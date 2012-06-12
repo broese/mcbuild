@@ -50,12 +50,4 @@ Tags
 // buf     : pointer to the tag start
 // name    : buffer to copy the name to. The name will be zero-terminated. Allocate 64k to ensure it fits
 // payload : RETURN where the offset to payload is stored (i.e. offset past the name, if any)
-char nbt_parsetag(unsigned char *buf, char *name, unsigned char **payload);
-
-int8_t nbt_read_byte(unsigned char *buf);
-int16_t nbt_read_short(unsigned char *buf);
-int32_t nbt_read_int(unsigned char *buf);
-int64_t nbt_read_long(unsigned char *buf);
-float nbt_read_float(unsigned char *buf);
-float nbt_read_double(unsigned char *buf);
-
+char nbt_parsetag(unsigned char **ptr, char *name);

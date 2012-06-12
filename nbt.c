@@ -4,65 +4,20 @@
 
 #include "nbt.h"
 #include "lh_debug.h"
+#include "lh_buffers.h"
 
-char nbt_parsetag(unsigned char *buf, char *name, unsigned char **payload) {
-    char type = (char) *buf++;
+char nbt_parsetag(unsigned char **ptr, char *name) {
+    char type = read_char(*ptr);
     if (type < NBT_TAG_END || type > NBT_TAG_INT_ARRAY)
-        LH_ERROR(-1,"Unknown tag type %d at %p\n",type,buf-1);
+        LH_ERROR(-1,"Unknown tag type %d at %p\n",type,*ptr-1);
 
     if (type != NBT_TAG_END) {
         // read the name
-        short len = (*buf++)<<8;
-        len += *buf++;
-
-        while(len--) *name++ = *buf++;
+        //hexdump(*ptr, 64);
+        short len = read_short(*ptr);
+        while(len--) *name++ = *(*ptr)++;
     }
     *name++ = 0;
-
-    *payload = buf;
     return type;
 }
-
-int8_t nbt_read_byte(unsigned char *buf) {
-    return (int8_t)*buf;
-}
-
-int16_t nbt_read_short(unsigned char *buf) {
-    int16_t val = *buf++;
-    val<<=8; val += *buf++;
-    return val;
-}
-
-int32_t nbt_read_int(unsigned char *buf) {
-    int32_t val = *buf++;
-    val<<=8; val += *buf++;
-    val<<=8; val += *buf++;
-    val<<=8; val += *buf++;
-    return val;
-}
-
-int64_t nbt_read_long(unsigned char *buf) {
-    int64_t val = *buf++;
-    val<<=8; val += *buf++;
-    val<<=8; val += *buf++;
-    val<<=8; val += *buf++;
-    val<<=8; val += *buf++;
-    val<<=8; val += *buf++;
-    val<<=8; val += *buf++;
-    val<<=8; val += *buf++;
-    return val;
-}
-
-float nbt_read_float(unsigned char *buf) {
-    float val;
-    memcpy(&val,buf,sizeof(val));
-    return val;
-}
-
-float nbt_read_double(unsigned char *buf) {
-    double val;
-    memcpy(&val,buf,sizeof(val));
-    return val;
-}
-
 

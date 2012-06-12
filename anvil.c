@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#define HAS_ENDIAN 1
 #ifndef HAS_ENDIAN
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -27,7 +28,7 @@ mcregion * load_region(const char * path) {
     ssize_t size;
     FILE *fd = open_file_r(path, &size);
     if (!fd) LH_ERROR(NULL,"load_region : failed to open file %s", path);
-    printf("Opened %s (%lu KiB, %lu pages)\n",path,size/1024,size/4096);
+    printf("Opened %s (%u KiB, %u pages)\n",path,size/1024,size/4096);
 
     // allocate region
     ALLOC(mcregion,region);
@@ -96,14 +97,14 @@ unsigned char * get_compound_data(mcregion *region, int x, int y, ssize_t *len) 
 ////////////////////////////////////////////////////////////////////////////////
 
 void parse_compound(unsigned char *data, ssize_t len) {
-    //hexdump(data,len);
+    hexdump(data,64);
     unsigned char *rptr = data;
     char name[65536];
     int i;
 
     int depth = 0;
     do {
-        char type = nbt_parsetag(rptr, name, &rptr);
+        char type = nbt_parsetag(&rptr, name);
         for(i=0; i<depth; i++) printf("  ");
 
         ssize_t plen = 0;
@@ -114,58 +115,50 @@ void parse_compound(unsigned char *data, ssize_t len) {
                 depth--;
                 break;
             case NBT_TAG_BYTE: {
-                int8_t val = nbt_read_byte(rptr);
+                int8_t val = read_char(rptr);
                 printf("Byte (%s) %d\n",name,val);
-                rptr++;
                 break;
             }
             case NBT_TAG_SHORT: {
-                int16_t val = nbt_read_short(rptr);
+                int16_t val = read_short(rptr);
                 printf("Short (%s) %d\n",name,val);
-                rptr+=2;
                 break;
             }
             case NBT_TAG_INT: {
-                int32_t val = nbt_read_int(rptr);
+                int32_t val = read_int(rptr);
                 printf("Int (%s) %d\n",name,val);
-                rptr+=4;
                 break;
             }
             case NBT_TAG_LONG: {
-                int64_t val = nbt_read_long(rptr);
+                int64_t val = read_long(rptr);
                 printf("Long (%s) %lld\n",name,val);
-                rptr+=8;
                 break;
             }
             case NBT_TAG_FLOAT: {
-                float val = nbt_read_float(rptr);
+                float val = read_float(rptr);
                 printf("Float (%s) %f\n",name,val);
-                rptr+=4;
                 break;
             }
             case NBT_TAG_DOUBLE: {
-                double val = nbt_read_double(rptr);
+                double val = read_double(rptr);
                 printf("Double (%s) %f\n",name,val);
-                rptr+=8;
                 break;
             }
             case NBT_TAG_BYTE_ARRAY: {
-                int32_t len = nbt_read_int(rptr);
-                rptr+=4+len;
+                int32_t len = read_int(rptr);
+                rptr+=len;
                 printf("Byte Array (%s) %d bytes\n",name,len);
                 break;
             }
             case NBT_TAG_STRING: {
-                uint16_t len = nbt_read_short(rptr);
-                rptr+=2+len;
+                uint16_t len = read_short(rptr);
+                rptr+=len;
                 printf("String (%s) %d bytes\n",name,len);
                 break;
             }
             case NBT_TAG_LIST: {
-                char stype = nbt_read_byte(rptr);
-                rptr++;
-                int32_t len = nbt_read_int(rptr);
-                rptr+=4;
+                char stype = read_char(rptr);
+                int32_t len = read_int(rptr);
                 printf("List (%s) of %d, len=%d\n",name,stype,len);
                 break;
             }
@@ -175,8 +168,8 @@ void parse_compound(unsigned char *data, ssize_t len) {
                 break;
             }
             case NBT_TAG_INT_ARRAY: {
-                int32_t len = nbt_read_int(rptr);
-                rptr += 4+len*4;
+                int32_t len = read_int(rptr);
+                rptr += len*4;
                 printf("Int Array (%s) %d ints\n",name,len);
                 break;
             }
