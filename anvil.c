@@ -7,7 +7,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#ifdef __linux
 #define HAS_ENDIAN 1
+#endif
+
 #ifndef HAS_ENDIAN
 #include <sys/types.h>
 #include <netinet/in.h>
@@ -83,8 +86,9 @@ void free_region(mcregion *region) {
     free(region);
 }
 
-unsigned char * get_compound_data(mcregion *region, int x, int y, ssize_t *len) {
-    mccolumn * col = &region->columns[x+y*16];
+unsigned char * get_compound_data(mcregion *region, int idx, ssize_t *len) {
+    mccolumn * col = &region->columns[idx];
+    if (col->size <= 0) return NULL;
 
     unsigned char *cdata = read_froma(region->fd, col->offset+5, col->size);
     if (!cdata) return NULL;
@@ -96,84 +100,3 @@ unsigned char * get_compound_data(mcregion *region, int x, int y, ssize_t *len) 
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void parse_compound(unsigned char *data, ssize_t len) {
-    hexdump(data,64);
-    unsigned char *rptr = data;
-    char name[65536];
-    int i;
-
-    int depth = 0;
-    do {
-        char type = nbt_parsetag(&rptr, name);
-        for(i=0; i<depth; i++) printf("  ");
-
-        ssize_t plen = 0;
-        //printf("%2d (%s)\n",type,name);
-        switch (type) {
-            case NBT_TAG_END:
-                printf("End\n");
-                depth--;
-                break;
-            case NBT_TAG_BYTE: {
-                int8_t val = read_char(rptr);
-                printf("Byte (%s) %d\n",name,val);
-                break;
-            }
-            case NBT_TAG_SHORT: {
-                int16_t val = read_short(rptr);
-                printf("Short (%s) %d\n",name,val);
-                break;
-            }
-            case NBT_TAG_INT: {
-                int32_t val = read_int(rptr);
-                printf("Int (%s) %d\n",name,val);
-                break;
-            }
-            case NBT_TAG_LONG: {
-                int64_t val = read_long(rptr);
-                printf("Long (%s) %lld\n",name,val);
-                break;
-            }
-            case NBT_TAG_FLOAT: {
-                float val = read_float(rptr);
-                printf("Float (%s) %f\n",name,val);
-                break;
-            }
-            case NBT_TAG_DOUBLE: {
-                double val = read_double(rptr);
-                printf("Double (%s) %f\n",name,val);
-                break;
-            }
-            case NBT_TAG_BYTE_ARRAY: {
-                int32_t len = read_int(rptr);
-                rptr+=len;
-                printf("Byte Array (%s) %d bytes\n",name,len);
-                break;
-            }
-            case NBT_TAG_STRING: {
-                uint16_t len = read_short(rptr);
-                rptr+=len;
-                printf("String (%s) %d bytes\n",name,len);
-                break;
-            }
-            case NBT_TAG_LIST: {
-                char stype = read_char(rptr);
-                int32_t len = read_int(rptr);
-                printf("List (%s) of %d, len=%d\n",name,stype,len);
-                break;
-            }
-            case NBT_TAG_COMPOUND: {
-                printf("Compound (%s)\n",name);
-                depth++;
-                break;
-            }
-            case NBT_TAG_INT_ARRAY: {
-                int32_t len = read_int(rptr);
-                rptr += len*4;
-                printf("Int Array (%s) %d ints\n",name,len);
-                break;
-            }
-        }
-
-    } while(rptr-data < len);
-}

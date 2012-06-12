@@ -46,8 +46,45 @@ Tags
 #define NBT_TAG_COMPOUND   10
 #define NBT_TAG_INT_ARRAY  11
 
-// generic tag parser
-// buf     : pointer to the tag start
-// name    : buffer to copy the name to. The name will be zero-terminated. Allocate 64k to ensure it fits
-// payload : RETURN where the offset to payload is stored (i.e. offset past the name, if any)
-char nbt_parsetag(unsigned char **ptr, char *name);
+//typedef struct nbtl nbtl;
+typedef struct nbte nbte;
+
+#if 0
+struct nbtl {
+    int   n;
+    nbte *e;  
+};
+#endif
+
+struct nbte {
+    int      type;      // type of element
+    char    *name;      // element name - allocated, must be freed!
+    int      count;     // number of elements in the parsed object:
+                        // 1 for all elemental types
+                        // number of elements in the array for ba, ia
+                        // string length for str
+                        // number of elements in the compound or list
+
+    union {
+        int8_t  b;      // NBT_TAG_BYTE
+        int16_t s;      // NBT_TAG_SHORT
+        int32_t i;      // NBT_TAG_INT
+        int64_t l;      // NBT_TAG_LONG
+        float   f;      // NBT_TAG_FLOAT
+        double  d;      // NBT_TAG_DOUBLE
+
+                        // all following pointers are allocated and must be freed on destruction!
+        int8_t *ba;     // NBT_TAG_BYTE_ARRAY
+        int32_t*ia;     // NBT_TAG_INT_ARRAY
+
+        char   *str;    // NBT_TAG_STRING
+
+        nbte   *list;   // NBT_TAG_LIST
+        nbte   *comp;   // NBT_TAG_COMPOUND
+    } v;
+};
+
+nbte *nbt_parse(unsigned char **ptr);
+void nbt_dump(nbte *elem, int indent);
+
+nbte * nbt_ce(nbte *elem, const char *name);
