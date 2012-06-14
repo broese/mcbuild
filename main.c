@@ -6,9 +6,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <gd.h>
-#include <gdfontl.h>
-
 #include "anvil.h"
 #include "nbt.h"
 #include "lh_image.h"
@@ -97,6 +94,25 @@ static int BIOMES[] = {
     0x60a020, //Jungle Hills
 };
 
+static int BLOCKS[256] = {
+    0x000000,
+    0x808080,
+    0x00c000,
+    0x404000,
+    0x707070,
+    0x808020,
+    0x40c020,
+    0x101010,
+    0x0000c0,
+    0x0000c0,
+    0xc08020,
+    0xc08020,
+    0xc0c020,
+    0xc0a0b0,
+    0xffff00,
+    0xff0000,
+};
+
 void draw_biomes(lhimage *img, nbte *level) {
     nbte *xPos = nbt_ce(level,"xPos");
     nbte *zPos = nbt_ce(level,"zPos");
@@ -109,26 +125,84 @@ void draw_biomes(lhimage *img, nbte *level) {
         for(y=0; y<16; y++) {
             int spos = x+X*16+(y+Z*16)*img->width;
             int bpos = x+y*16;
-            int color = (b[bpos]>=0 && b[bpos]<=22) ? BIOMES[b[bpos]] : 0x00ffff;
+            int color = (b[bpos]<=22) ? BIOMES[b[bpos]] : 0x00ffff;
             img->data[spos] = color;
         }
     }    
 }
 
-static char *names[] = {
-    "r.0.0.mca",
-    "r.0.1.mca",
-    "r.1.0.mca",
-    "r.1.1.mca",
-    "r.-1.-1.mca",
-    "r.-1.0.mca",
-    "r.-1.1.mca",
-    "r.0.-1.mca",
-    "r.1.-1.mca",
-    NULL
-};
+void draw_topmap(lhimage *img, nbte *level) {
+    //nbt_dump(level, 0); exit(1);
 
-void draw_biomes_from_region(lhimage *img, const char *path) {
+    nbte *xPos = nbt_ce(level,"xPos");
+    nbte *zPos = nbt_ce(level,"zPos");
+    nbte *sect = nbt_ce(level,"Sections");
+
+    // extract block data
+    unsigned char *cubes[16];
+    memset(cubes, 0, sizeof(cubes));
+
+    int i;
+    for(i=0; i<16; i++) {
+        nbte *c = nbt_le(sect, i);
+        if (!c) continue;
+        nbte *Y = nbt_ce(c, "Y");
+        int y = Y->v.i;
+        nbte *B = nbt_ce(c, "Blocks");
+        cubes[y] = B->v.ba;
+    }
+
+#if 0
+    printf("%2d %2d ",xPos->v.i,zPos->v.i);
+    for(i=0; i<16; i++)
+        if (cubes[i]) printf("%x",i);
+    printf("\n");
+#endif
+
+#if 0
+    int X=xPos->v.i,Z=zPos->v.i;
+    int x,y,l,z;
+    for(l=0; l<16; l++) {
+        unsigned char *b = cubes[l];
+        if (!b) break; // skip empty cubes
+        for(i=0; i<4096; i++) {
+            int spos = X*16+(i&0x0f)+(((i&0xf0)>>4)+Z*16)*img->width;
+            int vvv = 4*((l<<4)+(i>>8));
+            if (vvv>255) vvv=255;
+
+            if (b[i]==8 || b[i]==9) img->data[spos] |= (vvv<<16);
+            if (b[i]==10 || b[i]==11) img->data[spos] |= (vvv<<8);
+            if (b[i]==4) img->data[spos] |= vvv;
+        }
+    }
+#endif
+
+
+#if 1
+    // draw
+    int X=xPos->v.i,Z=zPos->v.i;
+    int x,y,l,z;
+    for(l=0; l<16; l++) {
+        unsigned char *b = cubes[l];
+        if (!b) break; // skip empty cubes
+
+        for(x=0; x<16; x++) {
+            for(y=0; y<16; y++) {
+                int spos = x+X*16+(y+Z*16)*img->width;
+                for(z=0; z<4096; z+=256) {
+                    int bpos = z+(y<<4)+x;
+                    if (b[bpos]!=0)
+                        img->data[spos] = BLOCKS[b[bpos]];
+                }
+            }
+        }
+    }
+#endif
+
+
+}
+
+void draw_region(lhimage *img, const char *path) {
     mcregion *region = load_region(path);
     
     int idx;
@@ -143,9 +217,11 @@ void draw_biomes_from_region(lhimage *img, const char *path) {
         //printf("parsed %d bytes out of %d\n",ptr-data,len);
 
         nbte *level = nbt_ce(comp,"Level");
+#if 0
         draw_biomes(img, level);
-
-        //printf("%4d  %2d %2d\n",idx,xPos->v.i,zPos->v.i);
+#else
+        draw_topmap(img, level);
+#endif
 
         nbt_free(comp);
         free(comp);
@@ -158,22 +234,18 @@ void draw_biomes_from_region(lhimage *img, const char *path) {
 
 int main(int ac, char **av) {
 
-#if 0
-    if ( parse_args(ac,av) || o_help ) {
-        print_usage();
-        return 1;
-    }
-#endif
+    lhimage * img = allocate_image(512,512);
 
-    lhimage * img = allocate_image(1536,1536);
-
-    int i=0;
-    while(names[i]) {
-        draw_biomes_from_region(img, names[i]);
+    int i=1;
+    while(av[i]) {
+        draw_region(img, av[i]);
         i++;
     }
 
+
     export_png_file(img, "biomes.png");
+
+    
 
     return 0;
 }
