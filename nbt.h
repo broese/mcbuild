@@ -88,3 +88,5 @@ nbte *nbt_parse(unsigned char **ptr);
 void nbt_dump(nbte *elem, int indent);
 
 nbte * nbt_ce(nbte *elem, const char *name);
+nbte * nbt_le(nbte *elem, int index);
+
