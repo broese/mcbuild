@@ -280,7 +280,7 @@ void draw_topmap_iso(lhimage *img, nbte *level, int ox, int oy) {
     }
 
     // draw
-    int X=xPos->v.i,Z=zPos->v.i;
+    int X=(xPos->v.i)&0x1f,Z=(zPos->v.i)&0x1f;
     int x,y,t,l,z;
     for(l=0; l<16; l++) {
         unsigned char *b = cubes[l];
