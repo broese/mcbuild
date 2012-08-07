@@ -131,6 +131,53 @@ void draw_biomes(lhimage *img, nbte *level) {
     }    
 }
 
+#define MAPSEED 1517717513523274421LL
+
+long long Random_new(long long seed) {
+    long long r = (seed ^ 0x5deece66dLL) & ((1LL<<48)-1);
+    return r;
+}
+
+int Random_next(long long *seed, int bits) {
+    *seed = (*seed * 0x5DEECE66DLL + 0xBLL) & ((1LL << 48) - 1);
+    return (int)(*seed >> (48 - bits));
+}
+
+int Random_nextInt(long long *seed, int n) {
+    if ((n & -n) == n)  // i.e., n is a power of 2
+        return (int)((n * (long long)Random_next(seed,31)) >> 31);
+
+    int bits, val;
+    do {
+        bits = Random_next(seed,31);
+        val = bits % n;
+    } while(bits - val + (n-1) < 0);
+    return val;
+}
+
+int is_slime(int X, int Y) {
+    long long r = Random_new(
+        MAPSEED +
+        (long long) (X*X*0x4c1906) + 
+        (long long) (X*0x5ac0db) + 
+        (long long) (Y*Y) * 0x4307a7LL + 
+        (long long) (Y*0x5f24f) ^ 0x3ad8025f
+    );
+        
+    return Random_nextInt(&r,10) == 0;
+}
+
+void draw_block(lhimage *img, int X, int Y) {
+    int offset = Y*16*img->width+X*16;
+    int i,j;
+    for(i=0; i<16; i++) {
+        for(j=0; j<16; j++) {
+            img->data[offset+j] = 0x00008000;
+        }
+        offset += img->width;
+    }
+}
+
 void draw_topmap(lhimage *img, nbte *level) {
     //nbt_dump(level, 0); exit(1);
 
@@ -159,7 +206,7 @@ void draw_topmap(lhimage *img, nbte *level) {
     printf("\n");
 #endif
 
-#if 0
+#if 1
     int X=xPos->v.i,Z=zPos->v.i;
     int x,y,l,z;
     for(l=0; l<16; l++) {
@@ -170,15 +217,17 @@ void draw_topmap(lhimage *img, nbte *level) {
             int vvv = 4*((l<<4)+(i>>8));
             if (vvv>255) vvv=255;
 
-            if (b[i]==8 || b[i]==9) img->data[spos] |= (vvv<<16);
-            if (b[i]==10 || b[i]==11) img->data[spos] |= (vvv<<8);
-            if (b[i]==4) img->data[spos] |= vvv;
+            if (b[i]==50 || b[i]==58 || b[i]==54 || b[i]==61) img->data[spos] |= (vvv<<16);
+            //if (is_slime(X,Z)) img->data[spos] |= (vvv<<8);
+            //if (b[i]==8 || b[i]==9) img->data[spos] |= (vvv<<16);
+            if (b[i]==52) img->data[spos] |= (vvv<<8);
+            if (b[i]==8 || b[i]==9) img->data[spos] |= vvv;
         }
     }
 #endif
 
 
-#if 1
+#if 0
     // draw
     int X=xPos->v.i,Z=zPos->v.i;
     int x,y,l,z;
@@ -356,7 +405,7 @@ void draw_isometric(lhimage *img, mcregion * region, int ox, int oy) {
 
 int main(int ac, char **av) {
 
-#if 0
+#if 1
     lhimage * img = allocate_image(512,512);
 
     int i=1;
