@@ -16,6 +16,8 @@
 #include "anvil.h"
 #include "nbt.h"
 
+////////////////////////////////////////////////////////////////////////////////
+
 #define SERVERIP "83.233.237.64"
 #define PCAPFILTER "host " SERVERIP
 
@@ -75,6 +77,8 @@ typedef struct {
     unsigned short cs;
     unsigned short urg;
 } h_tcp;
+
+////////////////////////////////////////////////////////////////////////////////
 
 #define MCP_KeepAlive           0x00
 #define MCP_LoginRequest        0x01
@@ -153,34 +157,6 @@ typedef struct {
 #define MCP_ServerListPing      0xfe
 #define MCP_Disconnect          0xff
 
-#if 0
-static uint8_t * read_string(const uint8_t **p, int len) {
-    if (len < 2) return NULL;
-    uint16_t slen = read_short(*p);
-    if (len < slen*2+2) return NULL;
-    ALLOCB(s,slen+1);
-
-    int i;
-    for(i=0; i<slen; i++) {
-        (*p)++;
-        s[i] = read_char(*p);
-    }
-    s[i] = 0;
-    return s;
-}
-
-/* Observed login process on 2b2t.net. Does not match description in the wiki
-00000035  01 00 00 00 1d 00 0a 00  44 00 6f 00 72 00 71 00 ........ D.o.r.q.
-00000045  75 00 65 00 6d 00 61 00  64 00 61 00 00 00 00 00 u.e.m.a. d.a.....
-00000055  00 00 00 00 00 00 00 00                          ........ 
-    00000023  01 00 40 15 14 00 00 00  07 00 64 00 65 00 66 00 ..@..... ..d.e.f.
-    00000033  61 00 75 00 6c 00 74 00  00 00 00 00 00 00 00 03 a.u.l.t. ........
-    00000043  00 3c 06 00 00 00 00 00  00 00 42 00 00 00 00 ca .<...... ..B.....
-    00000053  00 00 00 00 04 00 00 00  00 f6 ed b4 e2          ........ .....
-*/
-#define RSTR s = read_string(&p,limit-p); if (!s) { atlimit=1; break; }
-#endif
-
 typedef struct {
     int    type;
     char * name;
@@ -216,9 +192,37 @@ mobmeta MOBS[] = {
     { -1, "",             0 }
 };
 
-////////////////////////////////////////////////////////////////////////////////
+// List of enchantable items
+// Ref: http://wiki.vg/wiki/index.php?title=Slot_Data&oldid=2152
+short TOOLS[] = {
+    256,257,258,        // iron tools
+    259,                // flint and steel
+    261,                // bow
+    267,                // iron sword
+    268,269,270,271,    // wooden tools
+    272,273,274,275,    // stone tools
+    276,277,278,279,    // diamond tools
+    283,284,285,286,    // golden tools
+    290,291,292,293,294,// hoes
+    298,299,300,301,    // leather equipment
+    302,303,304,305,    // chainmain equipment
+    306,307,308,309,    // iron equipment
+    310,311,312,313,    // diamond equipment
+    314,315,316,317,    // golden equipment
+    346,                // fishing rod
+    359,                // shears
+    -1,
+};
 
-#define Rest(l) (limit-p >= (l))
+static inline int istool(int id) {
+    int i;
+    for(i=0; TOOLS[i]>=0; i++)
+        if (TOOLS[i] == id)
+            return 1;
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 static inline int read_string(char **p, char *s, char *limit) {
     if (limit-*p < 2) return 1;
@@ -255,16 +259,32 @@ typedef struct {
     char  meta[256];
 } slot_t;
 
-#define Rslot(n)                                            \
-        slot_t n = {0,0,0};                                 \
-        Rlim(sizeof(short)) else n.id = read_short(p);      \
-        if (n.id != -1) {                                   \
-            Rlim(sizeof(char)+sizeof(short)) else {         \
-                n.count = read_char(p);                     \
-                n.damage = read_short(p);                   \
-            }                                               \
-        }
+#define Rslot_old(n)                                        \
+    slot_t n = {0,0,0};                                     \
+    Rshort(id); n.id = id;                                  \
+    if (id != -1) {                                         \
+        Rchar(count); n.count = count;                      \
+        Rshort(mlen); n.damage = mlen;                      \
+        while (mlen > 0) {                                  \
+            Rshort(term);                                   \
+            if (term == -1) break;                          \
+            mlen--;                                         \
+            p--;                                            \
+        }                                                   \
+    }
 
+#define Rslot(n)                                            \
+    slot_t n = {0,0,0};                                     \
+    Rshort(id); n.id = id;                                  \
+    if (id != -1) {                                         \
+        Rchar(count); n.count = count;                      \
+        Rshort(damage); n.damage = damage;                  \
+        if (istool(id)) {                                   \
+            Rshort(metalen);                                \
+            if (metalen != -1)                              \
+                Rskip(metalen);                             \
+        }                                                   \
+    }
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -300,14 +320,14 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(uid);
             if (is_client) {
                 Rstr(s);
-                printf("Login Request (Client) %d %s\n",uid,s);
                 Rskip(13);
+                printf("Login Request (Client) %d %s\n",uid,s);
             }
             else {
-                p +=2;
+                Rskip(2);
                 Rstr(s);
-                printf("Login Request (Server) %d %s\n",uid,s);
                 Rskip(38);
+                printf("Login Request (Server) %d %s\n",uid,s);
             }
             break;
         }
@@ -327,6 +347,14 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
         case MCP_TimeUpdate: { // 04
             Rlong(tm);
             printf("Time Update: %lld (%dd %dh)\n",tm,(int)(tm/24000L),(int)(tm%24000)/1000);
+            break;
+        }
+
+        case MCP_UseEntity: { //07
+            Rint(user);
+            Rint(target);
+            Rchar(button);
+            printf("Use Item: user=%d target=%d %c\n",user,target,button?'L':'R');
             break;
         }
 
@@ -400,29 +428,21 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
         }
 
         case MCP_PlayerBlockPlace: { //0f
-            printf("\n--------------------\n");
-            hexdump(data+consumed, len-consumed);
             Rint(x);
             Rchar(y);
             Rint(z);
             Rchar(dir);
-            Rshort(iid);
-            if (iid == -1) {
-                printf("Player Block Placement: coord=%d,%d,%d item:-\n",x,(unsigned int)y,z);
-            }
+            Rslot(s);
+            
+            printf("Player Block Placement: coord=%d,%d,%d item:",x,(unsigned int)y,z);
+            if (s.id == -1)
+                printf("-");
             else {
-                Rchar(count);
-                Rshort(damage);
-                Rshort(metalen);
-                if (metalen >= 0)
-                    Rskip(metalen);
-                printf("Player Block Placement: coord=%d,%d,%d item:%3d x%2d",x,(unsigned int)y,z,iid,count);
-                if (damage != 0)
-                    printf(" dmg=%d",damage);
-                if (metalen >= 0)
-                    printf(" meta=%d",metalen);
-                printf("\n");
+                printf("%3d x%2d",s.id,s.count);
+                if (s.damage != 0)
+                    printf(" dmg=%d",s.damage);
             }
+            printf("\n");
             break;
         }
 
@@ -436,6 +456,13 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(eid);
             Rchar(aid);
             printf("Animation: EID=%d anim=%d\n",eid,aid);
+            break;
+        }
+
+        case MCP_EntityAction: { //13
+            Rint(eid);
+            Rchar(action);
+            printf("Entity Action: eid=%d action=%d\n",eid,action);
             break;
         }
 
@@ -458,6 +485,25 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(ieid);
             Rint(ceid);
             printf("Collect Item: item=%d collector=%d\n",ieid,ceid);
+            break;
+        }
+
+        case MCP_SpawnObject: {//17
+            Rint(eid);
+            Rchar(type);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rint(eeid);
+            if (eeid == 0) {
+                printf("Spawn Object: eid=%d type=%d coord=%d,%d,%d\n",eid,type,x/32,y/16,z/32);
+            }
+            else {
+                Rshort(vx);
+                Rshort(vy);
+                Rshort(vz);
+                printf("Spawn Object: eid=%d type=%d coord=%d,%d,%d Fireball eeid=%d speed=%d,%d,%d\n",eid,type,x/32,y/16,z/32,eeid,vx,vy,vz);
+            }
             break;
         }
 
@@ -505,6 +551,16 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(z);
             Rint(dir);
             printf("Spawn Painting: EID=%d %s %d,%d,%d %d\n",eid,title,x,y,z,dir);
+            break;
+        }
+
+        case MCP_SpawnExperienceOrb: {
+            Rint(eid);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rshort(count);
+            printf("Spawn Experience Orb: EID=%d coord=%x,%y,%z count=%d\n",eid,x,y,z,count);
             break;
         }
 
@@ -560,6 +616,13 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             break;
         }
 
+        case MCP_EntityStatus: { //26
+            Rint(eid);
+            Rchar(status);
+            printf("Entity Status: EID=%d status=%d\n",eid,status);
+            break;
+        }
+
         case MCP_EntityMetadata: { //28
             Rint(eid);
             while(p<limit && *p!=127) p++;
@@ -593,9 +656,18 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rshort(add_bitmap);
             Rint(compsize);
             Rint(unused);
-            //printf("preparing to skip %d bytes, only %d available\n",compsize,limit-p);
             Rskip(compsize);
             printf("Chunk Data: %d,%d cont=%d PBM=%04x ABM=%04x compsize=%d\n",X,Z,cont,primary_bitmap,add_bitmap,compsize);
+            break;
+        }
+
+        case MCP_MultiBlockChange: { //34
+            Rint(X);
+            Rint(Z);
+            Rshort(count);
+            Rint(dsize);
+            Rskip(dsize);
+            printf("Multi Block Change: %d,%d count=%d (%d bytes)\n",X,Z,count,dsize);
             break;
         }
 
@@ -616,6 +688,16 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rchar(b1);
             Rchar(b2);
             printf("Block Action: %d,%d,%d %d %d\n",x,y,z,b1,b2);
+            break;
+        }
+
+        case MCP_SoundParticleEffect: { //3D
+            Rint(effect);
+            Rint(x);
+            Rchar(y);
+            Rint(z);
+            Rint(data);
+            printf("Sound/Particle Effect: %d,%d,%d effect=%d,%d\n",x,(unsigned int)y,z,effect,data);
             break;
         }
 
@@ -640,14 +722,15 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rchar(rclick);
             Rshort(action);
             Rchar(shift);
-            Rslot(slot);
-            printf("Click Window: wid=%d slot#=%d action=[%c %c %d]",wid,sid,rclick?'R':'L',shift?'S':'-',action);
-            if (slot.id == -1)
-                printf(" item:-");
+            Rslot(s);
+
+            printf("Click Window: wid=%d slot=%d action=[%c %c %d]",wid,sid,rclick?'R':'L',shift?'S':'-',action);
+            if (s.id == -1)
+                printf("-");
             else {
-                printf(" item:%3d x %2d",slot.id,slot.count);
-                if (slot.damage != 0)
-                    printf(" dmg=%d",slot.damage);
+                printf("%3d x%2d",s.id,s.count);
+                if (s.damage != 0)
+                    printf(" dmg=%d",s.damage);
             }
             printf("\n");
             break;
@@ -655,63 +738,46 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
 
         case MCP_SetSlot: { //67
             Rchar(wid);
-            Rshort(slot);
-            Rshort(iid);
-            if (iid == -1) {
-                printf("SetSlot: wid=%d slot=%d -\n",wid,slot);
-            }
+            Rshort(sid);
+            Rslot(s);
+
+            printf("Set Slot: wid=%d slot=%d item=",wid,sid);
+            if (s.id == -1)
+                printf("-");
             else {
-                Rchar(icount);
-                Rshort(damage);
-                Rshort(notchshit);
+                printf("%3d x%2d",s.id,s.count);
+                if (s.damage != 0)
+                    printf(" dmg=%d",s.damage);
+            }
+            printf("\n");
+            break;
+        }
 
-                if (notchshit != -1) p-=2;// roll back two bytes if no notchshit present
-                //FIXME: Enchantments?
-
-                printf("SetSlot: wid=%d slot=%d %3d x%2d (%04x)",wid,slot,iid,icount,(unsigned short)notchshit);
-                if (damage > 0) {
-                    if (iid < 256) {
-                        printf(" metadata=%d",damage);
-                        Rskip(damage);
-                    }
-                    else {
-                        printf(" dmg=%d",damage);
-                    }
+        case MCP_SetWindowItems: { //68
+            Rchar(wid);
+            Rshort(nslots);
+            printf("Set Window Items: wid=%d nslots=%d\n",wid,nslots);
+            int slot;
+            for(slot=0; slot<nslots; slot++) {
+                Rslot(s);
+                printf("    Slot %2d :",slot);
+                if (s.id == -1)
+                    printf("-");
+                else {
+                    printf("%3d x%2d",s.id,s.count);
+                    if (s.damage != 0)
+                        printf(" dmg=%d",s.damage);
                 }
                 printf("\n");
             }
             break;
         }
 
-        case MCP_SetWindowItems: { //68
+        case MCP_UpdateWindowProp: { //69
             Rchar(wid);
-            Rshort(count);
-            printf("Set Window Items: wid=%d count=%d\n",wid,count);
-            int slot;
-            count+=12; // GOD DAMN IT, NOTCH, Y U DO THIS
-            for(slot=0; slot<count; slot++) { 
-                Rshort(iid);
-                if (iid == -1) {
-                    printf(" Slot %2d : -\n",slot);
-                    continue;
-                }
-                else {
-                    Rchar(icount);
-                    Rshort(damage);
-                    printf(" Slot %2d : %3d x%2d",slot,iid,icount);
-                    if (damage > 0) {
-                        if (iid < 256) {
-                            printf(" metadata=%d\n",damage);
-                            Rskip(damage);
-                        }
-                        else {
-                            printf(" dmg=%d",damage);
-                        }
-                    }
-                    printf("\n");
-                }                
-            }
-            printf("-------------------\n");
+            Rshort(pid);
+            Rshort(pvalue);
+            printf("Update Window Property: wid=%d prop %d => %d\n",wid,pid,pvalue);
             break;
         }
 
@@ -840,6 +906,7 @@ int main(int ac, char ** av) {
     // monitored connection
     uint8_t *sdata[2] = { NULL, NULL };
     uint32_t slen[2] = { 0, 0};
+    uint32_t seqn[2] = { 0, 0};
     uint16_t cport = 0xffff; // port FFFF == no connection tracked
 
     #define BUFGRAN 65536
@@ -887,6 +954,7 @@ int main(int ac, char ** av) {
         }
 
         if (plen > 0) {
+            if (tcp->flags & 
             if ( (is_client && cport != ntohs(tcp->sport)) ||
                  (!is_client && cport != ntohs(tcp->dport)) )
                 LH_ERROR(1, "Incorrect port");
