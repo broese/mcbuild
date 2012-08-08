@@ -235,8 +235,9 @@ static inline int read_string(char **p, char *s, char *limit) {
 }
 
 
+#define Rlim(l) if (limit-p < l) { atlimit=1; break; }
 
-#define Rx(n,type,fun) type n; if Rest(sizeof(type)) { n = fun(p); } else { atlimit=1; break; }
+#define Rx(n,type,fun) type n; Rlim(sizeof(type)) else { n = fun(p); }
 
 #define Rchar(n)  Rx(n,char,read_char)
 #define Rshort(n) Rx(n,short,read_short)
@@ -245,11 +246,31 @@ static inline int read_string(char **p, char *s, char *limit) {
 #define Rfloat(n) Rx(n,float,read_float)
 #define Rdouble(n) Rx(n,double,read_double)
 #define Rstr(n)   char n[4096]; if (read_string((char **)&p,n,(char *)limit)) { atlimit=1; break; }
-#define Rskip(n)  if (limit-p < n) { atlimit=1; break; } else { p+=n; }
+#define Rskip(n)  Rlim(n) else { p+=n; }
+
+typedef struct {
+    short id;
+    char  count;
+    short damage;
+    char  meta[256];
+} slot_t;
+
+#define Rslot(n)                                            \
+        slot_t n = {0,0,0};                                 \
+        Rlim(sizeof(short)) else n.id = read_short(p);      \
+        if (n.id != -1) {                                   \
+            Rlim(sizeof(char)+sizeof(short)) else {         \
+                n.count = read_char(p);                     \
+                n.damage = read_short(p);                   \
+            }                                               \
+        }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
 uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
+    //if (is_client) return len;
+
     int consumed = 0;
     uint8_t * limit = data+len;
     int atlimit = 0;
@@ -347,6 +368,14 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             break;
         }
 
+        case MCP_PlayerLook: { //0C
+            Rfloat(yaw);
+            Rfloat(pitch);
+            Rchar(ground);
+            printf("Player Look: rot=%.1f,%.1f ground=%d\n",yaw,pitch,ground);
+            break;
+        }
+
         case MCP_PlayerPositionLook: { //0D
             Rdouble(x);
             Rdouble(y);
@@ -357,6 +386,56 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rchar(ground);
             printf("Player Position & Look: coord=%.1lf,%.1lf,%.1lf stance=%.1lf rot=%.1f,%.1f ground=%d\n",
                    x,y,z,stance,yaw,pitch,ground);
+            break;
+        }
+
+        case MCP_PlayerDigging: {//0e
+            Rchar(status);
+            Rint(x);
+            Rchar(y);
+            Rint(z);
+            Rchar(face);
+            printf("Player Digging: coord=%d,%d,%d face=%d\n",x,(unsigned int)y,z,face);
+            break;
+        }
+
+        case MCP_PlayerBlockPlace: { //0f
+            printf("\n--------------------\n");
+            hexdump(data+consumed, len-consumed);
+            Rint(x);
+            Rchar(y);
+            Rint(z);
+            Rchar(dir);
+            Rshort(iid);
+            if (iid == -1) {
+                printf("Player Block Placement: coord=%d,%d,%d item:-\n",x,(unsigned int)y,z);
+            }
+            else {
+                Rchar(count);
+                Rshort(damage);
+                Rshort(metalen);
+                if (metalen >= 0)
+                    Rskip(metalen);
+                printf("Player Block Placement: coord=%d,%d,%d item:%3d x%2d",x,(unsigned int)y,z,iid,count);
+                if (damage != 0)
+                    printf(" dmg=%d",damage);
+                if (metalen >= 0)
+                    printf(" meta=%d",metalen);
+                printf("\n");
+            }
+            break;
+        }
+
+        case MCP_HeldItemChange: {//10
+            Rshort(sid);
+            printf("Held Item Change: slot=%d\n",sid);
+            break;
+        }
+
+        case MCP_Animation: {//12
+            Rint(eid);
+            Rchar(aid);
+            printf("Animation: EID=%d anim=%d\n",eid,aid);
             break;
         }
 
@@ -372,6 +451,13 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rchar(pitch);
             Rchar(roll);
             printf("Spawn Dropped Item: EID=%d IID=%d x%d %d,%d,%d\n",eid,iid,count,x/32,y/16,z/32);
+            break;
+        }
+
+        case MCP_CollectItem: { //16
+            Rint(ieid);
+            Rint(ceid);
+            printf("Collect Item: item=%d collector=%d\n",ieid,ceid);
             break;
         }
 
@@ -422,11 +508,48 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             break;
         }
 
+        case MCP_DestroyEntity: { //1D
+            Rint(eid);
+            printf("Destroy Entity: EID=%d\n",eid);
+            break;
+        }
+
+        case MCP_EntityRelativeMove: { //1F
+            Rint(eid);
+            Rchar(dx);
+            Rchar(dy);
+            Rchar(dz);
+            printf("Entity Relative Move: EID=%d move=%d,%d,%d\n",eid,dx,dy,dz);
+            break;
+        }
+
         case MCP_EntityLook: { //20
             Rint(eid);
             Rchar(yaw);
             Rchar(pitch);
             printf("Entity Look: EID=%d, yaw=%d pitch=%d\n",eid,yaw,pitch);
+            break;
+        }
+
+        case MCP_EntityLookRelmove: { //21
+            Rint(eid);
+            Rchar(dx);
+            Rchar(dy);
+            Rchar(dz);
+            Rchar(yaw);
+            Rchar(pitch);
+            printf("Entity Look and Relative Move: EID=%d move=%d,%d,%d look=%d,%d\n",eid,dx,dy,dz,yaw,pitch);
+            break;
+        }
+
+        case MCP_EntityTeleport: { //22
+            Rint(eid);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rchar(yaw);
+            Rchar(pitch);
+            printf("Entity Teleport: EID=%d move=%d,%d,%d look=%d,%d\n",eid,x/32,y/16,z/32,yaw,pitch);
             break;
         }
 
@@ -437,11 +560,20 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             break;
         }
 
+        case MCP_EntityMetadata: { //28
+            Rint(eid);
+            while(p<limit && *p!=127) p++;
+            if (p>=limit) {atlimit=1; break;}
+            p++;
+            printf("Entity Metadata: EID=%d\n",eid);
+            break;
+        }
+
         case MCP_SetExperience: { //2B
             Rfloat(expbar);
             Rshort(level);
             Rshort(exp);
-            printf("Set Experience EXP=%d LVL=%d bar=%.1f\n",exp,level,expbar);
+            printf("Set Experience: EXP=%d LVL=%d bar=%.1f\n",exp,level,expbar);
             break;
         }
 
@@ -449,12 +581,11 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(X);
             Rint(Y);
             Rchar(alloc);
-            printf("Allocate Chunk %d,%d (%d,%d) => %s\n",X,Y,X*16,Y*16,alloc?"allocate":"release");
+            printf("Allocate Chunk: %d,%d (%d,%d) => %s\n",X,Y,X*16,Y*16,alloc?"allocate":"release");
             break;
         }
 
         case MCP_ChunkData: { //33
-            printf("in 33\n");
             Rint(X);
             Rint(Z);
             Rchar(cont);
@@ -462,9 +593,63 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rshort(add_bitmap);
             Rint(compsize);
             Rint(unused);
-            printf("preparing to skip %d bytes, only %d available\n",compsize,limit-p);
+            //printf("preparing to skip %d bytes, only %d available\n",compsize,limit-p);
             Rskip(compsize);
             printf("Chunk Data: %d,%d cont=%d PBM=%04x ABM=%04x compsize=%d\n",X,Z,cont,primary_bitmap,add_bitmap,compsize);
+            break;
+        }
+
+        case MCP_BlockChange: { //35
+            Rint(x);
+            Rchar(y);
+            Rint(z);
+            Rchar(bid);
+            Rchar(metadata);
+            printf("Block Change: %d,%d,%d block=%d meta=%d\n",x,(unsigned int)y,z,bid,metadata);
+            break;
+        }
+
+        case MCP_BlockAction: { //36
+            Rint(x);
+            Rshort(y);
+            Rint(z);
+            Rchar(b1);
+            Rchar(b2);
+            printf("Block Action: %d,%d,%d %d %d\n",x,y,z,b1,b2);
+            break;
+        }
+
+        case MCP_OpenWindow: {//64
+            Rchar(wid);
+            Rchar(invtype);
+            Rstr(title);
+            Rchar(nslots);
+            printf("Open Window: wid=%d invtype=%d nslots=%d Title=%s\n",wid,invtype,nslots,title);
+            break;
+        }
+
+        case MCP_CloseWindow: {//65
+            Rchar(wid);
+            printf("Close Window: wid=%d\n",wid);
+            break;
+        }
+
+        case MCP_ClickWindow: {//66
+            Rchar(wid);
+            Rshort(sid);
+            Rchar(rclick);
+            Rshort(action);
+            Rchar(shift);
+            Rslot(slot);
+            printf("Click Window: wid=%d slot#=%d action=[%c %c %d]",wid,sid,rclick?'R':'L',shift?'S':'-',action);
+            if (slot.id == -1)
+                printf(" item:-");
+            else {
+                printf(" item:%3d x %2d",slot.id,slot.count);
+                if (slot.damage != 0)
+                    printf(" dmg=%d",slot.damage);
+            }
+            printf("\n");
             break;
         }
 
@@ -483,10 +668,10 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
                 if (notchshit != -1) p-=2;// roll back two bytes if no notchshit present
                 //FIXME: Enchantments?
 
-                printf("SetSlot: wid=%d slot=%d %3d x%2d (%04x)\n",wid,slot,iid,icount,(unsigned short)notchshit);
+                printf("SetSlot: wid=%d slot=%d %3d x%2d (%04x)",wid,slot,iid,icount,(unsigned short)notchshit);
                 if (damage > 0) {
                     if (iid < 256) {
-                        printf(" metadata=%d\n",damage);
+                        printf(" metadata=%d",damage);
                         Rskip(damage);
                     }
                     else {
@@ -529,6 +714,14 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             printf("-------------------\n");
             break;
         }
+
+        case MCP_ConfirmTransaction: { //6A
+            Rchar(wid);
+            Rshort(action);
+            Rchar(accepted);
+            printf("Confirm Transaction: wid=%d action=%d accepted=%d\n",wid,action,accepted);
+            break;
+        }
         
         case MCP_UpdateSign: { //82
             Rint(x);
@@ -551,7 +744,14 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(c1);
             Rint(c2);
             Rint(c3);
-            printf("UpdateTileEntry: %d,%d,%d action=%d custom=%d,%d,%d\n",x,y,z,action,c1,c2,c3);
+            printf("Update Tile Entry: %d,%d,%d action=%d custom=%d,%d,%d\n",x,y,z,action,c1,c2,c3);
+            break;
+        }
+
+        case MCP_IncrementStatistic: { //c8
+            Rint(stid);
+            Rchar(amount);
+            printf("Increment Statistic: id=%d by %d\n",stid,amount);
             break;
         }
 
