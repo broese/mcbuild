@@ -288,6 +288,10 @@ typedef struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+uint32_t process_streamz(uint8_t * data, uint32_t len, int is_client) {
+    return len;
+}
+
 uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
     //if (is_client) return len;
 
@@ -560,7 +564,7 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(y);
             Rint(z);
             Rshort(count);
-            printf("Spawn Experience Orb: EID=%d coord=%x,%y,%z count=%d\n",eid,x,y,z,count);
+            printf("Spawn Experience Orb: EID=%d coord=%d,%d,%d count=%d\n",eid,x,y,z,count);
             break;
         }
 
@@ -629,6 +633,7 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             if (p>=limit) {atlimit=1; break;}
             p++;
             printf("Entity Metadata: EID=%d\n",eid);
+            hexdump(data+consumed, len-consumed);
             break;
         }
 
@@ -698,6 +703,23 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(z);
             Rint(data);
             printf("Sound/Particle Effect: %d,%d,%d effect=%d,%d\n",x,(unsigned int)y,z,effect,data);
+            break;
+        }
+
+        case MCP_ChangeGameState: { //46
+            Rchar(reason);
+            Rchar(mode);
+            printf("Change Game State: reason=%d mode=%d\n",reason, mode);
+            break;
+        }
+
+        case MCP_Thunderbolt: { //47
+            Rint(eid);
+            Rchar(unk);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            printf("Thunderbolt EID=%d coord=%d,%d,%d\n",eid,x,y,z);
             break;
         }
 
@@ -868,6 +890,8 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
     return consumed;
 }
 
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 
 int main(int ac, char ** av) {
 
@@ -905,29 +929,23 @@ int main(int ac, char ** av) {
 
     // monitored connection
     uint8_t *sdata[2] = { NULL, NULL };
-    uint32_t slen[2] = { 0, 0};
-    uint32_t seqn[2] = { 0, 0};
+    int32_t slen[2] = { 0, 0}; // current length of data in the buffers, does not necessarily equal acknowledged data
+    int32_t seqn[2] = { 0, 0}; // sequence number of the first byte in the buffer
+    int32_t ackd[2] = { 0, 0}; // last acknowledged seqn for a stream
     uint16_t cport = 0xffff; // port FFFF == no connection tracked
 
     #define BUFGRAN 65536
 
     while(pkt = pcap_next(p, &h)) {
         pn++;
-        //printf("Packet length %d\n",h.len);
+
         h_eth * eth = (h_eth *)pkt;
-        //printf("%02x:%02x:%02x:%02x:%02x:%02x -> %02x:%02x:%02x:%02x:%02x:%02x\n",
-        //       eth->src[0],eth->src[1],eth->src[2],eth->src[3],eth->src[4],eth->src[5],
-        //       eth->dst[0],eth->dst[1],eth->dst[2],eth->dst[3],eth->dst[4],eth->dst[5]);
         if (ntohs(eth->et) != ET_IP4)
             LH_ERROR(1,"Incorrect ethertype %04x\n",ntohs(eth->et));
 
         h_ip4 * ip = (h_ip4 *)(pkt+sizeof(h_eth));
         if (ip->proto != IPP_TCP)
             LH_ERROR(1,"Incorrect IP type %04x\n",ip->proto);
-        //char src[32],dst[32];
-        //sprintf(src,"%s",inet_ntoa(ip->src));
-        //sprintf(dst,"%s",inet_ntoa(ip->dst));
-        //printf("%s -> %s\n",src,dst);
 
         h_tcp * tcp = (h_tcp *)(pkt+sizeof(h_eth)+sizeof(h_ip4));
         //printf("%s:%d -> %s:%d\n",src,ntohs(tcp->sport),dst,ntohs(tcp->dport));
@@ -939,43 +957,63 @@ int main(int ac, char ** av) {
         int plen = ntohs(ip->len)-sizeof(h_ip4)-TH_OFF(tcp);
         int is_client = (ntohl(ip->src.s_addr) == 0x0a000002);
 
-        //printf("%7d %c %4d\n",pn,is_client?'C':' ',plen);
+        if (tcp->flags & TH_SYN) {
+            if (!(tcp->flags & TH_ACK)) {
+                // first packet from the client - SYN
 
-        if ((tcp->flags & TH_SYN) && !(tcp->flags & TH_ACK)) {
-            if (cport != 0xffff) LH_ERROR(1, "Multiple parallel connections are not supported");
-            cport = ntohs(tcp->sport);
-            //printf("Resetting sdata\n");
-            if (sdata[0]) { free(sdata[0]); } sdata[0] = NULL; slen[0]=0;
-            if (sdata[1]) { free(sdata[1]); } sdata[1] = NULL; slen[1]=0;
+                if (cport != 0xffff) LH_ERROR(1, "Multiple parallel connections are not supported");
+                cport = ntohs(tcp->sport);
+
+                //printf("Resetting sdata\n");
+                if (sdata[1]) { free(sdata[1]); } sdata[1] = NULL; slen[1]=0; seqn[1]=ntohl(tcp->seq)+1; ackd[1]=seqn[1];
+            }
+            else {
+                // first packet from the server - SYN ACK
+                if (sdata[0]) { free(sdata[0]); } sdata[0] = NULL; slen[0]=0; seqn[0]=ntohl(tcp->seq)+1; ackd[0]=seqn[0];
+            }
+            continue;
         }
         if (tcp->flags & TH_FIN) {
             cport = 0xffff;
             //printf("Close connection\n");
+            continue;
+            //FIXME: do correct connection close
+        }
+        if (tcp->flags & TH_ACK) {
+            ackd[1-is_client] = ntohl(tcp->ack);
         }
 
         if (plen > 0) {
-            if (tcp->flags & 
             if ( (is_client && cport != ntohs(tcp->sport)) ||
                  (!is_client && cport != ntohs(tcp->dport)) )
                 LH_ERROR(1, "Incorrect port");
 
-            int oldlen = slen[is_client];
-            BUFFER_ADDG(sdata[is_client], slen[is_client], plen, BUFGRAN);
-            printf("%6d %c %08x %7d\n", pn, is_client?'C':' ', sdata[is_client], slen[is_client]);
-            memcpy(sdata[is_client]+oldlen,pdata,plen);
+            int offset = ntohl(tcp->seq)-seqn[is_client];
+            int maxlen = offset+plen;
 
-            int consumed = process_stream(sdata[is_client], slen[is_client], is_client);
+            if (maxlen > slen[is_client]) {
+                BUFFER_EXTENDG(sdata[is_client], slen[is_client], maxlen, BUFGRAN);
+            }
+            //printf("%6d %c %08x %7d seq=%u %u ack=%u (%u)\n", pn, is_client?'C':'S', sdata[is_client], slen[is_client], 
+            //       seqn[is_client], ntohl(tcp->seq), ackd[is_client], ackd[is_client]-seqn[is_client]);
+            //printf("Inserting %d bytes (%u) at offset %d. maxlen=%d\n",plen,ntohl(tcp->seq),offset,maxlen);
+
+            if (offset >= 0) {
+                memcpy(sdata[is_client]+offset,pdata,plen);
+            }
+            else if (maxlen > 0) {
+                memcpy(sdata[is_client],pdata-offset,plen+offset);
+            }
+
+            //printf("Giving %d data, %d in the buffer\n",ackd[is_client]-seqn[is_client],slen[is_client]);
+            int consumed = process_stream(sdata[is_client], ackd[is_client]-seqn[is_client], is_client);
             if (consumed > 0) {
                 memcpy(sdata[is_client], sdata[is_client]+consumed, slen[is_client]-consumed);
                 BUFFER_EXTENDG(sdata[is_client], slen[is_client], slen[is_client]-consumed, BUFGRAN);
-            }
-            
+                seqn[is_client]+=consumed;
+            }            
         }
-
-        //printf("%d\n",pn);
-
-        //if (!--cnt) break;
-    }
+   }
 
     
 
