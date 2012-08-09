@@ -160,7 +160,7 @@ typedef struct {
 typedef struct {
     int    type;
     char * name;
-    int    metalen;
+    int    metaadd;
 } mobmeta;
 
 mobmeta MOBS[] = {
@@ -259,20 +259,6 @@ typedef struct {
     char  meta[256];
 } slot_t;
 
-#define Rslot_old(n)                                        \
-    slot_t n = {0,0,0};                                     \
-    Rshort(id); n.id = id;                                  \
-    if (id != -1) {                                         \
-        Rchar(count); n.count = count;                      \
-        Rshort(mlen); n.damage = mlen;                      \
-        while (mlen > 0) {                                  \
-            Rshort(term);                                   \
-            if (term == -1) break;                          \
-            mlen--;                                         \
-            p--;                                            \
-        }                                                   \
-    }
-
 #define Rslot(n)                                            \
     slot_t n = {0,0,0};                                     \
     Rshort(id); n.id = id;                                  \
@@ -284,6 +270,21 @@ typedef struct {
             if (metalen != -1)                              \
                 Rskip(metalen);                             \
         }                                                   \
+    }
+//TODO: extract metadata into buffer
+
+#define Rmobmeta(n)                                                     \
+    while (1) {                                                         \
+        Rchar(type);                                                    \
+        if (type == 127) break;                                         \
+        switch (type >> 5) {                                            \
+            case 0: Rskip(1); break;                                    \
+            case 1: Rskip(2); break;                                    \
+            case 2: Rskip(4); break;                                    \
+            case 3: Rskip(4); break;                                    \
+            case 4: { Rstr(s); break; }                                 \
+            default: printf("Unsupported type %d\n",type>>5); exit(1);  \
+        }                                                               \
     }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -416,7 +417,7 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rfloat(yaw);
             Rfloat(pitch);
             Rchar(ground);
-            printf("Player Position & Look: coord=%.1lf,%.1lf,%.1lf stance=%.1lf rot=%.1f,%.1f ground=%d\n",
+            printf("Player Position & Look: coord=%.1f,%.1f,%.1f stance=%.1f rot=%.1f,%.1f ground=%d\n",
                    x,y,z,stance,yaw,pitch,ground);
             break;
         }
@@ -540,10 +541,8 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
                 exit(1);
             }
 
-            while(p<limit && *p!=127) p++;
-            if (p>=limit) {atlimit=1; break;}
+            Rmobmeta(m);
             printf("Spawn Mob: EID=%d type=%d %s %d,%d,%d\n",eid,type,MOBS[i].name,x/32,y/16,z/32);
-            p++;
             break;
         }
 
@@ -587,7 +586,7 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(eid);
             Rchar(yaw);
             Rchar(pitch);
-            printf("Entity Look: EID=%d, yaw=%d pitch=%d\n",eid,yaw,pitch);
+            //printf("Entity Look: EID=%d, yaw=%d pitch=%d\n",eid,yaw,pitch);
             break;
         }
 
@@ -598,7 +597,7 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rchar(dz);
             Rchar(yaw);
             Rchar(pitch);
-            printf("Entity Look and Relative Move: EID=%d move=%d,%d,%d look=%d,%d\n",eid,dx,dy,dz,yaw,pitch);
+            //printf("Entity Look and Relative Move: EID=%d move=%d,%d,%d look=%d,%d\n",eid,dx,dy,dz,yaw,pitch);
             break;
         }
 
@@ -616,7 +615,7 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
         case MCP_EntityHeadLook: { //23
             Rint(eid);
             Rchar(yaw);
-            printf("Entity Head Look: EID=%d %d\n",eid,yaw);
+            //printf("Entity Head Look: EID=%d %d\n",eid,yaw);
             break;
         }
 
@@ -629,11 +628,8 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
 
         case MCP_EntityMetadata: { //28
             Rint(eid);
-            while(p<limit && *p!=127) p++;
-            if (p>=limit) {atlimit=1; break;}
-            p++;
+            Rmobmeta(m);
             printf("Entity Metadata: EID=%d\n",eid);
-            hexdump(data+consumed, len-consumed);
             break;
         }
 
@@ -869,8 +865,6 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
         }
 
         case MCP_Disconnect: { //FF
-            //printf("in FF\n");
-            //hexdump(data+consumed, len-consumed);
             Rstr(s);
             printf("Disconnect: %s\n",s);
             break;
