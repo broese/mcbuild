@@ -276,14 +276,17 @@ typedef struct {
 #define Rmobmeta(n)                                                     \
     while (1) {                                                         \
         Rchar(type);                                                    \
-        if (type == 127) break;                                         \
-        switch (type >> 5) {                                            \
+        if (type == 0x7f) break;                                        \
+        type = (type>>5)&0x07;                                          \
+        switch (type) {                                                 \
             case 0: Rskip(1); break;                                    \
             case 1: Rskip(2); break;                                    \
             case 2: Rskip(4); break;                                    \
             case 3: Rskip(4); break;                                    \
             case 4: { Rstr(s); break; }                                 \
-            default: printf("Unsupported type %d\n",type>>5); exit(1);  \
+            case 5: { Rslot(s); break; }                                \
+            case 6: Rskip(12); break;                                   \
+            default: printf("Unsupported type %d\n",type); exit(1);     \
         }                                                               \
     }
 
@@ -512,15 +515,6 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             break;
         }
 
-        case MCP_EntityVelocity: { //1C
-            Rint(eid);
-            Rshort(vx);
-            Rshort(vy);
-            Rshort(vz);
-            printf("Entity Velocity: EID=%d %d,%d,%d\n",eid,vx,vy,vz);
-            break;
-        }
-
         case MCP_SpawnMob: { //18
             Rint(eid);
             Rchar(type);
@@ -530,9 +524,6 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rchar(yaw);
             Rchar(pitch);
             Rchar(hyaw);
-            Rshort(vx);
-            Rshort(vy);
-            Rshort(vz);
 
             int i;
             for(i=0; MOBS[i].type>0 && MOBS[i].type!=type; i++);
@@ -557,13 +548,22 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             break;
         }
 
-        case MCP_SpawnExperienceOrb: {
+        case MCP_SpawnExperienceOrb: { //1A
             Rint(eid);
             Rint(x);
             Rint(y);
             Rint(z);
             Rshort(count);
             printf("Spawn Experience Orb: EID=%d coord=%d,%d,%d count=%d\n",eid,x,y,z,count);
+            break;
+        }
+
+        case MCP_EntityVelocity: { //1C
+            Rint(eid);
+            Rshort(vx);
+            Rshort(vy);
+            Rshort(vz);
+            printf("Entity Velocity: EID=%d %d,%d,%d\n",eid,vx,vy,vz);
             break;
         }
 
@@ -586,7 +586,7 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(eid);
             Rchar(yaw);
             Rchar(pitch);
-            //printf("Entity Look: EID=%d, yaw=%d pitch=%d\n",eid,yaw,pitch);
+            printf("Entity Look: EID=%d, yaw=%d pitch=%d\n",eid,yaw,pitch);
             break;
         }
 
@@ -597,7 +597,7 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rchar(dz);
             Rchar(yaw);
             Rchar(pitch);
-            //printf("Entity Look and Relative Move: EID=%d move=%d,%d,%d look=%d,%d\n",eid,dx,dy,dz,yaw,pitch);
+            printf("Entity Look and Relative Move: EID=%d move=%d,%d,%d look=%d,%d\n",eid,dx,dy,dz,yaw,pitch);
             break;
         }
 
@@ -615,7 +615,7 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
         case MCP_EntityHeadLook: { //23
             Rint(eid);
             Rchar(yaw);
-            //printf("Entity Head Look: EID=%d %d\n",eid,yaw);
+            printf("Entity Head Look: EID=%d %d\n",eid,yaw);
             break;
         }
 
