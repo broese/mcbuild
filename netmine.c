@@ -292,6 +292,37 @@ typedef struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <lh_compress.h>
+
+void process_chunk(uint8_t *cdata, ssize_t clen, uint16_t bitmask, int X, int Z) {
+    printf("Decoding chunk (%08p,%d)\n",cdata,clen);
+
+    ssize_t len;
+    unsigned char * data = zlib_decode(cdata, clen, &len);
+    if (!data) { printf("zlib_decode failed!\n"); exit(1); }
+
+    uint8_t *ptr = data;
+
+    int Y,i;
+    for (Y=0;Y<16;Y++) {
+        //If the bitmask indicates this chunk has been sent...
+        if (bitmask & (1 << Y)) {
+            for(i=0; i<4096; i++) {
+                if (ptr[i] == 22) {
+                    //Byte arrays
+                    int x = X*16 + (i&0x0F);
+                    int y = Y*16 + (i>>8);
+                    int z = Z*16 + ((i&0xF0)>>4);
+                    printf("*** Sugar Cane : %d,%d,%d ***\n",x,y,z);
+                }
+            }
+            ptr+=4096;
+        }
+    }
+
+    free(data);
+}
+
 uint32_t process_streamz(uint8_t * data, uint32_t len, int is_client) {
     return len;
 }
@@ -355,6 +386,15 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
         case MCP_TimeUpdate: { // 04
             Rlong(tm);
             printf("Time Update: %lld (%dd %dh)\n",tm,(int)(tm/24000L),(int)(tm%24000)/1000);
+            break;
+        }
+
+        case MCP_EntityEquipment: { //05
+            Rint(eid);
+            Rshort(sid);
+            Rshort(iid);
+            Rshort(damage);
+            printf("Entity Equipment: EID=%d slot=%d item=%d dmg=%d\n",eid,sid,iid,damage);
             break;
         }
 
@@ -460,6 +500,16 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             break;
         }
 
+        case MCP_UseBed: {//11
+            Rint(eid);
+            Rchar(unk);
+            Rint(x);
+            Rchar(y);
+            Rint(z);
+            printf("Use Bed: EID=%d coord=%d,%d,%d\n",eid,x,(unsigned int)y,z);
+            break;
+        }
+
         case MCP_Animation: {//12
             Rint(eid);
             Rchar(aid);
@@ -471,6 +521,20 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(eid);
             Rchar(action);
             printf("Entity Action: eid=%d action=%d\n",eid,action);
+            break;
+        }
+
+        case MCP_SpawnNamedEntity: {//14
+            Rint(eid);
+            Rstr(pname);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rchar(yaw);
+            Rchar(pitch);
+            Rshort(item);
+            printf("Spawn Named Entity: EID=%d %s coords=%d,%d,%d rot=%d,%d item=%d\n",
+                   eid,pname,x/32,y/16,z/32,yaw,pitch,item);
             break;
         }
 
@@ -626,6 +690,13 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             break;
         }
 
+        case MCP_AttachEntity: { //27
+            Rint(eid);
+            Rint(vid);
+            printf("Attach Entity: EID=%d vehicle=%d\n",eid,vid);
+            break;
+        }
+
         case MCP_EntityMetadata: { //28
             Rint(eid);
             Rmobmeta(m);
@@ -658,6 +729,7 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(compsize);
             Rint(unused);
             Rskip(compsize);
+            process_chunk(p-compsize,compsize,primary_bitmap,X,Z);
             printf("Chunk Data: %d,%d cont=%d PBM=%04x ABM=%04x compsize=%d\n",X,Z,cont,primary_bitmap,add_bitmap,compsize);
             break;
         }
@@ -689,6 +761,17 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rchar(b1);
             Rchar(b2);
             printf("Block Action: %d,%d,%d %d %d\n",x,y,z,b1,b2);
+            break;
+        }
+
+        case MCP_Explosion: { //3C
+            Rdouble(x);
+            Rdouble(y);
+            Rdouble(z);
+            Rfloat(radius);
+            Rint(count);
+            Rskip(count*3);
+            printf("Explosion: %f,%f,%f r=%f count=%d\n",x,y,z,radius,count);
             break;
         }
 
