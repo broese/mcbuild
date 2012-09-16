@@ -46,7 +46,7 @@ mcregion * load_region(const char * path) {
         return NULL;
 
     // allocate column table
-    ALLOCNE(mccolumn, region->columns, 1024);
+    ALLOCNE(region->columns, 1024);
 
     int gen = 0; // number of generated columns
 

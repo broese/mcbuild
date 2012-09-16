@@ -61,7 +61,7 @@ static void nbt_parse_noheader(unsigned char **ptr, nbte *elem) {
         }
         case NBT_TAG_INT_ARRAY: {
             elem->count = read_int(*ptr);
-            ALLOCNE(int32_t,elem->v.ia, elem->count);
+            ALLOCNE(elem->v.ia, elem->count);
             int i;
             for(i=0; i<elem->count; i++) {
                 elem->v.ia[i] = read_int(*ptr);
@@ -81,7 +81,7 @@ static void nbt_parse_noheader(unsigned char **ptr, nbte *elem) {
         case NBT_TAG_LIST: {
             char type = read_char(*ptr);
             elem->count = read_int(*ptr);
-            ALLOCNE(nbte, elem->v.list, elem->count);
+            ALLOCNE(elem->v.list, elem->count);
 
             int i;
             for(i=0; i<elem->count; i++) {
@@ -94,12 +94,12 @@ static void nbt_parse_noheader(unsigned char **ptr, nbte *elem) {
             break;
         }
         case NBT_TAG_COMPOUND: {
-            ARRAY_ALLOC(nbte,elem->v.comp,elem->count,0);
+            ARRAY_ALLOC(elem->v.comp,elem->count,0);
             while (1) {
                 nbte *subelem = nbt_parse(ptr);
                 if (!subelem) break; // Tag_End found - stop parsing the compound
 
-                ARRAY_ADD(nbte,elem->v.comp,elem->count,1);
+                ARRAY_ADD(elem->v.comp,elem->count,1);
                 nbte *newelem = &elem->v.list[elem->count-1];
 
                 memcpy(newelem, subelem, sizeof(nbte));

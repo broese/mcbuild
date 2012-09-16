@@ -4,7 +4,7 @@ DEFS=
 
 all: minemap slimemap netmine
 
-minemap: main.o anvil.o nbt.o
+minemap: main.o anvil.o nbt.o draw.o ../libhelper/libhelper.a
 	$(CC) -o $@ $^ $(LIBS)
 
 netmine: netmine.o anvil.o nbt.o
@@ -16,7 +16,13 @@ slimemap: slimemap.o
 .c.o:
 	$(CC) $(CFLAGS) $(DEFS) -o $@ -c $<
 
-main.o : anvil.h
+main.o: anvil.h nbt.h draw.h
+
+anvil.o: anvil.h nbt.h
+
+nbt.o: nbt.h
+
+draw.o: anvil.h nbt.h draw.h
 
 clean:
 	rm -f *.o *~

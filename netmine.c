@@ -303,6 +303,22 @@ void process_chunk(uint8_t *cdata, ssize_t clen, uint16_t bitmask, int X, int Z)
 
     uint8_t *ptr = data;
 
+    char fname[256];
+    sprintf(fname, "chunks/chunk_%04x_%04x.dat",(unsigned short)X,(unsigned short)Z);
+    FILE *fd = open_file_w(fname);
+
+    int Y,n=0;
+    for (Y=0;Y<16;Y++)
+        if (bitmask & (1 << Y))
+            n++;
+
+    write_file_f(fd, (unsigned char *)&n, sizeof(n));
+    write_file_f(fd, (unsigned char *)&X, sizeof(X));
+    write_file_f(fd, (unsigned char *)&Z, sizeof(Z));
+    write_file_f(fd, data, n*4096);
+    fclose(fd);
+
+#if 0
     int Y,i;
     for (Y=0;Y<16;Y++) {
         //If the bitmask indicates this chunk has been sent...
@@ -319,6 +335,7 @@ void process_chunk(uint8_t *cdata, ssize_t clen, uint16_t bitmask, int X, int Z)
             ptr+=4096;
         }
     }
+#endif
 
     free(data);
 }
@@ -1069,7 +1086,7 @@ int main(int ac, char ** av) {
             int maxlen = offset+plen;
 
             if (maxlen > slen[is_client]) {
-                BUFFER_EXTENDG(sdata[is_client], slen[is_client], maxlen, BUFGRAN);
+                ARRAY_EXTENDG(sdata[is_client], slen[is_client], maxlen, BUFGRAN);
             }
             //printf("%6d %c %08x %7d seq=%u %u ack=%u (%u)\n", pn, is_client?'C':'S', sdata[is_client], slen[is_client], 
             //       seqn[is_client], ntohl(tcp->seq), ackd[is_client], ackd[is_client]-seqn[is_client]);
@@ -1086,7 +1103,7 @@ int main(int ac, char ** av) {
             int consumed = process_stream(sdata[is_client], ackd[is_client]-seqn[is_client], is_client);
             if (consumed > 0) {
                 memcpy(sdata[is_client], sdata[is_client]+consumed, slen[is_client]-consumed);
-                BUFFER_EXTENDG(sdata[is_client], slen[is_client], slen[is_client]-consumed, BUFGRAN);
+                ARRAY_EXTENDG(sdata[is_client], slen[is_client], slen[is_client]-consumed, BUFGRAN);
                 seqn[is_client]+=consumed;
             }            
         }
