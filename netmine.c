@@ -18,7 +18,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define SERVERIP "83.233.237.64"
+//#define SERVERIP "83.233.237.64"
+#define SERVERIP "10.0.0.1"
 #define PCAPFILTER "host " SERVERIP
 
 #define ET_IP4 0x800

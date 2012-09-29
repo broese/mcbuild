@@ -211,23 +211,18 @@ void draw_region(drawstate *ds, const char *path) {
 
 int main(int ac, char **av) {
 
-#if 1
     drawstate *ds = create_drawing();
-
-#if 0
-    int i=1;
-    while(av[i]) {
-        draw_region(ds, av[i]);
-        i++;
-    }
-#endif
 
     char **arg = av+1;
     while (*arg) {
 
-        //printf("Opened chunk %s (%d,%d)\n",*arg,X,Z);
-
 #if 1
+        // topmap from the anvil region files
+        draw_region(ds, *arg);
+#endif
+
+#if 0
+        // topmap from the netmine chunk files
         ssize_t size;
         uint8_t *buf = read_file(*arg,&size);
         if (buf) {
@@ -247,26 +242,24 @@ int main(int ac, char **av) {
         }
         free(buf);
 #endif
+
+#if 0
+        // isometric map from 1 anvil region
+        lhimage * img = allocate_image(ISIZE_WD(512,512,256)+64,ISIZE_HG(512,512,256)+64);
+        mcregion *region = load_region(*arg);
+
+        printf("Origin : %d %d\n", ORIGIN_X(512,512,256)+32, ORIGIN_Y(512,512,256)+32);
+
+        draw_isometric (img, region, ORIGIN_X(512,512,256)+32, ORIGIN_Y(512,512,256)+32);
+        
+        export_png_file(img, "iso.png");
+        return 0;
+#endif
+
         arg++;
     }
 
     export_png_file(ds->img, "map.png");
-#else
-
-    //lhimage cubes[256];
-    //load_cubes("img");
-
-    lhimage * img = allocate_image(ISIZE_WD(512,512,256)+64,ISIZE_HG(512,512,256)+64);
-    mcregion *region = load_region(av[1]);
-
-    printf("Origin : %d %d\n", ORIGIN_X(512,512,256)+32, ORIGIN_Y(512,512,256)+32);
-
-    draw_isometric (img, region, ORIGIN_X(512,512,256)+32, ORIGIN_Y(512,512,256)+32);
-
-    export_png_file(img, "iso.png");
-#endif
-
-    
 
     return 0;
 }
