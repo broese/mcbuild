@@ -18,12 +18,7 @@
 //#define SERVER_IP 0xc7a866c2 // Beciliacraft
 #define SERVER_PORT 25565
 
-/*
-typedef struct {
-    uint8_t * data;
-    ssize_t len;
-} buffer_t;
-*/
+////////////////////////////////////////////////////////////////////////////////
 
 int handle_server(int sfd, uint32_t ip, uint16_t port, int *cs, int *ms) {
 
@@ -61,23 +56,72 @@ int handle_server(int sfd, uint32_t ip, uint16_t port, int *cs, int *ms) {
     return 1;
 }
 
-int pumpdata(int src, int dst, uint8_t **sbuf, ssize_t *slen, int is_client) {
+typedef struct {
+    uint8_t * crbuf; ssize_t crlen;
+    uint8_t * cwbuf; ssize_t cwlen;
+    uint8_t * srbuf; ssize_t srlen;
+    uint8_t * swbuf; ssize_t swlen;
+} flbuffers;
+
+#define WRITEBUF_GRAN 65536
+
+ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen, uint8_t **dbuf, ssize_t *dlen) {
+    ssize_t wpos = *dlen;
+    hexdump(*sbuf, *slen);
+    ARRAY_ADDG(*dbuf,*dlen,wpos+*slen,WRITEBUF_GRAN);
+    memcpy(*dbuf+wpos,*sbuf,*slen);
+    printf("copied %d bytes\n",*slen);
+    return *slen;    
+}
+
+int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
+    printf("pumdata %d -> %d\n",src, dst);
+
+    // choose correct buffers depending on traffic direction
+    uint8_t **sbuf, **dbuf;
+    ssize_t *slen, *dlen;
+
+    if (is_client) {
+        sbuf = &fb->crbuf;
+        slen = &fb->crlen;
+        dbuf = &fb->swbuf;
+        dlen = &fb->swlen;
+    }
+    else {
+        sbuf = &fb->srbuf;
+        slen = &fb->srlen;
+        dbuf = &fb->cwbuf;
+        dlen = &fb->cwlen;
+    }
+
+    // read incoming data to the source buffer
     int res = evfile_read(src, sbuf, slen, 1048576);
 
     switch (res) {
         case EVFILE_OK:
         case EVFILE_WAIT: {
-            uint8_t *buf = *sbuf;
-            ssize_t len = *slen;
+            // call the external method to process the input data
+            // it will copy the data to dbuf as is, or modified, or it may
+            // also insert other data
+            ssize_t consumed = process_data(is_client, sbuf, slen, dbuf, dlen);
+            if (consumed > 0) {
+                if (*slen-consumed > 0)
+                    memcpy(*sbuf, *sbuf+consumed, *slen-consumed);
+                *slen -= consumed;
+            }
+            
+            // send out the contents of the write buffer
+            uint8_t *buf = *dbuf;
+            ssize_t len = *dlen;
             while (len > 0) {
-                hexdump(buf,len);
-                printf("sending %d bytes to %s\n",len,is_client?"client":"server");
+                //hexdump(buf,len);
+                printf("sending %d bytes to %s\n",len,is_client?"server":"client");
                 ssize_t sent = write(dst,buf,len);
-                printf("sent %d bytes to %s\n",sent,is_client?"client":"server");
+                printf("sent %d bytes to %s\n",sent,is_client?"server":"client");
                 buf += sent;
                 len -= sent;
             }
-            *slen = 0;
+            *dlen = 0;
             return 0;
         }         
         case EVFILE_ERROR:
@@ -110,12 +154,8 @@ int proxy_pump(uint32_t ip, uint16_t port) {
 
     int cs=-1, ms=-1;
 
-    // growable buffers
-    ARRAY(uint8_t,crbuf,crlen);
-    //ARRAY(uint8_t,cwbuf,cwlen);
-    ARRAY(uint8_t,srbuf,srlen);
-    //ARRAY(uint8_t,swbuf,swlen);
-
+    flbuffers fb;
+    CLEAR(fb);
 
     // main pump
     int stay = 1, i;
@@ -143,18 +183,30 @@ int proxy_pump(uint32_t ip, uint16_t port) {
             }
 
         if (cg.rn > 0) {
-            if (pumpdata(cs, ms, &crbuf, &crlen, 1)) {
+            if (pumpdata(cs, ms, 1, &fb)) {
                 pollarray_remove(&pa, cs);
                 pollarray_remove(&pa, ms);
+                close(cs); close(ms);
                 cs = ms = -1;
+                if (fb.crbuf) free(fb.crbuf);
+                if (fb.cwbuf) free(fb.cwbuf);
+                if (fb.srbuf) free(fb.srbuf);
+                if (fb.swbuf) free(fb.swbuf);
+                CLEAR(fb);
             }
         }
                
         if (mg.rn > 0) {
-            if (pumpdata(ms, cs, &srbuf, &srlen, 1)) {
+            if (pumpdata(ms, cs, 0, &fb)) {
                 pollarray_remove(&pa, cs);
                 pollarray_remove(&pa, ms);
+                close(cs); close(ms);
                 cs = ms = -1;
+                if (fb.crbuf) free(fb.crbuf);
+                if (fb.cwbuf) free(fb.cwbuf);
+                if (fb.srbuf) free(fb.srbuf);
+                if (fb.swbuf) free(fb.swbuf);
+                CLEAR(fb);
             }
         }               
     }
