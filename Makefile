@@ -1,11 +1,11 @@
 CFLAGS=-g -pg -I../libhelper
-LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap
+LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lssl
 DEFS=
 
 all: minemap slimemap netmine mcproxy decodeder
 
-decodeder: decodeder.o
-	$(CC) -o $@ $^ $(LIBS) -ltasn1
+decodeder: decodeder.o crypto.o
+	$(CC) -o $@ $^ $(LIBS)
 
 minemap: main.o anvil.o nbt.o draw.o ../libhelper/libhelper.a
 	$(CC) -o $@ $^ $(LIBS)
