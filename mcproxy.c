@@ -11,6 +11,8 @@
 
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
+#include <openssl/sha.h>
+#include <openssl/aes.h>
 
 #include "lh_buffers.h"
 #include "lh_files.h"
@@ -270,6 +272,17 @@ struct {
     // DER-encoded public key sent to the client
     char c_pkey[1024];
     int c_pklen;
+
+    int encstate;
+    int passfirst;
+
+    AES_KEY c_aes;
+    char c_enc_iv[16];
+    char c_dec_iv[16];
+
+    AES_KEY s_aes;
+    char s_enc_iv[16];
+    char s_dec_iv[16];
 } mitm;
 
 void init_mitm() {
@@ -455,6 +468,8 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
 
             // generate the server-side shared key pair
             RAND_pseudo_bytes(mitm.s_skey, 16);
+            printf("Server-side shared key:\n");
+            hexdump(mitm.s_skey, 16);
 
 
             // create a client-side RSA
@@ -494,9 +509,29 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
 
         case MCP_EncryptionKeyResp: {
             if (!is_client) {
-                printf("Server Encryption Start\n");
+                Rshort(z1);
+                Rshort(z2);
+                printf("Server Encryption Start z1=%d z2=%d\n",z1,z2);
                 //TODO: enable stream encryption now
-                exit(1);
+
+                AES_set_encrypt_key(mitm.c_skey, 128, &mitm.c_aes);
+                memcpy(mitm.c_enc_iv, mitm.c_skey, 16);
+                memcpy(mitm.c_dec_iv, mitm.c_skey, 16);
+
+                AES_set_encrypt_key(mitm.s_skey, 128, &mitm.s_aes);
+                memcpy(mitm.s_enc_iv, mitm.s_skey, 16);
+                memcpy(mitm.s_dec_iv, mitm.s_skey, 16);
+                
+                mitm.encstate = 1;
+                mitm.passfirst = 1;
+                
+                printf("c_skey:   "); hexdump(mitm.c_skey,16);
+                printf("c_enc_iv: "); hexdump(mitm.c_enc_iv,16);
+                printf("c_dec_iv: "); hexdump(mitm.c_dec_iv,16);
+                printf("s_skey:   "); hexdump(mitm.s_skey,16);
+                printf("s_enc_iv: "); hexdump(mitm.s_enc_iv,16);
+                printf("s_dec_iv: "); hexdump(mitm.s_dec_iv,16);
+
                 break;
             }
 
@@ -584,19 +619,21 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rstr(s);
             printf("Disconnect: %s\n",s);
 
+#if 0
             msgbuf[0] = 0xff;
             ssize_t len = Wstr(msgbuf+1,"Barrels of Dicks!\xa7""12""\xa7""34");
             ssize_t wpos = *dlen;
             ARRAY_ADDG(*dbuf,*dlen,len+1,WRITEBUF_GRAN);
             memcpy(*dbuf+wpos,msgbuf,len+1);
             modified = 1;
+#endif
             break;
         }
 
         default:
             printf("Unknown message %02x\n",mtype);
             hexdump(msg_start, *slen-consumed);
-            exit(1);
+            //exit(1);
         }
 
         if (!atlimit) {
@@ -623,8 +660,6 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
 }
 
 int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
-    printf("pumdata %d -> %d\n",src, dst);
-
     // choose correct buffers depending on traffic direction
     uint8_t **sbuf, **dbuf;
     ssize_t *slen, *dlen;
@@ -643,29 +678,63 @@ int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
     }
 
     // read incoming data to the source buffer
+    ssize_t prevlen = *slen;
     int res = evfile_read(src, sbuf, slen, 1048576);
 
     switch (res) {
         case EVFILE_OK:
         case EVFILE_WAIT: {
+            // decrypt read buffer if encryption is enabled
+            // but only the new portion that was read
+            if (mitm.encstate) {
+                uint8_t *ebuf = *sbuf+prevlen;
+                ssize_t elen  = *slen-prevlen;
+
+                int num=0;
+                if (is_client)
+                    AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.c_aes, mitm.c_dec_iv, &num, AES_DECRYPT);
+                else
+                    AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.s_aes, mitm.s_dec_iv, &num, AES_DECRYPT);
+            }
+
             // call the external method to process the input data
             // it will copy the data to dbuf as is, or modified, or it may
             // also insert other data
+
             ssize_t consumed = process_data(is_client, sbuf, slen, dbuf, dlen);
             if (consumed > 0) {
                 if (*slen-consumed > 0)
                     memcpy(*sbuf, *sbuf+consumed, *slen-consumed);
                 *slen -= consumed;
             }
-            
+
+            // encrypt write buffer if encryption is enabled
+            if (mitm.encstate) {
+                uint8_t *ebuf = *dbuf;
+                ssize_t elen  = *dlen;
+                
+                // when the encryption is enabled for the first time,
+                // the last message (0xFC from the server) still goes out unencrypted,
+                // so we skip the first byte and clear the flag
+                //FIXME: watch out for race conditions
+                if (mitm.passfirst)
+                    mitm.passfirst=0;
+                else {
+                    int num=0;
+                    if (is_client)
+                        AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.s_aes, mitm.s_enc_iv, &num, AES_ENCRYPT);
+                    else
+                        AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.c_aes, mitm.c_enc_iv, &num, AES_ENCRYPT);
+                }
+            }
+
+
             // send out the contents of the write buffer
             uint8_t *buf = *dbuf;
             ssize_t len = *dlen;
             while (len > 0) {
-                hexdump(buf,len);
-                printf("sending %d bytes to %s\n",len,is_client?"server":"client");
+                //printf("sending %d bytes to %s\n",len,is_client?"server":"client");
                 ssize_t sent = write(dst,buf,len);
-                printf("sent %d bytes to %s\n",sent,is_client?"server":"client");
                 buf += sent;
                 len -= sent;
             }

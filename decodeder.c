@@ -11,6 +11,7 @@
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
 #include <openssl/sha.h>
+#include <openssl/aes.h>
 
 static void callback(int p, int n, void *arg)
 {
@@ -49,8 +50,6 @@ void print_hex(char *buf, const char *data, ssize_t len) {
     while(*z == '0') z++;
     while(*z) *w++ = *z++;
     *w++ = 0;
-
-    printf("%s\n",buf);
 }
 
 int main(int ac, char **av) {
@@ -112,6 +111,7 @@ int main(int ac, char **av) {
 
 #endif
 
+#if 0
     unsigned char md[SHA_DIGEST_LENGTH];
     //SHA_CTX sha; CLEAR(sha);
 
@@ -119,6 +119,63 @@ int main(int ac, char **av) {
     //SHA1("jeb_", strlen("jeb_"), md);
     char buf[4096];
     print_hex(buf, md, SHA_DIGEST_LENGTH);
+#endif
+
+    AES_KEY aes;
+    AES_KEY aesd;
+    CLEAR(aes);
+    CLEAR(aesd);
+    char ive[16];
+    char ivd[16];
+
+    //char *key = "fuckfuckfuckfuck";
+    char *key = "\xc3\xc2\x3c\xea\x4a\xe9\x69\xc6\x0d\xda\x7b\x40\xde\xa6\x45\x93";
+
+    AES_set_encrypt_key(key, 128, &aes);
+    AES_set_decrypt_key(key, 128, &aesd);
+    memcpy(ive, key, 16);
+    memcpy(ivd, key, 16);
+
+    //char *plaintext = "This is an example of a plaintext\n";
+    char ok[2] = { 0xCD, 0x00 };
+
+    char encoded[4096];
+    CLEAR(encoded);
+    char decoded[4096];
+    CLEAR(decoded);
+    int nume = 0;
+    int numd = 0;
+    
+    printf("Key:\n");
+    hexdump(key, 16);
+    printf("IV(e):\n");
+    hexdump(ive, 16);
+    printf("IV(d):\n");
+    hexdump(ivd, 16);
+    AES_cfb8_encrypt(ok, encoded, 2, &aes, ive, &nume, AES_ENCRYPT);
+    AES_cfb8_encrypt(encoded, decoded, 2, &aesd, ivd, &numd, AES_DECRYPT);
+    
+    hexdump(ok, 2);
+    hexdump(encoded, 2);
+    hexdump(decoded, 2);
+
+
+
+
+#if 0
+    hexdump(ive, 16);
+
+    hexdump(ivd, 16);
+    int numd = -1;
+    AES_cfb8_encrypt(encoded, decoded, strlen(plaintext)+1,
+                     &aes, ivd, &numd, AES_DECRYPT);
+    hexdump(ivd, 16);
+
+    printf("nume=%d numd=%d\n",nume,numd);
+    hexdump(plaintext, strlen(plaintext)+10);
+    hexdump(encoded, strlen(plaintext)+10);
+    hexdump(decoded, strlen(plaintext)+10);
+#endif
 
     return 0;
 }
