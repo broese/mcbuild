@@ -11,6 +11,7 @@
 #include "draw.h"
 #include "lh_image.h"
 #include "lh_buffers.h"
+#include "lh_files.h"
 
 const char * program_name;
 int o_level = 256;
@@ -216,12 +217,12 @@ int main(int ac, char **av) {
     char **arg = av+1;
     while (*arg) {
 
-#if 1
+#if 0
         // topmap from the anvil region files
         draw_region(ds, *arg);
 #endif
 
-#if 0
+#if 1
         // topmap from the netmine chunk files
         ssize_t size;
         uint8_t *buf = read_file(*arg,&size);

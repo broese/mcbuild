@@ -18,9 +18,13 @@
 #include "lh_files.h"
 #include "lh_net.h"
 #include "lh_event.h"
+#include "lh_compress.h"
 
-#define SERVER_IP 0x0a000001
-//#define SERVER_IP 0xc7a866c2 // Beciliacraft
+//#define SERVER_IP 0x0a000001
+//#define SERVER_IP 0xc7a866c2 // Beciliacraft 199.168.102.194
+#define SERVER_IP 0x53e9ed40   // 2B2T 83.233.237.64
+//#define SERVER_IP 0x53b3151f   // rujush.org   83.179.21.31
+//#define SERVER_IP 0x6c3d10d3   // WC Minecraft 108.61.16.211
 #define SERVER_PORT 25565
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -127,8 +131,8 @@ int handle_server(int sfd, uint32_t ip, uint16_t port, int *cs, int *ms) {
 #define MCP_SetWindowItems      0x68
 #define MCP_UpdateWindowProp    0x69
 #define MCP_ConfirmTransaction  0x6a
-#define MCP_CreativeInventory   0x6b
-#define MCP_EnchanItem          0x6c
+#define MCP_CreativeInvAction   0x6b
+#define MCP_EnchantItem         0x6c
 #define MCP_UpdateSign          0x82
 #define MCP_ItemData            0x83
 #define MCP_UpdateTileEntity    0x84
@@ -143,6 +147,73 @@ int handle_server(int sfd, uint32_t ip, uint16_t port, int *cs, int *ms) {
 #define MCP_EncryptionKeyReq    0xfd
 #define MCP_ServerListPing      0xfe
 #define MCP_Disconnect          0xff
+
+typedef struct {
+    int    type;
+    char * name;
+    int    metaadd;
+} mobmeta;
+
+mobmeta MOBS[] = {
+    { 50, "Creeper",      2 },
+    { 51, "Skeleton",     0 },
+    { 52, "Spider",       1 },
+    { 53, "Giant Zombie", 0 },
+    { 54, "Zombie",       0 },
+    { 55, "Slime",        1 },
+    { 56, "Ghast",        1 },
+    { 57, "Zombie Pigman",0 },
+    { 58, "Enderman",     2 },
+    { 59, "Cave Spider",  1 },
+    { 60, "Silverfish",   0 },
+    { 61, "Blaze",        1 },
+    { 62, "Magma Cube",   1 },
+    { 63, "Ender Dragon", 2 },
+    { 90, "Pig",          1 },
+    { 91, "Sheep",        1 },
+    { 92, "Cow",          0 },
+    { 93, "Chicken",      0 },
+    { 94, "Squid",        0 },
+    { 95, "Wolf",         7 },
+    { 96, "Mooshoom",     0 },
+    { 97, "Snowman",      0 },
+    { 98, "Ocelot",       7 },
+    { 99, "Iron Golem",   1 },
+    { 120, "Villager",    4 },
+    { -1, "",             0 }
+};
+
+// List of enchantable items
+// Ref: http://wiki.vg/wiki/index.php?title=Slot_Data&oldid=2152
+short TOOLS[] = {
+    256,257,258,        // iron tools
+    259,                // flint and steel
+    261,                // bow
+    267,                // iron sword
+    268,269,270,271,    // wooden tools
+    272,273,274,275,    // stone tools
+    276,277,278,279,    // diamond tools
+    283,284,285,286,    // golden tools
+    290,291,292,293,294,// hoes
+    298,299,300,301,    // leather equipment
+    302,303,304,305,    // chainmain equipment
+    306,307,308,309,    // iron equipment
+    310,311,312,313,    // diamond equipment
+    314,315,316,317,    // golden equipment
+    346,                // fishing rod
+    359,                // shears
+    -1,
+};
+
+static inline int istool(int id) {
+    int i;
+    for(i=0; TOOLS[i]>=0; i++)
+        if (TOOLS[i] == id)
+            return 1;
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 static inline int read_string(char **p, char *s, char *limit) {
     if (limit-*p < 2) return 1;
@@ -185,11 +256,9 @@ typedef struct {
     if (id != -1) {                                         \
         Rchar(count); n.count = count;                      \
         Rshort(damage); n.damage = damage;                  \
-        if (istool(id)) {                                   \
-            Rshort(metalen);                                \
-            if (metalen != -1)                              \
-                Rskip(metalen);                             \
-        }                                                   \
+        Rshort(metalen);                                    \
+        if (metalen != -1)                                  \
+            Rskip(metalen);                                 \
     }
 //TODO: extract metadata into buffer
 
@@ -289,6 +358,8 @@ void init_mitm() {
     if (mitm.s_rsa) RSA_free(mitm.s_rsa);
     if (mitm.c_rsa) RSA_free(mitm.c_rsa);
     CLEAR(mitm);
+
+    //sprintf(mitm.c_session, "%s", "-5902608541656304512");
 }
 
 int handle_session_server(int sfd) {
@@ -318,8 +389,7 @@ int handle_session_server(int sfd) {
             while(*ssid != ' ') *wp++ = *ssid++;
             *wp++ = 0;
 
-            printf("session login caught : sessionId=%s serverId=%s\n",
-                   mitm.c_session,mitm.server_id_hash);
+            printf("session login caught : sessionId=%s serverId=%s\n", mitm.c_session,mitm.server_id_hash);
         }
 
         //hexdump(buf, strlen(buf));
@@ -407,6 +477,80 @@ int connect_session(const char *user, const char *sessionId, const char *serverI
     return (http_ok && mc_ok);
 }
 
+#define PRALL if (mprio<1)
+
+static int msg_prio[256] = {
+ // 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+
+    1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, // 0
+    0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, // 1
+    1, 1, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, // 2
+    0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 1, 0, // 3
+
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 4
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 5
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 6
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 7
+
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // A
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // B
+
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // C
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // D
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // E
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // F
+};
+
+int once = 1;
+
+void process_chunks(int count, uint32_t *XX, uint32_t *ZZ, uint16_t *bm, uint8_t * cdata, ssize_t clen) {
+    if (count == 0) return; // ignore "empty" updates
+
+    ssize_t len;
+    unsigned char * data = zlib_decode(cdata, clen, &len);
+    if (!data) { printf("zlib_decode failed!\n"); exit(1); }
+    uint8_t *ptr = data;
+
+    //printf("Decoded bulk chunk: %d bytes, %d chunks\n",len, count);
+
+    int i;
+    uint8_t *pdata = data;
+
+    for(i=0; i<count; i++) {
+        int32_t X = XX[i];
+        int32_t Z = ZZ[i];
+
+        //printf("Chunk %d at %d\n",i,pdata-data);
+        char fname[256];
+        sprintf(fname, "chunks/chunk_%04x_%04x.dat",(unsigned short)X,(unsigned short)Z);
+        FILE *fd = open_file_w(fname);
+
+        uint32_t Y,n=0;
+        for (Y=0;Y<16;Y++)
+            if (bm[i] & (1 << Y))
+                n++;
+
+        if (once) {
+            hexdump(pdata, 10240*n+256);
+            once = 0;
+        }
+
+        printf("CHUNK %3d,%3d,%d\n",X,Z,n);
+
+        write_file_f(fd, (unsigned char *)&n, sizeof(n));
+        write_file_f(fd, (unsigned char *)&X, sizeof(X));
+        write_file_f(fd, (unsigned char *)&Z, sizeof(Z));
+        write_file_f(fd, pdata, n*4096);
+        fclose(fd);
+
+        pdata += 10240*n+256;
+    }
+
+    free (data);
+}
+
 ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen, 
                                     uint8_t **dbuf, ssize_t *dlen) {
     ssize_t consumed = 0;
@@ -427,87 +571,782 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         // itself, the handler already wrote necessary data to output
 
         uint8_t mtype = read_char(p);
-        printf("%c %02x ",is_client?'C':'S',mtype);
+        int mprio = msg_prio[mtype];
+
+        PRALL printf("%c %02x ",is_client?'C':'S',mtype);
         switch(mtype) {
+
+        case MCP_KeepAlive: { // 00
+            Rint(id);
+            PRALL printf("Keepalive: id=%08x\n",id);
+            break;
+        }
+       
+        case MCP_LoginRequest: { // 01
+            Rint(eid);
+            Rstr(leveltype);
+            Rchar(gamemode);
+            Rchar(dimension);
+            Rchar(difficulty);
+            Rchar(unused);
+            Rchar(maxplayers);
+            PRALL printf("Login Request eid=%d ltype=%s mode=%d dim=%d diff=%d maxplayers=%d\n",
+                   eid,leveltype,gamemode,dimension,difficulty,maxplayers);
+            break;
+        }
 
         case MCP_Handshake: { // 02
             Rchar(proto);
             Rstr(username);
             Rstr(host);
             Rint(port);
-            printf("Handshake: proto=%d user=%s server=%s:%d\n",proto,username,host,port);
+            PRALL printf("Handshake: proto=%d user=%s server=%s:%d\n",proto,username,host,port);
             break;
         }
 
-        case MCP_EncryptionKeyReq: { // FD
-            Rstr(serverid);
-            Rshort(pklen);
-            uint8_t *pkey = p;
-            Rskip(pklen);
-            Rshort(tklen);
-            uint8_t *token = p;
-            Rskip(tklen);
-            printf("Encryption Key Request : server=%s tklen=%d\n",serverid, tklen);
-            hexdump(msg_start, *slen-consumed);
+        case MCP_ChatMessage: { // 03
+            Rstr(msg);
+            PRALL printf("Chat Message: %s\n",msg);
+            break;
+        }
 
+        case MCP_TimeUpdate: { // 04
+            Rlong(tm);
+            PRALL printf("Time Update: %lld (%dd %dh)\n",tm,(int)(tm/24000L),(int)(tm%24000)/1000);
+            break;
+        }
 
-            // save relevant data in the MITM structure
-            sprintf(mitm.s_id,"%s",serverid);
-            memcpy(mitm.s_token, token, tklen);
-            mitm.s_pklen = pklen;
-            memcpy(mitm.s_pkey, pkey, pklen);
-
-            // decode server PUBKEY to an RSA struct
-            unsigned char *pp = pkey;
-            d2i_RSA_PUBKEY(&mitm.s_rsa, &pp, pklen);
-            if (mitm.s_rsa == NULL) {
-                printf("Failed to decode the server's public key\n");
-                exit(1);
+        case MCP_EntityEquipment: { //05
+            Rint(eid);
+            Rshort(sid);
+            Rslot(s);
+            printf("Entity Equipment: EID=%d slot=%d item=\n",eid,sid);
+            if (s.id == -1)
+                printf("-");
+            else {
+                printf("%3d x%2d",s.id,s.count);
+                if (s.damage != 0)
+                    printf(" dmg=%d",s.damage);
             }
-            RSA_print_fp(stdout, mitm.s_rsa, 4);
+            printf("\n");
+            break;
+        }
 
-            // generate the server-side shared key pair
-            RAND_pseudo_bytes(mitm.s_skey, 16);
-            printf("Server-side shared key:\n");
-            hexdump(mitm.s_skey, 16);
+        case MCP_SpawnPosition: { //06
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            printf("Spawn Position: %d,%d,%d\n",x,y,z);
+            break;
+        }
 
+        case MCP_UseEntity: { //07
+            Rint(user);
+            Rint(target);
+            Rchar(button);
+            printf("Use Item: user=%d target=%d %c\n",user,target,button?'L':'R');
+            break;
+        }
 
-            // create a client-side RSA
-            mitm.c_rsa = RSA_generate_key(1024, RSA_F4, NULL, NULL);
-            if (mitm.c_rsa == NULL) {
-                printf("Failed to generate client-side RSA key\n");
-                exit(1);
+        case MCP_UpdateHealth: { //08
+            Rshort(health);
+            Rshort(food);
+            Rfloat(saturation);
+            printf("UpdateHealth: HP=%d FP=%d SP=%.1f\n",health,food,saturation);
+            break;
+        }
+
+        case MCP_Respawn: { // 09
+            Rint(dimension);
+            Rchar(difficulty);
+            Rchar(gamemode);
+            Rshort(height);
+            Rstr(leveltype);
+            printf("Respawn: dim=%d diff=%d gamemode=%d height=%d leveltype=%s\n",
+                   dimension,difficulty,gamemode,height,leveltype);
+            break;
+        }
+
+        case MCP_Player: { //0A
+            Rchar(ground);
+            PRALL printf("Player: ground=%d\n",ground);
+            break;
+        }
+
+        case MCP_PlayerPosition: { //0B
+            Rdouble(x);
+            Rdouble(y);
+            Rdouble(stance);
+            Rdouble(z);
+            Rchar(ground);
+            PRALL printf("Player Position: coord=%.1lf,%.1lf,%.1lf stance=%.1lf ground=%d\n",
+                   x,y,z,stance,ground);
+            break;
+        }
+
+        case MCP_PlayerLook: { //0C
+            Rfloat(yaw);
+            Rfloat(pitch);
+            Rchar(ground);
+            PRALL printf("Player Look: rot=%.1f,%.1f ground=%d\n",yaw,pitch,ground);
+            break;
+        }
+
+        case MCP_PlayerPositionLook: { //0D
+            if (is_client) {
+                Rdouble(x);
+                Rdouble(y);
+                Rdouble(stance);
+                Rdouble(z);
+                Rfloat(yaw);
+                Rfloat(pitch);
+                Rchar(ground);
+                PRALL printf("Player Position & Look: coord=%.1f,%.1f,%.1f stance=%.1f "
+                       "rot=%.1f,%.1f ground=%d\n",x,y,z,stance,yaw,pitch,ground);
             }
-            RSA_print_fp(stdout, mitm.c_rsa, 4);
+            else {
+                Rdouble(x);
+                Rdouble(stance);
+                Rdouble(y);
+                Rdouble(z);
+                Rfloat(yaw);
+                Rfloat(pitch);
+                Rchar(ground);
+                PRALL printf("Player Position & Look: coord=%.1f,%.1f,%.1f stance=%.1f "
+                       "rot=%.1f,%.1f ground=%d\n",x,y,z,stance,yaw,pitch,ground);
+            }
 
-            // encode the client-side pubkey as DER
-            pp = mitm.c_pkey;
-            mitm.c_pklen = i2d_RSA_PUBKEY(mitm.c_rsa, &pp);
+            break;
+        }
 
-            // generate the client-side verification token
-            RAND_pseudo_bytes(mitm.c_token, 4);
+        case MCP_PlayerDigging: {//0e
+            Rchar(status);
+            Rint(x);
+            Rchar(y);
+            Rint(z);
+            Rchar(face);
+            printf("Player Digging: coord=%d,%d,%d face=%d\n",x,(unsigned int)y,z,face);
+            break;
+        }
+
+        case MCP_PlayerBlockPlace: { //0f
+            Rint(x);
+            Rchar(y);
+            Rint(z);
+            Rchar(dir);
+            Rslot(s);
             
+            printf("Player Block Placement: coord=%d,%d,%d item:",x,(unsigned int)y,z);
+            if (s.id == -1)
+                printf("-");
+            else {
+                printf("%3d x%2d",s.id,s.count);
+                if (s.damage != 0)
+                    printf(" dmg=%d",s.damage);
+            }
 
-            // combine all to a MCP message to the client
-            ssize_t outlen = 7 + strlen(serverid)*2 + mitm.c_pklen + sizeof(mitm.c_token);
-            ssize_t wpos = *dlen;
-            ARRAY_ADDG(*dbuf,*dlen,outlen,WRITEBUF_GRAN);
-            uint8_t * wp = *dbuf+wpos;
+            Rchar(cx);
+            Rchar(cy);
+            Rchar(cz);
 
-            write_char(wp, 0xfd);
-            wp += Wstr(wp, serverid);
-            write_short(wp, mitm.c_pklen);
-            memcpy(wp, mitm.c_pkey, mitm.c_pklen);
-            wp += mitm.c_pklen;
-            write_short(wp, 4);
-            memcpy(wp, mitm.c_token, 4);
-
-            modified = 1;
-
+            printf(" cursor: %d,%d,%d\n",cx,cy,cz);
             break;
         }
 
-        case MCP_EncryptionKeyResp: {
+        case MCP_HeldItemChange: {//10
+            Rshort(sid);
+            printf("Held Item Change: slot=%d\n",sid);
+            break;
+        }
+
+        case MCP_UseBed: {//11
+            Rint(eid);
+            Rchar(unk);
+            Rint(x);
+            Rchar(y);
+            Rint(z);
+            printf("Use Bed: EID=%d coord=%d,%d,%d\n",eid,x,(unsigned int)y,z);
+            break;
+        }
+
+        case MCP_Animation: {//12
+            Rint(eid);
+            Rchar(aid);
+            PRALL printf("Animation: EID=%d anim=%d\n",eid,aid);
+            break;
+        }
+
+        case MCP_EntityAction: { //13
+            Rint(eid);
+            Rchar(action);
+            PRALL printf("Entity Action: eid=%d action=%d\n",eid,action);
+            break;
+        }
+
+        case MCP_SpawnNamedEntity: {//14
+            Rint(eid);
+            Rstr(pname);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rchar(yaw);
+            Rchar(pitch);
+            Rshort(item);
+
+            Rmobmeta(m);
+
+            printf("Spawn Named Entity: EID=%d %s coords=%d,%d,%d rot=%d,%d item=%d\n",
+                   eid,pname,x/32,y/16,z/32,yaw,pitch,item);
+            break;
+        }
+
+        case MCP_SpawnDroppedItem: { //15
+            Rint(eid);
+            Rshort(iid);
+            Rchar(count);
+            Rshort(dmg);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rchar(rot);
+            Rchar(pitch);
+            Rchar(roll);
+            printf("Spawn Dropped Item: EID=%d IID=%d x%d %d,%d,%d\n",eid,iid,count,x/32,y/16,z/32);
+            break;
+        }
+
+        case MCP_CollectItem: { //16
+            Rint(ieid);
+            Rint(ceid);
+            PRALL printf("Collect Item: item=%d collector=%d\n",ieid,ceid);
+            break;
+        }
+
+        case MCP_SpawnObject: {//17
+            Rint(eid);
+            Rchar(type);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rint(eeid);
+            if (eeid == 0) {
+                printf("Spawn Object: eid=%d type=%d coord=%d,%d,%d\n",eid,type,x/32,y/16,z/32);
+            }
+            else {
+                Rshort(vx);
+                Rshort(vy);
+                Rshort(vz);
+                printf("Spawn Object: eid=%d type=%d coord=%d,%d,%d Fireball eeid=%d speed=%d,%d,%d\n",eid,type,x/32,y/16,z/32,eeid,vx,vy,vz);
+            }
+            break;
+        }
+
+        case MCP_SpawnMob: { //18
+            Rint(eid);
+            Rchar(type);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rchar(yaw);
+            Rchar(pitch);
+            Rchar(hyaw);
+            Rshort(vx);
+            Rshort(vy);
+            Rshort(vz);
+
+            int i;
+            for(i=0; MOBS[i].type>0 && MOBS[i].type!=type; i++);
+            if (MOBS[i].type<0) {
+                printf("Unknown mob type %d\n",type);
+                exit(1);
+            }
+
+            Rmobmeta(m);
+            printf("Spawn Mob: EID=%d type=%d %s %d,%d,%d\n",eid,type,MOBS[i].name,x/32,y/16,z/32);
+            break;
+        }
+
+        case MCP_SpawnPainting: { //19
+            Rint(eid);
+            Rstr(title);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rint(dir);
+            printf("Spawn Painting: EID=%d %s %d,%d,%d %d\n",eid,title,x,y,z,dir);
+            break;
+        }
+
+        case MCP_SpawnExperienceOrb: { //1A
+            Rint(eid);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rshort(count);
+            printf("Spawn Experience Orb: EID=%d coord=%d,%d,%d count=%d\n",eid,x,y,z,count);
+            break;
+        }
+
+        case MCP_EntityVelocity: { //1C
+            Rint(eid);
+            Rshort(vx);
+            Rshort(vy);
+            Rshort(vz);
+            PRALL printf("Entity Velocity: EID=%d %d,%d,%d\n",eid,vx,vy,vz);
+            break;
+        }
+
+        case MCP_DestroyEntity: { //1D
+            Rchar(count);
+            printf("Destroy Entity: %d EIDs:",count);
+            int i;
+            for(i=0; i<count; i++) {
+                Rint(eid);
+                printf(" %d",eid);
+            }
+            printf("\n");
+            break;
+        }
+
+        case MCP_Entity: { //1E
+            Rint(eid);
+            PRALL printf("Entity: EID=%d\n",eid);
+            break;
+        }
+
+        case MCP_EntityRelativeMove: { //1F
+            Rint(eid);
+            Rchar(dx);
+            Rchar(dy);
+            Rchar(dz);
+            PRALL printf("Entity Relative Move: EID=%d move=%d,%d,%d\n",eid,dx,dy,dz);
+            break;
+        }
+
+
+
+        case MCP_EntityLook: { //20
+            Rint(eid);
+            Rchar(yaw);
+            Rchar(pitch);
+            PRALL printf("Entity Look: EID=%d, yaw=%d pitch=%d\n",eid,yaw,pitch);
+            break;
+        }
+
+        case MCP_EntityLookRelmove: { //21
+            Rint(eid);
+            Rchar(dx);
+            Rchar(dy);
+            Rchar(dz);
+            Rchar(yaw);
+            Rchar(pitch);
+            PRALL printf("Entity Look and Relative Move: EID=%d move=%d,%d,%d look=%d,%d\n",eid,dx,dy,dz,yaw,pitch);
+            break;
+        }
+
+        case MCP_EntityTeleport: { //22
+            Rint(eid);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rchar(yaw);
+            Rchar(pitch);
+            PRALL printf("Entity Teleport: EID=%d move=%d,%d,%d look=%d,%d\n",eid,x/32,y/16,z/32,yaw,pitch);
+            break;
+        }
+
+        case MCP_EntityHeadLook: { //23
+            Rint(eid);
+            Rchar(hyaw);
+            PRALL printf("Entity Head Look: EID=%d %d\n",eid,hyaw);
+            break;
+        }
+
+        case MCP_EntityStatus: { //26
+            Rint(eid);
+            Rchar(status);
+            PRALL printf("Entity Status: EID=%d status=%d\n",eid,status);
+            break;
+        }
+
+        case MCP_AttachEntity: { //27
+            Rint(eid);
+            Rint(vid);
+            PRALL printf("Attach Entity: EID=%d vehicle=%d\n",eid,vid);
+            break;
+        }
+
+        case MCP_EntityMetadata: { //28
+            Rint(eid);
+            Rmobmeta(m);
+            PRALL printf("Entity Metadata: EID=%d\n",eid);
+            break;
+        }
+
+        case MCP_EntityEffect: { //29
+            Rint(eid);
+            Rchar(effect);
+            Rchar(amp);
+            Rshort(duration);
+            PRALL printf("Entity Effect: EID=%d effect=%d amp=%d dur=%d\n",
+                   eid,effect,amp,duration);
+            break;
+        }
+
+        case MCP_RemoveEntityEffect: { //2A
+            Rint(eid);
+            Rchar(effect);
+            PRALL printf("Remove Entity Effect: EID=%d effect=%d\n",eid,effect);
+            break;
+        }
+
+        case MCP_SetExperience: { //2B
+            Rfloat(expbar);
+            Rshort(level);
+            Rshort(exp);
+            PRALL printf("Set Experience: EXP=%d LVL=%d bar=%.1f\n",exp,level,expbar);
+            break;
+        }
+
+        case MCP_ChunkData: { //33
+            Rint(X);
+            Rint(Z);
+            Rchar(cont);
+            Rshort(primary_bitmap);
+            Rshort(add_bitmap);
+            Rint(compsize);
+            uint8_t *data = p;
+            Rskip(compsize);
+            PRALL printf("Chunk Data: %d,%d cont=%d PBM=%04x ABM=%04x compsize=%d\n",X,Z,cont,primary_bitmap,add_bitmap,compsize);
+            process_chunks(1, &X, &Z, &primary_bitmap, data, compsize);
+            break;
+        }
+
+        case MCP_MultiBlockChange: { //34
+            Rint(X);
+            Rint(Z);
+            Rshort(count);
+            Rint(dsize);
+            Rskip(dsize);
+            PRALL printf("Multi Block Change: %d,%d count=%d (%d bytes)\n",X,Z,count,dsize);
+            break;
+        }
+
+        case MCP_BlockChange: { //35
+            Rint(x);
+            Rchar(y);
+            Rint(z);
+            Rshort(bid);
+            Rchar(metadata);
+            PRALL printf("Block Change: %d,%d,%d block=%d meta=%d\n",
+                   x,(unsigned int)y,z,bid,metadata);
+            break;
+        }
+
+        case MCP_BlockAction: { //36
+            Rint(x);
+            Rshort(y);
+            Rint(z);
+            Rchar(b1);
+            Rchar(b2);
+            Rshort(bid);
+            PRALL printf("Block Action: %d,%d,%d bid=%d %d %d\n",x,y,z,bid,b1,b2);
+            break;
+        }
+
+        case MCP_BlockBreakAnimation: { //37
+            Rint(eid);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rchar(state);
+            PRALL printf("Block Break Animation: eid=%d %d,%d,%d state=%d\n",
+                   eid,x,y,z,state);
+            break;
+        }
+           
+        case MCP_MapChunkBulk: { //38
+            Rshort(count);
+            Rint(datalen);
+            uint8_t * data = p;
+            Rskip(datalen);
+
+            int i;
+            int XX[1024];
+            int ZZ[1024];
+            uint16_t BM[1024];
+            for(i=0; i<count; i++) {
+                Rint(X);
+                Rint(Z);
+                Rshort(PBM);
+                Rshort(ABM);
+                XX[i] = X;
+                ZZ[i] = Z;
+                BM[i] = PBM;
+            }
+            if (atlimit) break;
+
+            printf("Map Chunk Bulk: count=%d %d bytes", count, datalen);
+            for(i=0; i<count; i++) 
+                printf(" %d,%d,%04x",XX[i],ZZ[i],BM[i]);
+            printf("\n");
+
+            process_chunks(count, XX, ZZ, BM, data, datalen);
+            break;
+        }
+           
+        case MCP_Explosion: { //3C
+            Rdouble(x);
+            Rdouble(y);
+            Rdouble(z);
+            Rfloat(radius);
+            Rint(count);
+            Rskip(count*3);
+            Rskip(12); // 3x unknown float
+            printf("Explosion: %f,%f,%f r=%f count=%d\n",x,y,z,radius,count);
+            break;
+        }
+
+        case MCP_SoundParticleEffect: { //3D
+            Rint(effect);
+            Rint(x);
+            Rchar(y);
+            Rint(z);
+            Rint(data);
+            PRALL printf("Sound/Particle Effect: %d,%d,%d effect=%d,%d\n",x,(unsigned int)y,z,effect,data);
+            break;
+        }
+
+        case MCP_NamedSoundEffect: { //3E
+            Rstr(name);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rfloat(volume);
+            Rchar(pitch);
+            PRALL printf("Named Sound Effect: %s %d,%d,%d vol=%.2f pitch=%d\n",
+                   name,x,y,z,volume,pitch);
+            break;
+        }
+
+        case MCP_ChangeGameState: { //46
+            Rchar(reason);
+            Rchar(mode);
+            printf("Change Game State: reason=%d mode=%d\n",reason, mode);
+            break;
+        }
+
+        case MCP_Thunderbolt: { //47
+            Rint(eid);
+            Rchar(unk);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            printf("Thunderbolt EID=%d coord=%d,%d,%d\n",eid,x,y,z);
+            break;
+        }
+
+        case MCP_OpenWindow: {//64
+            Rchar(wid);
+            Rchar(invtype);
+            Rstr(title);
+            Rchar(nslots);
+            printf("Open Window: wid=%d invtype=%d nslots=%d Title=%s\n",wid,invtype,nslots,title);
+            break;
+        }
+
+        case MCP_CloseWindow: {//65
+            Rchar(wid);
+            printf("Close Window: wid=%d\n",wid);
+            break;
+        }
+
+        case MCP_ClickWindow: {//66
+            Rchar(wid);
+            Rshort(sid);
+            Rchar(rclick);
+            Rshort(action);
+            Rchar(shift);
+            Rslot(s);
+
+            printf("Click Window: wid=%d slot=%d action=[%c %c %d]",wid,sid,rclick?'R':'L',shift?'S':'-',action);
+            if (s.id == -1)
+                printf("-");
+            else {
+                printf("%3d x%2d",s.id,s.count);
+                if (s.damage != 0)
+                    printf(" dmg=%d",s.damage);
+            }
+            printf("\n");
+            break;
+        }
+
+        case MCP_SetSlot: { //67
+            Rchar(wid);
+            Rshort(sid);
+            Rslot(s);
+
+            printf("Set Slot: wid=%d slot=%d item=",wid,sid);
+            if (s.id == -1)
+                printf("-");
+            else {
+                printf("%3d x%2d",s.id,s.count);
+                if (s.damage != 0)
+                    printf(" dmg=%d",s.damage);
+            }
+            printf("\n");
+            break;
+        }
+
+        case MCP_SetWindowItems: { //68
+            Rchar(wid);
+            Rshort(nslots);
+            printf("Set Window Items: wid=%d nslots=%d\n",wid,nslots);
+            int slot;
+            for(slot=0; slot<nslots; slot++) {
+                Rslot(s);
+                printf("    Slot %2d :",slot);
+                if (s.id == -1)
+                    printf("-");
+                else {
+                    printf("%3d x%2d",s.id,s.count);
+                    if (s.damage != 0)
+                        printf(" dmg=%d",s.damage);
+                }
+                printf("\n");
+            }
+            break;
+        }
+
+        case MCP_UpdateWindowProp: { //69
+            Rchar(wid);
+            Rshort(pid);
+            Rshort(pvalue);
+            printf("Update Window Property: wid=%d prop %d => %d\n",wid,pid,pvalue);
+            break;
+        }
+
+        case MCP_ConfirmTransaction: { //6A
+            Rchar(wid);
+            Rshort(action);
+            Rchar(accepted);
+            printf("Confirm Transaction: wid=%d action=%d accepted=%d\n",wid,action,accepted);
+            break;
+        }
+        
+        case MCP_CreativeInvAction: { //6B
+            Rshort(sid);
+            Rslot(s);
+
+            printf("Creative Inventory Action: slot=%d item=",sid);
+            if (s.id == -1)
+                printf("-");
+            else {
+                printf("%3d x%2d",s.id,s.count);
+                if (s.damage != 0)
+                    printf(" dmg=%d",s.damage);
+            }
+            printf("\n");
+            break;
+        }
+        
+        case MCP_EnchantItem: { //6C
+            Rchar(wid);
+            Rchar(enchant);
+            printf("Enchant Item: wid=%d enchantment=%02x\n",wid,enchant);
+            break;
+        }
+        
+        case MCP_UpdateSign: { //82
+            Rint(x);
+            Rshort(y);
+            Rint(z);
+            Rstr(line1);
+            Rstr(line2);
+            Rstr(line3);
+            Rstr(line4);
+            printf("Update Sign: %d,%d,%d\n",x,y,z);
+            printf("%s\n%s\n%s\n%s\n",line1,line2,line3,line4);
+            break;
+        }
+
+        case MCP_ItemData: { //83
+            Rshort(type);
+            Rshort(iid);
+            Rchar(tlen);
+            char text[4096];
+            memcpy(text, p, tlen);
+            text[tlen] = 0;
+            Rskip(tlen);
+            printf("Item Data: type=%d iid=%d >%s<\n",type, iid, text);
+            break;
+        }
+
+        case MCP_UpdateTileEntity: { //84
+            Rint(x);
+            Rshort(y);
+            Rint(z);
+            Rchar(action);
+            Rshort(dlen);
+            if (dlen > 0)
+                Rskip(dlen);
+            printf("Update Tile Entry: %d,%d,%d action=%d custom=%d bytes\n",x,y,z,action,dlen);
+            break;
+        }
+
+        case MCP_IncrementStatistic: { //c8
+            Rint(stid);
+            Rchar(amount);
+            printf("Increment Statistic: id=%d by %d\n",stid,amount);
+            break;
+        }
+
+        case MCP_PlayerListItem: { //C9
+            Rstr(s);
+            Rchar(online);
+            Rshort(ping);
+            printf("Player List Item: %-24s ping: %4dms online:%d\n",s,ping,online);
+            break;
+        }
+
+        case MCP_PlayerAbilities: { //CA
+            Rchar(flags);
+            Rchar(fspeed);
+            Rchar(wspeed);
+            printf("Player Abilities: flags=%02x fspeed=%d wspeed=%d\n",flags,fspeed,wspeed);
+            break;
+        }
+
+        case MCP_TabComplete: { //CB
+            Rstr(str);
+            printf("Tab Complete: %s\n",str);
+            break;
+        }
+
+        case MCP_LocaleAndViewdist: { //CC
+            Rstr(locale);
+            Rchar(view);
+            Rchar(chat);
+            Rchar(diff);
+            printf("Locale And View Distance: %s view=%d chat=%02x diff=%d\n",locale,view,chat,diff);
+            break;
+        }
+
+        case MCP_ClientStatuses: { //CD
+            Rchar(status);
+            printf("Client Statuses: %s\n",status?"respawn":"login");
+            break;
+        }
+
+        case MCP_PluginMessage: { //FA
+            Rstr(channel);
+            Rshort(len);
+            Rskip(len);
+            printf("Plugin Message: channel=%s len=%d\n",channel,len);
+            break;
+        }
+
+        case MCP_EncryptionKeyResp: { // FC
             if (!is_client) {
                 Rshort(z1);
                 Rshort(z2);
@@ -610,6 +1449,74 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             break;
         }
 
+        case MCP_EncryptionKeyReq: { // FD
+            Rstr(serverid);
+            Rshort(pklen);
+            uint8_t *pkey = p;
+            Rskip(pklen);
+            Rshort(tklen);
+            uint8_t *token = p;
+            Rskip(tklen);
+            printf("Encryption Key Request : server=%s tklen=%d\n",serverid, tklen);
+            hexdump(msg_start, *slen-consumed);
+
+
+            // save relevant data in the MITM structure
+            sprintf(mitm.s_id,"%s",serverid);
+            memcpy(mitm.s_token, token, tklen);
+            mitm.s_pklen = pklen;
+            memcpy(mitm.s_pkey, pkey, pklen);
+
+            // decode server PUBKEY to an RSA struct
+            unsigned char *pp = pkey;
+            d2i_RSA_PUBKEY(&mitm.s_rsa, &pp, pklen);
+            if (mitm.s_rsa == NULL) {
+                printf("Failed to decode the server's public key\n");
+                exit(1);
+            }
+            RSA_print_fp(stdout, mitm.s_rsa, 4);
+
+            // generate the server-side shared key pair
+            RAND_pseudo_bytes(mitm.s_skey, 16);
+            printf("Server-side shared key:\n");
+            hexdump(mitm.s_skey, 16);
+
+
+            // create a client-side RSA
+            mitm.c_rsa = RSA_generate_key(1024, RSA_F4, NULL, NULL);
+            if (mitm.c_rsa == NULL) {
+                printf("Failed to generate client-side RSA key\n");
+                exit(1);
+            }
+            RSA_print_fp(stdout, mitm.c_rsa, 4);
+
+            // encode the client-side pubkey as DER
+            pp = mitm.c_pkey;
+            mitm.c_pklen = i2d_RSA_PUBKEY(mitm.c_rsa, &pp);
+
+            // generate the client-side verification token
+            RAND_pseudo_bytes(mitm.c_token, 4);
+            
+
+            // combine all to a MCP message to the client
+            ssize_t outlen = 7 + strlen(serverid)*2 + mitm.c_pklen + sizeof(mitm.c_token);
+            ssize_t wpos = *dlen;
+            ARRAY_ADDG(*dbuf,*dlen,outlen,WRITEBUF_GRAN);
+            uint8_t * wp = *dbuf+wpos;
+
+            write_char(wp, 0xfd);
+            wp += Wstr(wp, serverid);
+            write_short(wp, mitm.c_pklen);
+            memcpy(wp, mitm.c_pkey, mitm.c_pklen);
+            wp += mitm.c_pklen;
+            write_short(wp, 4);
+            memcpy(wp, mitm.c_token, 4);
+
+            modified = 1;
+
+            break;
+        }
+
         case MCP_ServerListPing: { //FE
             printf("Server List Ping\n");
             break;
@@ -618,22 +1525,13 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         case MCP_Disconnect: { //FF
             Rstr(s);
             printf("Disconnect: %s\n",s);
-
-#if 0
-            msgbuf[0] = 0xff;
-            ssize_t len = Wstr(msgbuf+1,"Barrels of Dicks!\xa7""12""\xa7""34");
-            ssize_t wpos = *dlen;
-            ARRAY_ADDG(*dbuf,*dlen,len+1,WRITEBUF_GRAN);
-            memcpy(*dbuf+wpos,msgbuf,len+1);
-            modified = 1;
-#endif
             break;
         }
 
         default:
             printf("Unknown message %02x\n",mtype);
             hexdump(msg_start, *slen-consumed);
-            //exit(1);
+            exit(1);
         }
 
         if (!atlimit) {
@@ -645,8 +1543,8 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
                 ssize_t wpos = *dlen;
                 ARRAY_ADDG(*dbuf,*dlen,msg_len,WRITEBUF_GRAN);
                 memcpy(*dbuf+wpos,msg_start,msg_len);
-                printf("Copied %d bytes\n",msg_len);
-                hexdump(msg_start,msg_len);
+                //printf("Copied %d bytes\n",msg_len);
+                //hexdump(msg_start,msg_len);
             }
 
             consumed = p-*sbuf;
@@ -748,7 +1646,6 @@ int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
 }
 
 int proxy_pump(uint32_t ip, uint16_t port) {
-    printf("%s:%d\n",__func__,__LINE__);
     CLEAR(mitm);
 
 
@@ -797,19 +1694,10 @@ int proxy_pump(uint32_t ip, uint16_t port) {
         // common poll for all registered sockets
         evfile_poll(&pa, 1000);
 
-#if 0
-        printf("%s:%d sg:%d,%d,%d cg:%d,%d,%d mg:%d,%d,%d\n",
-               __func__,__LINE__,
-               sg.rn,sg.wn,sg.en,
-               cg.rn,cg.wn,cg.en,
-               mg.rn,mg.wn,mg.en);
-#endif
-
         // handle connection requests from the client side
         if (sg.rn > 0 && cs == -1)
             if (handle_server(pa.p[sg.r[0]].fd, ip, port, &cs, &ms)) {
-                printf("%s:%d - handle_server successful cs=%d ms=%d\n",
-                       __func__,__LINE__, cs, ms);
+                printf("New connection: cs=%d ms=%d\n", cs, ms);
                 
                 // handle_server was able to accept the client connection and
                 // also open the server-side connection, we need to add these
