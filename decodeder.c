@@ -52,6 +52,32 @@ void print_hex(char *buf, const char *data, ssize_t len) {
     *w++ = 0;
 }
 
+void process_cmd(const char *msg, char *answer) {
+    //if (msg[0] != '#') return 0;
+
+    // tokenize
+    char *words[256];
+    int w=0;
+
+    char wbuf[4096];
+    strncpy(wbuf, msg, sizeof(wbuf));
+    char *wsave;
+
+    char *wstr = wbuf;
+    do {
+        words[w++] = strtok_r(wstr, " ", &wsave);
+        wstr = NULL;
+    } while(words[w-1]);
+
+    w=0;
+    while(words[w]) {
+        printf("%3d : >%s<\n",w,words[w]);
+        w++;
+    }
+
+    printf("-----------------------\n");
+}
+
 int main(int ac, char **av) {
 
 #if 0
@@ -121,6 +147,7 @@ int main(int ac, char **av) {
     print_hex(buf, md, SHA_DIGEST_LENGTH);
 #endif
 
+#if 0
     AES_KEY aes;
     AES_KEY aesd;
     CLEAR(aes);
@@ -158,7 +185,7 @@ int main(int ac, char **av) {
     hexdump(ok, 2);
     hexdump(encoded, 2);
     hexdump(decoded, 2);
-
+#endif
 
 
 
@@ -176,6 +203,15 @@ int main(int ac, char **av) {
     hexdump(encoded, strlen(plaintext)+10);
     hexdump(decoded, strlen(plaintext)+10);
 #endif
+
+    process_cmd("build", NULL);
+    process_cmd("build shit", NULL);
+    process_cmd("build  shit", NULL);
+    process_cmd("build additional pylons", NULL);
+    process_cmd("build additional pylons ", NULL);
+    process_cmd(" build additional pylons", NULL);
+    process_cmd("build    additional    pylons", NULL);
+
 
     return 0;
 }

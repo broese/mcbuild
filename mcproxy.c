@@ -352,14 +352,25 @@ struct {
     AES_KEY s_aes;
     char s_enc_iv[16];
     char s_dec_iv[16];
+
+    FILE * output;
 } mitm;
 
+#include <time.h>
+
 void init_mitm() {
+    if (mitm.output) fclose(mitm.output);
     if (mitm.s_rsa) RSA_free(mitm.s_rsa);
     if (mitm.c_rsa) RSA_free(mitm.c_rsa);
     CLEAR(mitm);
 
     //sprintf(mitm.c_session, "%s", "-5902608541656304512");
+
+    char fname[4096];
+    time_t t;
+    time(&t);
+    strftime(fname, sizeof(fname), "saved/%Y%m%d_%H%M%S.mcs",localtime(&t));
+    mitm.output = open_file_w(fname);
 }
 
 int handle_session_server(int sfd) {
@@ -503,11 +514,7 @@ static int msg_prio[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // F
 };
 
-int once = 1;
-
 void process_chunks(int count, uint32_t *XX, uint32_t *ZZ, uint16_t *bm, uint8_t * cdata, ssize_t clen) {
-    if (count == 0) return; // ignore "empty" updates
-
     ssize_t len;
     unsigned char * data = zlib_decode(cdata, clen, &len);
     if (!data) { printf("zlib_decode failed!\n"); exit(1); }
@@ -522,20 +529,16 @@ void process_chunks(int count, uint32_t *XX, uint32_t *ZZ, uint16_t *bm, uint8_t
         int32_t X = XX[i];
         int32_t Z = ZZ[i];
 
-        //printf("Chunk %d at %d\n",i,pdata-data);
-        char fname[256];
-        sprintf(fname, "chunks/chunk_%04x_%04x.dat",(unsigned short)X,(unsigned short)Z);
-        FILE *fd = open_file_w(fname);
-
         uint32_t Y,n=0;
         for (Y=0;Y<16;Y++)
             if (bm[i] & (1 << Y))
                 n++;
+        if (n==0) continue; // ignore "empty" updates
 
-        if (once) {
-            hexdump(pdata, 10240*n+256);
-            once = 0;
-        }
+        //printf("Chunk %d at %d\n",i,pdata-data);
+        char fname[256];
+        sprintf(fname, "chunks/chunk_%04x_%04x.dat",(unsigned short)X,(unsigned short)Z);
+        FILE *fd = open_file_w(fname);
 
         printf("CHUNK %3d,%3d,%d\n",X,Z,n);
 
@@ -551,8 +554,134 @@ void process_chunks(int count, uint32_t *XX, uint32_t *ZZ, uint16_t *bm, uint8_t
     free (data);
 }
 
+typedef struct {
+    int x,y,z;
+} bcoord;
+
+struct {
+    int state;      // current building state: 0 - stopped, 1 - waiting for trigger, 2 - building
+    int nb;         // number of blocks still left
+    bcoord *b;      // array of coordinates
+
+    int slot;
+    int count;
+    bcoord cur;
+} build;
+
+void trigger_build(int x, int y, int z, int dir, int slot, int count, int cx, int cy, int cz) {
+    build.state = 2;
+    ARRAY_ADD(build.b, build.nb, 7);
+    build.cur.x = cx; build.cur.y = cy; build.cur.z = cz;
+    build.slot = slot;
+    build.count = count;
+
+    build.b[0].x=x+0; build.b[0].y=y+0; build.b[0].z=z+1; 
+    build.b[1].x=x+0; build.b[1].y=y+1; build.b[1].z=z+0; 
+    build.b[2].x=x+0; build.b[2].y=y+1; build.b[2].z=z+1; 
+    build.b[3].x=x+1; build.b[3].y=y+0; build.b[3].z=z+0; 
+    build.b[4].x=x+1; build.b[4].y=y+0; build.b[4].z=z+1; 
+    build.b[5].x=x+1; build.b[5].y=y+1; build.b[5].z=z+0; 
+    build.b[6].x=x+1; build.b[6].y=y+1; build.b[6].z=z+1;
+}
+
+#define SQR(x) ((x)*(x))
+
+void progress_build(int x, int y, int z, uint8_t **buf, ssize_t *len) {
+    if (build.state != 2) return;
+    printf("Checking build state, pos=%d,%d,%d blocks=%d slot=%d,%d\n",x,y,z,build.nb,build.slot,build.count);
+
+    int i;
+    for(i=0; i<build.nb; i++) {
+        bcoord *b = &build.b[i];
+        int dist = SQR(x-b->x)+SQR(y-b->y)+SQR(z-b->z);
+        if (dist <= 9) {
+            printf(" Place Cube %d %d,%d,%d\n",i,b->x,b->y,b->z);
+
+            uint8_t mbuf[4096];
+            uint8_t *p = mbuf;
+            write_char(p,0x0f);
+            write_int(p, b->x);
+            write_char(p, (unsigned char)b->y);
+            write_int(p, b->z);
+            write_char(p,1);
+
+            write_short(p,4);  // ID=Cobblestone
+            write_char(p,1);   // count
+            write_short(p,0);  // damage
+            write_short(p,-1);
+            
+            write_char(p,0);
+            write_char(p,0);
+            write_char(p,0);
+
+            ssize_t mlen = p-mbuf;
+            ssize_t wpos = *len;
+            ARRAY_ADDG(*buf,*len,mlen,WRITEBUF_GRAN);
+            memcpy(*buf+wpos, mbuf, mlen);
+
+            ARRAY_DELETE(build.b, build.nb, i);
+            i--;
+            break;
+        }
+    }
+
+    if (build.nb == 0)
+        build.state = 0;
+}
+
+int process_cmd(const char *msg, char *answer) {
+    if (msg[0] != '#') return 0;
+    answer[0] = 0;
+
+    // tokenize
+    char *words[256];
+    int w=0;
+
+    char wbuf[4096];
+    strncpy(wbuf, msg+1, sizeof(wbuf));
+    char *wsave;
+
+    char *wstr = wbuf;
+    do {
+        words[w++] = strtok_r(wstr, " ", &wsave);
+        wstr = NULL;
+    } while(words[w-1]);
+    w--;
+
+    if (w==0) return 0;
+
+    if (!strcmp(words[0],"build")) {
+        if (!words[1]) return 0;
+        if (!strcmp(words[1],"abort")) {
+            sprintf(answer, "<MC Proxy> Aborting build");
+            if (build.b) free(build.b);
+            CLEAR(build);
+            return 1;
+        }
+
+        if (build.state) {
+            sprintf(answer, "<MC Proxy> Another building is still in progress (%d blocks remaining). Abort it first.", build.nb);
+            return 1;
+        }
+
+        if (!strcmp(words[1],"cube")) {
+            sprintf(answer, "<MC Proxy> Building 3x3x3 cube. Place the bottom NW block to start.");
+            build.state = 1;
+            return 1;
+        }
+        if (!strcmp(words[1],"bridge")) {
+            sprintf(answer, "<MC Proxy> Building bridge");
+            return 1;
+        }
+        return 0;
+    }
+    else
+        return 0;
+}
+
 ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen, 
-                                    uint8_t **dbuf, ssize_t *dlen) {
+                                    uint8_t **dbuf, ssize_t *dlen,
+                                    uint8_t **abuf, ssize_t *alen) {
     ssize_t consumed = 0;
     uint8_t *limit = *sbuf+*slen;
     int atlimit = 0;
@@ -607,6 +736,21 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         case MCP_ChatMessage: { // 03
             Rstr(msg);
             PRALL printf("Chat Message: %s\n",msg);
+
+            if (is_client && msg[0]=='#') {
+                char answer[4096];
+                if (process_cmd(msg,answer)) {
+                    modified = 1; // so the message won't be forwarded to the server
+                    if (answer[0]) {
+                        ssize_t _alen = *alen;
+                        ARRAY_ADDG(*abuf,*alen,strlen(answer)*2+3,WRITEBUF_GRAN);
+                        uint8_t *wp = *abuf+_alen;
+                        write_char(wp, 0x03);
+                        Wstr(wp,answer);
+                    }
+                }
+            }
+
             break;
         }
 
@@ -674,6 +818,10 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         }
 
         case MCP_PlayerPosition: { //0B
+            int px,py,pz;
+            uint8_t **buf;
+            ssize_t *len;
+
             Rdouble(x);
             Rdouble(y);
             Rdouble(stance);
@@ -681,6 +829,30 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rchar(ground);
             PRALL printf("Player Position: coord=%.1lf,%.1lf,%.1lf stance=%.1lf ground=%d\n",
                    x,y,z,stance,ground);
+
+            px = (int)x;
+            py = (int)y;
+            pz = (int)z;
+            
+            if (is_client) {
+                buf = dbuf;
+                len = dlen;
+            }
+            else {
+                buf = abuf;
+                len = alen;
+            }
+
+            // copy the message so we can ensure it goes out first
+            ssize_t msg_len = p-msg_start;
+            ssize_t wpos = *dlen;
+            ARRAY_ADDG(*dbuf,*dlen,msg_len,WRITEBUF_GRAN);
+            memcpy(*dbuf+wpos,msg_start,msg_len);
+            modified = 1;
+
+            if (build.state == 2)
+                progress_build(px, py, pz, buf, len);
+
             break;
         }
 
@@ -693,6 +865,10 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         }
 
         case MCP_PlayerPositionLook: { //0D
+            int px,py,pz;
+            uint8_t **buf;
+            ssize_t *len;
+
             if (is_client) {
                 Rdouble(x);
                 Rdouble(y);
@@ -703,6 +879,12 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
                 Rchar(ground);
                 PRALL printf("Player Position & Look: coord=%.1f,%.1f,%.1f stance=%.1f "
                        "rot=%.1f,%.1f ground=%d\n",x,y,z,stance,yaw,pitch,ground);
+                px = (int)x;
+                py = (int)y;
+                pz = (int)z;
+
+                buf = dbuf;
+                len = dlen;
             }
             else {
                 Rdouble(x);
@@ -714,7 +896,24 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
                 Rchar(ground);
                 PRALL printf("Player Position & Look: coord=%.1f,%.1f,%.1f stance=%.1f "
                        "rot=%.1f,%.1f ground=%d\n",x,y,z,stance,yaw,pitch,ground);
+
+                px = (int)x;
+                py = (int)y;
+                pz = (int)z;
+
+                buf = abuf;
+                len = alen;
             }
+
+            // copy the message so we can ensure it goes out first
+            ssize_t msg_len = p-msg_start;
+            ssize_t wpos = *dlen;
+            ARRAY_ADDG(*dbuf,*dlen,msg_len,WRITEBUF_GRAN);
+            memcpy(*dbuf+wpos,msg_start,msg_len);
+            modified = 1;
+
+            if (build.state == 2)
+                progress_build(px, py, pz, buf, len);
 
             break;
         }
@@ -736,7 +935,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rchar(dir);
             Rslot(s);
             
-            printf("Player Block Placement: coord=%d,%d,%d item:",x,(unsigned int)y,z);
+            printf("Player Block Placement: coord=%d,%d,%d dir=%d item:",x,(unsigned int)y,z,dir);
             if (s.id == -1)
                 printf("-");
             else {
@@ -750,6 +949,10 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rchar(cz);
 
             printf(" cursor: %d,%d,%d\n",cx,cy,cz);
+
+            if (build.state == 1 && s.id == 4)
+                trigger_build(x,y,z,dir,s.id,s.count,cx,cy,cz);
+
             break;
         }
 
@@ -1535,11 +1738,26 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         }
 
         if (!atlimit) {
+            ssize_t msg_len = p-msg_start;
+
+            if (mitm.output) {
+                struct timeval tv;
+                gettimeofday(&tv, NULL);
+
+                uint8_t header[4096];
+                uint8_t *hp = header;
+                write_int(hp, is_client);
+                write_int(hp, tv.tv_sec);
+                write_int(hp, tv.tv_usec);
+                write_int(hp, msg_len);
+                write_file_f(mitm.output, header, hp-header);
+                write_file_f(mitm.output, msg_start, msg_len);
+            }
+
             // the message was ingested successfully
             if (!modified) {
                 // the handler only ingested the data but did not modify it
                 // we need to copy it 1-1 to the output
-                ssize_t msg_len = p-msg_start;
                 ssize_t wpos = *dlen;
                 ARRAY_ADDG(*dbuf,*dlen,msg_len,WRITEBUF_GRAN);
                 memcpy(*dbuf+wpos,msg_start,msg_len);
@@ -1559,20 +1777,25 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
 
 int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
     // choose correct buffers depending on traffic direction
-    uint8_t **sbuf, **dbuf;
-    ssize_t *slen, *dlen;
+    uint8_t **sbuf, **dbuf, **abuf;
+    ssize_t *slen, *dlen, *alen;
+    // sbuf - coming from the source, dbuf - forward to destination, abuf - response back to source
 
     if (is_client) {
         sbuf = &fb->crbuf;
         slen = &fb->crlen;
         dbuf = &fb->swbuf;
         dlen = &fb->swlen;
+        abuf = &fb->cwbuf;
+        alen = &fb->cwlen;
     }
     else {
         sbuf = &fb->srbuf;
         slen = &fb->srlen;
         dbuf = &fb->cwbuf;
         dlen = &fb->cwlen;
+        abuf = &fb->swbuf;
+        alen = &fb->swlen;
     }
 
     // read incoming data to the source buffer
@@ -1599,7 +1822,7 @@ int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
             // it will copy the data to dbuf as is, or modified, or it may
             // also insert other data
 
-            ssize_t consumed = process_data(is_client, sbuf, slen, dbuf, dlen);
+            ssize_t consumed = process_data(is_client, sbuf, slen, dbuf, dlen, abuf, alen);
             if (consumed > 0) {
                 if (*slen-consumed > 0)
                     memcpy(*sbuf, *sbuf+consumed, *slen-consumed);
@@ -1624,6 +1847,20 @@ int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
                     else
                         AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.c_aes, mitm.c_enc_iv, &num, AES_ENCRYPT);
                 }
+
+                ebuf = *abuf;
+                elen = *alen;
+                
+                if (elen > 0) {
+                    printf("Encrypting answer buffer\n");
+                    hexdump(ebuf, elen);
+
+                    int num=0;
+                    if (is_client)
+                        AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.c_aes, mitm.c_enc_iv, &num, AES_ENCRYPT);
+                    else
+                        AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.s_aes, mitm.s_enc_iv, &num, AES_ENCRYPT);
+                }
             }
 
 
@@ -1637,6 +1874,18 @@ int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
                 len -= sent;
             }
             *dlen = 0;
+
+            // send out the contents of the answer buffer
+            buf = *abuf;
+            len = *alen;
+            while (len > 0) {
+                //printf("sending %d bytes to %s\n",len,is_client?"server":"client");
+                ssize_t sent = write(src,buf,len);
+                buf += sent;
+                len -= sent;
+            }
+            *alen = 0;
+
             return 0;
         }         
         case EVFILE_ERROR:
@@ -1647,6 +1896,7 @@ int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
 
 int proxy_pump(uint32_t ip, uint16_t port) {
     CLEAR(mitm);
+    CLEAR(build);
 
 
     // common poll array for all sockets
