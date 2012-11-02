@@ -18,8 +18,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-//#define SERVERIP "83.233.237.64"
-#define SERVERIP "10.0.0.1"
+#define SERVERIP "83.233.237.64"
+//#define SERVERIP "10.0.0.1"
 #define PCAPFILTER "host " SERVERIP
 
 #define ET_IP4 0x800
@@ -57,14 +57,14 @@ typedef struct {
 } h_ip4;
 
 typedef struct {
-    unsigned short sport,dport;
+    uint16_t    sport,dport;
 
-    unsigned long  seq, ack;
+    uint32_t    seq, ack;
     
-    unsigned char th_offx2;	/* data offset, rsvd */
+    uint8_t     th_offx2;	/* data offset, rsvd */
     #define TH_OFF(th) ((((th)->th_offx2 & 0xf0) >> 4)<<2)
 
-	unsigned char flags;
+	uint8_t     flags;
 	#define TH_FIN 0x01
 	#define TH_SYN 0x02
 	#define TH_RST 0x04
@@ -74,9 +74,9 @@ typedef struct {
 	#define TH_ECE 0x40
 	#define TH_CWR 0x80
 	#define TH_FLAGS (TH_FIN|TH_SYN|TH_RST|TH_ACK|TH_URG|TH_ECE|TH_CWR)
-    unsigned short win;
-    unsigned short cs;
-    unsigned short urg;
+    uint16_t win;
+    uint16_t cs;
+    uint16_t urg;
 } h_tcp;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -244,10 +244,10 @@ static inline int read_string(char **p, char *s, char *limit) {
 
 #define Rx(n,type,fun) type n; Rlim(sizeof(type)) else { n = fun(p); }
 
-#define Rchar(n)  Rx(n,char,read_char)
-#define Rshort(n) Rx(n,short,read_short)
-#define Rint(n)   Rx(n,int,read_int)
-#define Rlong(n)  Rx(n,long long,read_long);
+#define Rchar(n)  Rx(n,int8_t,read_char)
+#define Rshort(n) Rx(n,int16_t,read_short)
+#define Rint(n)   Rx(n,int32_t,read_int)
+#define Rlong(n)  Rx(n,int64_t,read_long);
 #define Rfloat(n) Rx(n,float,read_float)
 #define Rdouble(n) Rx(n,double,read_double)
 #define Rstr(n)   char n[4096]; if (read_string((char **)&p,n,(char *)limit)) { atlimit=1; break; }
@@ -295,8 +295,10 @@ typedef struct {
 
 #include <lh_compress.h>
 
+FILE * output_dump = NULL;
+
 void process_chunk(uint8_t *cdata, ssize_t clen, uint16_t bitmask, int X, int Z) {
-    printf("Decoding chunk (%08p,%d)\n",cdata,clen);
+    printf("Decoding chunk (%8p,%zd)\n",cdata,clen);
 
     ssize_t len;
     unsigned char * data = zlib_decode(cdata, clen, &len);
@@ -341,14 +343,25 @@ void process_chunk(uint8_t *cdata, ssize_t clen, uint16_t bitmask, int X, int Z)
     free(data);
 }
 
-uint32_t process_streamz(uint8_t * data, uint32_t len, int is_client) {
+ssize_t process_streamz(uint8_t * data, ssize_t len, int is_client) {
+    if (len < 0) {
+        printf("PENG\n");
+        exit(1);
+    }
     return len;
 }
 
-uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
-    //if (is_client) return len;
+ssize_t process_stream(uint8_t * data, ssize_t len, int is_client) {
+    printf("** RECEIVED INPUT %8p %zd**\n",data,len);
+    if (len > 1024) {
+        hexdump(data, 1024);
+        printf("... %zd more bytes\n",len-1024);
+    }
+    else {
+        hexdump(data, len);
+    }
 
-    int consumed = 0;
+    ssize_t consumed = 0;
     uint8_t * limit = data+len;
     int atlimit = 0;
 
@@ -361,10 +374,16 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
 
     while(1) {
         uint8_t * p = data+consumed;
+        uint8_t * msg_start = p;
         if (p>=limit) break;
 
+        printf("** PROCESSING NEXT MESSAGE **\n");
+        hexdump(msg_start, (limit-p)>256?256:(limit-p));
+
+        // message type
         uint8_t mtype = read_char(p);
         printf("%c %02x ",is_client?'C':'S',mtype);
+
         switch(mtype) {
 
         case MCP_KeepAlive: { // 00
@@ -403,7 +422,7 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
 
         case MCP_TimeUpdate: { // 04
             Rlong(tm);
-            printf("Time Update: %lld (%dd %dh)\n",tm,(int)(tm/24000L),(int)(tm%24000)/1000);
+            printf("Time Update: %ld (%dd %dh)\n",tm,(int)(tm/24000L),(int)(tm%24000)/1000);
             break;
         }
 
@@ -747,7 +766,7 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             Rint(compsize);
             Rint(unused);
             Rskip(compsize);
-            process_chunk(p-compsize,compsize,primary_bitmap,X,Z);
+            //process_chunk(p-compsize,compsize,primary_bitmap,X,Z);
             printf("Chunk Data: %d,%d cont=%d PBM=%04x ABM=%04x compsize=%d\n",X,Z,cont,primary_bitmap,add_bitmap,compsize);
             break;
         }
@@ -976,8 +995,27 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
             hexdump(data+consumed, len-consumed);
             exit(1);
         }       
-        if (!atlimit)
+        if (!atlimit) {
+            ssize_t msg_len = p-msg_start;
+            printf("** PROCESSED MESSAGE **\n");
+            hexdump(msg_start, msg_len);
+
+            if (output_dump) {
+                struct timeval tv;
+                gettimeofday(&tv, NULL);
+
+                uint8_t header[4096];
+                uint8_t *hp = header;
+                write_int(hp, is_client);
+                write_int(hp, tv.tv_sec);
+                write_int(hp, tv.tv_usec);
+                write_int(hp, msg_len);
+                write_file_f(output_dump, header, hp-header);
+                write_file_f(output_dump, msg_start, msg_len);
+            }
+
             consumed = p-data;
+        }
         else
             break;
     }
@@ -991,7 +1029,6 @@ uint32_t process_stream(uint8_t * data, uint32_t len, int is_client) {
 int main(int ac, char ** av) {
 
     // open PCAP
-
     const char *pname = av[1];
     if (!pname) LH_ERROR(1, "you must specify file name");
 
@@ -1003,7 +1040,6 @@ int main(int ac, char ** av) {
 
 
     // configure filter
-
     struct bpf_program bpf;
 
     if (pcap_compile(p, &bpf, PCAPFILTER, 1, 0xffffff00)<0) 
@@ -1015,6 +1051,22 @@ int main(int ac, char ** av) {
     printf("Set filter %s successfully\n",PCAPFILTER);
 
 
+    // open output dumpfile
+    char dname[4096];
+    sprintf(dname,"%s",pname);
+    char *dp = dname;
+    while(*dp) dp++;
+    char *de = dp;
+    while(dp >= dname) {
+        if (*dp == '.') break;
+        if (*dp == '/') { dp = de; break; }
+        dp --;
+    }
+    sprintf(dp, ".mcs");
+    output_dump = open_file_w(dname);
+    if (!output_dump) exit(1);
+
+
     // start reading packets
     struct pcap_pkthdr h;
     unsigned char *pkt;
@@ -1022,9 +1074,13 @@ int main(int ac, char ** av) {
     int cnt = 100;
     int pn=0;
 
+    FILE * out_cl = open_file_w("out_cl");
+    FILE * out_sr = open_file_w("out_sv");
+
+
     // monitored connection
     uint8_t *sdata[2] = { NULL, NULL };
-    int32_t slen[2] = { 0, 0}; // current length of data in the buffers, does not necessarily equal acknowledged data
+    ssize_t slen[2] = { 0, 0}; // current length of data in the buffers, does not necessarily equal acknowledged data
     int32_t seqn[2] = { 0, 0}; // sequence number of the first byte in the buffer
     int32_t ackd[2] = { 0, 0}; // last acknowledged seqn for a stream
     uint16_t cport = 0xffff; // port FFFF == no connection tracked
@@ -1043,15 +1099,22 @@ int main(int ac, char ** av) {
             LH_ERROR(1,"Incorrect IP type %04x\n",ip->proto);
 
         h_tcp * tcp = (h_tcp *)(pkt+sizeof(h_eth)+sizeof(h_ip4));
-        //printf("%s:%d -> %s:%d\n",src,ntohs(tcp->sport),dst,ntohs(tcp->dport));
 
         if (ntohs(ip->off) & IP_MF)
             LH_ERROR(1,"Fragmented IP packet %d",pn);
 
         uint8_t * pdata = pkt+sizeof(h_eth)+sizeof(h_ip4)+TH_OFF(tcp);
-        int plen = ntohs(ip->len)-sizeof(h_ip4)-TH_OFF(tcp);
+        ssize_t plen = (ssize_t)ntohs(ip->len)-sizeof(h_ip4)-TH_OFF(tcp);
         int is_client = (ntohl(ip->src.s_addr) == 0x0a000002);
 
+#if 0
+        printf("%c %s %s %08x:%d -> %08x:%d\n",
+               is_client?'C':'S',
+               (tcp->flags & TH_SYN)?"SYN":"   ",
+               (tcp->flags & TH_ACK)?"ACK":"   ",
+               ip->src,ntohs(tcp->sport),
+               ip->dst,ntohs(tcp->dport));
+#endif
         if (tcp->flags & TH_SYN) {
             if (!(tcp->flags & TH_ACK)) {
                 // first packet from the client - SYN
@@ -1068,12 +1131,14 @@ int main(int ac, char ** av) {
             }
             continue;
         }
+
         if (tcp->flags & TH_FIN) {
             cport = 0xffff;
             //printf("Close connection\n");
             continue;
             //FIXME: do correct connection close
         }
+
         if (tcp->flags & TH_ACK) {
             ackd[1-is_client] = ntohl(tcp->ack);
         }
@@ -1083,33 +1148,74 @@ int main(int ac, char ** av) {
                  (!is_client && cport != ntohs(tcp->dport)) )
                 LH_ERROR(1, "Incorrect port");
 
-            int offset = ntohl(tcp->seq)-seqn[is_client];
-            int maxlen = offset+plen;
+            int32_t offset = (int32_t)ntohl(tcp->seq)-seqn[is_client];
+            int32_t maxlen = offset+(int32_t)plen;
 
-            if (maxlen > slen[is_client]) {
+            printf("> %d %d %08x\n",offset,maxlen,ackd[is_client]);
+
+            // first, we must ensure that there is enough space in the buffer to store
+            // the new packet's data
+            if (slen[is_client] < maxlen) {
+                //printf("*** EXTEND %d TO %d (%d) ***\n",slen[is_client], maxlen, maxlen - slen[is_client]);
                 ARRAY_EXTENDG(sdata[is_client], slen[is_client], maxlen, BUFGRAN);
             }
             //printf("%6d %c %08x %7d seq=%u %u ack=%u (%u)\n", pn, is_client?'C':'S', sdata[is_client], slen[is_client], 
             //       seqn[is_client], ntohl(tcp->seq), ackd[is_client], ackd[is_client]-seqn[is_client]);
             //printf("Inserting %d bytes (%u) at offset %d. maxlen=%d\n",plen,ntohl(tcp->seq),offset,maxlen);
 
-            if (offset >= 0) {
-                memcpy(sdata[is_client]+offset,pdata,plen);
-            }
-            else if (maxlen > 0) {
-                memcpy(sdata[is_client],pdata-offset,plen+offset);
+            if (1) {
+                printf("before: %08x %08x %08x %08x\n",
+                       (int32_t)slen[is_client], (int32_t)ackd[is_client], 
+                       (int32_t)offset, (int32_t)maxlen);
+                hexdump(sdata[is_client], slen[is_client]);
             }
 
+
+            if (offset >= 0)
+                // if offset is positive, the packet lies completely within the buffer
+                memcpy(sdata[is_client]+offset, pdata, plen);
+            else if (maxlen > 0)
+                // the offset is negative, but positive maxlen indicates that at least
+                // part of the packet will be in the buffer
+                memcpy(sdata[is_client],pdata-offset,plen+offset);
+
+            printf("after:  %08x %08x %08x %08x\n",
+                   (int32_t)slen[is_client], (int32_t)ackd[is_client], 
+                   (int32_t)offset, (int32_t)maxlen);
+            hexdump(sdata[is_client], slen[is_client]);
+
+            if (ackd[is_client] == 0x99e48fb2) exit(1);
+
+#if 0
             //printf("Giving %d data, %d in the buffer\n",ackd[is_client]-seqn[is_client],slen[is_client]);
-            int consumed = process_stream(sdata[is_client], ackd[is_client]-seqn[is_client], is_client);
+            printf("** PROCESS STREAM\n");
+            printf("%08x -> %08x\n",seqn[is_client],ackd[is_client]);
+            hexdump(sdata[is_client], ackd[is_client]-seqn[is_client]);
+#endif
+
+            uint8_t * dt = sdata[is_client];
+            printf("bufanl: %08x %08x %d %02x\n", ackd[is_client],seqn[is_client],ackd[is_client]-seqn[is_client], dt[0]);
+            //seqn[is_client] = ackd[is_client];
+#if 1
+            ssize_t consumed = process_streamz(sdata[is_client], ackd[is_client]-seqn[is_client], is_client);
             if (consumed > 0) {
-                memcpy(sdata[is_client], sdata[is_client]+consumed, slen[is_client]-consumed);
+                void *  to   = sdata[is_client];
+                void *  from = sdata[is_client]+consumed;
+                ssize_t len  =  slen[is_client]-consumed;
+                printf("%016x %016x %016x\n",to,from,len);
+
+                memmove(sdata[is_client], sdata[is_client]+consumed, slen[is_client]-consumed);
+                printf("after after: (consumed=%016x)\n",consumed);
+                hexdump(sdata[is_client], slen[is_client]);
                 ARRAY_EXTENDG(sdata[is_client], slen[is_client], slen[is_client]-consumed, BUFGRAN);
                 seqn[is_client]+=consumed;
-            }            
+            }
+#endif
         }
-   }
+    }
 
+    fclose(out_sr);
+    fclose(out_cl);
     
 
     return 0;
