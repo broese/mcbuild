@@ -344,23 +344,10 @@ void process_chunk(uint8_t *cdata, ssize_t clen, uint16_t bitmask, int X, int Z)
 }
 
 ssize_t process_streamz(uint8_t * data, ssize_t len, int is_client) {
-    if (len < 0) {
-        printf("PENG\n");
-        exit(1);
-    }
     return len;
 }
 
 ssize_t process_stream(uint8_t * data, ssize_t len, int is_client) {
-    printf("** RECEIVED INPUT %8p %zd**\n",data,len);
-    if (len > 1024) {
-        hexdump(data, 1024);
-        printf("... %zd more bytes\n",len-1024);
-    }
-    else {
-        hexdump(data, len);
-    }
-
     ssize_t consumed = 0;
     uint8_t * limit = data+len;
     int atlimit = 0;
@@ -376,9 +363,6 @@ ssize_t process_stream(uint8_t * data, ssize_t len, int is_client) {
         uint8_t * p = data+consumed;
         uint8_t * msg_start = p;
         if (p>=limit) break;
-
-        printf("** PROCESSING NEXT MESSAGE **\n");
-        hexdump(msg_start, (limit-p)>256?256:(limit-p));
 
         // message type
         uint8_t mtype = read_char(p);
@@ -997,8 +981,6 @@ ssize_t process_stream(uint8_t * data, ssize_t len, int is_client) {
         }       
         if (!atlimit) {
             ssize_t msg_len = p-msg_start;
-            printf("** PROCESSED MESSAGE **\n");
-            hexdump(msg_start, msg_len);
 
             if (output_dump) {
                 struct timeval tv;
@@ -1074,10 +1056,6 @@ int main(int ac, char ** av) {
     int cnt = 100;
     int pn=0;
 
-    FILE * out_cl = open_file_w("out_cl");
-    FILE * out_sr = open_file_w("out_sv");
-
-
     // monitored connection
     uint8_t *sdata[2] = { NULL, NULL };
     ssize_t slen[2] = { 0, 0}; // current length of data in the buffers, does not necessarily equal acknowledged data
@@ -1151,25 +1129,14 @@ int main(int ac, char ** av) {
             int32_t offset = (int32_t)ntohl(tcp->seq)-seqn[is_client];
             int32_t maxlen = offset+(int32_t)plen;
 
-            printf("> %d %d %08x\n",offset,maxlen,ackd[is_client]);
-
             // first, we must ensure that there is enough space in the buffer to store
             // the new packet's data
             if (slen[is_client] < maxlen) {
-                //printf("*** EXTEND %d TO %d (%d) ***\n",slen[is_client], maxlen, maxlen - slen[is_client]);
                 ARRAY_EXTENDG(sdata[is_client], slen[is_client], maxlen, BUFGRAN);
             }
             //printf("%6d %c %08x %7d seq=%u %u ack=%u (%u)\n", pn, is_client?'C':'S', sdata[is_client], slen[is_client], 
             //       seqn[is_client], ntohl(tcp->seq), ackd[is_client], ackd[is_client]-seqn[is_client]);
             //printf("Inserting %d bytes (%u) at offset %d. maxlen=%d\n",plen,ntohl(tcp->seq),offset,maxlen);
-
-            if (1) {
-                printf("before: %08x %08x %08x %08x\n",
-                       (int32_t)slen[is_client], (int32_t)ackd[is_client], 
-                       (int32_t)offset, (int32_t)maxlen);
-                hexdump(sdata[is_client], slen[is_client]);
-            }
-
 
             if (offset >= 0)
                 // if offset is positive, the packet lies completely within the buffer
@@ -1179,44 +1146,14 @@ int main(int ac, char ** av) {
                 // part of the packet will be in the buffer
                 memcpy(sdata[is_client],pdata-offset,plen+offset);
 
-            printf("after:  %08x %08x %08x %08x\n",
-                   (int32_t)slen[is_client], (int32_t)ackd[is_client], 
-                   (int32_t)offset, (int32_t)maxlen);
-            hexdump(sdata[is_client], slen[is_client]);
-
-            if (ackd[is_client] == 0x99e48fb2) exit(1);
-
-#if 0
-            //printf("Giving %d data, %d in the buffer\n",ackd[is_client]-seqn[is_client],slen[is_client]);
-            printf("** PROCESS STREAM\n");
-            printf("%08x -> %08x\n",seqn[is_client],ackd[is_client]);
-            hexdump(sdata[is_client], ackd[is_client]-seqn[is_client]);
-#endif
-
-            uint8_t * dt = sdata[is_client];
-            printf("bufanl: %08x %08x %d %02x\n", ackd[is_client],seqn[is_client],ackd[is_client]-seqn[is_client], dt[0]);
-            //seqn[is_client] = ackd[is_client];
-#if 1
-            ssize_t consumed = process_streamz(sdata[is_client], ackd[is_client]-seqn[is_client], is_client);
+            ssize_t consumed = process_stream(sdata[is_client], ackd[is_client]-seqn[is_client], is_client);
             if (consumed > 0) {
-                void *  to   = sdata[is_client];
-                void *  from = sdata[is_client]+consumed;
-                ssize_t len  =  slen[is_client]-consumed;
-                printf("%016x %016x %016x\n",to,from,len);
-
                 memmove(sdata[is_client], sdata[is_client]+consumed, slen[is_client]-consumed);
-                printf("after after: (consumed=%016x)\n",consumed);
-                hexdump(sdata[is_client], slen[is_client]);
                 ARRAY_EXTENDG(sdata[is_client], slen[is_client], slen[is_client]-consumed, BUFGRAN);
                 seqn[is_client]+=consumed;
             }
-#endif
         }
     }
-
-    fclose(out_sr);
-    fclose(out_cl);
-    
 
     return 0;
 }
