@@ -82,7 +82,7 @@ void free_region(mcregion *region) {
     if (!region) return;
 
     if (region->columns)
-    fclose(region->fd);
+        fclose(region->fd);
     free(region);
 }
 

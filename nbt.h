@@ -90,3 +90,19 @@ void nbt_dump(nbte *elem, int indent);
 nbte * nbt_ce(nbte *elem, const char *name);
 nbte * nbt_le(nbte *elem, int index);
 
+nbte * nbt_make_byte   (const char *name, int8_t  b);
+nbte * nbt_make_short  (const char *name, int16_t s);
+nbte * nbt_make_int    (const char *name, int32_t i);
+nbte * nbt_make_long   (const char *name, int64_t l);
+nbte * nbt_make_float  (const char *name, float   f);
+nbte * nbt_make_double (const char *name, double  d);
+
+nbte * nbt_make_ba     (const char *name, int8_t  *ba, int num);
+nbte * nbt_make_ia     (const char *name, int32_t *ia, int num);
+nbte * nbt_make_str    (const char *name, char    *str);
+
+nbte * nbt_make_list   (const char *name);
+nbte * nbt_make_comp   (const char *name);
+
+int nbt_add(nbte *list, nbte *el);
+uint8_t * nbt_write(uint8_t *p, uint8_t *limit, nbte *el, int with_header);

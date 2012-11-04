@@ -152,7 +152,7 @@ void nbt_dump(nbte *elem, int indent) {
             printf("Int %08x",elem->v.i);
             break;
         case NBT_TAG_LONG:
-            printf("Long %016llx",elem->v.l);
+            printf("Long %016lx",elem->v.l);
             break;
         case NBT_TAG_FLOAT:
             printf("Float %f",elem->v.f);
@@ -218,6 +218,7 @@ void nbt_free(nbte *elem) {
     }
 }
 
+// retrieve a subelement from a compound elem, by its name
 nbte * nbt_ce(nbte *elem, const char *name) {
     if (!elem) LH_ERROR(NULL,"nbt_ce on the NULL");
     if (elem->type != NBT_TAG_COMPOUND) LH_ERROR(NULL,"nbt_ce on a non-compound object");
@@ -231,10 +232,180 @@ nbte * nbt_ce(nbte *elem, const char *name) {
     return NULL;
 }
 
+// retrieve a subelement from a list elem, by the index
 nbte * nbt_le(nbte *elem, int index) {
     if (!elem) LH_ERROR(NULL,"nbt_le on the NULL");
     if (elem->type != NBT_TAG_LIST) LH_ERROR(NULL,"nbt_le on a non-list object");
     if (index <0 || index >= elem->count) return NULL;//LH_ERROR(NULL,"nbt_le - index %d out of bounds", index);
 
     return &elem->v.comp[index];
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+inline
+nbte * nbt_make(const char *name, int type) {
+    ALLOC(nbte,el);
+    el->type = type;
+    el->name = name ? strdup(name) : NULL;
+    el->count = 1;
+    return el;
+}
+
+nbte * nbt_make_byte   (const char *name, int8_t  b) {
+    nbte *el = nbt_make(name, NBT_TAG_BYTE);
+    el->v.b = b;
+    return el;
+}
+
+nbte * nbt_make_short  (const char *name, int16_t s) {
+    nbte *el = nbt_make(name, NBT_TAG_SHORT);
+    el->v.s = s;
+    return el;
+}
+
+nbte * nbt_make_int    (const char *name, int32_t i) {
+    nbte *el = nbt_make(name, NBT_TAG_INT);
+    el->v.i = i;
+    return el;
+}
+
+nbte * nbt_make_long   (const char *name, int64_t l) {
+    nbte *el = nbt_make(name, NBT_TAG_LONG);
+    el->v.l = l;
+    return el;
+}
+
+nbte * nbt_make_float  (const char *name, float   f) {
+    nbte *el = nbt_make(name, NBT_TAG_FLOAT);
+    el->v.f = f;
+    return el;
+}
+
+nbte * nbt_make_double (const char *name, double  d) {
+    nbte *el = nbt_make(name, NBT_TAG_DOUBLE);
+    el->v.d = d;
+    return el;
+}
+
+nbte * nbt_make_ba     (const char *name, int8_t *ba, int num) {
+    nbte *el = nbt_make(name, NBT_TAG_BYTE_ARRAY);
+    el->count = num;
+    ALLOCBE(el->v.ba, num);
+    memcpy(el->v.ba, ba, num);
+    return el;
+}
+
+nbte * nbt_make_ia     (const char *name, int32_t *ia, int num) {
+    nbte *el = nbt_make(name, NBT_TAG_INT_ARRAY);
+    el->count = num;
+    ALLOCBE(el->v.ia, num);
+    memcpy(el->v.ia, ia, num*sizeof(int32_t));
+    return el;
+}
+
+nbte * nbt_make_str    (const char *name, char    *str) {
+    nbte *el = nbt_make(name, NBT_TAG_STRING);
+    el->count = strlen(str);
+    el->v.str   = strdup(str);
+    return el;
+}
+
+nbte * nbt_make_list   (const char *name) {
+    nbte *el = nbt_make(name, NBT_TAG_LIST);
+    el->count = 0;
+    el->v.list = NULL;
+}
+
+nbte * nbt_make_comp   (const char *name) {
+    nbte *el = nbt_make(name, NBT_TAG_COMPOUND);
+    el->count = 0;
+    el->v.comp = NULL;
+}
+
+int nbt_add(nbte *list, nbte *el) {
+    if (list->type != NBT_TAG_LIST && list->type != NBT_TAG_COMPOUND)
+        LH_ERROR(-1, "nbt_add : must be of type list or compound");
+
+    ARRAY_ADD(list->v.list, list->count, 1);
+    memcpy(&list->v.list[list->count-1], el, sizeof(nbte));
+    return list->count-1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+//FIXME: check for limit
+uint8_t * nbt_write(uint8_t *p, uint8_t *limit, nbte *el, int with_header) {
+    if (with_header) {
+        write_char(p, el->type);
+        if (el->name) {
+            write_short(p, strlen(el->name));
+            p += sprintf(p, "%s", el->name);
+        }
+        else {
+            write_short(p, 0);
+        }
+    }
+
+    switch (el->type) {
+    case NBT_TAG_BYTE:
+        write_char(p, el->v.b);
+        break;
+    case NBT_TAG_SHORT:
+        write_short(p, el->v.s);
+        break;
+    case NBT_TAG_INT:
+        write_int(p, el->v.i);
+        break;
+    case NBT_TAG_LONG:
+        write_long(p, el->v.l);
+        break;
+    case NBT_TAG_FLOAT:
+        write_float(p, el->v.f);
+        break;
+    case NBT_TAG_DOUBLE:
+        write_double(p, el->v.d);
+        break;
+    case NBT_TAG_BYTE_ARRAY:
+        write_int(p, el->count);
+        memcpy(p, el->v.ba, el->count);
+        p += el->count;
+        break;
+    case NBT_TAG_INT_ARRAY: {
+        write_int(p, el->count);
+        int i;
+        for (i=0; i<el->count; i++) {
+            write_int(p, el->v.ia[i]);
+        }
+        break;
+    }
+    case NBT_TAG_STRING:
+        write_short(p, el->count);
+        memcpy(p, el->v.str, el->count);
+        p += el->count;
+        break;
+    case NBT_TAG_COMPOUND: {
+        int i;
+        for(i=0; i<el->count; i++)
+            p = nbt_write(p, limit, &el->v.comp[i], 1);
+        write_char(p,0);
+        break;
+    }
+    case NBT_TAG_LIST: {
+        int i;
+        char type = NBT_TAG_BYTE;
+        if (el->count > 0)
+            type = el->v.list[0].type;
+
+        write_char(p, type);
+        write_int(p, el->count);
+
+        for(i=0; i<el->count; i++)
+            p = nbt_write(p, limit, &el->v.list[i], 0);
+        break;
+    }
+        
+    }
+    return p;
 }
