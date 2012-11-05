@@ -2,7 +2,7 @@ CFLAGS=-g -pg -I../libhelper
 LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lssl
 DEFS=
 
-all: minemap netmine mcproxy nbttest
+all: minemap netmine mcproxy mcsanvil
 
 minemap: main.o anvil.o nbt.o draw.o ../libhelper/libhelper.a
 	$(CC) -o $@ $^ $(LIBS)

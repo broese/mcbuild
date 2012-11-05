@@ -6,6 +6,10 @@
 #include "nbt.h"
 #include "anvil.h"
 
+#define MC12 1
+#define MC13 0
+#define MC14 0
+
 #define REG "r.0.0.mca"
 
 typedef struct {
@@ -29,23 +33,28 @@ int read_stream(FILE *mcs, uint8_t **buf, ssize_t *len, mcsh *header) {
         header->usec      = read_int(p);
         header->length    = read_int(p);
 
+        printf("%d %d.%06d %d %zd\n",
+               header->is_client, header->sec, header->usec,
+               header->length, *len);
+
         // extend buffer if necessary
         if (*len < header->length)
             ARRAY_EXTEND(*buf, *len, header->length);
 
         // read in the message data
         if (fread(*buf, 1, header->length, mcs) != header->length) return 0;
-        //printf("%02x %6d\n", **buf, header->length);
+        printf("%02x %6d %zd\n", **buf, header->length, *len);
 
     } while (**buf != 0x33);
-
     return 1;
 }
 
-store_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t clen) {
+int store_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t clen) {
     // decompress chunk data
     ssize_t len;
+    hexdump(cdata, clen);
     uint8_t *buf = zlib_decode(cdata, clen, &len);
+    if (!buf) LH_ERROR(0, "zlib decode failed\n");
 
     // determine the number of cubes in the chunk
     uint32_t Y,n=0;
@@ -53,6 +62,15 @@ store_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t clen) {
         if (pbm & (1 << Y))
             n++;
 
+    // region and region-local coordinates of this chunk
+    int32_t  rX   = X>>5;
+    int32_t  rZ   = Z>>5;
+    int32_t  lX   = X&0x1f;
+    int32_t  lZ   = Z&0x1f;
+    
+    printf("CHUNK: %+5d,%+5d (%+3d+%2d,%+3d+%2d) %04x %d cubes\n",
+           X,Z,rX,lX,rZ,lZ,pbm,n);
+    
     // prepare pointers
     uint8_t *blocks = buf;
     uint8_t *meta   = blocks+n*4096;
@@ -61,14 +79,64 @@ store_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t clen) {
     uint8_t *addbl  = slight+n*2048;
     uint8_t *biome  = addbl +n*2048;
 
+    // generate NBT structure
+
+    nbte * Chunk = nbt_make_comp("");
+    nbte * Level = nbt_make_comp("Level");
+
+    // Cubes
+    nbte * Sections = nbt_make_list("Sections");
+    for(Y=0; Y<n; Y++) {
+        nbte *Data       = nbt_make_ba("Data",meta+Y*2048,2048);
+        nbte *SkyLight   = nbt_make_ba("SkyLight",slight+Y*2048,2048);
+        nbte *BlockLight = nbt_make_ba("BlockLight",blight+Y*2048,2048);
+        nbte *Ycoord     = nbt_make_byte("Y",(int8_t)Y);
+        nbte *Blocks     = nbt_make_ba("Blocks",blocks+Y*4096,4096);
+
+        nbte *cube = nbt_make_comp(NULL);
+        nbt_add(cube, Data);
+        nbt_add(cube, SkyLight);
+        nbt_add(cube, BlockLight);
+        nbt_add(cube, Ycoord);
+        nbt_add(cube, Blocks);
+
+        nbt_add(Sections, cube);
+    }
+    nbt_add(Level, Sections);    
+
+    // Other data
+    nbt_add(Level, nbt_make_list("Entities"));
+    nbt_add(Level, nbt_make_ba("Biomes", biome, 256));
+    nbt_add(Level, nbt_make_long("LastUpdate", 0LL));
+    nbt_add(Level, nbt_make_int("xPos", lX));
+    nbt_add(Level, nbt_make_int("zPos", lZ));
+    nbt_add(Level, nbt_make_list("TileEntities"));
+    nbt_add(Level, nbt_make_byte("TerrainPopulated",1));
+    uint8_t hmap[256];
+    memset(hmap, n*16, 256); //FIXME: fake HeightMap
+    nbt_add(Level, nbt_make_ba("HeightMap", hmap, 256));
+
+    nbt_add(Chunk,Level);
+
+    // Encode the NBT data
+    uint8_t nbuf[1048576];
+    uint8_t *end = nbt_write(nbuf, NULL, Chunk, 1);
+    nbt_free(Chunk);
+    free(buf);
     
-    
-    
+    // compress it
+    ssize_t nclen;
+    uint8_t *ncbuf = zlib_encode(nbuf, end-nbuf, &nclen);
+
+
+
+    // Open the region file and store the newly generated chunk there
+
+  
 }
 
 int main(int ac, char ** av) {
 
-#if 0
     int i=1;
     while(av[i]) {
         ssize_t sz;
@@ -87,15 +155,16 @@ int main(int ac, char ** av) {
             uint16_t pbm  = read_short(p);
             uint16_t abm  = read_short(p);
             int32_t  size = read_int(p);
+#if MC12
+            read_int(p);
+#endif
+            if (!pbm) continue;
 
-            if (pbm == 0x0000) continue;
-
-            printf("%+5d,%+5d %6d %04x\n",X,Z,size,pbm);
+            store_chunk(X, Z, pbm, p, size);
         }
 
         i++;
     }
-#endif
 
 #if 0
     mcregion * r = load_region(REG);
@@ -103,9 +172,5 @@ int main(int ac, char ** av) {
     uint8_t * comp = get_compound_data(r, 0, &clen);
     //hexdump(comp, clen);
 #endif
-
-    char *str = NULL;
-    char *p = strdup(str);
-    printf("%p\n",p);
     
 }

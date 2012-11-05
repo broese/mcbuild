@@ -187,9 +187,19 @@ void draw_region(drawstate *ds, const char *path) {
         unsigned char * data = get_compound_data(region,idx,&len);
         if (!data) continue; //{ printf("Skipping column %d\n",idx); continue; }
         //printf("Parsing column %d (%d bytes)\n",idx,len);
+        write_file("original.dat",data,len);
 
         unsigned char * ptr = data;
         nbte *comp = nbt_parse(&ptr);
+
+        uint8_t nbuf[1048576];
+        uint8_t *end = nbt_write(nbuf, NULL, comp, 1);
+        write_file("encoded.dat",nbuf,end-nbuf);
+        exit(1);
+
+        //nbt_dump(comp, 0);
+        //hexdump(data, len);
+        //exit(1);
         //printf("parsed %d bytes out of %d\n",ptr-data,len);
 
         nbte *level = nbt_ce(comp,"Level");
@@ -238,12 +248,12 @@ int main(int ac, char **av) {
     char **arg = av+1;
     while (*arg) {
 
-#if 0
+#if 1
         // topmap from the anvil region files
         draw_region(ds, *arg);
 #endif
 
-#if 1
+#if 0
         // topmap from the netmine chunk files
         ssize_t size;
         uint8_t *buf = read_file(*arg,&size);
