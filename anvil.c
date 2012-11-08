@@ -89,7 +89,7 @@ unsigned char * get_compound_data(mcregion *region, int idx, ssize_t *len) {
     mccolumn * col = &region->columns[idx];
     if (col->size <= 0) return NULL;
 
-    printf("col %4d : size=%d\n",idx,col->size);
+    //printf("col %4d : size=%d\n",idx,col->size);
     unsigned char *cdata = read_froma(region->fd, col->offset+5, col->size);
     if (!cdata) return NULL;
 

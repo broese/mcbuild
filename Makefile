@@ -1,6 +1,6 @@
 CFLAGS=-g -pg -I../libhelper
 LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lssl
-DEFS=
+DEFS=-DDEBUG_MEMORY=1
 
 all: minemap netmine mcproxy mcsanvil
 
@@ -29,4 +29,9 @@ draw.o: anvil.h nbt.h draw.h
 
 clean:
 	rm -f *.o *~
+
+mtrace: mcsanvil
+	MALLOC_TRACE=mtrace ./dirlibtest $(PARAMS)
+#	mtrace mtrace | awk '{ if ( $$1 ~ /^0x/ ) { addr2line -e filemap $$4 | getline $$fileline ; print $$fileline $$0 $$1; } }'
+	mtrace mtrace | perl -e 'while (<>) { if (/^(0x\S+)\s+(0x\S+)\s+at\s+(0x\S+)/) { print "$$1 $$2 at ".`addr2line -e dirlibtest $$3`; } }'
 

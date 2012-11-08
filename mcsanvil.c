@@ -139,7 +139,11 @@ int store_chunk(int X, int Z, uint8_t *data, ssize_t len) {
 		coff = find_chunk_space(cdir, ncsize, maxsize);
 		
     printf("Storing chunk (len=%d) at position %d (%016x)\n",ncsize,coff,coff*4096);
-	write_to(rf, coff*4096, data, len);
+	char chead[5];
+	place_int(chead, len);
+	chead[4] = 0x02;
+	write_to(rf, coff*4096, chead, 5);
+	write_to(rf, coff*4096+5, data, len);
 
 	// update chunk directory
 	c = (ncsize&0xff)+((coff<<8)&0xffffff00);
