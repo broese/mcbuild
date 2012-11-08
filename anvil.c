@@ -56,7 +56,6 @@ mcregion * load_region(const char * path) {
         col->sectors = c&0xff;               // number of 4k sectors/pages of the column data
         col->offset = (off_t)(c>>8) * 4096;  // starting offset of the column data in the MCA file
 
-
         if (col->sectors > 0) {              // this index is non-empty
             struct {
                 uint32_t size;
@@ -90,6 +89,7 @@ unsigned char * get_compound_data(mcregion *region, int idx, ssize_t *len) {
     mccolumn * col = &region->columns[idx];
     if (col->size <= 0) return NULL;
 
+    printf("col %4d : size=%d\n",idx,col->size);
     unsigned char *cdata = read_froma(region->fd, col->offset+5, col->size);
     if (!cdata) return NULL;
 

@@ -33,26 +33,129 @@ int read_stream(FILE *mcs, uint8_t **buf, ssize_t *len, mcsh *header) {
         header->usec      = read_int(p);
         header->length    = read_int(p);
 
-        printf("%d %d.%06d %d %zd\n",
-               header->is_client, header->sec, header->usec,
-               header->length, *len);
-
         // extend buffer if necessary
         if (*len < header->length)
             ARRAY_EXTEND(*buf, *len, header->length);
 
         // read in the message data
         if (fread(*buf, 1, header->length, mcs) != header->length) return 0;
-        printf("%02x %6d %zd\n", **buf, header->length, *len);
+        //printf("%02x %6d %zd\n", **buf, header->length, *len);
 
     } while (**buf != 0x33);
     return 1;
 }
 
-int store_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t clen) {
+int find_chunk_space(uint32_t *cdir, int size, int maxsize) {
+    ALLOCB(map,maxsize);
+    int i, j;
+    uint8_t *dp = (uint8_t *)(cdir);
+    for(i=0; i<1024; i++) {
+        uint32_t c  = read_int(dp);
+        int csize   = c&0xff;
+        int coff    = c>>8;
+        for(j=0; j<csize; j++) map[coff+j] = 1;
+    }
+
+    int maxpos = maxsize-size;
+
+    for(i=1; i<maxpos; ) {
+        int pass = 1;
+        for(j=0; j<size; j++)
+            if (map[i+j])
+                break;
+
+        if (j==size) {
+            free(map);
+            return i;
+        }
+        while(!map[i] && i<maxpos) i++; // skip zeros
+        while(map[i] && i<maxpos) i++;  // skip ones
+        // so after that i is positioned at the start of the next free window
+    }
+
+    // no suitable window found - return next block after the end of file
+    return maxsize;
+}
+
+int store_chunk(int X, int Z, uint8_t *data, ssize_t len) {
+    // region and region-local coordinates of this chunk
+    int32_t  rX   = X>>5;
+    int32_t  rZ   = Z>>5;
+    int32_t  lX   = X&0x1f;
+    int32_t  lZ   = Z&0x1f;
+    int      idx  = lX + (lZ<<5);
+
+    // buffer for the column directory
+    uint32_t cdir[1024];
+    CLEAR(cdir);
+
+    char regname[1024];
+    sprintf(regname, "region/r.%d.%d.mca", rX, rZ);
+
+    // Try opening it for update and see if the region file already exists
+    ssize_t rsize = -1;
+    FILE * rf = open_file_u(regname, &rsize);
+
+    if (!rf) {
+        // probably the file does not exist yet. Try creating it instead
+        rf = open_file_w(regname);
+        if (!rf) LH_ERROR(0, "Failed to create the region file %s",regname);
+        rsize = 4096;
+        
+        // note that the column directory is automatically initialized
+		// as empty as it was zeroed
+    }
+    else if (rsize < 4096) {
+        // file exists, but has defective directory
+        rsize = 4096;
+    }
+    else {
+        // file exists and is opened for update
+        if (read_from(rf, 0, (uint8_t *)cdir, 4096)) return 0;
+    }
+
+    // position and size of the old chunk if one exists
+    uint8_t *dp = (uint8_t *)(&cdir[idx]);
+    uint32_t c  = parse_int(dp);
+    int csize   = c&0xff; // size of the old chunk in 4k blocks
+    int coff    = c>>8; // offset of the chunk in the file, in 4k blocks
+    
+    if (csize > 0) {
+        // delete the old chunk
+        ALLOCB(empty, csize*4096);
+        write_to(rf, coff*4096, empty, csize*4096); // erase data
+        place_int(dp, 0); // erase directory entry
+    }
+	
+	// size of the new chunk, in 4k blocks
+	int ncsize  = GRANSIZE(len, 4096) / 4096;
+
+    // size of the file, 4k blocks
+    int maxsize = GRANSIZE(rsize, 4096) / 4096;
+	
+	// if csize>=ncsize, we can just reuse the offset
+	if (csize < ncsize)
+		// if not - we need to find a large enough unused window in the file
+		coff = find_chunk_space(cdir, ncsize, maxsize);
+		
+    printf("Storing chunk (len=%d) at position %d (%016x)\n",ncsize,coff,coff*4096);
+	write_to(rf, coff*4096, data, len);
+
+	// update chunk directory
+	c = (ncsize&0xff)+((coff<<8)&0xffffff00);
+	place_int(dp, c);
+    //hexdump(cdir, 4096);
+	write_to(rf, 0, (uint8_t *)cdir, 4096); // save chunk directory
+
+    fclose(rf);
+	
+	return 1;
+}
+
+uint8_t * create_nbt_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t clen, ssize_t *ccsize) {
     // decompress chunk data
     ssize_t len;
-    hexdump(cdata, clen);
+    //hexdump(cdata, clen);
     uint8_t *buf = zlib_decode(cdata, clen, &len);
     if (!buf) LH_ERROR(0, "zlib decode failed\n");
 
@@ -62,7 +165,7 @@ int store_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t clen) {
         if (pbm & (1 << Y))
             n++;
 
-    // region and region-local coordinates of this chunk
+    // region-local coordinates of this chunk
     int32_t  rX   = X>>5;
     int32_t  rZ   = Z>>5;
     int32_t  lX   = X&0x1f;
@@ -124,19 +227,12 @@ int store_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t clen) {
     nbt_free(Chunk);
     free(buf);
     
-    // compress it
-    ssize_t nclen;
-    uint8_t *ncbuf = zlib_encode(nbuf, end-nbuf, &nclen);
-
-
-
-    // Open the region file and store the newly generated chunk there
-
-  
+    // compress and return it
+    uint8_t *ncbuf = zlib_encode(nbuf, end-nbuf, ccsize);
+	return ncbuf;
 }
 
 int main(int ac, char ** av) {
-
     int i=1;
     while(av[i]) {
         ssize_t sz;
@@ -158,9 +254,12 @@ int main(int ac, char ** av) {
 #if MC12
             read_int(p);
 #endif
-            if (!pbm) continue;
+            if (!pbm) continue; // skip empty updates
 
-            store_chunk(X, Z, pbm, p, size);
+			ssize_t ccsize;
+			uint8_t *cchunk = create_nbt_chunk(X,Z,pbm,p, size, &ccsize);
+			store_chunk(X, Z, cchunk, ccsize);
+			free(cchunk);
         }
 
         i++;
