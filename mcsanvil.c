@@ -1,3 +1,5 @@
+#include <mcheck.h>
+
 #include "lh_buffers.h"
 #include "lh_debug.h"
 #include "lh_compress.h"
@@ -5,6 +7,7 @@
 
 #include "nbt.h"
 #include "anvil.h"
+
 
 #define MC12 1
 #define MC13 0
@@ -74,6 +77,7 @@ int find_chunk_space(uint32_t *cdir, int size, int maxsize) {
     }
 
     // no suitable window found - return next block after the end of file
+    free(map);
     return maxsize;
 }
 
@@ -125,6 +129,7 @@ int store_chunk(int X, int Z, uint8_t *data, ssize_t len) {
         ALLOCB(empty, csize*4096);
         write_to(rf, coff*4096, empty, csize*4096); // erase data
         place_int(dp, 0); // erase directory entry
+        free(empty);
     }
 	
 	// size of the new chunk, in 4k blocks
@@ -237,6 +242,10 @@ uint8_t * create_nbt_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t 
 }
 
 int main(int ac, char ** av) {
+    mtrace();
+
+    int max = 1;
+
     int i=1;
     while(av[i]) {
         ssize_t sz;
@@ -246,7 +255,7 @@ int main(int ac, char ** av) {
         BUFFER(buf,len);
         mcsh h;
 
-        while(read_stream(mcs, &buf, &len, &h)) {
+        while(--max>=0 && read_stream(mcs, &buf, &len, &h)) {
             uint8_t *p = buf;
             p++;
             int32_t  X    = read_int(p);
@@ -265,15 +274,10 @@ int main(int ac, char ** av) {
 			store_chunk(X, Z, cchunk, ccsize);
 			free(cchunk);
         }
+        free(buf);
 
         i++;
     }
-
-#if 0
-    mcregion * r = load_region(REG);
-    ssize_t clen;
-    uint8_t * comp = get_compound_data(r, 0, &clen);
-    //hexdump(comp, clen);
-#endif
+    muntrace();
     
 }

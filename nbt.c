@@ -79,13 +79,16 @@ static void nbt_parse_noheader(unsigned char **ptr, nbte *elem) {
 
         // lists
         case NBT_TAG_LIST: {
-            char type = read_char(*ptr);
+            char type = read_char(*ptr); // type of elemets in the list
             elem->count = read_int(*ptr);
             ALLOCNE(elem->v.list, elem->count);
 
             int i;
             for(i=0; i<elem->count; i++) {
-                nbte * subelem = &elem->v.list[i];
+                nbte * subelem = ALLOCE(elem->v.list[i]);
+                // the elements we put into the object are not
+                // completely defined in the file - i.e. there's no name
+                // so we recreate the header and use NULL for name
                 subelem->type = type;
                 subelem->name = NULL;
                 nbt_parse_noheader(ptr, subelem);
@@ -99,11 +102,9 @@ static void nbt_parse_noheader(unsigned char **ptr, nbte *elem) {
                 nbte *subelem = nbt_parse(ptr);
                 if (!subelem) break; // Tag_End found - stop parsing the compound
 
+                // extend the list and add the new element at the end
                 ARRAY_ADD(elem->v.comp,elem->count,1);
-                nbte *newelem = &elem->v.list[elem->count-1];
-
-                memcpy(newelem, subelem, sizeof(nbte));
-                free(subelem);
+                elem->v.list[elem->count-1] = subelem;
             }
             break;
         }
@@ -115,11 +116,10 @@ nbte *nbt_parse(unsigned char **ptr) {
 
     if (type == NBT_TAG_END) return NULL;
 
-    ALLOC(nbte,elem);
-
     if (type < NBT_TAG_END || type > NBT_TAG_INT_ARRAY)
         LH_ERROR(NULL,"Unknown tag type %d at %p\n",type,*ptr-1);
 
+    ALLOC(nbte,elem);
     elem->type = type;
 
     // fetch name
@@ -179,7 +179,7 @@ void nbt_dump(nbte *elem, int indent) {
         case NBT_TAG_LIST: {
             printf("List %d entries [\n",elem->count);
             for(i=0; i<elem->count; i++)
-                nbt_dump(&elem->v.list[i],indent+1);
+                nbt_dump(elem->v.list[i],indent+1);
             printf("\n");
             for(i=0; i<indent; i++) printf("  ");
             printf("]");
@@ -188,7 +188,7 @@ void nbt_dump(nbte *elem, int indent) {
         case NBT_TAG_COMPOUND: {
             printf("Compound %d entries {\n",elem->count);
             for(i=0; i<elem->count; i++)
-                nbt_dump(&elem->v.comp[i],indent+1);
+                nbt_dump(elem->v.comp[i],indent+1);
             printf("\n");
             for(i=0; i<indent; i++) printf("  ");
             printf("}");
@@ -213,9 +213,11 @@ void nbt_free(nbte *elem) {
         case NBT_TAG_LIST:
         case NBT_TAG_COMPOUND:
             for(i=0; i<elem->count; i++)
-                nbt_free(&elem->v.list[i]);
+                nbt_free(elem->v.list[i]);
+            free(elem->v.list);
             break;
     }
+    free(elem);
 }
 
 // retrieve a subelement from a compound elem, by its name
@@ -225,7 +227,7 @@ nbte * nbt_ce(nbte *elem, const char *name) {
 
     int i;
     for(i=0; i<elem->count; i++) {
-        nbte *se = &elem->v.comp[i];
+        nbte *se = elem->v.comp[i];
         if (se->name && !strcmp(se->name, name))
             return se;
     }
@@ -236,9 +238,9 @@ nbte * nbt_ce(nbte *elem, const char *name) {
 nbte * nbt_le(nbte *elem, int index) {
     if (!elem) LH_ERROR(NULL,"nbt_le on the NULL");
     if (elem->type != NBT_TAG_LIST) LH_ERROR(NULL,"nbt_le on a non-list object");
-    if (index <0 || index >= elem->count) return NULL;//LH_ERROR(NULL,"nbt_le - index %d out of bounds", index);
+    if (index <0 || index >= elem->count) LH_ERROR(NULL,"nbt_le - index %d out of bounds", index);
 
-    return &elem->v.comp[index];
+    return elem->v.comp[index];
 }
 
 
@@ -329,7 +331,7 @@ int nbt_add(nbte *list, nbte *el) {
         LH_ERROR(-1, "nbt_add : must be of type list or compound");
 
     ARRAY_ADD(list->v.list, list->count, 1);
-    memcpy(&list->v.list[list->count-1], el, sizeof(nbte));
+    list->v.list[list->count-1] = el;
     return list->count-1;
 }
 
@@ -388,7 +390,7 @@ uint8_t * nbt_write(uint8_t *p, uint8_t *limit, nbte *el, int with_header) {
     case NBT_TAG_COMPOUND: {
         int i;
         for(i=0; i<el->count; i++)
-            p = nbt_write(p, limit, &el->v.comp[i], 1);
+            p = nbt_write(p, limit, el->v.comp[i], 1);
         write_char(p,0);
         break;
     }
@@ -396,13 +398,13 @@ uint8_t * nbt_write(uint8_t *p, uint8_t *limit, nbte *el, int with_header) {
         int i;
         char type = NBT_TAG_BYTE;
         if (el->count > 0)
-            type = el->v.list[0].type;
+            type = el->v.list[0]->type;
 
         write_char(p, type);
         write_int(p, el->count);
 
         for(i=0; i<el->count; i++)
-            p = nbt_write(p, limit, &el->v.list[i], 0);
+            p = nbt_write(p, limit, el->v.list[i], 0);
         break;
     }
         

@@ -79,8 +79,8 @@ struct nbte {
 
         char   *str;    // NBT_TAG_STRING
 
-        nbte   *list;   // NBT_TAG_LIST
-        nbte   *comp;   // NBT_TAG_COMPOUND
+        nbte   **list;  // NBT_TAG_LIST
+        nbte   **comp;  // NBT_TAG_COMPOUND
     } v;
 };
 
