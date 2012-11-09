@@ -244,8 +244,6 @@ uint8_t * create_nbt_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t 
 int main(int ac, char ** av) {
     mtrace();
 
-    int max = 1;
-
     int i=1;
     while(av[i]) {
         ssize_t sz;
@@ -255,7 +253,7 @@ int main(int ac, char ** av) {
         BUFFER(buf,len);
         mcsh h;
 
-        while(--max>=0 && read_stream(mcs, &buf, &len, &h)) {
+        while(read_stream(mcs, &buf, &len, &h)) {
             uint8_t *p = buf;
             p++;
             int32_t  X    = read_int(p);
@@ -275,6 +273,7 @@ int main(int ac, char ** av) {
 			free(cchunk);
         }
         free(buf);
+        fclose(mcs);
 
         i++;
     }
