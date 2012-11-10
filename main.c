@@ -217,10 +217,7 @@ void draw_region(drawstate *ds, const char *path) {
         draw_topmap(ds, X, Z, cubes);
 #endif
 
-
-
         nbt_free(comp);
-        free(comp);
 
         free(data);
     }
@@ -229,8 +226,6 @@ void draw_region(drawstate *ds, const char *path) {
 }
 
 int main(int ac, char **av) {
-
-    printf("%d chunks\n",ac);
 
     drawstate *ds = create_drawing();
 

@@ -1,4 +1,6 @@
+#if MEMORY_DEBUG
 #include <mcheck.h>
+#endif
 
 #include "lh_buffers.h"
 #include "lh_debug.h"
@@ -143,12 +145,8 @@ int store_chunk(int X, int Z, uint8_t *data, ssize_t len) {
 		// if not - we need to find a large enough unused window in the file
 		coff = find_chunk_space(cdir, ncsize, maxsize);
 		
-    printf("Storing chunk (len=%d) at position %d (%016x)\n",ncsize,coff,coff*4096);
-	char chead[5];
-	place_int(chead, len);
-	chead[4] = 0x02;
-	write_to(rf, coff*4096, chead, 5);
-	write_to(rf, coff*4096+5, data, len);
+    //printf("Storing chunk (len=%d) at position %d (%016x)\n",ncsize,coff,coff*4096);
+	write_to(rf, coff*4096, data, ncsize*4096);
 
 	// update chunk directory
 	c = (ncsize&0xff)+((coff<<8)&0xffffff00);
@@ -161,12 +159,11 @@ int store_chunk(int X, int Z, uint8_t *data, ssize_t len) {
 	return 1;
 }
 
-uint8_t * create_nbt_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t clen, ssize_t *ccsize) {
+ssize_t create_nbt_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t clen, uint8_t *ncbuf, ssize_t ncsize) {
     // decompress chunk data
-    ssize_t len;
-    //hexdump(cdata, clen);
-    uint8_t *buf = zlib_decode(cdata, clen, &len);
-    if (!buf) LH_ERROR(0, "zlib decode failed\n");
+    uint8_t buf[262144];
+    ssize_t len = zlib_decode_to(cdata, clen, buf, sizeof(buf));
+    if (!len<0) LH_ERROR(-1, "zlib decode failed\n");
 
     // determine the number of cubes in the chunk
     uint32_t Y,n=0;
@@ -192,7 +189,6 @@ uint8_t * create_nbt_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t 
     uint8_t *biome  = addbl +n*2048;
 
     // generate NBT structure
-
     nbte * Chunk = nbt_make_comp("");
     nbte * Level = nbt_make_comp("Level");
 
@@ -214,35 +210,53 @@ uint8_t * create_nbt_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t 
 
         nbt_add(Sections, cube);
     }
-    nbt_add(Level, Sections);    
 
     // Other data
     nbt_add(Level, nbt_make_list("Entities"));
     nbt_add(Level, nbt_make_ba("Biomes", biome, 256));
-    nbt_add(Level, nbt_make_long("LastUpdate", 0LL));
-    nbt_add(Level, nbt_make_int("xPos", lX));
-    nbt_add(Level, nbt_make_int("zPos", lZ));
+    nbt_add(Level, nbt_make_long("LastUpdate", 0x1234LL));
+    nbt_add(Level, nbt_make_int("xPos", X));
+    nbt_add(Level, nbt_make_int("zPos", Z));
     nbt_add(Level, nbt_make_list("TileEntities"));
     nbt_add(Level, nbt_make_byte("TerrainPopulated",1));
-    uint8_t hmap[256];
-    memset(hmap, n*16, 256); //FIXME: fake HeightMap
-    nbt_add(Level, nbt_make_ba("HeightMap", hmap, 256));
 
+    // generate heightmap
+    uint32_t hmap[256];
+    memset(hmap, 0, 1024);
+    int y,i;
+    for(i=0; i<256; i++) {
+        uint8_t *bp = blocks+i;
+        for(y=0; y<n*16; y++) {
+            if (*bp) hmap[i] = y;
+            bp+=256;
+        }
+    }
+    nbt_add(Level, nbt_make_ia("HeightMap", hmap, 256));
+
+    nbt_add(Level, Sections);    
     nbt_add(Chunk,Level);
 
     // Encode the NBT data
     uint8_t nbuf[1048576];
     uint8_t *end = nbt_write(nbuf, NULL, Chunk, 1);
     nbt_free(Chunk);
-    free(buf);
     
-    // compress and return it
-    uint8_t *ncbuf = zlib_encode(nbuf, end-nbuf, ccsize);
-	return ncbuf;
+    // compress the NBT data
+    CLEARN(ncbuf,ncsize);
+    ssize_t encsize = zlib_encode_to(nbuf, end-nbuf, ncbuf+5, ncsize-5);
+    if (encsize<0) return -1;
+
+    // add the 5-byte header
+    uint8_t *wp = ncbuf;
+    write_int(wp, encsize);
+    write_char(wp, 2);
+	return encsize+5;
 }
 
 int main(int ac, char ** av) {
+#if MEMORY_DEBUG
     mtrace();
+#endif
 
     int i=1;
     while(av[i]) {
@@ -267,16 +281,18 @@ int main(int ac, char ** av) {
 #endif
             if (!pbm) continue; // skip empty updates
 
-			ssize_t ccsize;
-			uint8_t *cchunk = create_nbt_chunk(X,Z,pbm,p, size, &ccsize);
-			store_chunk(X, Z, cchunk, ccsize);
-			free(cchunk);
+            uint8_t ncbuf[262144];
+
+			ssize_t ccsize = create_nbt_chunk(X,Z,pbm,p, size, ncbuf, sizeof(ncbuf));
+			store_chunk(X, Z, ncbuf, ccsize);
         }
         free(buf);
         fclose(mcs);
 
         i++;
     }
+#if MEMORY_DEBUG
     muntrace();
+#endif
     
 }

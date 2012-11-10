@@ -1,6 +1,6 @@
 CFLAGS=-g -pg -I../libhelper
 LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lssl
-DEFS=-DDEBUG_MEMORY=1
+DEFS=-DDEBUG_MEMORY=0
 
 all: minemap netmine mcproxy mcsanvil
 

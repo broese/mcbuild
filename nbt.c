@@ -238,7 +238,8 @@ nbte * nbt_ce(nbte *elem, const char *name) {
 nbte * nbt_le(nbte *elem, int index) {
     if (!elem) LH_ERROR(NULL,"nbt_le on the NULL");
     if (elem->type != NBT_TAG_LIST) LH_ERROR(NULL,"nbt_le on a non-list object");
-    if (index <0 || index >= elem->count) LH_ERROR(NULL,"nbt_le - index %d out of bounds", index);
+    if (index <0 || index >= elem->count) return NULL; //LH_ERROR(NULL,"nbt_le - index %d out of bounds", index);
+    // LH_ERROR commented out because it was producing too many error messages in minemap
 
     return elem->v.comp[index];
 }
