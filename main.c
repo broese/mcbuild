@@ -195,12 +195,12 @@ void draw_region(drawstate *ds, const char *path) {
         nbte *xPos  = nbt_ce(level,"xPos");
         nbte *zPos  = nbt_ce(level,"zPos");
         int X=xPos->v.i, Z=zPos->v.i;
-#if 0
+#if 1
         nbte *biomes = nbt_ce(level,"Biomes");
         draw_biomes(ds, X, Z, biomes->v.ba);
 #endif
 
-#if 1
+#if 0
         nbte *sect = nbt_ce(level,"Sections");
         uint8_t *cubes[16]; CLEAR(cubes);
 

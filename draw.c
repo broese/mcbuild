@@ -83,14 +83,26 @@ void draw_topmap(drawstate *ds, int X, int Z, uint8_t **cubes) {
         for(x=0; x<16; x++) {
             for(y=0; y<16; y++) {
                 int spos = x+Xoff+(y+Zoff)*ds->img->width;
+                int vvv = 4*((l<<4)); if (vvv>255) vvv=255;
+                ds->img->data[spos] = 0;
                 for(z=0; z<4096; z+=256) {
                     int bpos = z+(y<<4)+x;
-                    if (b[bpos]!=0)
+                    if (b[bpos]!=0) {
+#if 0
                         ds->img->data[spos] = BLOCKS[b[bpos]];
+#endif
+
+#if 1
+                        if (b[bpos]==50 || b[bpos]==58 || b[bpos]==54 || b[bpos]==61) ds->img->data[spos] |= (vvv<<16);
+                        //if (is_slime(X,Z)) ds->img->data[spos] |= (1<<8);
+                        if (b[bpos]==52 || b[bpos]==48) ds->img->data[spos] |= (vvv<<8);
+                        if (b[bpos]==8 || b[bpos]==9) ds->img->data[spos] |= vvv;
+#endif
+                    }
                 }
             }
         }
-    }   
+    }
 }
 
 #if 0
@@ -133,7 +145,7 @@ void draw_topmap(lhimage *img, nbte *level) {
     printf("\n");
 #endif
 
-#if 0
+#if 1
     int X=xPos->v.i,Z=zPos->v.i;
     int x,y,l,z;
     for(l=0; l<16; l++) {
@@ -145,16 +157,16 @@ void draw_topmap(lhimage *img, nbte *level) {
             if (vvv>255) vvv=255;
 
             if (b[i]==50 || b[i]==58 || b[i]==54 || b[i]==61) img->data[spos] |= (vvv<<16);
-            //if (is_slime(X,Z)) img->data[spos] |= (vvv<<8);
-            //if (b[i]==8 || b[i]==9) img->data[spos] |= (vvv<<16);
-            if (b[i]==52) img->data[spos] |= (vvv<<8);
+            if (is_slime(X,Z)) img->data[spos] |= (1<<8);
+            if (b[i]==52 || b[i]==48) img->data[spos] |= (vvv<<8);
             if (b[i]==8 || b[i]==9) img->data[spos] |= vvv;
+            printf("HERE\n"); exit(1);
         }
     }
 #endif
 
 
-#if 1
+#if 0
     // draw
     int X=xPos->v.i,Z=zPos->v.i;
     int x,y,l,z;

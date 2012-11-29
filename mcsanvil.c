@@ -11,7 +11,7 @@
 #include "anvil.h"
 
 
-#define MC12 1
+#define MC12 0
 #define MC13 0
 #define MC14 0
 
@@ -162,6 +162,7 @@ int store_chunk(int X, int Z, uint8_t *data, ssize_t len) {
 ssize_t create_nbt_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t clen, uint8_t *ncbuf, ssize_t ncsize) {
     // decompress chunk data
     uint8_t buf[262144];
+    CLEAR(buf);
     ssize_t len = zlib_decode_to(cdata, clen, buf, sizeof(buf));
     if (!len<0) LH_ERROR(-1, "zlib decode failed\n");
 
@@ -186,7 +187,7 @@ ssize_t create_nbt_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t cl
     uint8_t *blight = meta  +n*2048;
     uint8_t *slight = blight+n*2048;
     uint8_t *addbl  = slight+n*2048;
-    uint8_t *biome  = addbl +n*2048;
+    uint8_t *biome  = slight+n*2048;
 
     // generate NBT structure
     nbte * Chunk = nbt_make_comp("");
@@ -281,7 +282,7 @@ int main(int ac, char ** av) {
 #endif
             if (!pbm) continue; // skip empty updates
 
-            uint8_t ncbuf[262144];
+            uint8_t ncbuf[512288];
 
 			ssize_t ccsize = create_nbt_chunk(X,Z,pbm,p, size, ncbuf, sizeof(ncbuf));
 			store_chunk(X, Z, ncbuf, ccsize);
