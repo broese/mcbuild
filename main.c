@@ -195,12 +195,23 @@ void draw_region(drawstate *ds, const char *path) {
         nbte *xPos  = nbt_ce(level,"xPos");
         nbte *zPos  = nbt_ce(level,"zPos");
         int X=xPos->v.i, Z=zPos->v.i;
-#if 1
+
+#if 0
+        nbte *entities = nbt_ce(level,"Entities");
+        if (entities) {
+            printf("\n\n\n[%03d,%03d]\n",X,Z);
+            nbt_dump(entities, 0);
+        }
+
+#endif        
+
+
+#if 0
         nbte *biomes = nbt_ce(level,"Biomes");
         draw_biomes(ds, X, Z, biomes->v.ba);
 #endif
 
-#if 0
+#if 1
         nbte *sect = nbt_ce(level,"Sections");
         uint8_t *cubes[16]; CLEAR(cubes);
 
@@ -275,7 +286,10 @@ int main(int ac, char **av) {
         arg++;
     }
 
+    draw_coordmesh(ds, 500);
+
     export_png_file(ds->img, "map.png");
+    printf("Drawstate offset is X:%d Z:%d\n",ds->offX,ds->offZ); 
 
     return 0;
 }

@@ -169,6 +169,9 @@ mobmeta MOBS[] = {
     { 61, "Blaze",        1 },
     { 62, "Magma Cube",   1 },
     { 63, "Ender Dragon", 2 },
+    { 64, "Wither",       1000 },
+    { 65, "Bat",          1000 },
+    { 66, "Witch",        1000 },
     { 90, "Pig",          1 },
     { 91, "Sheep",        1 },
     { 92, "Cow",          0 },
@@ -263,7 +266,7 @@ typedef struct {
 //TODO: extract metadata into buffer
 
 #define Rmobmeta(n)                                                     \
-    while (1) {                                                         \
+    while (!atlimit) {                                                         \
         Rchar(type);                                                    \
         if (type == 0x7f) break;                                        \
         type = (type>>5)&0x07;                                          \
@@ -451,7 +454,9 @@ void print_hex(char *buf, const char *data, ssize_t len) {
     *w++ = 0;
 }
 
-#define SESSION_SERVER_IP 0xb849df28
+//#define SESSION_SERVER_IP 0xb849df28
+#define SESSION_SERVER_IP 0x3213EA8A
+//#define SESSION_SERVER_IP 0x36F34FE8
 
 int connect_session(const char *user, const char *sessionId, const char *serverId) {
     int ss = sock_client_ipv4_tcp(SESSION_SERVER_IP, 80);
@@ -755,8 +760,9 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         }
 
         case MCP_TimeUpdate: { // 04
+            Rlong(age);
             Rlong(tm);
-            PRALL printf("Time Update: %lld (%dd %dh)\n",tm,(int)(tm/24000L),(int)(tm%24000)/1000);
+            PRALL printf("Time Update: age=%ld time=%ld (%dd %dh)\n",age,tm,(int)(tm/24000L),(int)(tm%24000)/1000);
             break;
         }
 
@@ -1005,16 +1011,22 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
 
         case MCP_SpawnDroppedItem: { //15
             Rint(eid);
-            Rshort(iid);
-            Rchar(count);
-            Rshort(dmg);
+            Rslot(s);
             Rint(x);
             Rint(y);
             Rint(z);
             Rchar(rot);
             Rchar(pitch);
             Rchar(roll);
-            printf("Spawn Dropped Item: EID=%d IID=%d x%d %d,%d,%d\n",eid,iid,count,x/32,y/16,z/32);
+            printf("Spawn Dropped Item: EID=%d %d,%d,%d ",eid,x/32,y/16,z/32);
+            if (s.id == -1)
+                printf("-");
+            else {
+                printf("%3d x%2d",s.id,s.count);
+                if (s.damage != 0)
+                    printf(" dmg=%d",s.damage);
+            }
+            printf("\n");
             break;
         }
 
@@ -1032,6 +1044,8 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rint(y);
             Rint(z);
             Rint(eeid);
+            //NOTE: The following segment was replaced by "ObjectData" in the wiki,
+            //although the contents stay the same - check if it works correctly
             if (eeid == 0) {
                 printf("Spawn Object: eid=%d type=%d coord=%d,%d,%d\n",eid,type,x/32,y/16,z/32);
             }
@@ -1180,6 +1194,8 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         }
 
         case MCP_EntityMetadata: { //28
+            //printf("Entity Metadata, dump follows:\n");
+            //hexdump(msg_start, *slen-consumed);
             Rint(eid);
             Rmobmeta(m);
             PRALL printf("Entity Metadata: EID=%d\n",eid);
@@ -1316,7 +1332,8 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rchar(y);
             Rint(z);
             Rint(data);
-            PRALL printf("Sound/Particle Effect: %d,%d,%d effect=%d,%d\n",x,(unsigned int)y,z,effect,data);
+            Rchar(novol);
+            PRALL printf("Sound/Particle Effect: %d,%d,%d effect=%d,%d,%d\n",x,(unsigned int)y,z,effect,data,novol);
             break;
         }
 
@@ -1476,8 +1493,8 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         case MCP_ItemData: { //83
             Rshort(type);
             Rshort(iid);
-            Rchar(tlen);
-            char text[4096];
+            Rshort(tlen);
+            char text[66000];
             memcpy(text, p, tlen);
             text[tlen] = 0;
             Rskip(tlen);
@@ -1531,7 +1548,8 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rchar(view);
             Rchar(chat);
             Rchar(diff);
-            printf("Locale And View Distance: %s view=%d chat=%02x diff=%d\n",locale,view,chat,diff);
+            Rchar(cape);
+            printf("Locale And View Distance: %s view=%d chat=%02x diff=%d cape=%d\n",locale,view,chat,diff,cape);
             break;
         }
 
@@ -1721,6 +1739,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         }
 
         case MCP_ServerListPing: { //FE
+            Rchar(magic);
             printf("Server List Ping\n");
             break;
         }

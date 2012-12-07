@@ -27,3 +27,5 @@ drawstate * create_drawing();
 void draw_biomes(drawstate *ds, int X, int Y, uint8_t *biomes);
 void draw_topmap(drawstate *ds, int X, int Y, uint8_t **cubes);
 //void draw_isometric(lhimage *img, mcregion * region, int ox, int oy);
+
+void draw_coordmesh(drawstate *ds, int sz);

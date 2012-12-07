@@ -44,7 +44,8 @@ int read_stream(FILE *mcs, uint8_t **buf, ssize_t *len, mcsh *header) {
 
         // read in the message data
         if (fread(*buf, 1, header->length, mcs) != header->length) return 0;
-        //printf("%02x %6d %zd\n", **buf, header->length, *len);
+        //printf("%02x %6d\n", **buf, header->length);
+        //hexdump(*buf, header->length);
 
     } while (**buf != 0x33);
     return 1;
