@@ -51,6 +51,8 @@ int read_stream(FILE *mcs, uint8_t **buf, ssize_t *len, mcsh *header) {
     return 1;
 }
 
+// find a free block of suitable size in the region file by analyzing its chunk directory
+// either we find a block inside the file, or if not we'll append it at the end
 int find_chunk_space(uint32_t *cdir, int size, int maxsize) {
     ALLOCB(map,maxsize);
     int i, j;
