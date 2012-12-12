@@ -20,7 +20,7 @@
 #include "lh_event.h"
 #include "lh_compress.h"
 
-//#define SERVER_IP 0x0a000001
+//#define SERVER_IP 0x0a000001   // Loacl server on Peorth
 //#define SERVER_IP 0xc7a866c2 // Beciliacraft 199.168.102.194
 #define SERVER_IP 0x53e9ed40   // 2B2T 83.233.237.64
 //#define SERVER_IP 0x53b3151f   // rujush.org   83.179.21.31

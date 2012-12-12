@@ -3,6 +3,7 @@
 #endif
 
 #include <SDL/SDL.h> // main SDL header
+#include <signal.h>
 
 #include "lh_buffers.h"
 #include "lh_debug.h"
@@ -16,33 +17,66 @@ typedef struct {
     int32_t length;
 } mcsh;
 
+#define RS_OK    0
+#define RS_EOF   1
+#define RS_ERR   2
+
 // read a MCStream (.mcs) file and return only the messages
 // 0x33 (Chunk Data), 0x0B (Player Position) and 0x0D (Player Position and Look)
 // returns 1 on success, 0 on end of stream or error
 // TODO: modify this function to be able to read from simultaneously written file (like tail -f)
 int read_stream(FILE *mcs, uint8_t **buf, ssize_t *len, mcsh *header) {
-    do {
-        // read header
-        char hb[sizeof(mcsh)];
-        if (fread(hb, sizeof(mcsh), 1, mcs) != 1) return 0;
-        //hexdump(hb, sizeof(hb));
+    ssize_t rb;
+    char hb[sizeof(mcsh)+1];
+
+    clearerr(mcs);
+
+    while(1) {
+        // save current position in case of error
+        off_t cpos = ftell(mcs);
+        printf("Offset: %d\n",cpos);
+
+        // read header + message ID
+        rb = fread(hb, 1, sizeof(hb), mcs);
+        if (rb != sizeof(hb)) { // could not read the entire header, possibly EOF
+            printf("*header* Offset: %d, feof=%d, ferror=%d\n",ftell(mcs),feof(mcs),ferror(mcs));
+            fseek(mcs, cpos, SEEK_SET);
+            return ferror(mcs) ? RS_ERR : RS_EOF;
+        }
+
         uint8_t *p = hb;
         header->is_client = read_int(p);
         header->sec       = read_int(p);
         header->usec      = read_int(p);
         header->length    = read_int(p);
 
+        uint8_t type = read_char(p);
+        if (type != 0x33 && type != 0x32 && type != 0x0d && type != 0x0b) {
+            // this is not the message type we are interested in, so we skip
+            // to the start of the next message. Note that this might set the
+            // position past the file end, and lead to an FEOF on the next cycle
+            printf("Skipping %d -> %d\n", cpos, cpos + sizeof(mcsh) + header->length);
+            fseek(mcs, cpos + sizeof(mcsh) + header->length, SEEK_SET);
+            continue;
+        }
+
         // extend buffer if necessary
         if (*len < header->length)
             ARRAY_EXTEND(*buf, *len, header->length);
 
-        // read in the message data
-        if (fread(*buf, 1, header->length, mcs) != header->length) return 0;
-        //printf("%02x %6d\n", **buf, header->length);
-        //hexdump(*buf, header->length);
+        // since we read the message type byte, put it back into buffer
+        **buf = type;
 
-    } while (**buf != 0x33 && **buf != 0x32 && **buf != 0x0D && **buf != 0x0B);
-    return 1;
+        // read in the message data
+        rb = fread(*buf+1, 1, header->length-1, mcs);
+        if ( rb != header->length-1) {
+            printf("*message* Offset: %d, feof=%d, ferror=%d\n",ftell(mcs),feof(mcs),ferror(mcs));
+            fseek(mcs, cpos, SEEK_SET);
+            return ferror(mcs) ? RS_ERR : RS_EOF;
+        }
+
+        return RS_OK;
+    }
 }
 
 uint8_t map[2048*2048];
@@ -111,7 +145,7 @@ int sdl_init(int screen_width, int screen_height, int fullscreen) {
 #define SCR_WD 1280
 #define SCR_HG  800
 #define CSZ      16
-#define SSZ       1
+#define SSZ       4
 #define SCR_CWD  ((SCR_WD)/SSZ)
 #define SCR_CHG  ((SCR_HG)/SSZ)
 
@@ -161,10 +195,24 @@ void redraw_map() {
     SDL_Flip(screen); 
 }
 
+int signal_caught;
+
+void signal_handler(int signum) {
+    printf("Caught signal %d, stopping main loop\n",signum);
+    signal_caught = 1;
+}
+
 int main(int ac, char ** av) {
 #if MEMORY_DEBUG
     mtrace();
 #endif
+
+    signal_caught = 0;
+    struct sigaction sa;
+    CLEAR(sa);
+    sa.sa_handler = signal_handler;
+    if (sigaction(SIGINT, &sa, NULL))
+        LH_ERROR(1,"Failed to set sigaction\n");
 
     if (!sdl_init(SCR_WD, SCR_HG, 0)) return 1;
 
@@ -178,7 +226,20 @@ int main(int ac, char ** av) {
     BUFFER(buf,len);
     mcsh h;
 
-    while(read_stream(mcs, &buf, &len, &h)) {
+    while(!signal_caught) {
+        int res = read_stream(mcs, &buf, &len, &h);
+
+        if (res == RS_ERR) {
+            printf("Encountered error: %d %s\n", errno, strerror(errno));
+            break;
+        }
+
+        if (res == RS_EOF) {
+            printf("EOF, waiting\n");
+            sleep(1);
+            continue;
+        }
+
         uint8_t *p = buf;
         char     type = read_char(p);
 
@@ -219,10 +280,9 @@ int main(int ac, char ** av) {
             }
         }
         redraw_map();
-        usleep(50);
-
-        //TODO: make the loop terminate on Ctrl+C
     }
+
+    printf("Saving map ....\n");
 
     // clear all "visiting" areas
     int i;
