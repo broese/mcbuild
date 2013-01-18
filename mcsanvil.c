@@ -47,7 +47,7 @@ int read_stream(FILE *mcs, uint8_t **buf, ssize_t *len, mcsh *header) {
         //printf("%02x %6d\n", **buf, header->length);
         //hexdump(*buf, header->length);
 
-    } while (**buf != 0x33);
+    } while (**buf != 0x03);
     return 1;
 }
 
@@ -102,7 +102,7 @@ int store_chunk(int X, int Z, uint8_t *data, ssize_t len) {
     sprintf(regname, "region/r.%d.%d.mca", rX, rZ);
 
     // Try opening it for update and see if the region file already exists
-    ssize_t rsize = -1;
+    off_t rsize = -1;
     FILE * rf = open_file_u(regname, &rsize);
 
     if (!rf) {
@@ -257,6 +257,22 @@ ssize_t create_nbt_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t cl
 	return encsize+5;
 }
 
+static inline int read_string(char **p, char *s, char *limit) {
+    if (limit-*p < 2) return 1;
+    uint16_t slen = read_short(*p);
+    if (limit-*p < slen*2) return 1;
+
+    int i;
+    for(i=0; i<slen; i++) {
+        (*p)++;
+        s[i] = read_char(*p);
+    }
+    s[i] = 0;
+    return 0;
+}
+
+#include <time.h>
+
 int main(int ac, char ** av) {
 #if MEMORY_DEBUG
     mtrace();
@@ -264,7 +280,7 @@ int main(int ac, char ** av) {
 
     int i=1;
     while(av[i]) {
-        ssize_t sz;
+        off_t sz;
         FILE * mcs = open_file_r(av[i], &sz);
         if (!mcs) continue;
 
@@ -274,6 +290,30 @@ int main(int ac, char ** av) {
         while(read_stream(mcs, &buf, &len, &h)) {
             uint8_t *p = buf;
             p++;
+#if 1
+            char str[1024];
+            read_string((char **)&p, str, p+1000); //FIXME
+            char date[1024];
+            strftime(date, sizeof(date), "%F %T", localtime((time_t *)&h.sec));
+            printf("%s %-20s\n",date,str);
+#endif
+
+#if 0
+            int32_t  eid  = read_int(p);
+            char name[1024];
+            read_string((char **)&p, name, p+1000); //FIXME
+
+
+            int32_t  X    = read_int(p);
+            int32_t  Y    = read_int(p);
+            int32_t  Z    = read_int(p);
+
+            char date[1024];
+            strftime(date, sizeof(date), "%F %T", localtime((time_t *)&h.sec));
+            printf("%s %-20s %5d,%5d %3d\n",date,name,X/32,Z/32,Y/32);
+#endif
+
+#if 0
             int32_t  X    = read_int(p);
             int32_t  Z    = read_int(p);
             char     cont = read_char(p);
@@ -289,6 +329,7 @@ int main(int ac, char ** av) {
 
 			ssize_t ccsize = create_nbt_chunk(X,Z,pbm,p, size, ncbuf, sizeof(ncbuf));
 			store_chunk(X, Z, ncbuf, ccsize);
+#endif
         }
         free(buf);
         fclose(mcs);

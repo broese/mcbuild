@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <sys/socket.h>
+#include <signal.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -199,7 +200,7 @@ short TOOLS[] = {
     283,284,285,286,    // golden tools
     290,291,292,293,294,// hoes
     298,299,300,301,    // leather equipment
-    302,303,304,305,    // chainmain equipment
+    302,303,304,305,    // chainmail equipment
     306,307,308,309,    // iron equipment
     310,311,312,313,    // diamond equipment
     314,315,316,317,    // golden equipment
@@ -357,6 +358,9 @@ struct {
     char s_dec_iv[16];
 
     FILE * output;
+
+    // Various options
+    int cowradar;
 } mitm;
 
 #include <time.h>
@@ -455,8 +459,8 @@ void print_hex(char *buf, const char *data, ssize_t len) {
 }
 
 //#define SESSION_SERVER_IP 0xb849df28
-#define SESSION_SERVER_IP 0x3213EA8A
-//#define SESSION_SERVER_IP 0x36F34FE8
+//#define SESSION_SERVER_IP 0x3213EA8A
+#define SESSION_SERVER_IP 0x36F34FE8
 
 int connect_session(const char *user, const char *sessionId, const char *serverId) {
     int ss = sock_client_ipv4_tcp(SESSION_SERVER_IP, 80);
@@ -493,7 +497,11 @@ int connect_session(const char *user, const char *sessionId, const char *serverI
     return (http_ok && mc_ok);
 }
 
+#if 1
 #define PRALL if (mprio<1)
+#else
+#define PRALL
+#endif
 
 static int msg_prio[256] = {
  // 0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
@@ -679,6 +687,11 @@ int process_cmd(const char *msg, char *answer) {
             return 1;
         }
         return 0;
+    }
+    if (!strcmp(words[0],"cowradar")) {
+        mitm.cowradar = !mitm.cowradar;
+        sprintf(answer, "<MC Proxy> Cowradar is %s",mitm.cowradar?"enabled":"disabled");
+        return 1;
     }
     else
         return 0;
@@ -1006,6 +1019,18 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
 
             printf("Spawn Named Entity: EID=%d %s coords=%d,%d,%d rot=%d,%d item=%d\n",
                    eid,pname,x/32,y/16,z/32,yaw,pitch,item);
+
+            // prepare notification to be inserted into chat
+            char notify[4096];
+            sprintf(notify, "§c§l[MCProxy] NAMED ENTITY: %s coords=%d,%d,%d",pname,x/32,y/32,z/32);
+
+            // make place in the destination buffer. Since MCP_SpawnNamedEntity goes to the client,
+            // we send the chat message the same direction
+            ssize_t _dlen = *dlen;
+            ARRAY_ADDG(*dbuf,*dlen,strlen(notify)*2+3,WRITEBUF_GRAN);
+            uint8_t *wp = *dbuf+_dlen;
+            write_char(wp, 0x03);
+            Wstr(wp,notify);
             break;
         }
 
@@ -1038,11 +1063,16 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         }
 
         case MCP_SpawnObject: {//17
+            printf("Dumping SpawnObject:\n");
+            hexdump(msg_start, 256);
+
             Rint(eid);
             Rchar(type);
             Rint(x);
             Rint(y);
             Rint(z);
+            Rchar(yaw);
+            Rchar(pitch);
             Rint(eeid);
             //NOTE: The following segment was replaced by "ObjectData" in the wiki,
             //although the contents stay the same - check if it works correctly
@@ -1055,6 +1085,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
                 Rshort(vz);
                 printf("Spawn Object: eid=%d type=%d coord=%d,%d,%d Fireball eeid=%d speed=%d,%d,%d\n",eid,type,x/32,y/16,z/32,eeid,vx,vy,vz);
             }
+
             break;
         }
 
@@ -1080,6 +1111,20 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
 
             Rmobmeta(m);
             printf("Spawn Mob: EID=%d type=%d %s %d,%d,%d\n",eid,type,MOBS[i].name,x/32,y/16,z/32);
+
+            if (mitm.cowradar && (type==92 || type==96)) {
+                // prepare notification to be inserted into chat
+                char notify[4096];
+                sprintf(notify, "§c§l[MCProxy] COW: %s coords=%d,%d,%d",MOBS[i].name,x/32,y/32,z/32);
+                
+                // make place in the destination buffer. Since MCP_SpawnNamedEntity goes to the client,
+                // we send the chat message the same direction
+                ssize_t _dlen = *dlen;
+                ARRAY_ADDG(*dbuf,*dlen,strlen(notify)*2+3,WRITEBUF_GRAN);
+                uint8_t *wp = *dbuf+_dlen;
+                write_char(wp, 0x03);
+                Wstr(wp,notify);
+            }
             break;
         }
 
@@ -1237,7 +1282,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             uint8_t *data = p;
             Rskip(compsize);
             PRALL printf("Chunk Data: %d,%d cont=%d PBM=%04x ABM=%04x compsize=%d\n",X,Z,cont,primary_bitmap,add_bitmap,compsize);
-            process_chunks(1, &X, &Z, &primary_bitmap, data, compsize);
+            //process_chunks(1, &X, &Z, &primary_bitmap, data, compsize);
             break;
         }
 
@@ -1287,6 +1332,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         case MCP_MapChunkBulk: { //38
             Rshort(count);
             Rint(datalen);
+            Rchar(skylight);
             uint8_t * data = p;
             Rskip(datalen);
 
@@ -1310,7 +1356,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
                 printf(" %d,%d,%04x",XX[i],ZZ[i],BM[i]);
             printf("\n");
 
-            process_chunks(count, XX, ZZ, BM, data, datalen);
+            //process_chunks(count, XX, ZZ, BM, data, datalen);
             break;
         }
            
@@ -1760,6 +1806,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             ssize_t msg_len = p-msg_start;
 
             if (mitm.output) {
+                // write packet to the MCS file
                 struct timeval tv;
                 gettimeofday(&tv, NULL);
 
@@ -1771,6 +1818,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
                 write_int(hp, msg_len);
                 write_file_f(mitm.output, header, hp-header);
                 write_file_f(mitm.output, msg_start, msg_len);
+                fflush(mitm.output);
             }
 
             // the message was ingested successfully
@@ -1913,6 +1961,13 @@ int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
     }
 }
 
+int signal_caught;
+
+void signal_handler(int signum) {
+    printf("Caught signal %d, stopping main loop\n",signum);
+    signal_caught = 1;
+}
+
 int proxy_pump(uint32_t ip, uint16_t port) {
     CLEAR(mitm);
     CLEAR(build);
@@ -1955,11 +2010,17 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     CLEAR(fb);
 
 
-
+    // prepare signal handling
+    signal_caught = 0;
+    struct sigaction sa;
+    CLEAR(sa);
+    sa.sa_handler = signal_handler;
+    if (sigaction(SIGINT, &sa, NULL))
+        LH_ERROR(1,"Failed to set sigaction\n");
 
     // main pump
-    int stay = 1, i;
-    while(stay) {
+    int i;
+    while(!signal_caught) {
         // common poll for all registered sockets
         evfile_poll(&pa, 1000);
 
@@ -2009,6 +2070,12 @@ int proxy_pump(uint32_t ip, uint16_t port) {
                 CLEAR(fb);
             }
         }               
+    }
+    printf("Terminating...\n");
+    if (mitm.output) {
+        fflush(mitm.output);
+        fclose(mitm.output);
+        mitm.output = NULL;
     }
 }
 

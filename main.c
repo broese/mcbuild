@@ -257,7 +257,7 @@ int main(int ac, char **av) {
             int n = read_int_le(p);
             int X = read_int_le(p);
             int Z = read_int_le(p);
-            printf("Opened chunk %s (%d,%d) %d cubes\n",*arg,X,Z,n);
+            //printf("Opened chunk %s (%d,%d) %d cubes\n",*arg,X,Z,n);
 
             uint8_t *cubes[16]; CLEAR(cubes);
             int l;

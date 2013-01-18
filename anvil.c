@@ -31,7 +31,7 @@ mcregion * load_region(const char * path) {
     ssize_t size;
     FILE *fd = open_file_r(path, &size);
     if (!fd) LH_ERROR(NULL,"load_region : failed to open file %s", path);
-    printf("Opened %s (%zu KiB, %zu pages)\n",path,size/1024,size/4096);
+    //printf("Opened %s (%zu KiB, %zu pages)\n",path,size/1024,size/4096);
 
     // allocate region
     ALLOC(mcregion,region);
@@ -71,8 +71,7 @@ mcregion * load_region(const char * path) {
         }
 
     }
-    printf("Loaded column table, %d columns generated (%.2f%%)\n",
-           gen, (float)gen/10.24);
+    //printf("Loaded column table, %d columns generated (%.2f%%)\n", gen, (float)gen/10.24);
 
     return region;
 }

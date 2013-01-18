@@ -8,12 +8,14 @@
 #include "lh_buffers.h"
 #include "draw.h"
 
+#define BGCOLOR 0x00000000
+
 drawstate * create_drawing() {
     lhimage *img = allocate_image(512,512);
 
     uint32_t size = img->width*img->height;
     int i;
-    for (i=0; i<size; i++) img->data[i] = 0x00ffffff;
+    for (i=0; i<size; i++) img->data[i] = BGCOLOR;
 
     ALLOC(drawstate,state);
     state->img = img;
@@ -41,13 +43,15 @@ void update_drawstate(drawstate *ds, int X, int Z) {
         int newheight = (Zmax-Zmin)*16;
         int newOffX   = -Xmin;
         int newOffZ   = -Zmin;
+#if 0
         printf("Resizing %dx%d -> %dx%d , %d,%d -> %d,%d, because of %d,%d\n",
                ds->img->width, ds->img->height, newwidth, newheight,
                ds->offX,ds->offZ,newOffX,newOffZ, X,Z);
+#endif
                
                
         resize_image(ds->img, newwidth, newheight, 
-                     (newOffX-ds->offX)*16, (newOffZ-ds->offZ)*16, 0x00ffffff);
+                     (newOffX-ds->offX)*16, (newOffZ-ds->offZ)*16, BGCOLOR);
         ds->offX = newOffX;
         ds->offZ = newOffZ;
     }
@@ -88,15 +92,18 @@ void draw_topmap(drawstate *ds, int X, int Z, uint8_t **cubes) {
                 for(z=0; z<4096; z+=256) {
                     int bpos = z+(y<<4)+x;
                     if (b[bpos]!=0) {
-#if 1
+#if 0
                         ds->img->data[spos] = BLOCKS[b[bpos]];
 #endif
 
-#if 0
-                        if (b[bpos]==50 || b[bpos]==58 || b[bpos]==54 || b[bpos]==61) ds->img->data[spos] |= (vvv<<16);
+#if 1
+                        //if (b[bpos]==50 || b[bpos]==58 || b[bpos]==54 || b[bpos]==61) ds->img->data[spos] |= (vvv<<16);
+                        if (b[bpos]==130) ds->img->data[spos] |= (vvv<<16);
                         //if (is_slime(X,Z)) ds->img->data[spos] |= (1<<8);
                         if (b[bpos]==52 || b[bpos]==48) ds->img->data[spos] |= (vvv<<8);
                         if (b[bpos]==8 || b[bpos]==9) ds->img->data[spos] |= vvv;
+                        if (b[bpos]==130)
+                            printf("Ender Chest: %d,%d (%d)\n",x+X*16,y+Z*16,z/256+l*16);
 #endif
 
                     }

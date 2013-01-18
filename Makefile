@@ -2,12 +2,15 @@ CFLAGS=-g -pg -I../libhelper
 LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lssl
 DEFS=-DDEBUG_MEMORY=0
 
-all: minemap netmine mcproxy mcsanvil chunkradar
+all: minemap netmine mcproxy mcsanvil chunkradar invedit
 
-minemap: main.o anvil.o nbt.o draw.o ../libhelper/libhelper.a
+minemap: main.o anvil.o nbt.o draw.o
 	$(CC) -o $@ $^ $(LIBS)
 
 netmine: netmine.o anvil.o nbt.o
+	$(CC) -o $@ $^ $(LIBS)
+
+invedit: invedit.o nbt.o
 	$(CC) -o $@ $^ $(LIBS)
 
 chunkradar: chunkradar.o 

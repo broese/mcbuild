@@ -21,6 +21,8 @@ typedef struct {
 #define RS_EOF   1
 #define RS_ERR   2
 
+const char * REGMSG = "\x33\x32\x0d\x0b\x01\x27\x14\x1d";
+
 // read a MCStream (.mcs) file and return only the messages
 // 0x33 (Chunk Data), 0x0B (Player Position) and 0x0D (Player Position and Look)
 // returns 1 on success, 0 on end of stream or error
@@ -34,12 +36,12 @@ int read_stream(FILE *mcs, uint8_t **buf, ssize_t *len, mcsh *header) {
     while(1) {
         // save current position in case of error
         off_t cpos = ftell(mcs);
-        printf("Offset: %d\n",cpos);
+        //printf("Offset: %d\n",cpos);
 
         // read header + message ID
         rb = fread(hb, 1, sizeof(hb), mcs);
         if (rb != sizeof(hb)) { // could not read the entire header, possibly EOF
-            printf("*header* Offset: %d, feof=%d, ferror=%d\n",ftell(mcs),feof(mcs),ferror(mcs));
+            //printf("*header* Offset: %d, feof=%d, ferror=%d\n",ftell(mcs),feof(mcs),ferror(mcs));
             fseek(mcs, cpos, SEEK_SET);
             return ferror(mcs) ? RS_ERR : RS_EOF;
         }
@@ -51,14 +53,18 @@ int read_stream(FILE *mcs, uint8_t **buf, ssize_t *len, mcsh *header) {
         header->length    = read_int(p);
 
         uint8_t type = read_char(p);
-        if (type != 0x33 && type != 0x32 && type != 0x0d && type != 0x0b) {
+        int i;
+        for(i=0; REGMSG[i] && type != REGMSG[i]; i++);
+        if (!REGMSG[i]) {
             // this is not the message type we are interested in, so we skip
             // to the start of the next message. Note that this might set the
             // position past the file end, and lead to an FEOF on the next cycle
-            printf("Skipping %d -> %d\n", cpos, cpos + sizeof(mcsh) + header->length);
+            //printf("Skipping %d -> %d\n", cpos, cpos + sizeof(mcsh) + header->length);
             fseek(mcs, cpos + sizeof(mcsh) + header->length, SEEK_SET);
             continue;
         }
+
+        usleep(1000);
 
         // extend buffer if necessary
         if (*len < header->length)
@@ -108,7 +114,7 @@ void init_map() {
 }
 
 void update_map(int X, int Z, uint16_t pbm) {
-    printf("Chunk %4d,%4d\n",X,Z);
+    //printf("Chunk %4d,%4d\n",X,Z);
     int off = (X+1024)+(Z+1024)*2048;
     if (pbm == 0) // this chunk update was a "chunk release", as PBM is set to 0
         map[off] = 1; // set to "visited"
@@ -142,12 +148,32 @@ int sdl_init(int screen_width, int screen_height, int fullscreen) {
     return 1;
 }
 
-#define SCR_WD 1280
-#define SCR_HG  800
+#define SCR_WD  480
+#define SCR_HG  480
 #define CSZ      16
-#define SSZ       4
+#define SSZ       1
 #define SCR_CWD  ((SCR_WD)/SSZ)
 #define SCR_CHG  ((SCR_HG)/SSZ)
+
+int signal_caught;
+
+void signal_handler(int signum) {
+    printf("Caught signal %d, stopping main loop\n",signum);
+    signal_caught = 1;
+}
+
+int32_t PID = -1; // Player's entity ID
+int attached;
+int32_t VID = -1; // attached vehicle's entity ID
+
+typedef struct {
+    int  eid;
+    char name[20];
+    int  x,y,z;
+} player;
+
+player players[256];
+int nump;
 
 void redraw_map() {
     static time_t lasttime = -1;
@@ -191,15 +217,36 @@ void redraw_map() {
             }
         }
     }
+
+    if (nump > 0) {
+        int y,i;
+        for (y=32; y<64; y++) {
+            uint32_t *ptr = &scr[y*pitch+32];
+            for (i=0; i<32; i++)
+                *ptr++ = 0xff0000;
+        }
+        printf("***** WARNING *****\n");
+        for (i=0; i<nump; i++) {
+            printf(" %s\n",players[i].name);
+        }
+    }
+
     //SDL_UnlockSurface(screen);
     SDL_Flip(screen); 
 }
 
-int signal_caught;
+static inline int read_string(char **p, char *s, char *limit) {
+    if (limit-*p < 2) return 1;
+    uint16_t slen = read_short(*p);
+    if (limit-*p < slen*2) return 1;
 
-void signal_handler(int signum) {
-    printf("Caught signal %d, stopping main loop\n",signum);
-    signal_caught = 1;
+    int i;
+    for(i=0; i<slen; i++) {
+        (*p)++;
+        s[i] = read_char(*p);
+    }
+    s[i] = 0;
+    return 0;
 }
 
 int main(int ac, char ** av) {
@@ -226,6 +273,9 @@ int main(int ac, char ** av) {
     BUFFER(buf,len);
     mcsh h;
 
+    CLEAR(players);
+    nump = 0;
+
     while(!signal_caught) {
         int res = read_stream(mcs, &buf, &len, &h);
 
@@ -245,7 +295,7 @@ int main(int ac, char ** av) {
 
         switch (type) {
             case 0x33: {
-                // read the Chunk Data header
+                // Chunk Data - loaded or unloaded chunks
                 int32_t  X    = read_int(p);
                 int32_t  Z    = read_int(p);
                 char     cont = read_char(p);
@@ -258,7 +308,7 @@ int main(int ac, char ** av) {
                 break;
             }
             case 0x32: {
-                // read the Chunk Data header
+                // Chunk Allocation (pre-1.3 protocol) - unloaded chunks
                 int32_t  X     = read_int(p);
                 int32_t  Z     = read_int(p);
                 char     alloc = read_char(p);
@@ -269,13 +319,66 @@ int main(int ac, char ** av) {
             }
             case 0x0D:
             case 0x0B: {
-                double x = read_double(p);
-                double y = read_double(p);
-                double s = read_double(p);
-                double z = read_double(p);
+                // Player Position (and Look)
+                if (!attached) {
+                    // ignore while we are attached (i.e. to a boat)
+                    double x = read_double(p);
+                    double y = read_double(p);
+                    double s = read_double(p);
+                    double z = read_double(p);
 
-                xpos = (int)x;
-                zpos = (int)z;
+                    xpos = (int)x;
+                    zpos = (int)z;
+                }
+                break;
+            }
+            case 0x01: {
+                // Login Request - get the player's EID
+                // necessary to handle attach
+                PID = read_int(p);
+                break;
+            }
+            case 0x27: {
+                // Attach Entity - attaching or detaching from vehicles
+                int eid = read_int(p);
+                int vid = read_int(p);
+                if (eid == PID) {
+                    attached = (vid!=-1);
+                    VID = vid;
+                }
+                break;
+            }
+            case 0x14: {
+                // Spawn Named Entity
+                player *pl = players+nump;
+
+                pl->eid = read_int(p);
+                read_string((char **)&p, pl->name, p+1000); //FIXME
+                pl->x = read_int(p); pl->x/=32;
+                pl->y = read_int(p); pl->y/=32;
+                pl->z = read_int(p); pl->z/=32;
+
+                nump++;
+
+                printf("NAMED ENTITY %s %d,%d,%d\n",pl->name,pl->x,pl->y,pl->z);
+
+                break;                
+            }
+            case 0x1d: {
+                // Destroy Entity
+                unsigned char count = read_char(p);
+                while(count > 0) {
+                    int eid = read_int(p);
+                    int i;
+                    for(i=0; i<nump; i++) {
+                        if (players[i].eid == eid) {
+                            printf("DELETE NAMED ENTITY %s\n",players[i].name);
+                            ARRAY_DELETE(players, nump,i);
+                            break;
+                        }
+                    }
+                    count --;
+                }
                 break;
             }
         }
