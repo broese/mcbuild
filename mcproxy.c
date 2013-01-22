@@ -21,12 +21,15 @@
 #include "lh_event.h"
 #include "lh_compress.h"
 
-//#define SERVER_IP 0x0a000001   // Loacl server on Peorth
+#define SERVER_IP 0x0a000001   // Local server on Peorth
 //#define SERVER_IP 0xc7a866c2 // Beciliacraft 199.168.102.194
-#define SERVER_IP 0x53e9ed40   // 2B2T 83.233.237.64
+//#define SERVER_IP 0x53e9ed40   // 2B2T 83.233.237.64
 //#define SERVER_IP 0x53b3151f   // rujush.org   83.179.21.31
 //#define SERVER_IP 0x6c3d10d3   // WC Minecraft 108.61.16.211
 #define SERVER_PORT 25565
+
+#define ASYNC_THRESHOLD 100000
+#define NEAR_THRESHOLD 10000
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -361,6 +364,9 @@ struct {
 
     // Various options
     int cowradar;
+    int grinding;
+
+    int64_t last[2];
 } mitm;
 
 #include <time.h>
@@ -581,6 +587,27 @@ struct {
     bcoord cur;
 } build;
 
+typedef struct {
+    int eid;
+    int type;
+    char * name;
+
+    int x;
+    int y;
+    int z;
+
+} entity;
+
+// tracking of mobs and players
+struct {
+    // tracking self
+    bcoord self;
+
+    // tracking entities
+    entity *ent;
+    int nent;
+} track;
+
 void trigger_build(int x, int y, int z, int dir, int slot, int count, int cx, int cy, int cz) {
     build.state = 2;
     ARRAY_ADD(build.b, build.nb, 7);
@@ -693,8 +720,116 @@ int process_cmd(const char *msg, char *answer) {
         sprintf(answer, "<MC Proxy> Cowradar is %s",mitm.cowradar?"enabled":"disabled");
         return 1;
     }
+    if (!strcmp(words[0],"check")) {
+        sprintf(answer, "<MC Proxy> Coords:%d,%d (%d)",track.self.x/32,track.self.z/32,track.self.y/32);
+        return 1;
+    }
+    if (!strcmp(words[0],"entities")) {
+        sprintf(answer, "<MC Proxy> Tracking %d entities",track.nent);
+        return 1;
+    }
+    if (!strcmp(words[0],"near")) {
+        int32_t res[4096];
+        int n = near_entities(54,res,4096);
+        sprintf(answer, "<MC Proxy> %d entities nearby",n);
+        return 1;
+    }
+    if (!strcmp(words[0],"grind")) {
+        mitm.grinding = !mitm.grinding;
+        sprintf(answer, "<MC Proxy> Grinding is %s",mitm.grinding?"enabled":"disabled");
+        return 1;
+    }
     else
         return 0;
+}
+
+void queue_message(uint8_t **mbuf, ssize_t *mlen, uint8_t *data, ssize_t len) {
+    ssize_t _mlen = *mlen;
+    ARRAY_ADDG(*mbuf,*mlen,len,WRITEBUF_GRAN);
+    memmove(*mbuf+_mlen, data, len);
+}
+
+void queue_chat_message(uint8_t **mbuf, ssize_t *mlen, char *message) {
+    char msg[4096];
+    char *wp = msg;
+    write_char(wp,MCP_ChatMessage);
+    wp += Wstr(wp,message);
+    queue_message(mbuf, mlen, msg, wp-msg);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+entity * find_entity(int32_t eid) {
+    int i;
+    for(i=0; i<track.nent; i++)
+        if (track.ent[i].eid == eid)
+            return &track.ent[i];
+    return NULL;
+}
+
+void remove_entity(int32_t eid) {
+    int i;
+    for(i=0; i<track.nent; i++)
+        if (track.ent[i].eid == eid)
+            ARRAY_DELETE(track.ent, track.nent, i);
+}
+
+entity * add_entity(int32_t eid, int type, int x, int y, int z) {
+    if (find_entity(eid))
+        remove_entity(eid);
+    ARRAY_ADD(track.ent, track.nent,1);
+    entity *e = &track.ent[track.nent-1];
+    e->eid = eid;
+    e->type = type;
+    e->name = NULL;
+    e->x = x;
+    e->y = y;
+    e->z = z;
+    return e;
+}
+
+entity * add_named_entity(int32_t eid, int x, int y, int z, const char *pname) {
+    entity *e = add_entity(eid,0,x,y,z);
+    e->name = strdup(pname);
+    return e;
+}
+
+int near_entities(int type, int32_t *res, int max) {
+    int i,j=0;
+    for(i=0; i<track.nent && j<max; i++)
+        if (type<0 || track.ent[i].type == type) {
+            int dx = track.ent[i].x - track.self.x;
+            int dy = track.ent[i].y - track.self.y;
+            int dz = track.ent[i].z - track.self.z;
+            int dist = dx*dx+dy*dy+dz*dz;
+            printf("%d %4d %d,%d,%d\n",track.ent[i].eid,dist,dx,dy,dz);
+            if (dist < NEAR_THRESHOLD)
+                res[j++] = track.ent[i].eid;
+        }
+    return j;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void process_async(int is_client, uint8_t **sbuf, ssize_t *slen, 
+                                  uint8_t **dbuf, ssize_t *dlen,
+                                  uint8_t **abuf, ssize_t *alen) {
+    printf("process_async: client=%d\n",is_client);
+
+    if (is_client && mitm.grinding) {
+        int ent;
+        int n = near_entities(54, &ent, 1);
+        if (n>0) {
+            printf("Hitting entity %d\n",ent);
+            char msg[4096];
+            char *wp = msg;
+            write_char(wp,MCP_UseEntity);
+            write_int(wp,1234);
+            write_int(wp,ent);
+            write_char(wp,1);
+            queue_message(dbuf, dlen, msg, 10);
+        }
+    }
 }
 
 ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen, 
@@ -759,13 +894,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
                 char answer[4096];
                 if (process_cmd(msg,answer)) {
                     modified = 1; // so the message won't be forwarded to the server
-                    if (answer[0]) {
-                        ssize_t _alen = *alen;
-                        ARRAY_ADDG(*abuf,*alen,strlen(answer)*2+3,WRITEBUF_GRAN);
-                        uint8_t *wp = *abuf+_alen;
-                        write_char(wp, 0x03);
-                        Wstr(wp,answer);
-                    }
+                    if (answer[0]) queue_chat_message(abuf, alen, answer);
                 }
             }
 
@@ -775,7 +904,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         case MCP_TimeUpdate: { // 04
             Rlong(age);
             Rlong(tm);
-            PRALL printf("Time Update: age=%ld time=%ld (%dd %dh)\n",age,tm,(int)(tm/24000L),(int)(tm%24000)/1000);
+            PRALL printf("Time Update: age=%lld time=%lld (%dd %dh)\n",age,tm,(int)(tm/24000L),(int)(tm%24000)/1000);
             break;
         }
 
@@ -800,6 +929,9 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rint(y);
             Rint(z);
             printf("Spawn Position: %d,%d,%d\n",x,y,z);
+            track.self.x = x;
+            track.self.y = y;
+            track.self.z = z;
             break;
         }
 
@@ -863,11 +995,13 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             }
 
             // copy the message so we can ensure it goes out first
-            ssize_t msg_len = p-msg_start;
-            ssize_t wpos = *dlen;
-            ARRAY_ADDG(*dbuf,*dlen,msg_len,WRITEBUF_GRAN);
-            memcpy(*dbuf+wpos,msg_start,msg_len);
+            queue_message(dbuf, dlen, msg_start, p-msg_start);
             modified = 1;
+
+            // save own position for track
+            track.self.x = (int)(x*32);
+            track.self.y = (int)(y*32);
+            track.self.z = (int)(z*32);
 
             if (build.state == 2)
                 progress_build(px, py, pz, buf, len);
@@ -920,15 +1054,17 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
                 py = (int)y;
                 pz = (int)z;
 
+                // save own position for tracking
+                track.self.x = (int)(x*32);
+                track.self.y = (int)(y*32);
+                track.self.z = (int)(z*32);
+
                 buf = abuf;
                 len = alen;
             }
 
             // copy the message so we can ensure it goes out first
-            ssize_t msg_len = p-msg_start;
-            ssize_t wpos = *dlen;
-            ARRAY_ADDG(*dbuf,*dlen,msg_len,WRITEBUF_GRAN);
-            memcpy(*dbuf+wpos,msg_start,msg_len);
+            queue_message(dbuf, dlen, msg_start, p-msg_start);
             modified = 1;
 
             if (build.state == 2)
@@ -1023,14 +1159,10 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             // prepare notification to be inserted into chat
             char notify[4096];
             sprintf(notify, "§c§l[MCProxy] NAMED ENTITY: %s coords=%d,%d,%d",pname,x/32,y/32,z/32);
+            queue_chat_message(dbuf, dlen, notify);
 
-            // make place in the destination buffer. Since MCP_SpawnNamedEntity goes to the client,
-            // we send the chat message the same direction
-            ssize_t _dlen = *dlen;
-            ARRAY_ADDG(*dbuf,*dlen,strlen(notify)*2+3,WRITEBUF_GRAN);
-            uint8_t *wp = *dbuf+_dlen;
-            write_char(wp, 0x03);
-            Wstr(wp,notify);
+            add_named_entity(eid,x,y,z,pname);
+
             break;
         }
 
@@ -1063,9 +1195,6 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
         }
 
         case MCP_SpawnObject: {//17
-            printf("Dumping SpawnObject:\n");
-            hexdump(msg_start, 256);
-
             Rint(eid);
             Rchar(type);
             Rint(x);
@@ -1116,15 +1245,11 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
                 // prepare notification to be inserted into chat
                 char notify[4096];
                 sprintf(notify, "§c§l[MCProxy] COW: %s coords=%d,%d,%d",MOBS[i].name,x/32,y/32,z/32);
-                
-                // make place in the destination buffer. Since MCP_SpawnNamedEntity goes to the client,
-                // we send the chat message the same direction
-                ssize_t _dlen = *dlen;
-                ARRAY_ADDG(*dbuf,*dlen,strlen(notify)*2+3,WRITEBUF_GRAN);
-                uint8_t *wp = *dbuf+_dlen;
-                write_char(wp, 0x03);
-                Wstr(wp,notify);
+                queue_chat_message(dbuf, dlen, notify);
             }
+            add_entity(eid,type,x,y,z);
+
+
             break;
         }
 
@@ -1165,6 +1290,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             for(i=0; i<count; i++) {
                 Rint(eid);
                 printf(" %d",eid);
+                remove_entity(eid);
             }
             printf("\n");
             break;
@@ -1182,6 +1308,12 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rchar(dy);
             Rchar(dz);
             PRALL printf("Entity Relative Move: EID=%d move=%d,%d,%d\n",eid,dx,dy,dz);
+            entity *e = find_entity(eid);
+            if (e) {
+                e->x += dx;
+                e->y += dx;
+                e->z += dx;
+            }
             break;
         }
 
@@ -1203,6 +1335,12 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rchar(yaw);
             Rchar(pitch);
             PRALL printf("Entity Look and Relative Move: EID=%d move=%d,%d,%d look=%d,%d\n",eid,dx,dy,dz,yaw,pitch);
+            entity *e = find_entity(eid);
+            if (e) {
+                e->x += dx;
+                e->y += dx;
+                e->z += dx;
+            }
             break;
         }
 
@@ -1214,6 +1352,12 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rchar(yaw);
             Rchar(pitch);
             PRALL printf("Entity Teleport: EID=%d move=%d,%d,%d look=%d,%d\n",eid,x/32,y/16,z/32,yaw,pitch);
+            entity *e = find_entity(eid);
+            if (e) {
+                e->x = x;
+                e->y = y;
+                e->z = z;
+            }
             break;
         }
 
@@ -1736,7 +1880,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
 
             // decode server PUBKEY to an RSA struct
             unsigned char *pp = pkey;
-            d2i_RSA_PUBKEY(&mitm.s_rsa, &pp, pklen);
+            d2i_RSA_PUBKEY(&mitm.s_rsa, (const unsigned char **)&pp, pklen);
             if (mitm.s_rsa == NULL) {
                 printf("Failed to decode the server's public key\n");
                 exit(1);
@@ -1896,6 +2040,16 @@ int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
                 *slen -= consumed;
             }
 
+            // check if asynchronous events can be processed
+            struct timeval tv;
+            gettimeofday(&tv, NULL);
+            int64_t now = ((int64_t)tv.tv_sec)*1000000+tv.tv_usec;
+            if (now-mitm.last[is_client] > ASYNC_THRESHOLD) {
+                mitm.last[is_client] = now;
+                process_async(is_client, sbuf, slen, dbuf, dlen, abuf, alen);
+            }
+
+
             // encrypt write buffer if encryption is enabled
             if (mitm.encstate) {
                 uint8_t *ebuf = *dbuf;
@@ -1971,6 +2125,7 @@ void signal_handler(int signum) {
 int proxy_pump(uint32_t ip, uint16_t port) {
     CLEAR(mitm);
     CLEAR(build);
+    CLEAR(track);
 
 
     // common poll array for all sockets
@@ -2069,7 +2224,7 @@ int proxy_pump(uint32_t ip, uint16_t port) {
                 if (fb.swbuf) free(fb.swbuf);
                 CLEAR(fb);
             }
-        }               
+        }            
     }
     printf("Terminating...\n");
     if (mitm.output) {
