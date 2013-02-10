@@ -6,6 +6,7 @@
 #include "lh_debug.h"
 #include "lh_compress.h"
 #include "lh_files.h"
+#include "lh_image.h"
 
 #include "nbt.h"
 #include "anvil.h"
@@ -46,8 +47,8 @@ int read_stream(FILE *mcs, uint8_t **buf, ssize_t *len, mcsh *header) {
         if (fread(*buf, 1, header->length, mcs) != header->length) return 0;
         //printf("%02x %6d\n", **buf, header->length);
         //hexdump(*buf, header->length);
-
-    } while (**buf != 0x03);
+        return 1;
+    } while (**buf != 0x33 && **buf != 0x38 && **buf != 0x17);
     return 1;
 }
 
@@ -192,6 +193,24 @@ ssize_t create_nbt_chunk(int X, int Z, uint16_t pbm, uint8_t * cdata, ssize_t cl
     uint8_t *addbl  = slight+n*2048;
     uint8_t *biome  = slight+n*2048;
 
+    // block search
+#if 1
+    printf("Chunk %3d,%3d\n",X,Z);
+    int Cy,b;
+    for(Cy=0; Cy<n; Cy++) {
+        uint8_t *bl = blocks+Cy*4096;
+        for(b=0; b<4096; b++) {
+            int xx = b&0x0f;
+            int zz = (b&0xf0)>>4;
+            int yy = Cy*16+(b>>8);
+            if (bl[b] == 110) printf("Mycelium  : %5d,%5d (%3d)\n",X*32+xx,Z*32+zz,yy);
+            if (bl[b] == 130) printf("Enderchest: %5d,%5d (%3d)\n",X*32+xx,Z*32+zz,yy);
+            if (bl[b] == 120) printf("EndportalF: %5d,%5d (%3d)\n",X*32+xx,Z*32+zz,yy);
+        }        
+    }
+    return 0;
+#endif
+
     // generate NBT structure
     nbte * Chunk = nbt_make_comp("");
     nbte * Level = nbt_make_comp("Level");
@@ -273,6 +292,9 @@ static inline int read_string(char **p, char *s, char *limit) {
 
 #include <time.h>
 
+#define CLR(a,b,c,d,e,f) (((a)<<23)|((b)<<22)|((c)<<15)|((d)<<14)|((e)<<7)|((f)<<6))
+#define CCC(a,b,c) CLR(a,a,b,b,c,c)
+
 int main(int ac, char ** av) {
 #if MEMORY_DEBUG
     mtrace();
@@ -287,10 +309,11 @@ int main(int ac, char ** av) {
         BUFFER(buf,len);
         mcsh h;
 
+#if 0
         while(read_stream(mcs, &buf, &len, &h)) {
             uint8_t *p = buf;
             p++;
-#if 1
+#if 0
             char str[1024];
             read_string((char **)&p, str, p+1000); //FIXME
             char date[1024];
@@ -314,23 +337,130 @@ int main(int ac, char ** av) {
 #endif
 
 #if 0
-            int32_t  X    = read_int(p);
-            int32_t  Z    = read_int(p);
-            char     cont = read_char(p);
-            uint16_t pbm  = read_short(p);
-            uint16_t abm  = read_short(p);
-            int32_t  size = read_int(p);
+            if (*buf == 0x33) {
+                // ChunkData
+                int32_t  X    = read_int(p);
+                int32_t  Z    = read_int(p);
+                char     cont = read_char(p);
+                uint16_t pbm  = read_short(p);
+                uint16_t abm  = read_short(p);
+                int32_t  size = read_int(p);
 #if MC12
-            read_int(p);
+                read_int(p);
 #endif
-            if (!pbm) continue; // skip empty updates
+                if (!pbm) continue; // skip empty updates
 
-            uint8_t ncbuf[512288];
+                uint8_t ncbuf[512288];
 
-			ssize_t ccsize = create_nbt_chunk(X,Z,pbm,p, size, ncbuf, sizeof(ncbuf));
-			store_chunk(X, Z, ncbuf, ccsize);
+                ssize_t ccsize = create_nbt_chunk(X,Z,pbm,p, size, ncbuf, sizeof(ncbuf));
+                //store_chunk(X, Z, ncbuf, ccsize);
+            }
+            else if (*buf == 0x38) {
+                // MapChunkBulk
+                int16_t count = read_short(p);
+                int32_t dlen = read_int(p);
+                char    skylight = read_char(p);
+
+                uint8_t *data = p;
+                p += dlen;
+                ssize_t ulen;
+                uint8_t *udata = zlib_decode(data, dlen, &ulen);
+                
+                for(i=0; i<count; i++) {
+                    int32_t  X    = read_int(p);
+                    int32_t  Z    = read_int(p);
+                    uint16_t pbm  = read_short(p);
+                    uint16_t abm  = read_short(p);
+                    //printf("Chunk %d,%d\n",X,Z);
+
+                    uint32_t Y,n=0;
+                    for (Y=0;Y<16;Y++)
+                        if (pbm & (1 << Y))
+                            n++;
+
+                    // block search
+#if 1
+                    int Cy,b;
+                    for(Cy=0; Cy<n; Cy++) {
+                        uint8_t *bl = udata+Cy*4096;
+                        for(b=0; b<4096; b++) {
+                            int xx = b&0x0f;
+                            int zz = (b&0xf0)>>4;
+                            int yy = Cy*16+(b>>8);
+                            if (bl[b] == 110) printf("Mycelium  : %5d,%5d (%3d)\n",X*16+xx,Z*16+zz,yy);
+                            if (bl[b] == 130) printf("Enderchest: %5d,%5d (%3d)\n",X*16+xx,Z*16+zz,yy);
+                            if (bl[b] == 120) printf("EndportalF: %5d,%5d (%3d)\n",X*16+xx,Z*16+zz,yy);
+                        }        
+                    }
 #endif
+
+                    // advance udata pointer to the next chunk
+                    udata += (4096+2048+2048+2048*skylight)*n+256;
+                }
+            }
+#endif
+
+            if (*buf == 0x17) {
+                // SpawnVehicle
+                int32_t eid = read_int(p);
+                char    type = read_char(p);
+                int32_t  x    = read_int(p);
+                int32_t  y    = read_int(p);
+                int32_t  z    = read_int(p);
+                printf("Object: type=%2d %5d,%5d (%3d)\n",type,x/32,y/32,z/32);
+            }
+
+
+
+
         }
+#endif
+
+        lhimage * img = allocate_image(128,128);
+
+        int32_t colors[16] = { 0, 8368696, 16247203, 10987431,
+                               16711680, 10526975, 10987431, 31744,
+                               16777215, 10791096, 12020271, 7368816,
+                               4210943, 6837042, 0, 0};
+
+        while(read_stream(mcs, &buf, &len, &h)) {
+            if (buf[0] == 0x83) {
+                //printf("%c %4d.%06d %5d     ",h.is_client?'C':'S',h.sec,h.usec,h.length);
+                //hexprint(buf+8, h.length-8); //(h.length <= 40)?h.length-8:40);
+
+                uint8_t *p= buf+1;
+                uint16_t itype = read_short(p);
+                uint16_t dmg   = read_short(p);
+                uint16_t len   = read_short(p);
+                uint8_t  mtype = read_char(p);
+                if (mtype == 0) {
+                    //hexprint(buf, 138);
+                    uint8_t x = *p++;
+                    uint8_t y = *p++;
+                    while(y<128) {
+                        char u = *p++;
+                        
+                        int var6 = colors[u>>2];
+                        unsigned char var7 = u&3;
+                        unsigned char var8 = 220;
+                        if (var7 == 2) var8 = 255;
+                        if (var7 == 0) var8 = 180;
+
+                        int r = (var6 >> 16 & 255) * var8 / 255;
+                        int g = (var6 >> 8 & 255) * var8 / 255;
+                        int b = (var6 & 255) * var8 / 255;
+
+                        uint32_t color = (r<<16)|(g<<8)|b;
+                        IMGDOT(img,x,y) = color;
+                        y++;
+                    }
+                }
+            }
+        }
+
+        export_png_file(img,"mymap.png");
+
+
         free(buf);
         fclose(mcs);
 
