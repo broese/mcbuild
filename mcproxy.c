@@ -21,15 +21,15 @@
 #include "lh_event.h"
 #include "lh_compress.h"
 
-#define SERVER_IP 0x0a000001   // Local server on Peorth
+//#define SERVER_IP 0x0a000001   // Local server on Peorth
 //#define SERVER_IP 0xc7a866c2 // Beciliacraft 199.168.102.194
-//#define SERVER_IP 0x53e9ed40   // 2B2T 83.233.237.64
+#define SERVER_IP 0x53e9ed40   // 2B2T 83.233.237.64
 //#define SERVER_IP 0x53b3151f   // rujush.org   83.179.21.31
 //#define SERVER_IP 0x6c3d10d3   // WC Minecraft 108.61.16.211
 #define SERVER_PORT 25565
 
-#define ASYNC_THRESHOLD 100000
-#define NEAR_THRESHOLD 10000
+#define ASYNC_THRESHOLD 500000
+#define NEAR_THRESHOLD 40000
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -365,6 +365,7 @@ struct {
     // Various options
     int cowradar;
     int grinding;
+    int maxlevel;
 
     int64_t last[2];
 } mitm;
@@ -522,7 +523,7 @@ static int msg_prio[256] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 6
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 7
 
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8
+    0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // A
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // B
@@ -601,6 +602,7 @@ typedef struct {
 // tracking of mobs and players
 struct {
     // tracking self
+    int32_t pid;
     bcoord self;
 
     // tracking entities
@@ -675,6 +677,7 @@ int process_cmd(const char *msg, char *answer) {
 
     // tokenize
     char *words[256];
+    CLEAR(words);
     int w=0;
 
     char wbuf[4096];
@@ -730,13 +733,23 @@ int process_cmd(const char *msg, char *answer) {
     }
     if (!strcmp(words[0],"near")) {
         int32_t res[4096];
-        int n = near_entities(54,res,4096);
+        int n = near_entities(51,res,4096);
         sprintf(answer, "<MC Proxy> %d entities nearby",n);
         return 1;
     }
     if (!strcmp(words[0],"grind")) {
         mitm.grinding = !mitm.grinding;
-        sprintf(answer, "<MC Proxy> Grinding is %s",mitm.grinding?"enabled":"disabled");
+        int maxlevel=0;
+
+        if (words[1] && sscanf(words[1],"%d",&maxlevel)==1)
+            mitm.maxlevel = maxlevel;
+        else
+            mitm.maxlevel = 30;
+
+        if (mitm.grinding)
+            sprintf(answer, "[MC Proxy] Grinding is enabled, grinding to level %d",mitm.maxlevel);
+        else
+            sprintf(answer, "[MC Proxy] Grinding is disabled");
         return 1;
     }
     else
@@ -802,7 +815,7 @@ int near_entities(int type, int32_t *res, int max) {
             int dy = track.ent[i].y - track.self.y;
             int dz = track.ent[i].z - track.self.z;
             int dist = dx*dx+dy*dy+dz*dz;
-            printf("%d %4d %d,%d,%d\n",track.ent[i].eid,dist,dx,dy,dz);
+            //printf("%d %d %4d %d,%d,%d\n",track.ent[i].type,track.ent[i].eid,dist,dx,dy,dz);
             if (dist < NEAR_THRESHOLD)
                 res[j++] = track.ent[i].eid;
         }
@@ -814,20 +827,32 @@ int near_entities(int type, int32_t *res, int max) {
 void process_async(int is_client, uint8_t **sbuf, ssize_t *slen, 
                                   uint8_t **dbuf, ssize_t *dlen,
                                   uint8_t **abuf, ssize_t *alen) {
-    printf("process_async: client=%d\n",is_client);
+    //printf("process_async: client=%d\n",is_client);
 
     if (is_client && mitm.grinding) {
         int ent;
-        int n = near_entities(54, &ent, 1);
+        int n = near_entities(51, &ent, 1);
         if (n>0) {
             printf("Hitting entity %d\n",ent);
             char msg[4096];
             char *wp = msg;
+
+            // 1. Animation/swing arm
+            write_char(wp,MCP_Animation);
+            write_int(wp,track.pid);
+            write_char(wp,1);
+
+            // 2. UseEntity
             write_char(wp,MCP_UseEntity);
-            write_int(wp,1234);
+            write_int(wp,track.pid);
             write_int(wp,ent);
             write_char(wp,1);
-            queue_message(dbuf, dlen, msg, 10);
+
+            // 3. Player / on ground
+            write_char(wp,MCP_Player);
+            write_char(wp,1);
+
+            queue_message(dbuf, dlen, msg, wp-msg);
         }
     }
 }
@@ -874,6 +899,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rchar(maxplayers);
             PRALL printf("Login Request eid=%d ltype=%s mode=%d dim=%d diff=%d maxplayers=%d\n",
                    eid,leveltype,gamemode,dimension,difficulty,maxplayers);
+            track.pid = eid;
             break;
         }
 
@@ -1413,6 +1439,14 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             Rshort(level);
             Rshort(exp);
             PRALL printf("Set Experience: EXP=%d LVL=%d bar=%.1f\n",exp,level,expbar);
+
+            if (mitm.grinding && level >= mitm.maxlevel) {
+                mitm.grinding = 0;
+                char notify[4096];
+                sprintf(notify, "§c[MCProxy] Grinding finished with level %d",level);
+                queue_chat_message(dbuf, dlen, notify);                
+            }
+
             break;
         }
 
@@ -1688,7 +1722,7 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
             memcpy(text, p, tlen);
             text[tlen] = 0;
             Rskip(tlen);
-            printf("Item Data: type=%d iid=%d >%s<\n",type, iid, text);
+            PRALL printf("Item Data: type=%d iid=%d >%s<\n",type, iid, text);
             break;
         }
 
@@ -2073,9 +2107,6 @@ int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
                 elen = *alen;
                 
                 if (elen > 0) {
-                    printf("Encrypting answer buffer\n");
-                    hexdump(ebuf, elen);
-
                     int num=0;
                     if (is_client)
                         AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.c_aes, mitm.c_enc_iv, &num, AES_ENCRYPT);
