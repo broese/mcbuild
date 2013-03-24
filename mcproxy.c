@@ -2240,6 +2240,7 @@ int proxy_pump(uint32_t ip, uint16_t port) {
                 if (fb.srbuf) free(fb.srbuf);
                 if (fb.swbuf) free(fb.swbuf);
                 CLEAR(fb);
+                CLEAR(track);
             }
         }
                
@@ -2254,6 +2255,7 @@ int proxy_pump(uint32_t ip, uint16_t port) {
                 if (fb.srbuf) free(fb.srbuf);
                 if (fb.swbuf) free(fb.swbuf);
                 CLEAR(fb);
+                CLEAR(track);
             }
         }            
     }
