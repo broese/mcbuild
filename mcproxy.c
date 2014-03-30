@@ -9,11 +9,14 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <assert.h>
 
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
 #include <openssl/sha.h>
 #include <openssl/aes.h>
+
+#define LH_DECLARE_SHORT_NAMES 1
 
 #include "lh_buffers.h"
 #include "lh_files.h"
@@ -21,9 +24,9 @@
 #include "lh_event.h"
 #include "lh_compress.h"
 
-//#define SERVER_IP 0x0a000001   // Local server on Peorth
+#define SERVER_IP 0x0a000001   // Local server on Peorth
 //#define SERVER_IP 0xc7a866c2 // Beciliacraft 199.168.102.194
-#define SERVER_IP 0x53e9ed40   // 2B2T 83.233.237.64
+//#define SERVER_IP 0x53e9ed40   // 2B2T 83.233.237.64
 //#define SERVER_IP 0x53b3151f   // rujush.org   83.179.21.31
 //#define SERVER_IP 0x6c3d10d3   // WC Minecraft 108.61.16.211
 #define SERVER_PORT 25565
@@ -34,41 +37,25 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 int handle_server(int sfd, uint32_t ip, uint16_t port, int *cs, int *ms) {
-
-    //// Handle Client-Side Connection
-
-    // accept connection from the client side
+    // accept connection from the local client
     struct sockaddr_in cadr;
-    int size = sizeof(cadr);
-    *cs = accept(sfd, (struct sockaddr *)&cadr, &size);
-    if (*cs < 0) LH_ERROR(0, "Failed to accept the client-side connection",strerror(errno));
-    printf("Accepted from %s:%d\n",inet_ntoa(cadr.sin_addr),ntohs(cadr.sin_port));
-
-    // set non-blocking mode on the client socket
-    if (fcntl(*cs, F_SETFL, O_NONBLOCK) < 0) {
-        close(*cs);
-        LH_ERROR(0, "Failed to set non-blocking mode for the client",strerror(errno));
-    }
-
-    //// Handle Server-Side Connection
+    *cs = lh_accept_tcp4(sfd, &cadr);
+    if (*cs < 0)
+        LH_ERROR(0, "Failed to accept the client-side connection");
+    printf("Accepted from %s:%d\n",
+           inet_ntoa(cadr.sin_addr),ntohs(cadr.sin_port));
 
     // open connection to the remote server
-    *ms = sock_client_ipv4_tcp(ip, port);
+    *ms = lh_connect_tcp4(ip, port);
     if (*ms < 0) {
         close(*cs);
-        LH_ERROR(0, "Failed to open the client-side connection",strerror(errno));
+        LH_ERROR(0, "Failed to open the client-side connection");
     }
-
-    // set non-blocking mode
-    if (fcntl(*ms, F_SETFL, O_NONBLOCK) < 0) {
-        close(*cs);
-        close(*ms);
-        LH_ERROR(0, "Failed to set non-blocking mode for the server",strerror(errno));
-    }
-
     return 1;
 }
 
+
+#if 0
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -313,7 +300,13 @@ ssize_t inline Wstr(uint8_t *p, const char *str) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#endif
+
 struct {
+    // connections
+    lh_conn * cs_conn; // to the client
+    lh_conn * ms_conn; // to the server
+
     // RSA structures/keys for server-side and client-side
     RSA *s_rsa; // public key only - must be freed by RSA_free
     RSA *c_rsa; // public+private key - must be freed by RSA_free
@@ -384,7 +377,7 @@ void init_mitm() {
     time_t t;
     time(&t);
     strftime(fname, sizeof(fname), "saved/%Y%m%d_%H%M%S.mcs",localtime(&t));
-    mitm.output = open_file_w(fname);
+    mitm.output = fopen(fname, "w");
 }
 
 int handle_session_server(int sfd) {
@@ -393,16 +386,19 @@ int handle_session_server(int sfd) {
 
     // accept connection from the client side
     struct sockaddr_in cadr;
-    int size = sizeof(cadr);
-    int cs = accept(sfd, (struct sockaddr *)&cadr, &size);
-    if (cs < 0) LH_ERROR(0, "Failed to accept the client-side connection",strerror(errno));
-    printf("Accepted from %s:%d (Webserver)\n",inet_ntoa(cadr.sin_addr),ntohs(cadr.sin_port));
+    int cs = lh_accept_tcp4(sfd, &cadr);
+    lh_net_blocking(cs);
+    if (cs < 0)
+        LH_ERROR(0, "Failed to accept the client-side connection",strerror(errno));
+    printf("Accepted from %s:%d (Webserver)\n",
+           inet_ntoa(cadr.sin_addr),ntohs(cadr.sin_port));
 
     FILE * client = fdopen(cs, "r+");
 
     char buf[4096];
+
     while(fgets(buf, sizeof(buf), client)) {
-        printf("%s\n",buf);
+        LH_HERE;
         if (!strncmp(buf, "GET /game/joinserver.jsp?user=", 30)) {
             char *ssid = index(buf, '&')+11; // skip to sessionId=
             char *wp = mitm.c_session;
@@ -414,9 +410,11 @@ int handle_session_server(int sfd) {
             while(*ssid != ' ') *wp++ = *ssid++;
             *wp++ = 0;
 
-            printf("session login caught : sessionId=%s serverId=%s\n", mitm.c_session,mitm.server_id_hash);
+            printf("session login caught : sessionId=%s serverId=%s\n",
+                   mitm.c_session,mitm.server_id_hash);
         }
 
+        LH_HERE;
         //hexdump(buf, strlen(buf));
         if (buf[0] == 0x0d && buf[1] == 0x0a) {
             printf("------ HEADER END ------\n");
@@ -432,9 +430,12 @@ int handle_session_server(int sfd) {
             fclose(client);
             break;
         }
+        LH_HERE;
     }
     return 1;
 }
+
+#if 0
 
 
 void print_hex(char *buf, const char *data, ssize_t len) {
@@ -574,6 +575,8 @@ void process_chunks(int count, uint32_t *XX, uint32_t *ZZ, uint16_t *bm, uint8_t
     free (data);
 }
 
+#endif
+
 typedef struct {
     int x,y,z;
 } bcoord;
@@ -609,6 +612,8 @@ struct {
     entity *ent;
     int nent;
 } track;
+
+#if 0
 
 void trigger_build(int x, int y, int z, int dir, int slot, int count, int cx, int cy, int cz) {
     build.state = 2;
@@ -2145,6 +2150,25 @@ int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
             return -1;
     }
 }
+#endif
+
+ssize_t handle_proxy(lh_conn *conn) {
+    int is_client = (int) conn->priv;
+    printf("%c ",is_client?'C':'S');
+
+    assert(conn->rbuf.data_ptr);
+
+    ssize_t len = conn->rbuf.data_cnt - conn->rbuf.data_ridx;
+    uint8_t *ptr = conn->rbuf.data_ptr + conn->rbuf.data_ridx;
+    hexprint(ptr,len);
+
+    if (is_client)
+        lh_conn_write(mitm.ms_conn, ptr, len);
+    else
+        lh_conn_write(mitm.cs_conn, ptr, len);
+
+    return len;
+}
 
 int signal_caught;
 
@@ -2153,48 +2177,31 @@ void signal_handler(int signum) {
     signal_caught = 1;
 }
 
+#define G_MCSERVER  1
+#define G_WEBSERVER 2
+#define G_PROXY     3
+
 int proxy_pump(uint32_t ip, uint16_t port) {
     CLEAR(mitm);
     CLEAR(build);
     CLEAR(track);
 
-
-    // common poll array for all sockets
-    pollarray pa;
+    // pollarray for all sockets
+    lh_pollarray pa;
     CLEAR(pa);
 
-
     // Minecraft proxy server
-    pollgroup sg;
-    CLEAR(sg);
-
-    int ss = sock_server_ipv4_tcp_any(port);
+    int ss = lh_listen_tcp4_any(port);
     if (ss<0) return -1;
-    pollarray_add(&pa, &sg, ss, MODE_R, NULL);
-
+    lh_poll_add(&pa, ss, POLLIN, G_MCSERVER, NULL);
 
     // fake session.minecraft.com web server
-    pollgroup wg; 
-    CLEAR(wg);
-
-    int ws = sock_server_ipv4_tcp_local(8880);
+    int ws = lh_listen_tcp4_any(8880);
     if (ws<0) return -1;
-    pollarray_add(&pa, &wg, ws, MODE_R, NULL);
+    lh_poll_add(&pa, ws, POLLIN, G_WEBSERVER, NULL);
 
-
-    // client side socket
-    pollgroup cg;
-    CLEAR(cg);
-
-
-    // server side socket
-    pollgroup mg;
-    CLEAR(mg);
-
+    // Client-side and the server-side sockets
     int cs=-1, ms=-1;
-    flbuffers fb;
-    CLEAR(fb);
-
 
     // prepare signal handling
     signal_caught = 0;
@@ -2207,58 +2214,41 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     // main pump
     int i;
     while(!signal_caught) {
-        // common poll for all registered sockets
-        evfile_poll(&pa, 1000);
+        lh_poll(&pa, 1000);
 
-        // handle connection requests from the client side
-        if (sg.rn > 0 && cs == -1)
-            if (handle_server(pa.p[sg.r[0]].fd, ip, port, &cs, &ms)) {
+        lh_polldata *pd;
+        int pos;
+
+        // handle connection requests on the web server
+        if ( pd=lh_poll_getfirst(&pa, G_WEBSERVER, POLLIN)) {
+            handle_session_server(pd->fd);
+        }
+
+        if ( pd=lh_poll_getfirst(&pa, G_MCSERVER, POLLIN)) {
+            if (handle_server(pd->fd, ip, port, &cs, &ms)) {
                 printf("New connection: cs=%d ms=%d\n", cs, ms);
                 
                 // handle_server was able to accept the client connection and
                 // also open the server-side connection, we need to add these
                 // new sockets to the groups cg and mg respectively
-                pollarray_add(&pa, &cg, cs, MODE_R, NULL);
-                pollarray_add(&pa, &mg, ms, MODE_R, NULL);
+                lh_conn *cs_conn = lh_conn_add(&pa, cs, G_PROXY, (void*)1);
+                lh_conn *ms_conn = lh_conn_add(&pa, ms, G_PROXY, (void*)0);
+                printf("cs_conn:%p ms_conn:%p\n",mitm.cs_conn,mitm.ms_conn);
+                printf("========================================\n");
+                lh_poll_dump(&pa);
+                printf("========================================\n");
 
                 init_mitm();
-            }
 
-        // handle connection requests from the client side
-        if (wg.rn > 0) {
-            handle_session_server(pa.p[wg.r[0]].fd);
+                mitm.cs_conn = cs_conn;
+                mitm.ms_conn = ms_conn;
+            }
         }
 
-        if (cg.rn > 0) {
-            if (pumpdata(cs, ms, 1, &fb)) {
-                pollarray_remove(&pa, cs);
-                pollarray_remove(&pa, ms);
-                close(cs); close(ms);
-                cs = ms = -1;
-                if (fb.crbuf) free(fb.crbuf);
-                if (fb.cwbuf) free(fb.cwbuf);
-                if (fb.srbuf) free(fb.srbuf);
-                if (fb.swbuf) free(fb.swbuf);
-                CLEAR(fb);
-                CLEAR(track);
-            }
-        }
-               
-        if (mg.rn > 0) {
-            if (pumpdata(ms, cs, 0, &fb)) {
-                pollarray_remove(&pa, cs);
-                pollarray_remove(&pa, ms);
-                close(cs); close(ms);
-                cs = ms = -1;
-                if (fb.crbuf) free(fb.crbuf);
-                if (fb.cwbuf) free(fb.cwbuf);
-                if (fb.srbuf) free(fb.srbuf);
-                if (fb.swbuf) free(fb.swbuf);
-                CLEAR(fb);
-                CLEAR(track);
-            }
-        }            
+        lh_conn_process(&pa, G_PROXY, handle_proxy);
+
     }
+
     printf("Terminating...\n");
     if (mitm.output) {
         fflush(mitm.output);

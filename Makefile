@@ -1,8 +1,9 @@
 CFLAGS=-g -pg -I../libhelper
-LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lssl
+LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lssl -lcrypto
 DEFS=-DDEBUG_MEMORY=0
 
-all: minemap netmine mcproxy mcsanvil chunkradar invedit
+all: mcproxy
+#all: minemap netmine mcproxy mcsanvil chunkradar invedit
 
 minemap: main.o anvil.o nbt.o draw.o
 	$(CC) -o $@ $^ $(LIBS)
@@ -18,6 +19,8 @@ chunkradar: chunkradar.o
 
 mcsanvil: mcsanvil.o anvil.o nbt.o
 	$(CC) -o $@ $^ $(LIBS)
+
+mcproxy-rebuild: mcproxy.o ../libhelper/libhelper.a mcproxy
 
 mcproxy: mcproxy.o
 	$(CC) -o $@ $^ $(LIBS)
