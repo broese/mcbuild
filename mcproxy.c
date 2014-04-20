@@ -35,33 +35,22 @@
 #define ASYNC_THRESHOLD 500000
 #define NEAR_THRESHOLD 40000
 
+#define G_MCSERVER  1
+#define G_WEBSERVER 2
+#define G_PROXY     3
+
+#define STATE_IDLE     0
+#define STATE_STATUS   1
+#define STATE_LOGIN    2
+#define STATE_PLAY     3
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
-int handle_server(int sfd, uint32_t ip, uint16_t port, int *cs, int *ms) {
-    // accept connection from the local client
-    struct sockaddr_in cadr;
-    *cs = lh_accept_tcp4(sfd, &cadr);
-    if (*cs < 0)
-        LH_ERROR(0, "Failed to accept the client-side connection");
-    printf("Accepted from %s:%d\n",
-           inet_ntoa(cadr.sin_addr),ntohs(cadr.sin_port));
-
-    // open connection to the remote server
-    *ms = lh_connect_tcp4(ip, port);
-    if (*ms < 0) {
-        close(*cs);
-        LH_ERROR(0, "Failed to open the client-side connection");
-    }
-    return 1;
-}
 
 
 #if 0
 
-
-////////////////////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////////////////////
 
 #define MCP_KeepAlive           0x00
 #define MCP_LoginRequest        0x01
@@ -303,21 +292,23 @@ ssize_t inline Wstr(uint8_t *p, const char *str) {
 
 #endif
 
-typedef struct {
-    lh_buf_t rx;
-    lh_buf_t tx;
-} decbufs;
+lh_pollarray pa;
 
 struct {
-    int state;
+    int state;          // handshake state
+
+    int cs;             // connected socket to client
+    int ms;             // connected socket to server
 
     // connections
     lh_conn * cs_conn; // to the client
     lh_conn * ms_conn; // to the server
 
     // decoded buffers
-    decbufs   cs_bufs;
-    decbufs   ms_bufs;
+    lh_buf_t  cs_rx;   // client -> proxy
+    lh_buf_t  cs_tx;   // proxy -> client
+    lh_buf_t  ms_rx;   // server -> proxy
+    lh_buf_t  ms_tx;   // proxy -> server
 
     // RSA structures/keys for server-side and client-side
     RSA *s_rsa; // public key only - must be freed by RSA_free
@@ -333,7 +324,7 @@ struct {
 
     // server ID - we forward this to client as is, so no need
     // for client- and server side versions.
-    // zero-temrinated string, so no need for length value
+    // zero-terminated string, so no need for length value
     // Note: serverID is received as UTF-16 string, but converted to ASCII
     // for hashing. The string itself is a hexstring, but it's not converted
     // to bytes or anything
@@ -377,78 +368,6 @@ struct {
 
 #include <time.h>
 
-void init_mitm() {
-    if (mitm.output) fclose(mitm.output);
-    if (mitm.s_rsa) RSA_free(mitm.s_rsa);
-    if (mitm.c_rsa) RSA_free(mitm.c_rsa);
-    CLEAR(mitm);
-
-    mitm.cs_bufs.rx.data_gran = mitm.cs_bufs.tx.data_gran = 65536;
-    mitm.ms_bufs.rx.data_gran = mitm.ms_bufs.tx.data_gran = 65536;
-
-    //sprintf(mitm.c_session, "%s", "-5902608541656304512");
-
-    char fname[4096];
-    time_t t;
-    time(&t);
-    strftime(fname, sizeof(fname), "saved/%Y%m%d_%H%M%S.mcs",localtime(&t));
-    mitm.output = fopen(fname, "w");
-}
-
-int handle_session_server(int sfd) {
-
-    //// Handle Client-Side Connection
-
-    // accept connection from the client side
-    struct sockaddr_in cadr;
-    int cs = lh_accept_tcp4(sfd, &cadr);
-    lh_net_blocking(cs);
-    if (cs < 0)
-        LH_ERROR(0, "Failed to accept the client-side connection",strerror(errno));
-    printf("Accepted from %s:%d (Webserver)\n",
-           inet_ntoa(cadr.sin_addr),ntohs(cadr.sin_port));
-
-    FILE * client = fdopen(cs, "r+");
-
-    char buf[4096];
-
-    while(fgets(buf, sizeof(buf), client)) {
-        LH_HERE;
-        if (!strncmp(buf, "GET /game/joinserver.jsp?user=", 30)) {
-            char *ssid = index(buf, '&')+11; // skip to sessionId=
-            char *wp = mitm.c_session;
-            while(*ssid != '&') *wp++ = *ssid++;
-            *wp++ = 0;
-
-            ssid += 10; // skip to serverId=
-            wp = mitm.server_id_hash;
-            while(*ssid != ' ') *wp++ = *ssid++;
-            *wp++ = 0;
-
-            printf("session login caught : sessionId=%s serverId=%s\n",
-                   mitm.c_session,mitm.server_id_hash);
-        }
-
-        LH_HERE;
-        //hexdump(buf, strlen(buf));
-        if (buf[0] == 0x0d && buf[1] == 0x0a) {
-            printf("------ HEADER END ------\n");
-            fprintf(client,
-                    "HTTP/1.1 200 OK\r\n"
-                    "Content-Type: text/plain; charset=UTF-8\r\n"
-                    "Server: Redstone\r\n"
-                    "Content-Length: 2\r\n"
-                    "Connection: close\r\n"
-                    "\r\n"
-                    "OK\r\n");
-            fflush(client);
-            fclose(client);
-            break;
-        }
-        LH_HERE;
-    }
-    return 1;
-}
 
 #if 0
 
@@ -2199,118 +2118,162 @@ uint8_t * read_string(uint8_t *p, char *s) {
 #define Rskip(n)  p+=n;
 #define Rvarint(n) uint32_t n = lh_read_varint(p);
 
-/*
-0x180cae0  ac 01 01 00 00 a2 30 81 9f 30 0d 06 09 2a 86 48  ......0..0...*.H
-0x180caf0  86 f7 0d 01 01 01 05 00 03 81 8d 00 30 81 89 02  ............0...
-0x180cb00  81 81 00 b4 37 15 30 53 3c b2 3c 29 bc 59 38 0b  ....7.0S<.<).Y8.
-0x180cb10  8b 0b c1 f1 bd 8e de de c8 8c 76 9f 69 ca 62 7a  ..........v.i.bz
-0x180cb20  a0 c9 2a 3c d6 6d d6 7f 20 bb 44 96 8d af be 67  ..*<.m. .D....g
-0x180cb30  33 fc 63 39 f2 ca 5b cd 74 2e 64 ef eb d2 b3 f5  3.c9..[.t.d.....
-0x180cb40  9d 4d ae e6 2d fa 92 7b 68 17 02 62 62 13 7c 54  .M..-..{h..bb.|T
-0x180cb50  6d 13 b9 ed ed 78 9e 71 c2 0d ef fe 80 51 65 dd  m....x.q.....Qe.
-0x180cb60  1f 9b e4 7c 32 5a 7b ba 1d 34 f3 c9 6b 3b 38 46  ...|2Z{..4..k;8F
-0x180cb70  a8 40 04 d3 2a c4 e1 a5 b6 57 fb 89 16 ce d5 b9  .@..*....W......
-0x180cb80  c7 da ab 02 03 01 00 01 00 04 71 f5 cb a5        ..........q...  
-*/
+////////////////////////////////////////////////////////////////////////////////
 
-#define MC_Handshake            0x00
-#define MC_EncryptionResponse   0x01
+#define CI(x) ((0x10<<24)|(0x##x))
+#define SI(x) ((0x00<<24)|(0x##x))
+#define CS(x) ((0x11<<24)|(0x##x))
+#define SS(x) ((0x01<<24)|(0x##x))
+#define CL(x) ((0x12<<24)|(0x##x))
+#define SL(x) ((0x02<<24)|(0x##x))
+#define CP(x) ((0x13<<24)|(0x##x))
+#define SP(x) ((0x03<<24)|(0x##x))
 
-#define MS_EncryptionRequest    0x01
+// Handshakes
+
+#define CI_Handshake            CI(00)
+
+// Status Query
+
+#define CS_Request              CS(00)
+#define CS_PingRequest          CS(01)
+#define SS_Response             SS(00)
+#define SS_PingResponse         SS(01)
+
+// Login Process
+
+#define CL_LoginStart           CL(00)
+#define CL_EncryptionResponse   CL(01)
+#define SL_Disconnect           SL(00)
+#define SL_EncryptionRequest    SL(01)
+#define SL_LoginSuccess         SL(02)
 
 void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                     lh_buf_t *forw, lh_buf_t *retour) {
+
     // one nice advantage - we can be sure that we have all data in the buffer,
     // so there's no need for limit checking with the new protocol
 
     uint8_t *p = ptr;
     uint32_t type = lh_read_varint(p);
-    LH_HERE;
+    uint32_t stype = ((mitm.state<<24)|(is_client<<28)|(type&0xffffff));
+
+    char *states = "ISLP";
+
+    printf("%c %c type=%02x, len=%zd\n", is_client?'C':'S',
+           states[mitm.state],type,len);
+    hexdump(ptr, len);
 
     uint8_t output[65536];
     uint8_t *w = output;
 
-    if (is_client) {
-        switch (type) {
-            case MC_Handshake: {
-                LH_HERE;
-                Rvarint(protocolVer);
-                LH_HERE;
-                Rstr(serverAddr);
-                printf(">%s<\n",serverAddr);
-#if 0
-                LH_HERE;
-                Rshort(serverPort);
-                LH_HERE;
-                Rvarint(nextState);
-                LH_HERE;
+    switch (stype) {
+        ////////////////////////////////////////////////////////////////////////
+        // Idle state
+        case CI_Handshake: {
+            LH_HERE;
+            Rvarint(protocolVer);
+            Rstr(serverAddr);
+            Rshort(serverPort);
+            Rvarint(nextState);
+            LH_HERE;
+            mitm.state = nextState;
+            printf("C %-30s protocol=%d server=%s:%d nextState=%d\n",
+                   "Handshake",protocolVer,serverAddr,serverPort,nextState);
+            LH_HERE;
+            write_packet(ptr, len, forw);
+            LH_HERE;
+            break;
+        }
 
-                LH_HERE;
-                mitm.state = nextState;
+        ////////////////////////////////////////////////////////////////////////
+#if 0
+        case CS_Request: {
+            printf("C %-30s\n", "Status Request");
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        case CS_PingRequest: {
+            Rlong(time);
+            printf("C %-30s time=%jd\n", "Ping Request",time);
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        case SS_Response: {
+            Rstr(serverStatus);
+            printf("S %-30s : %s\n","Status Response",serverStatus);
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        case SS_PingResponse: {
+            Rlong(time);
+            printf("S %-30s time=%jd\n","Ping Response",time);
+            write_packet(ptr, len, forw);
+            break;
+        }
 #endif
+
+        ////////////////////////////////////////////////////////////////////////    
+#if 0
+        case MC_EncryptionResponse: {
+            if (mitm.pstate != 2) {
                 write_packet(ptr, len, forw);
-                LH_HERE;
                 break;
             }
-
-            //case MC_LoginStart: 
-            case MC_EncryptionResponse: {
-                LH_HERE;
-                if (mitm.state != 2) {
-                    write_packet(ptr, len, forw);
-                    break;
-                }
-
-                Rshort(sklen);
-                uint8_t *skey = p;
-                Rskip(sklen);
-                Rshort(tklen);
-                uint8_t *token = p;
-                Rskip(tklen);
-
-                LH_HERE;
-                char buf[4096];
-                int dklen = RSA_private_decrypt(sklen, skey, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
-                if (dklen < 0) {
+            
+            Rshort(sklen);
+            uint8_t *skey = p;
+            Rskip(sklen);
+            Rshort(tklen);
+            uint8_t *token = p;
+            Rskip(tklen);
+            
+            LH_HERE;
+            char buf[4096];
+            int dklen = RSA_private_decrypt(sklen, skey, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
+            if (dklen < 0) {
                     printf("Failed to decrypt the shared key received from the client\n");
                     exit(1);
-                }
-                printf("Decrypted client shared key, keylen=%d ",dklen);
-                hexprint(buf, dklen);
-                memcpy(mitm.c_skey, buf, 16);
-                
-                int dtlen = RSA_private_decrypt(tklen, token, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
-                if (dtlen < 0) {
+            }
+            printf("Decrypted client shared key, keylen=%d ",dklen);
+            hexprint(buf, dklen);
+            memcpy(mitm.c_skey, buf, 16);
+            
+            int dtlen = RSA_private_decrypt(tklen, token, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
+            if (dtlen < 0) {
                     printf("Failed to decrypt the verification token received from the client\n");
                     exit(1);
-                }
-                printf("Decrypted client token, len=%d ",dtlen);
-                hexprint(buf, dtlen);
-                printf("Original token: ");
-                hexprint(mitm.c_token,4);
-                if (memcmp(buf, mitm.c_token, 4)) {
-                    printf("Token does not match!\n");
+            }
+            printf("Decrypted client token, len=%d ",dtlen);
+            hexprint(buf, dtlen);
+            printf("Original token: ");
+            hexprint(mitm.c_token,4);
+            if (memcmp(buf, mitm.c_token, 4)) {
+                printf("Token does not match!\n");
                     exit(1);
-                }
+            }
+            
+            LH_HERE;
+            // at this point, the client side is verified and the key is established
+            // now send our response to the server
+            write_varint(w, MC_EncryptionResponse);
 
-                LH_HERE;
-                // at this point, the client side is verified and the key is established
-                // now send our response to the server
-                write_varint(w, MC_EncryptionResponse);
-
-                int eklen = RSA_public_encrypt(sizeof(mitm.s_skey), mitm.s_skey, buf, mitm.s_rsa, RSA_PKCS1_PADDING);
-                write_short(w,(short)eklen);
-                memcpy(w, buf, eklen);
-                w += eklen;
-
-                int etlen = RSA_public_encrypt(sizeof(mitm.s_token), mitm.s_token, buf, mitm.s_rsa, RSA_PKCS1_PADDING);
-                write_short(w,(short)etlen);
-                memcpy(w, buf, etlen);
-                w += etlen;
-
-                write_packet(output, w-output, forw);
-                LH_HERE;
-
+            int eklen = RSA_public_encrypt(sizeof(mitm.s_skey), mitm.s_skey, buf, mitm.s_rsa, RSA_PKCS1_PADDING);
+            write_short(w,(short)eklen);
+            memcpy(w, buf, eklen);
+            w += eklen;
+            
+            int etlen = RSA_public_encrypt(sizeof(mitm.s_token), mitm.s_token, buf, mitm.s_rsa, RSA_PKCS1_PADDING);
+            write_short(w,(short)etlen);
+            memcpy(w, buf, etlen);
+            w += etlen;
+                
+            write_packet(output, w-output, forw);
+            LH_HERE;
+                
 #if 0
             // the final touch - send the authentication token to the session server
             unsigned char md[SHA_DIGEST_LENGTH];
@@ -2331,135 +2294,140 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                 exit(1);
             }
 #endif
-
-                break;
-
-            }
-
-            default:
-                // by default, just forward the packet as is
-                write_packet(ptr, len, forw);
         }
-    }
-    else {
-        LH_HERE;
-        switch (type) {
-            //case MS_Disconnect: 
-            case MS_EncryptionRequest: {
-                LH_HERE;
-                Rstr(serverID);
 
-                Rshort(klen);
-                memmove(mitm.s_pkey,p,klen);
-                Rskip(klen);
-
-                Rshort(tlen);
-                memmove(mitm.s_token,p,tlen);
-                Rskip(tlen);
-
-                printf("Encryption Request\n");
-
-                sprintf(mitm.s_id,"%s",serverID);
-                mitm.s_pklen = klen;
+        case MS_EncryptionRequest: {
+            LH_HERE;
+            Rstr(serverID);
+            
+            LH_HERE;
+            Rshort(klen);
+            memmove(mitm.s_pkey,p,klen);
+            Rskip(klen);
+            
+            LH_HERE;
+            Rshort(tlen);
+            memmove(mitm.s_token,p,tlen);
+            Rskip(tlen);
                 
-                LH_HERE;
-                // decode server PUBKEY to an RSA struct
-                unsigned char *pp = mitm.s_pkey;
-                d2i_RSA_PUBKEY(&mitm.s_rsa, (const unsigned char **)&pp, klen);
-                if (mitm.s_rsa == NULL) {
-                    printf("Failed to decode the server's public key\n");
-                    exit(1);
-                }
-                RSA_print_fp(stdout, mitm.s_rsa, 4);
-
-                // generate the server-side shared key pair
-                RAND_pseudo_bytes(mitm.s_skey, 16);
-                printf("Server-side shared key: ");
-                hexprint(mitm.s_skey, 16);
-
-                // create a client-side RSA
-                mitm.c_rsa = RSA_generate_key(1024, RSA_F4, NULL, NULL);
-                if (mitm.c_rsa == NULL) {
-                    printf("Failed to generate client-side RSA key\n");
-                    exit(1);
-                }
-                RSA_print_fp(stdout, mitm.c_rsa, 4);
-
-                // encode the client-side pubkey as DER
-                pp = mitm.c_pkey;
-                mitm.c_pklen = i2d_RSA_PUBKEY(mitm.c_rsa, &pp);
-
-                // generate the client-side verification token
-                RAND_pseudo_bytes(mitm.c_token, 4);
-
-                LH_HERE;
-                // combine it to a MCP message to the client
-                write_varint(w, MS_EncryptionRequest);
-                write_varint(w, strlen(serverID));
-                memmove(w, serverID, strlen(serverID));
-                w+=strlen(serverID);
-                write_short(w, mitm.c_pklen);
-                memmove(w, mitm.c_pkey, mitm.c_pklen);
-                w+=mitm.c_pklen;
-                write_short(w, 4);
-                memmove(w, mitm.c_token, 4);
-                w+=4;
-
-                LH_HERE;
-                write_packet(output, w-output, forw);
-
-                LH_HERE;
-                break;
+            LH_HERE;
+            printf("Encryption Request\n");
+                
+            sprintf(mitm.s_id,"%s",serverID);
+            mitm.s_pklen = klen;
+                
+            LH_HERE;
+            // decode server PUBKEY to an RSA struct
+            unsigned char *pp = mitm.s_pkey;
+            d2i_RSA_PUBKEY(&mitm.s_rsa, (const unsigned char **)&pp, klen);
+            if (mitm.s_rsa == NULL) {
+                printf("Failed to decode the server's public key\n");
+                exit(1);
             }
-            //case MS_LoginSuccess:
+            RSA_print_fp(stdout, mitm.s_rsa, 4);
 
-            default:
-                // by default, just forward the packet as is
-                write_packet(ptr, len, forw);
+            // generate the server-side shared key pair
+            RAND_pseudo_bytes(mitm.s_skey, 16);
+            printf("Server-side shared key: ");
+            hexprint(mitm.s_skey, 16);
+
+            // create a client-side RSA
+            mitm.c_rsa = RSA_generate_key(1024, RSA_F4, NULL, NULL);
+            if (mitm.c_rsa == NULL) {
+                printf("Failed to generate client-side RSA key\n");
+                exit(1);
+            }
+            RSA_print_fp(stdout, mitm.c_rsa, 4);
+
+            // encode the client-side pubkey as DER
+            pp = mitm.c_pkey;
+            mitm.c_pklen = i2d_RSA_PUBKEY(mitm.c_rsa, &pp);
+
+            // generate the client-side verification token
+            RAND_pseudo_bytes(mitm.c_token, 4);
+
+            LH_HERE;
+            // combine it to a MCP message to the client
+            write_varint(w, MS_EncryptionRequest);
+            write_varint(w, strlen(serverID));
+            memmove(w, serverID, strlen(serverID));
+            w+=strlen(serverID);
+            write_short(w, mitm.c_pklen);
+            memmove(w, mitm.c_pkey, mitm.c_pklen);
+            w+=mitm.c_pklen;
+            write_short(w, 4);
+            memmove(w, mitm.c_token, 4);
+            w+=4;
+
+            LH_HERE;
+            write_packet(output, w-output, forw);
+
+            LH_HERE;
+            break;
+        }
+#endif
+
+
+
+        ////////////////////////////////////////////////////////////////////////
+        default: {
+            // by default, just forward the packet as is
+            write_packet(ptr, len, forw);
         }
     }
 
-    LH_HERE;
-    printf("%c : %4x , %zd bytes\n",is_client?'C':'S',type,len);
-    //write_packet(ptr, len, forw);    
 }
 
 ssize_t handle_proxy(lh_conn *conn) {
-    int is_client = (int) conn->priv;
-    lh_buf_t *rx = is_client ? &mitm.cs_bufs.rx : &mitm.ms_bufs.rx;
-    lh_buf_t *tx = is_client ? &mitm.cs_bufs.tx : &mitm.ms_bufs.tx;
+    int is_client = (conn->priv != NULL);
+
+    if (conn->status&CONN_STATUS_REMOTE_EOF) {
+        // one of the parties has closed the connection.
+        // close both sides, deinit the MITM state and
+        // remove our descriptors from the pollarray
+
+        close(mitm.cs);
+        close(mitm.ms);
+        mitm.state = STATE_IDLE;
+        mitm.cs = mitm.ms = -1;
+        lh_conn_remove(mitm.cs_conn);
+        lh_conn_remove(mitm.ms_conn);
+
+        return 0;
+    }
+
+    // determine decoded buffers for input (rx) and output (tx)
+    lh_buf_t *rx = is_client ? &mitm.cs_rx : &mitm.ms_rx;
+    lh_buf_t *tx = is_client ? &mitm.cs_tx : &mitm.ms_tx;
 
     assert(conn->rbuf.data_ptr);
 
+    // sptr,slen - pointer and length of data in the receive buffer
     ssize_t slen = conn->rbuf.data_cnt - conn->rbuf.data_ridx;
     uint8_t *sptr = conn->rbuf.data_ptr + conn->rbuf.data_ridx;
 
+    // provide necessary space in the decoded receive buffer
     ssize_t widx = rx->data_cnt;
     lh_arr_add(AR(rx->data),rx->data_gran,slen);
+
     //TODO: decrypt data into rx
     memmove(rx->data_ptr+widx, sptr, slen);
 
-    //NOTE: we are starting decoding alaways from the beginning of the rx buffer
-    //The only reason it may still have data is because the packet was incomplete
-
-    ssize_t len = rx->data_cnt;
-    uint8_t * ptr = rx->data_ptr;
-
+    // try to extract as many packets from the stream as we can in a loop
     while(rx->data_cnt > 0) {
-        hexdump(AR(rx->data));
+        //hexdump(AR(rx->data));
         // do we have a complete packet?
-        uint8_t *p = ptr;
-        if (((*p)&0x80)&&(len<129)) break; // large varint, data is definitely too short
+        uint8_t *p = rx->data_ptr;
+
+        // large varint, data is definitely too short
+        if (((*p)&0x80)&&(rx->data_cnt<129)) break;
+
         uint32_t plen = lh_read_varint(p);
-        ssize_t ll = p-ptr;
-        printf("plen=%d ll=%zd len=%zd\n",plen,ll,len);
-        if (plen+ll > len) break; // packet is incomplete
-        printf("plen=%d\n",plen);
-        LH_HERE;
+        ssize_t ll = p-rx->data_ptr; // length of the varint
+        if (plen+ll > rx->data_cnt) break; // packet is incomplete
+
         process_packet(is_client, p, plen, tx, NULL);
-        LH_HERE;
         lh_arr_delete_range(AR(rx->data),0,ll+plen);
-        LH_HERE;
     }
 
     //TODO: encrypt
@@ -2467,7 +2435,7 @@ ssize_t handle_proxy(lh_conn *conn) {
     lh_conn_write(is_client?mitm.ms_conn:mitm.cs_conn, AR(tx->data));
     tx->data_cnt = tx->data_ridx = 0;
 
-    return len;
+    return slen;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2479,18 +2447,167 @@ void signal_handler(int signum) {
     signal_caught = 1;
 }
 
-#define G_MCSERVER  1
-#define G_WEBSERVER 2
-#define G_PROXY     3
+#include <openssl/evp.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
+
+void * sslerr(char * str) {
+    printf("SSL error: %s\n",str);
+    while(ERR_peek_error()) {
+        char error[4096];
+        printf("  %s\n", ERR_error_string(ERR_get_error(), error));
+    }
+    return NULL;
+}
+
+SSL_CTX * create_ssl_context() {
+    // init library
+    SSL_library_init();
+    OpenSSL_add_all_algorithms();       // load & register cryptos
+    SSL_load_error_strings();           // load all error messages
+
+    // init context
+    SSL_METHOD *method = SSLv23_server_method();    // create server instance
+    if (!method)
+        return sslerr("Failed to create SSLv23 server method");
+
+    SSL_CTX *ctx = SSL_CTX_new(method);             // create context
+    if (!ctx)
+        return sslerr("Failed to create SSL context");
+    
+    // load server certificate
+    // set the local certificate from CertFile
+    if (!SSL_CTX_use_certificate_file(ctx, "server.pem", SSL_FILETYPE_PEM))
+        return sslerr("Failed to load the server certificate");
+    // set the private key from KeyFile
+    if (!SSL_CTX_use_PrivateKey_file(ctx, "server.pem", SSL_FILETYPE_PEM))
+        return sslerr("Failed to load the server private key");
+    // verify private key
+    if ( !SSL_CTX_check_private_key(ctx) )
+        return sslerr("Checking the server private key failed");
+    return ctx;
+}
+
+int handle_session_server(int sfd, SSL_CTX *ctx) {
+    // accept connection from the client side
+    struct sockaddr_in cadr;
+    int cs = lh_accept_tcp4(sfd, &cadr);
+    lh_net_blocking(cs);
+    if (cs < 0)
+        LH_ERROR(0, "Failed to accept the client-side connection",strerror(errno));
+    printf("Accepted from %s:%d (Webserver)\n",
+           inet_ntoa(cadr.sin_addr),ntohs(cadr.sin_port));
+
+    // establish the SSL context on this conenction
+    SSL *ssl = SSL_new(ctx);        // get new SSL state with context
+    if (!ssl) return (int) sslerr("Failed to create an SSL state");
+
+    if (!SSL_set_fd(ssl, cs))       // assign connection to the SSL state
+        return (int) sslerr("Failed to set the fd");
+
+    if (!SSL_accept(ssl))           // start the handshake process
+        return (int) sslerr("Handshaking failed");
+
+    // handle client-side request
+    char buf[262144];
+    int pos = 0;
+    int bytes0 = 10;
+
+    do {
+        int bytes = SSL_read(ssl, buf+pos, sizeof(buf)-pos-1);
+        if (bytes == 0) {
+            if (--bytes0 > 0)
+                printf("read %d bytes\n",bytes);
+        }
+        else
+            printf("read %d bytes\n",bytes);
+
+        pos += bytes;
+        buf[pos] = 0;
+    } while(!strstr(buf,"\r\n\r\n") && !signal_caught);
+
+    char *post = strstr(buf,"\r\n\r\n")+4;
+    hexdump(post,256);
+    while(!strstr(post,"}") && !signal_caught) {
+        int bytes = SSL_read(ssl, buf+pos, sizeof(buf)-pos-1);
+        if (bytes > 0) printf("(2) read %d bytes\n",bytes);
+        pos += bytes;
+        buf[pos] = 0;
+    }
+
+    //TODO: parse json
+
+    printf("Received a request:\n");
+    hexdump(buf, pos);
+    lh_save("mcrequest", buf, pos);
+    
+    SSL_free(ssl);
+    close(cs);
+
+    return 1;
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+int handle_server(int sfd, uint32_t ip, uint16_t port) {
+    LH_HERE;
+    // accept connection from the local client
+    struct sockaddr_in cadr;
+    int cs = lh_accept_tcp4(sfd, &cadr);
+    if (cs < 0)
+        LH_ERROR(0, "Failed to accept the client-side connection");
+
+    printf("Accepted from %s:%d\n",
+           inet_ntoa(cadr.sin_addr),ntohs(cadr.sin_port));
+    
+    // open connection to the remote server
+    int ms = lh_connect_tcp4(ip, port);
+    if (ms < 0) {
+        close(mitm.cs);
+        LH_ERROR(0, "Failed to open the client-side connection");
+    }
+
+    // TCP connections established, 
+    printf("New connection: cs=%d ms=%d\n", cs, ms);
+    
+    // initialize mitm struct, terminate old state if any
+    if (mitm.output) fclose(mitm.output);
+    if (mitm.s_rsa) RSA_free(mitm.s_rsa);
+    if (mitm.c_rsa) RSA_free(mitm.c_rsa);
+    CLEAR(mitm);
+
+    mitm.cs_rx.data_gran = mitm.cs_tx.data_gran = 65536;
+    mitm.ms_rx.data_gran = mitm.ms_tx.data_gran = 65536;
+
+    char fname[4096];
+    time_t t;
+    time(&t);
+    strftime(fname, sizeof(fname), "saved/%Y%m%d_%H%M%S.mcs",localtime(&t));
+    mitm.output = fopen(fname, "w");
+
+    // handle_server was able to accept the client connection and
+    // also open the server-side connection, we need to add these
+    // new sockets to the groups cg and mg respectively
+    mitm.cs = cs;
+    mitm.ms = ms;
+    mitm.cs_conn = lh_conn_add(&pa, cs, G_PROXY, (void*)1);
+    mitm.ms_conn = lh_conn_add(&pa, ms, G_PROXY, (void*)0);
+
+    return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 int proxy_pump(uint32_t ip, uint16_t port) {
-    CLEAR(mitm);
-    CLEAR(build);
-    CLEAR(track);
-
-    // pollarray for all sockets
-    lh_pollarray pa;
     CLEAR(pa);
+
+    SSL_CTX * ctx = create_ssl_context();
+    if (!ctx) return -1;
+
+    CLEAR(mitm);
+    mitm.cs = mitm.ms = -1;
 
     // Minecraft proxy server
     int ss = lh_listen_tcp4_any(port);
@@ -2501,9 +2618,6 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     int ws = lh_listen_tcp4_any(8880);
     if (ws<0) return -1;
     lh_poll_add(&pa, ws, POLLIN, G_WEBSERVER, NULL);
-
-    // Client-side and the server-side sockets
-    int cs=-1, ms=-1;
 
     // prepare signal handling
     signal_caught = 0;
@@ -2522,33 +2636,14 @@ int proxy_pump(uint32_t ip, uint16_t port) {
         int pos;
 
         // handle connection requests on the web server
-        if ( pd=lh_poll_getfirst(&pa, G_WEBSERVER, POLLIN)) {
-            handle_session_server(pd->fd);
-        }
+        if ( pd=lh_poll_getfirst(&pa, G_WEBSERVER, POLLIN))
+            handle_session_server(pd->fd, ctx);
 
-        if ( pd=lh_poll_getfirst(&pa, G_MCSERVER, POLLIN)) {
-            if (handle_server(pd->fd, ip, port, &cs, &ms)) {
-                printf("New connection: cs=%d ms=%d\n", cs, ms);
-                
-                // handle_server was able to accept the client connection and
-                // also open the server-side connection, we need to add these
-                // new sockets to the groups cg and mg respectively
-                lh_conn *cs_conn = lh_conn_add(&pa, cs, G_PROXY, (void*)1);
-                lh_conn *ms_conn = lh_conn_add(&pa, ms, G_PROXY, (void*)0);
-                printf("cs_conn:%p ms_conn:%p\n",mitm.cs_conn,mitm.ms_conn);
-                printf("========================================\n");
-                lh_poll_dump(&pa);
-                printf("========================================\n");
+        if ( pd=lh_poll_getfirst(&pa, G_MCSERVER, POLLIN))
+            handle_server(pd->fd, ip, port);
 
-                init_mitm();
-
-                mitm.cs_conn = cs_conn;
-                mitm.ms_conn = ms_conn;
-            }
-        }
-
+        // handle client- and server-side connection
         lh_conn_process(&pa, G_PROXY, handle_proxy);
-
     }
 
     printf("Terminating...\n");
