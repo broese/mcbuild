@@ -1,5 +1,5 @@
 CFLAGS=-g -pg -I../libhelper
-LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lssl -lcrypto
+LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lssl -lcrypto -lcurl
 DEFS=-DDEBUG_MEMORY=0
 
 all: mcproxy
