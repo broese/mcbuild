@@ -25,11 +25,15 @@
 #include "lh_event.h"
 #include "lh_compress.h"
 
-#define SERVER_IP 0x0a000001   // Local server on Peorth
+//#define SERVER_IP 0x0a000001   // Local server on Peorth
 //#define SERVER_IP 0xc7a866c2 // Beciliacraft 199.168.102.194
 //#define SERVER_IP 0x53e9ed40   // 2B2T 83.233.237.64
 //#define SERVER_IP 0x53b3151f   // rujush.org   83.179.21.31
 //#define SERVER_IP 0x6c3d10d3   // WC Minecraft 108.61.16.211
+
+#define SERVER_ADDR "2b2t.org"
+//#define SERVER_ADDR "peorth"
+
 #define SERVER_PORT 25565
 #define WEBSERVER_PORT 8080
 
@@ -1940,131 +1944,6 @@ ssize_t process_data(int is_client, uint8_t **sbuf, ssize_t *slen,
     return consumed;
 }
 
-int pumpdata(int src, int dst, int is_client, flbuffers *fb) {
-    // choose correct buffers depending on traffic direction
-    uint8_t **sbuf, **dbuf, **abuf;
-    ssize_t *slen, *dlen, *alen;
-    // sbuf - coming from the source, dbuf - forward to destination, abuf - response back to source
-
-    if (is_client) {
-        sbuf = &fb->crbuf;
-        slen = &fb->crlen;
-        dbuf = &fb->swbuf;
-        dlen = &fb->swlen;
-        abuf = &fb->cwbuf;
-        alen = &fb->cwlen;
-    }
-    else {
-        sbuf = &fb->srbuf;
-        slen = &fb->srlen;
-        dbuf = &fb->cwbuf;
-        dlen = &fb->cwlen;
-        abuf = &fb->swbuf;
-        alen = &fb->swlen;
-    }
-
-    // read incoming data to the source buffer
-    ssize_t prevlen = *slen;
-    int res = evfile_read(src, sbuf, slen, 1048576);
-
-    switch (res) {
-        case EVFILE_OK:
-        case EVFILE_WAIT: {
-            // decrypt read buffer if encryption is enabled
-            // but only the new portion that was read
-            if (mitm.encstate) {
-                uint8_t *ebuf = *sbuf+prevlen;
-                ssize_t elen  = *slen-prevlen;
-
-                int num=0;
-                if (is_client)
-                    AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.c_aes, mitm.c_dec_iv, &num, AES_DECRYPT);
-                else
-                    AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.s_aes, mitm.s_dec_iv, &num, AES_DECRYPT);
-            }
-
-            // call the external method to process the input data
-            // it will copy the data to dbuf as is, or modified, or it may
-            // also insert other data
-
-            ssize_t consumed = process_data(is_client, sbuf, slen, dbuf, dlen, abuf, alen);
-            if (consumed > 0) {
-                if (*slen-consumed > 0)
-                    memcpy(*sbuf, *sbuf+consumed, *slen-consumed);
-                *slen -= consumed;
-            }
-
-            // check if asynchronous events can be processed
-            struct timeval tv;
-            gettimeofday(&tv, NULL);
-            int64_t now = ((int64_t)tv.tv_sec)*1000000+tv.tv_usec;
-            if (now-mitm.last[is_client] > ASYNC_THRESHOLD) {
-                mitm.last[is_client] = now;
-                process_async(is_client, sbuf, slen, dbuf, dlen, abuf, alen);
-            }
-
-
-            // encrypt write buffer if encryption is enabled
-            if (mitm.encstate) {
-                uint8_t *ebuf = *dbuf;
-                ssize_t elen  = *dlen;
-                
-                // when the encryption is enabled for the first time,
-                // the last message (0xFC from the server) still goes out unencrypted,
-                // so we skip the first byte and clear the flag
-                //FIXME: watch out for race conditions
-                if (mitm.passfirst)
-                    mitm.passfirst=0;
-                else {
-                    int num=0;
-                    if (is_client)
-                        AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.s_aes, mitm.s_enc_iv, &num, AES_ENCRYPT);
-                    else
-                        AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.c_aes, mitm.c_enc_iv, &num, AES_ENCRYPT);
-                }
-
-                ebuf = *abuf;
-                elen = *alen;
-                
-                if (elen > 0) {
-                    int num=0;
-                    if (is_client)
-                        AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.c_aes, mitm.c_enc_iv, &num, AES_ENCRYPT);
-                    else
-                        AES_cfb8_encrypt(ebuf, ebuf, elen, &mitm.s_aes, mitm.s_enc_iv, &num, AES_ENCRYPT);
-                }
-            }
-
-
-            // send out the contents of the write buffer
-            uint8_t *buf = *dbuf;
-            ssize_t len = *dlen;
-            while (len > 0) {
-                //printf("sending %d bytes to %s\n",len,is_client?"server":"client");
-                ssize_t sent = write(dst,buf,len);
-                buf += sent;
-                len -= sent;
-            }
-            *dlen = 0;
-
-            // send out the contents of the answer buffer
-            buf = *abuf;
-            len = *alen;
-            while (len > 0) {
-                //printf("sending %d bytes to %s\n",len,is_client?"server":"client");
-                ssize_t sent = write(src,buf,len);
-                buf += sent;
-                len -= sent;
-            }
-            *alen = 0;
-
-            return 0;
-        }         
-        case EVFILE_ERROR:
-        case EVFILE_EOF:
-            return -1;
-    }
-}
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2131,11 +2010,32 @@ uint8_t * read_string(uint8_t *p, char *s) {
 
 // Play
 
+#define SP_ChunkData            SP(21)
+#define SP_MultiBlockChange     SP(22)
+#define SP_BlockChange          SP(23)
+#define SP_MapChunkBulk         SP(26)
+
 void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                     lh_buf_t *forw, lh_buf_t *retour) {
 
     // one nice advantage - we can be sure that we have all data in the buffer,
     // so there's no need for limit checking with the new protocol
+
+    if (mitm.output) {
+        // write packet to the MCS file
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+
+        uint8_t header[4096];
+        uint8_t *hp = header;
+        write_int(hp, is_client);
+        write_int(hp, tv.tv_sec);
+        write_int(hp, tv.tv_usec);
+        write_int(hp, len);
+        fwrite(header, 1, hp-header, mitm.output);
+        fwrite(ptr, 1, len, mitm.output);
+        fflush(mitm.output);
+    }
 
     uint8_t *p = ptr;
     uint32_t type = lh_read_varint(p);
@@ -2322,6 +2222,10 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             LH_HERE;
             break;
         }
+
+        ////////////////////////////////////////////////////////////////////////
+
+            
 
         ////////////////////////////////////////////////////////////////////////
         default: {
@@ -2559,7 +2463,6 @@ int handle_session_server(int sfd) {
     fclose(fp);
     return 1;
 }
-//{"accessToken":"bbc3cae3264e4ad0b446fd9bb852519a","selectedProfile":"962c6718688448d4a35c249f8d30428b","serverId":"bd651042ec97910e449e11a3991e1274e3e67e5"}HTTP/1.1 401 Authorization Required
 
 void print_hex(char *buf, const char *data, ssize_t len) {
     int i;
@@ -2579,7 +2482,7 @@ void print_hex(char *buf, const char *data, ssize_t len) {
         
         sprintf(w,"%02x",(unsigned char)d);
         w+=2;
-    }//{"accessToken":"bbc3cae3264e4ad0b446fd9bb852519a","selectedProfile":"962c6718688448d4a35c249f8d30428b","serverId":"bd651042ec97910e449e11a3991e1274e3e67e5"}HTTP/1.1 401 Authorization Required
+    }
 
     *w++ = 0;
 
@@ -2743,7 +2646,11 @@ int proxy_pump(uint32_t ip, uint16_t port) {
 }
 
 int main(int ac, char **av) {
-    proxy_pump(SERVER_IP, SERVER_PORT);
+    uint32_t server_ip = lh_dns_addr_ipv4(SERVER_ADDR);
+    if (server_ip == 0xffffffff)
+        LH_ERROR(-1, "Failed to obtain IP address for the server %s",SERVER_ADDR);
+        
+    proxy_pump(server_ip, SERVER_PORT);
 
     return 0;
 }
