@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <err.h>
 
 #include <lh_debug.h>
 #include <lh_bytes.h>
@@ -41,6 +42,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
         uint8_t *pkt = p;
         Rvarint(type);
+        printf("%d.%06d: %c  type=%x\n",sec,usec,is_client?'C':'S',type);
 
         if (!is_client) {
             switch (type) {
@@ -62,6 +64,17 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                     printf("%d.%06d: Spawn Player  eid=%d uuid=%s\n",sec,usec,eid,uuid);
                     break;
                 }
+                case 0x28: {
+                    Rint(efid);
+                    Rint(x);
+                    Rchar(y);
+                    Rint(z);
+                    Rint(data);
+                    Rchar(disrv);
+                    printf("%d.%06d: Effect  efid=%d data=%d bcoord=%d:%d:%d %s\n",
+                           sec,usec,efid,data,x,y,z,disrv?"disable relative volume":"");
+                    break;
+                }
                 case 0x29: {
                     Rstr(name);
                     Rint(x);
@@ -69,8 +82,8 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                     Rint(z);
                     Rfloat(volume);
                     Rchar(pitch);
-                    //printf("%d.%06d: Sound Effect  name=%s bcoord=%d:%d:%d vol=%.3f pitch=%d\n",
-                    //       sec,usec,name,x/8,y/8,z/8,volume,pitch);
+                    printf("%d.%06d: Sound Effect  name=%s bcoord=%d:%d:%d vol=%.3f pitch=%d\n",
+                           sec,usec,name,x/8,y/8,z/8,volume,pitch);
                     break;
                 }
                 case 0x34: {
@@ -93,18 +106,23 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 }
 
 int main(int ac, char **av) {
-
     reset_gamestate();
     set_option(GSOP_PRUNE_CHUNKS, 0);
     set_option(GSOP_SEARCH_SPAWNERS, 1);
 
-    char *fname = av[1];
-    if (!fname) LH_ERROR(-1, "Usage: %s <file.mcs>", av[0]);
+    if (!av[1]) LH_ERROR(-1, "Usage: %s <file.mcs>", av[0]);
 
-    uint8_t *data;
-    ssize_t size = lh_load_alloc(fname, &data);
-    if (size < 0) LH_ERROR(-1, "Failed to open %s\n",fname);
-
-    parse_mcp(data, size);
+    int i;
+    for(i=1; av[i]; i++) {
+        uint8_t *data;
+        ssize_t size = lh_load_alloc(av[i], &data);
+        if (size < 0) {
+            warn("Failed to open %s",av[i]);
+        }
+        else {
+            parse_mcp(data, size);
+            free(data);
+        }
+    }
     search_spawners();
 }

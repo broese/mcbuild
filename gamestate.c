@@ -363,7 +363,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             Rint(z);
             Rchar(action);
             Rshort(dlen);
-            printf("UpdateBlockEntity %d,%d,%d action=%d dlen=%d\n",x,y,z,action,dlen);
+            //printf("UpdateBlockEntity %d,%d,%d action=%d dlen=%d\n",x,y,z,action,dlen);
             if (dlen > 0) {
                 ssize_t clen;
                 uint8_t *edata = lh_gzip_decode(p,dlen,&clen);
@@ -399,13 +399,19 @@ int search_spawners() {
     
     lh_arr_declare_i(spawner, s);
 
+    // create a filtered list of spawners - only include skeletons
     for(i=0; i<gs.spawner_cnt; i++)
-        if (gs.spawner_ptr[i].type == SPAWNER_TYPE_ZOMBIE || gs.spawner_ptr[i].type == SPAWNER_TYPE_SKELETON)
+        if (
+            //gs.spawner_ptr[i].type == SPAWNER_TYPE_ZOMBIE   ||
+            //gs.spawner_ptr[i].type == SPAWNER_TYPE_UNKNOWN  ||
+            gs.spawner_ptr[i].type == SPAWNER_TYPE_SKELETON
+            )
             lh_arr_new(GAR(s)) = gs.spawner_ptr[i];
     
     for(i=0; i<s_cnt; i++)
         s_ptr[i].nearest = 1000;
 
+    // calculate distances to the nearest spawner for every spawner
     for(i=0; i<s_cnt; i++)
         for(j=0; j<s_cnt; j++)
             if (i!=j) {
@@ -413,13 +419,21 @@ int search_spawners() {
                 if (dist < s_ptr[i].nearest)
                     s_ptr[i].nearest = dist;
             }
+
+    // eliminate spawners that have no close neighbors
+    for(i=0; i<s_cnt; ) {
+        if (s_ptr[i].nearest > 31) {
+            lh_arr_delete(AR(s),i);
+        }
+        else {
+            i++;
+        }
+    }
                 
     printf("Dumping %zd spawners\n",s_cnt);
     for(i=0; i<s_cnt; i++) {
         spawner *s = &s_ptr[i];
-        if (s->type == SPAWNER_TYPE_ZOMBIE || s->type == SPAWNER_TYPE_SKELETON) {
-            bcoord bc = c2b(s->co);
-            printf(" %d,%d,%d  %d:%d/%5d  %d  %.1f\n",bc.x,bc.y,bc.z,s->co.X,s->co.Z,s->co.i,s->type, s->nearest);
-        }
+        bcoord bc = c2b(s->co);
+        printf(" %d,%d,%d  %d:%d/%5d  %d  %.1f\n",bc.x,bc.y,bc.z,s->co.X,s->co.Z,s->co.i,s->type, s->nearest);
     }
 }
