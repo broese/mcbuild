@@ -28,9 +28,9 @@
 #include "lh_compress.h"
 #include "lh_arr.h"
 
-#define SERVER_ADDR "3b3t.net"
-//#define SERVER_ADDR "2b2t.org"
-//#define SERVER_ADDR "peorth"
+#include "gamestate.h"
+
+#define SERVER_ADDR "2b2t.org"
 
 #define SERVER_PORT 25565
 #define WEBSERVER_PORT 8080
@@ -216,6 +216,9 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
 
     if (!strcmp(words[0],"test")) {
         sprintf(reply,"Chat test response");
+    }
+    else if (!strcmp(words[0],"entities")) {
+        sprintf(reply,"Tracking %zd entities",gs.C(entity));
     }
 
     if (reply[0])
@@ -459,13 +462,6 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             Rvarint(eid);
             Rstr(uuid);
             Rstr(name);
-            Rvarint(dcount);
-            int i;
-            for(i=0; i<dcount; i++) {
-                Rstr(pname);
-                Rstr(pval);
-                Rstr(psig);
-            }
             Rint(x);
             Rint(y);
             Rint(z);
@@ -476,9 +472,10 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
 
             // track players
             import_packet(ptr, len);
+            hexdump(ptr, len);
 
             char msg[32768];
-            sprintf(msg, "Player %s at %d,%d,%d",name,x>>13,y>>13,z>>13);
+            sprintf(msg, "Player %s at %d,%d,%d",name,x>>5,y>>5,z>>5);
             chat_message(msg, forw, "blue");
             write_packet(ptr, len, forw);
             break;
@@ -527,6 +524,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
         case SP_EntityTeleport:
         {
             import_packet(ptr, len);
+            write_packet(ptr, len, forw);
             break;
         }
 
@@ -994,7 +992,7 @@ int proxy_pump(uint32_t ip, uint16_t port) {
 }
 
 int main(int ac, char **av) {
-    uint32_t server_ip = lh_dns_addr_ipv4(SERVER_ADDR);
+    uint32_t server_ip = lh_dns_addr_ipv4(av[1]?av[1]:SERVER_ADDR);
     if (server_ip == 0xffffffff)
         LH_ERROR(-1, "Failed to obtain IP address for the server %s",SERVER_ADDR);
         

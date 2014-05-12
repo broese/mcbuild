@@ -16,60 +16,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef struct _chunk {
-    uint8_t blocks[4096*16];
-    uint8_t meta[2048*16];
-    uint8_t add[2048*16];
-    uint8_t light[2048*16];
-    uint8_t skylight[2048*16];
-    uint8_t biome[256];
-    int32_t X,Z;
-} chunk;
-
-typedef struct _chunkid {
-    int32_t X,Z;
-    chunk * c;
-} chunkid;
-
-typedef struct _spawner {
-    ccoord co;
-    int type;
-    float nearest;
-} spawner;
-
-#define ENTITY_UNKNOWN  0
-#define ENTITY_SELF     1
-#define ENTITY_PLAYER   2
-#define ENTITY_MOB      3
-#define ENTITY_OBJECT   4
-#define ENTITY_OTHER    5
-
-typedef struct _entity {
-    int32_t id;
-    int32_t x,y,z;      // note: fixed-point coords, shift by ???
-    int  type;          // one of the ENTITY_ variables
-    int  hostile;       // whether marked hostile
-    char name[256];     // only valid for players
-} entity;
-
-struct {
-    // options
-    struct {
-        int prune_chunks;
-        int search_spawners;
-        int track_entities;
-    } opt;
-
-    // chunks
-    lh_arr_declare(chunkid, chunk);
-
-    // spawners
-    lh_arr_declare(spawner, spawner);
-
-    // entities
-    lh_arr_declare(entity, entity);
-
-} gs;
+gamestate gs;
 
 static int gs_used = 0;
 
@@ -323,13 +270,6 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             Rvarint(eid);
             Rstr(uuid);
             Rstr(name);
-            Rvarint(dcount);
-            int i;
-            for(i=0; i<dcount; i++) {
-                Rstr(pname);
-                Rstr(pval);
-                Rstr(psig);
-            }
             Rint(x);
             Rint(y);
             Rint(z);
@@ -344,7 +284,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             e->y = y;
             e->z = z;
             e->type = ENTITY_PLAYER;
-            sprintf(e->name, name);
+            sprintf(e->name, "%s", name);
             break;
         }
 
@@ -404,7 +344,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             e->y = y;
             e->z = z;
             e->type = ENTITY_OTHER;
-            sprintf(e->name, name);
+            sprintf(e->name, "%s", name);
             break;
         }
 
@@ -448,9 +388,9 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             if (idx<0) break;
 
             entity *e =P(gs.entity)+idx;
-            e->x += dx;
-            e->y += dy;
-            e->z += dz;
+            e->x += (int)dx;
+            e->y += (int)dy;
+            e->z += (int)dz;
             break;
         }
 
