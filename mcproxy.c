@@ -19,12 +19,14 @@
 
 #define LH_DECLARE_SHORT_NAMES 1
 
+#include "lh_debug.h"
 #include "lh_buffers.h"
 #include "lh_bytes.h"
 #include "lh_files.h"
 #include "lh_net.h"
 #include "lh_event.h"
 #include "lh_compress.h"
+#include "lh_arr.h"
 
 #define SERVER_ADDR "3b3t.net"
 //#define SERVER_ADDR "2b2t.org"
@@ -137,18 +139,18 @@ void write_packet(uint8_t *ptr, ssize_t len, lh_buf_t *buf) {
     uint8_t hbuf[16]; CLEAR(hbuf);
     ssize_t ll = lh_place_varint(hbuf,len) - hbuf;
 
-    ssize_t widx = buf->data_cnt;
+    ssize_t widx = buf->C(data);
     if (mitm.dbg)
-        fprintf(mitm.dbg, "%s:%d buf=%p ptr=%16p cnt=%zd adding %zd gran=%zd\n",
-                __func__,__LINE__,buf,AR(buf->data),(len+ll),buf->data_gran);
+        fprintf(mitm.dbg, "%s:%d buf=%p ptr=%16p cnt=%zd adding %zd\n",
+                __func__,__LINE__,buf,AR(buf->data),(len+ll));
     
-    lh_arr_add(AR(buf->data),buf->data_gran,(len+ll));
+    lh_arr_add(GAR4(buf->data),(len+ll));
     if (mitm.dbg)
         fprintf(mitm.dbg, "%s:%d buf=%p ptr=%16p cnt=%zd\n",
                 __func__,__LINE__,buf,AR(buf->data));
 
-    memmove(buf->data_ptr+widx, hbuf, ll);
-    memmove(buf->data_ptr+widx+ll, ptr, len);
+    memmove(P(buf->data)+widx, hbuf, ll);
+    memmove(P(buf->data)+widx+ll, ptr, len);
 }
 
 uint8_t * read_string(uint8_t *p, char *s) {
@@ -171,6 +173,21 @@ uint8_t * read_string(uint8_t *p, char *s) {
 #define Rvarint(n) uint32_t n = lh_read_varint(p);
 
 ////////////////////////////////////////////////////////////////////////////////
+
+void chat_message(const char *str, lh_buf_t *buf, const char *color) {
+    uint8_t jreply[32768];
+    ssize_t jlen = sprintf(jreply,
+                           "{"
+                           "\"text\":\"[MCP] %s\","
+                           "\"color\":\"%s\""
+                           "}",str,color?color:"red");
+    uint8_t wbuf[65536];
+    uint8_t *wp = wbuf;
+    write_varint(wp, 0x02);
+    write_varint(wp, jlen);
+    memcpy(wp,jreply,jlen);
+    write_packet(wbuf, (wp-wbuf)+jlen, buf);
+}
 
 int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
     if (msg[0] != '#') return 0;
@@ -201,21 +218,8 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
         sprintf(reply,"Chat test response");
     }
 
-    if (reply[0]) {
-        uint8_t jreply[32768];
-        ssize_t jlen = sprintf(jreply,
-                               "{"
-                               "\"text\":\"[MCP] %s\","
-                               "\"color\":\"red\""
-                               "}",reply);
-
-        uint8_t wbuf[65536];
-        uint8_t *wp = wbuf;
-        write_varint(wp, 0x02);
-        write_varint(wp, jlen);
-        memcpy(wp,jreply,jlen);
-        write_packet(wbuf, (wp-wbuf)+jlen, retour);
-    }
+    if (reply[0])
+        chat_message(reply, retour, NULL);
 
     return 1;
 }
@@ -252,6 +256,7 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
 
 // Play
 
+#define SP_SpawnPlayer          SP(0c)
 #define SP_ChunkData            SP(21)
 #define SP_MultiBlockChange     SP(22)
 #define SP_BlockChange          SP(23)
@@ -438,6 +443,32 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
         ////////////////////////////////////////////////////////////////////////
         // Play
 
+        case SP_SpawnPlayer: {
+            Rvarint(eid);
+            Rstr(uuid);
+            Rstr(name);
+            Rvarint(dcount);
+            int i;
+            for(i=0; i<dcount; i++) {
+                Rstr(pname);
+                Rstr(pval);
+                Rstr(psig);
+            }
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rchar(yaw);
+            Rchar(pitch);
+            Rshort(item);
+            //TODO: metadata
+
+            char msg[32768];
+            sprintf(msg, "Player %s at %d,%d,%d",name,x>>13,y>>13,z>>13);
+            chat_message(msg, forw, "blue");
+            write_packet(ptr, len, forw);
+            break;
+        }
+
         case SP_SoundEffect: {
             Rstr(name);
             Rint(x);
@@ -513,15 +544,15 @@ ssize_t handle_proxy(lh_conn *conn) {
     lh_buf_t *tx = is_client ? &mitm.cs_tx : &mitm.ms_tx;
     lh_buf_t *bx = is_client ? &mitm.ms_tx : &mitm.cs_tx;
 
-    assert(conn->rbuf.data_ptr);
+    assert(conn->rbuf.P(data));
 
     // sptr,slen - pointer and length of data in the receive buffer
-    ssize_t slen = conn->rbuf.data_cnt - conn->rbuf.data_ridx;
-    uint8_t *sptr = conn->rbuf.data_ptr + conn->rbuf.data_ridx;
+    ssize_t slen = conn->rbuf.C(data) - conn->rbuf.ridx;
+    uint8_t *sptr = conn->rbuf.P(data) + conn->rbuf.ridx;
 
     // provide necessary space in the decoded receive buffer
-    ssize_t widx = rx->data_cnt;
-    lh_arr_add(AR(rx->data),rx->data_gran,slen);
+    ssize_t widx = rx->C(data);
+    lh_arr_add(GAR4(rx->data),slen);
 
 #if 0
     printf("*** network data %s ***\n",is_client?"C->S":"C<-S");
@@ -533,72 +564,72 @@ ssize_t handle_proxy(lh_conn *conn) {
         // decryption needed
         int num = 0;
         if (is_client)
-            AES_cfb8_encrypt(sptr, rx->data_ptr+widx, slen,
+            AES_cfb8_encrypt(sptr, rx->P(data)+widx, slen,
                              &mitm.c_aes, mitm.c_dec_iv, &num, AES_DECRYPT);
         else
-            AES_cfb8_encrypt(sptr, rx->data_ptr+widx, slen,
+            AES_cfb8_encrypt(sptr, rx->P(data)+widx, slen,
                              &mitm.s_aes, mitm.s_dec_iv, &num, AES_DECRYPT);
     }
     else {
         // plaintext communication
-        memmove(rx->data_ptr+widx, sptr, slen);
+        memmove(rx->P(data)+widx, sptr, slen);
     }
 
 #if 0
     printf("*** decrypted data %s ***\n",is_client?"C->S":"C<-S");
-    hexdump(rx->data_ptr, rx->data_cnt);
+    hexdump(rx->P(data), rx->C(data));
     printf("************************\n");
 #endif
 
-    assert(bx->data_cnt==0);
+    assert(bx->C(data)==0);
 
     // try to extract as many packets from the stream as we can in a loop
-    while(rx->data_cnt > 0) {
+    while(rx->C(data) > 0) {
         //hexdump(AR(rx->data));
         // do we have a complete packet?
-        uint8_t *p = rx->data_ptr;
+        uint8_t *p = rx->P(data);
 
         // large varint, data is definitely too short
-        if (((*p)&0x80)&&(rx->data_cnt<129)) break;
+        if (((*p)&0x80)&&(rx->C(data)<129)) break;
 
         uint32_t plen = lh_read_varint(p);
-        ssize_t ll = p-rx->data_ptr; // length of the varint
-        if (plen+ll > rx->data_cnt) break; // packet is incomplete
+        ssize_t ll = p-rx->P(data); // length of the varint
+        if (plen+ll > rx->C(data)) break; // packet is incomplete
 
         process_packet(is_client, p, plen, tx, bx);
-        lh_arr_delete_range(AR(rx->data),0,ll+plen);
+        lh_arr_delete_range(GAR4(rx->data),0,ll+plen);
     }
 
-    if (tx->data_cnt > 0) {
+    if (tx->C(data) > 0) {
         if (mitm.state == STATE_PLAY) {
             // since we always write out all data, we just encrypt this in-place
             int num=0;
             if (is_client)
-                AES_cfb8_encrypt(tx->data_ptr, tx->data_ptr, tx->data_cnt,
+                AES_cfb8_encrypt(tx->P(data), tx->P(data), tx->C(data),
                                  &mitm.s_aes, mitm.s_enc_iv, &num, AES_ENCRYPT);
             else
-                AES_cfb8_encrypt(tx->data_ptr, tx->data_ptr, tx->data_cnt,
+                AES_cfb8_encrypt(tx->P(data), tx->P(data), tx->C(data),
                                  &mitm.c_aes, mitm.c_enc_iv, &num, AES_ENCRYPT);
         }
         
         lh_conn_write(is_client?mitm.ms_conn:mitm.cs_conn, AR(tx->data));
-        tx->data_cnt = tx->data_ridx = 0;
+        tx->C(data) = tx->ridx = 0;
     }
     
-    if (bx->data_cnt > 0) {
+    if (bx->C(data) > 0) {
         if (mitm.state == STATE_PLAY) {
             // since we always write out all data, we just encrypt this in-place
             int num=0;
             if (is_client)
-                AES_cfb8_encrypt(bx->data_ptr, bx->data_ptr, bx->data_cnt,
+                AES_cfb8_encrypt(bx->P(data), bx->P(data), bx->C(data),
                                  &mitm.c_aes, mitm.c_enc_iv, &num, AES_ENCRYPT);
             else
-                AES_cfb8_encrypt(bx->data_ptr, bx->data_ptr, bx->data_cnt,
+                AES_cfb8_encrypt(bx->P(data), bx->P(data), bx->C(data),
                                  &mitm.s_aes, mitm.s_enc_iv, &num, AES_ENCRYPT);
         }
         hexdump(AR(bx->data));
         lh_conn_write(is_client?mitm.cs_conn:mitm.ms_conn, AR(bx->data));
-        bx->data_cnt = bx->data_ridx = 0;
+        bx->C(data) = bx->ridx = 0;
     }
     
     if (mitm.enable_encryption) {
@@ -847,9 +878,6 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     if (mitm.s_rsa) RSA_free(mitm.s_rsa);
     if (mitm.c_rsa) RSA_free(mitm.c_rsa);
     CLEAR(mitm);
-
-    mitm.cs_rx.data_gran = mitm.cs_tx.data_gran = 65536;
-    mitm.ms_rx.data_gran = mitm.ms_tx.data_gran = 65536;
 
     char fname[4096];
     time_t t;

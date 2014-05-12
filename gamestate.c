@@ -61,10 +61,10 @@ int reset_gamestate() {
 
     if (gs_used) {
         // delete cached chunks
-        for(i=0; i<gs.chunk_cnt; i++)
-            if (gs.chunk_ptr[i].c)
-                free(gs.chunk_ptr[i].c);
-        free(gs.chunk_ptr);
+        for(i=0; i<gs.C(chunk); i++)
+            if (gs.P(chunk)[i].c)
+                free(gs.P(chunk)[i].c);
+        free(gs.P(chunk));
     }
     
     CLEAR(gs);
@@ -135,8 +135,8 @@ static inline int count_bits(uint32_t bitmask) {
 
 int get_chunk_idx(int X, int Z) {
     int i;
-    for(i=0; i<gs.chunk_cnt; i++)
-        if (gs.chunk_ptr[i].X==X && gs.chunk_ptr[i].Z==Z)
+    for(i=0; i<gs.C(chunk); i++)
+        if (gs.P(chunk)[i].X==X && gs.P(chunk)[i].Z==Z)
             return i;
     return -1;
 }
@@ -145,10 +145,10 @@ int import_chunk(int X, int Z, uint16_t pbm, uint16_t abm, int skylight, int bio
     int idx = get_chunk_idx(X,Z);
     chunkid * cid;
     if (idx<0) {
-        cid = &(lh_arr_new_c(GAR(gs.chunk)));
+        cid = lh_arr_new_c(GAR(gs.chunk));
     }
     else {
-        cid = gs.chunk_ptr+idx;
+        cid = gs.P(chunk)+idx;
     }
 
     cid->X = X;
@@ -222,8 +222,8 @@ int prune_chunk(int X, int Z) {
     int i = get_chunk_idx(X,Z);
     if (i<0) return -1;
 
-    if (gs.chunk_ptr[i].c) free(gs.chunk_ptr[i].c);
-    lh_arr_delete(AR(gs.chunk),i);
+    if (gs.P(chunk)[i].c) free(gs.P(chunk)[i].c);
+    lh_arr_delete(GAR(gs.chunk),i);
 
     return 0;
 }
@@ -257,18 +257,18 @@ int update_spawners(chunk *c) {
             ccoord co = { c->X, c->Z, i };
             int cmp = -1;
 
-            for(j=0; j<gs.spawner_cnt; j++) {
-                s = gs.spawner_ptr+j;
+            for(j=0; j<gs.C(spawner); j++) {
+                s = gs.P(spawner)+j;
                 cmp = cmp_cc(s->co,co);
                 if (cmp >= 0) break;
             }
             if (cmp==0) continue; // this spawner was already in the list, skip it
 
             // create a new slot in the list at the sorted position
-            if (j >= gs.spawner_cnt)
-                s = &(lh_arr_new_c(GAR(gs.spawner)));
+            if (j >= gs.C(spawner))
+                s = lh_arr_new_c(GAR(gs.spawner));
             else
-                s = &(lh_arr_insert_c(GAR(gs.spawner), j));
+                s = lh_arr_insert_c(GAR(gs.spawner), j);
 
             s->co = co;
             s->type = -1;
@@ -371,8 +371,8 @@ int import_packet(uint8_t *ptr, ssize_t size) {
                 int j;
                 bcoord bc = { .x=x, .y=y, .z=z };
                 ccoord cc = b2c(bc);
-                for(j=0; j<gs.spawner_cnt; j++) {
-                    spawner *s = gs.spawner_ptr+j;
+                for(j=0; j<gs.C(spawner); j++) {
+                    spawner *s = gs.P(spawner)+j;
                     if (s->co.X == cc.X && s->co.Z == cc.Z && s->co.i == cc.i) {
                         p=edata+162;
                         Rstr(ename);
@@ -400,40 +400,41 @@ int search_spawners() {
     lh_arr_declare_i(spawner, s);
 
     // create a filtered list of spawners - only include skeletons
-    for(i=0; i<gs.spawner_cnt; i++)
+    for(i=0; i<gs.C(spawner); i++)
         if (
-            //gs.spawner_ptr[i].type == SPAWNER_TYPE_ZOMBIE   ||
-            //gs.spawner_ptr[i].type == SPAWNER_TYPE_UNKNOWN  ||
-            gs.spawner_ptr[i].type == SPAWNER_TYPE_SKELETON
+            //gs.P(spawner)[i].type == SPAWNER_TYPE_ZOMBIE   ||
+            //gs.P(spawner)[i].type == SPAWNER_TYPE_UNKNOWN  ||
+            gs.P(spawner)[i].type == SPAWNER_TYPE_SKELETON
             )
-            lh_arr_new(GAR(s)) = gs.spawner_ptr[i];
+            *lh_arr_new(GAR(s)) = gs.P(spawner)[i];
     
-    for(i=0; i<s_cnt; i++)
-        s_ptr[i].nearest = 1000;
+    for(i=0; i<C(s); i++)
+        P(s)[i].nearest = 1000;
 
     // calculate distances to the nearest spawner for every spawner
-    for(i=0; i<s_cnt; i++)
-        for(j=0; j<s_cnt; j++)
+    for(i=0; i<C(s); i++)
+        for(j=0; j<C(s); j++)
             if (i!=j) {
-                float dist = dist_cc(s_ptr[i].co,s_ptr[j].co);
-                if (dist < s_ptr[i].nearest)
-                    s_ptr[i].nearest = dist;
+                float dist = dist_cc(P(s)[i].co,P(s)[j].co);
+                if (dist < P(s)[i].nearest)
+                    P(s)[i].nearest = dist;
             }
 
     // eliminate spawners that have no close neighbors
-    for(i=0; i<s_cnt; ) {
-        if (s_ptr[i].nearest > 31) {
-            lh_arr_delete(AR(s),i);
+    for(i=0; i<C(s); ) {
+        if (P(s)[i].nearest > 31) {
+            lh_arr_delete(GAR(s),i);
         }
         else {
             i++;
         }
     }
                 
-    printf("Dumping %zd spawners\n",s_cnt);
-    for(i=0; i<s_cnt; i++) {
-        spawner *s = &s_ptr[i];
+    printf("Dumping %zd spawners\n",C(s));
+    for(i=0; i<C(s); i++) {
+        spawner *s = P(s)+i;
         bcoord bc = c2b(s->co);
-        printf(" %d,%d,%d  %d:%d/%5d  %d  %.1f\n",bc.x,bc.y,bc.z,s->co.X,s->co.Z,s->co.i,s->type, s->nearest);
+        printf(" %d,%d,%d  %d:%d/%5d  %d  %.1f\n",bc.x,bc.y,bc.z,
+               s->co.X,s->co.Z,s->co.i,s->type, s->nearest);
     }
 }
