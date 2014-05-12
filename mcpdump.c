@@ -91,10 +91,10 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                     printf("%d.%06d: Maps  dmg=%d length=%d\n",sec,usec,damage,length);
                     break;
                 }
-                case 0x21:
-                case 0x23:
-                case 0x26:
-                case 0x35:
+                case 0x21: // Chunk Data
+                case 0x23: // Block Change
+                case 0x26: // Map Chunk Bulk
+                case 0x35: // Update Block Entity
                     import_packet(pkt, len);
                     break;
             }

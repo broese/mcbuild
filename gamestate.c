@@ -37,11 +37,27 @@ typedef struct _spawner {
     float nearest;
 } spawner;
 
+#define ENTITY_UNKNOWN  0
+#define ENTITY_SELF     1
+#define ENTITY_PLAYER   2
+#define ENTITY_MOB      3
+#define ENTITY_OBJECT   4
+#define ENTITY_OTHER    5
+
+typedef struct _entity {
+    int32_t id;
+    int32_t x,y,z;      // note: fixed-point coords, shift by ???
+    int  type;          // one of the ENTITY_ variables
+    int  hostile;       // whether marked hostile
+    char name[256];     // only valid for players
+} entity;
+
 struct {
     // options
     struct {
         int prune_chunks;
         int search_spawners;
+        int track_entities;
     } opt;
 
     // chunks
@@ -49,6 +65,9 @@ struct {
 
     // spawners
     lh_arr_declare(spawner, spawner);
+
+    // entities
+    lh_arr_declare(entity, entity);
 
 } gs;
 
@@ -81,6 +100,9 @@ int set_option(int optid, int value) {
     case GSOP_SEARCH_SPAWNERS:
         gs.opt.search_spawners = value;
         break;
+    case GSOP_TRACK_ENTITIES:
+        gs.opt.track_entities = value;
+        break;
 
     default:
         LH_ERROR(-1,"Unknown option ID %d\n", optid);
@@ -95,6 +117,8 @@ int get_option(int optid) {
         return gs.opt.prune_chunks;
     case GSOP_SEARCH_SPAWNERS:
         return gs.opt.search_spawners;
+    case GSOP_TRACK_ENTITIES:
+        return gs.opt.track_entities;
 
     default:
         LH_ERROR(-1,"Unknown option ID %d\n", optid);
@@ -278,11 +302,178 @@ int update_spawners(chunk *c) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static inline int find_entity(int eid) {
+    int i;
+    for(i=0; i<C(gs.entity); i++)
+        if (P(gs.entity)[i].id == eid)
+            return i;
+    return -1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 int import_packet(uint8_t *ptr, ssize_t size) {
     uint8_t *p = ptr;
 
     uint32_t type = lh_read_varint(p);
     switch (type) {
+        ///// Entity data
+
+        case 0x0c: { // SpawnPlayer
+            Rvarint(eid);
+            Rstr(uuid);
+            Rstr(name);
+            Rvarint(dcount);
+            int i;
+            for(i=0; i<dcount; i++) {
+                Rstr(pname);
+                Rstr(pval);
+                Rstr(psig);
+            }
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rchar(yaw);
+            Rchar(pitch);
+            Rshort(item);
+            //TODO: metadata
+
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = eid;
+            e->x = x;
+            e->y = y;
+            e->z = z;
+            e->type = ENTITY_PLAYER;
+            sprintf(e->name, name);
+            break;
+        }
+
+        case 0x0e: { // SpawnObject
+            Rvarint(eid);
+            Rchar(mtype);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rchar(pitch);
+            Rchar(yaw);
+            //TODO: data
+
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = eid;
+            e->x = x;
+            e->y = y;
+            e->z = z;
+            e->type = ENTITY_OBJECT;
+            break;
+        }
+
+        case 0x0f: { // SpawnMob
+            Rvarint(eid);
+            Rchar(mtype);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rchar(pitch);
+            Rchar(hpitch);
+            Rchar(yaw);
+            Rshort(vx);
+            Rshort(vy);
+            Rshort(vz);
+            //TODO: metadata
+
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = eid;
+            e->x = x;
+            e->y = y;
+            e->z = z;
+            e->type = ENTITY_MOB;
+            break;
+        }
+
+        case 0x10: { // SpawnPainting
+            Rvarint(eid);
+            Rstr(name);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rint(dir);
+
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = eid;
+            e->x = x;
+            e->y = y;
+            e->z = z;
+            e->type = ENTITY_OTHER;
+            sprintf(e->name, name);
+            break;
+        }
+
+        case 0x11: { // SpawnExperienceOrb
+            Rvarint(eid);
+            Rint(x);
+            Rint(y);
+            Rint(z);
+            Rshort(exp);
+
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = eid;
+            e->x = x;
+            e->y = y;
+            e->z = z;
+            e->type = ENTITY_OTHER;
+            break;
+        }
+
+        case 0x13: { // DestroyEntities
+            Rchar(count);
+            int i,cnt=(unsigned int)count;
+            for(i=0; i<cnt; i++) {
+                Rint(eid);
+                int idx = find_entity(eid);
+                if (idx < 0) continue;
+
+                lh_arr_delete_c(GAR(gs.entity),idx);
+            }
+            break;
+        }
+
+        case 0x15:   // EntityRelMove
+        case 0x17: { // EntityLookRelMove
+            Rint(eid);
+            Rchar(dx);
+            Rchar(dy);
+            Rchar(dz);
+
+            int idx = find_entity(eid);
+            if (idx<0) break;
+
+            entity *e =P(gs.entity)+idx;
+            e->x += dx;
+            e->y += dy;
+            e->z += dz;
+            break;
+        }
+
+        case 0x18: { // EntityTeleport
+            Rint(eid);
+            Rchar(x);
+            Rchar(y);
+            Rchar(z);
+            Rchar(yaw);
+            Rchar(pitch);
+
+            int idx = find_entity(eid);
+            if (idx<0) break;
+
+            entity *e =P(gs.entity)+idx;
+            e->x = x;
+            e->y = y;
+            e->z = z;
+            break;
+        }
+
+
+        ///// Chunk data
         case 0x21: {
             Rint(X);
             Rint(Z);

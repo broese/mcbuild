@@ -257,6 +257,18 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
 // Play
 
 #define SP_SpawnPlayer          SP(0c)
+#define SP_SpawnObject          SP(0e)
+#define SP_SpawnMob             SP(0f)
+#define SP_SpawnPainting        SP(10)
+#define SP_SpawnExperienceOrb   SP(11)
+#define SP_DestroyEntities      SP(13)
+#define SP_Entity               SP(14)
+#define SP_EntityRelMove        SP(15)
+#define SP_EntityLook           SP(16)
+#define SP_EntityLookRelMove    SP(17)
+#define SP_EntityTeleport       SP(18)
+#define SP_SetExperience        SP(1f)
+
 #define SP_ChunkData            SP(21)
 #define SP_MultiBlockChange     SP(22)
 #define SP_BlockChange          SP(23)
@@ -462,6 +474,9 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             Rshort(item);
             //TODO: metadata
 
+            // track players
+            import_packet(ptr, len);
+
             char msg[32768];
             sprintf(msg, "Player %s at %d,%d,%d",name,x>>13,y>>13,z>>13);
             chat_message(msg, forw, "blue");
@@ -499,6 +514,22 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             }
             break;
         }
+
+        case SP_SpawnObject:
+        case SP_SpawnMob:
+        case SP_SpawnPainting:
+        case SP_SpawnExperienceOrb:
+        case SP_DestroyEntities:
+        //case SP_Entity:
+        case SP_EntityRelMove:
+        //case SP_EntityLook:
+        case SP_EntityLookRelMove:
+        case SP_EntityTeleport:
+        {
+            import_packet(ptr, len);
+            break;
+        }
+
 
         case CP_ChatMessage: {
             Rstr(msg);
@@ -878,6 +909,11 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     if (mitm.s_rsa) RSA_free(mitm.s_rsa);
     if (mitm.c_rsa) RSA_free(mitm.c_rsa);
     CLEAR(mitm);
+
+    reset_gamestate();
+    set_option(GSOP_PRUNE_CHUNKS, 1);
+    set_option(GSOP_SEARCH_SPAWNERS, 1);
+    set_option(GSOP_TRACK_ENTITIES, 1);
 
     char fname[4096];
     time_t t;

@@ -2,6 +2,7 @@
 
 #define GSOP_PRUNE_CHUNKS       1
 #define GSOP_SEARCH_SPAWNERS    2
+#define GSOP_TRACK_ENTITIES     3
 
 #define SPAWNER_TYPE_UNKNOWN    0
 #define SPAWNER_TYPE_ZOMBIE     1
