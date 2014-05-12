@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <err.h>
 
 #include <lh_debug.h>
 #include <lh_bytes.h>
@@ -117,7 +116,7 @@ int main(int ac, char **av) {
         uint8_t *data;
         ssize_t size = lh_load_alloc(av[i], &data);
         if (size < 0) {
-            warn("Failed to open %s",av[i]);
+            fprintf(stderr,"Failed to open %s : %s",av[i],strerror(errno));
         }
         else {
             parse_mcp(data, size);

@@ -1,6 +1,17 @@
 CFLAGS=-g -pg -I../libhelper
-LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lssl -lcrypto -lcurl
+LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lcurl
 DEFS=-DDEBUG_MEMORY=0
+INC=
+
+UNAME := $(shell uname -s)
+ifeq ($(UNAME),SunOS)
+        INC  += -I/users/atm/broese/include
+        LIBS += -lsocket -lnsl -lmd5 -L/users/atm/broese/lib -lz -lssl -lcrypto
+endif
+ifeq ($(UNAME),Linux)
+        LIBS += -lcrypto -lz -lssl
+endif
+
 
 all: mcproxy mcpdump
 #all: minemap netmine mcproxy mcsanvil chunkradar invedit
@@ -29,7 +40,7 @@ mcpdump: mcpdump.o gamestate.o
 	$(CC) -o $@ $^ $(LIBS)
 
 .c.o:
-	$(CC) $(CFLAGS) $(DEFS) -o $@ -c $<
+	$(CC) $(CFLAGS) $(INC) $(DEFS) -o $@ -c $<
 
 main.o: anvil.h nbt.h draw.h
 
