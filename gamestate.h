@@ -22,6 +22,10 @@ typedef struct {
     uint32_t i;   // full-byte offset (i.e. in .blocks)
 } ccoord; // chunk coordinate
 
+typedef struct {
+    int32_t x,y,z;
+} fpcoord;
+
 static inline bcoord c2b(ccoord c) {
     bcoord b = {
         .x = c.X*16 + (c.i&0x0f),
@@ -72,6 +76,7 @@ typedef struct _entity {
     int32_t id;
     int32_t x,y,z;      // note: fixed-point coords, shift by ???
     int  type;          // one of the ENTITY_ variables
+    int  mtype;         // mob/object type as used natively
     int  hostile;       // whether marked hostile
     char name[256];     // only valid for players
 } entity;
@@ -83,6 +88,8 @@ typedef struct _gamestate {
         int search_spawners;
         int track_entities;
     } opt;
+
+    fpcoord own;        // player's own coordinates (fixpoint coords)
 
     // chunks
     lh_arr_declare(chunkid, chunk);
@@ -106,4 +113,9 @@ int get_option(int optid);
 
 int import_packet(uint8_t *p, ssize_t size);
 int search_spawners();
+
+int get_entities_in_range(int *dst, int max, float range,
+    int (*filt_pred)(entity *), int (*sort_pred)(entity *, entity *) );
+
+int is_in_range(entity * e, float range);
 

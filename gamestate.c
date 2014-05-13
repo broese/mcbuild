@@ -266,6 +266,20 @@ int import_packet(uint8_t *ptr, ssize_t size) {
     switch (type) {
         ///// Entity data
 
+        case 0x08: { // PlayerPositionAndLook
+            Rdouble(x);
+            Rdouble(y);
+            Rdouble(z);
+            Rfloat(yaw);
+            Rfloat(pitch);
+            Rchar(ground);
+            
+            gs.own.x = (int)(x*32);
+            gs.own.y = (int)(y*32);
+            gs.own.z = (int)(z*32);
+            break;
+        }
+
         case 0x0c: { // SpawnPlayer
             Rvarint(eid);
             Rstr(uuid);
@@ -285,6 +299,8 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             e->z = z;
             e->type = ENTITY_PLAYER;
             sprintf(e->name, "%s", name);
+
+            //TODO: mark players hostile/neutral/friendly depending on the faglist
             break;
         }
 
@@ -327,6 +343,14 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             e->y = y;
             e->z = z;
             e->type = ENTITY_MOB;
+
+            e->mtype = mtype;
+            // mark all monster mobs hostile except pigmen (too dangerous) and bats (too cute)
+            if (mtype >= 50 && mtype <90 && mtype!=57 && mtype!=65)
+                e->hostile = 1;
+            if (mtype == 50)
+                e->hostile = 2; // mark creepers extra hostile to make them prio targets
+
             break;
         }
 
@@ -568,4 +592,31 @@ int search_spawners() {
         printf(" %d,%d,%d  %d:%d/%5d  %d  %.1f\n",bc.x,bc.y,bc.z,
                s->co.X,s->co.Z,s->co.i,s->type, s->nearest);
     }
+}
+
+#define SQ(x) ((x)*(x))
+
+int entity_in_range(entity * e, float range) {
+    int sdist = SQ(gs.own.x-e->x)+SQ(gs.own.y-e->y)+SQ(gs.own.z-e->z);
+    sdist >>= 10;
+    return ((float)sdist < SQ(range));
+}
+
+
+
+int get_entities_in_range(int *dst, int max, float range,
+    int (*filt_pred)(entity *), int (*sort_pred)(entity *, entity *)) {
+
+    int i,j;
+
+    for(i=0,j=0; j<max && i<C(gs.entity); i++) {
+        entity *e = P(gs.entity)+i;
+        if (entity_in_range(e,range))
+            if (filt_pred && filt_pred(e))
+                dst[j++] = i;
+    }
+
+    //TODO: sorting
+
+    return j;
 }

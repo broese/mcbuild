@@ -126,9 +126,12 @@ struct {
     FILE * dbg;
 
     // Various options
-    int cowradar;
-    int grinding;
-    int maxlevel;
+    struct {
+        int autokill;
+        int cowradar;
+        int grinding;
+        int maxlevel;
+    } opt;
 
     int64_t last[2];
 } mitm;
@@ -220,6 +223,10 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
     else if (!strcmp(words[0],"entities")) {
         sprintf(reply,"Tracking %zd entities",gs.C(entity));
     }
+    else if (!strcmp(words[0],"autokill")) {
+        mitm.opt.autokill = !mitm.opt.autokill;
+        sprintf(reply,"Autokill is %s",mitm.opt.autokill?"enabled":"disabled");
+    }
 
     if (reply[0])
         chat_message(reply, retour, NULL);
@@ -259,6 +266,7 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
 
 // Play
 
+#define SP_PlayerPositionLook   SP(08)
 #define SP_SpawnPlayer          SP(0c)
 #define SP_SpawnObject          SP(0e)
 #define SP_SpawnMob             SP(0f)
@@ -512,6 +520,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             break;
         }
 
+        case SP_PlayerPositionLook:
         case SP_SpawnObject:
         case SP_SpawnMob:
         case SP_SpawnPainting:
@@ -880,6 +889,53 @@ int query_auth_server() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define MAX_ENTITIES 4096
+#define MAX_ATTACK   1
+
+int is_hostile_entity(entity *e) {
+    return e->hostile > 0;
+}
+
+int handle_async() {
+    if (mitm.opt.autokill) {
+        //TODO: limit message rate
+
+        // calculate list of hostile entities in range
+        int hent[MAX_ENTITIES];
+
+        //TODO: sort entities by how dangerous and how close they are
+        int nhent = get_entities_in_range(hent,MAX_ENTITIES,6.0,is_hostile_entity,NULL);
+
+        //TODO: select primary weapon for priority targets
+
+        //TODO: turn to target
+
+        int i;
+        for(i=0; i<MAX_ATTACK && i<nhent; i++) {
+            entity *e = gs.P(entity)+hent[i];
+            uint8_t pkt[4096], *p;
+
+            // wave arm
+            p = pkt;
+            write_varint(p,0x0a); // Animation
+            write_char(p,0x01);
+            write_packet(pkt, p-pkt, &mitm.cs_tx);
+
+            // attack entity
+            p = pkt;
+            write_varint(p,0x02); // Use Entity
+            write_int(p, e->id);
+            write_char(p, 0x01);
+            write_packet(pkt, p-pkt, &mitm.cs_tx);
+        }
+    }
+
+
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 int handle_server(int sfd, uint32_t ip, uint16_t port) {
     LH_HERE;
     // accept connection from the local client
@@ -977,6 +1033,9 @@ int proxy_pump(uint32_t ip, uint16_t port) {
 
         // handle client- and server-side connection
         lh_conn_process(&pa, G_PROXY, handle_proxy);
+
+        // handle asynchronous events
+        handle_async();
     }
 
     printf("Terminating...\n");
