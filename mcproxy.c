@@ -128,7 +128,6 @@ struct {
     // Various options
     struct {
         int autokill;
-        int cowradar;
         int grinding;
         int maxlevel;
     } opt;
@@ -226,6 +225,29 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
     else if (!strcmp(words[0],"autokill")) {
         mitm.opt.autokill = !mitm.opt.autokill;
         sprintf(reply,"Autokill is %s",mitm.opt.autokill?"enabled":"disabled");
+    }
+    else if (!strcmp(words[0],"grind")) {
+        int maxlevel=30;
+        int start = 1;
+
+        if (words[1]) {
+            if (!strcmp(words[1],"stop")) {
+                mitm.opt.grinding = 0;
+                mitm.opt.autokill = 0;
+                sprintf(reply,"Grinding is stopped");
+                start = 0;
+            }
+            else if (sscanf(words[1],"%d",&maxlevel)!=1) {
+                maxlevel = 30;
+            }
+        }
+
+        if (start) {
+            mitm.opt.grinding = 1;
+            mitm.opt.autokill = 1;
+            mitm.opt.maxlevel = maxlevel;
+            sprintf(reply,"Grinding to level %d",mitm.opt.maxlevel);
+        }
     }
 
     if (reply[0])
@@ -523,6 +545,24 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                 printf("**** Wither Spawn ****  efid=%d data=%d bcoord=%d:%d:%d %s\n",
                        efid,data,x,y,z,disrv?"disable relative volume":"");
             }
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        case  SP_SetExperience: {
+            Rfloat(bar);
+            Rshort(level);
+            Rshort(exp);
+
+            if (mitm.opt.grinding && level >= mitm.opt.maxlevel) {
+                mitm.opt.grinding = 0;
+                mitm.opt.autokill = 0;
+
+                char msg[4096];
+                sprintf(msg, "Grinding finished at level %d",level);
+                chat_message(msg, forw, "green");                
+            }
+            write_packet(ptr, len, forw);
             break;
         }
 
