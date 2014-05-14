@@ -22,10 +22,6 @@ typedef struct {
     uint32_t i;   // full-byte offset (i.e. in .blocks)
 } ccoord; // chunk coordinate
 
-typedef struct {
-    int32_t x,y,z;
-} fpcoord;
-
 static inline bcoord c2b(ccoord c) {
     bcoord b = {
         .x = c.X*16 + (c.i&0x0f),
@@ -89,8 +85,11 @@ typedef struct _gamestate {
         int track_entities;
     } opt;
 
-    fpcoord own;        // player's own coordinates (fixpoint coords)
-
+    struct {
+        int32_t x,y,z;
+        uint32_t id;
+    } own;
+            
     // chunks
     lh_arr_declare(chunkid, chunk);
 
@@ -118,4 +117,4 @@ int get_entities_in_range(int *dst, int max, float range,
     int (*filt_pred)(entity *), int (*sort_pred)(entity *, entity *) );
 
 int is_in_range(entity * e, float range);
-
+int import_clpacket(uint8_t *ptr, ssize_t size);

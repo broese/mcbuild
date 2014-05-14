@@ -288,6 +288,9 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
 #define SP_SoundEffect          SP(29)
 
 #define CP_ChatMessage          CP(01)
+#define CP_PlayerPosition       CP(04)
+#define CP_PlayerLook           CP(05)
+#define CP_PlayerPositionLook   CP(06)
 
 void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                     lh_buf_t *forw, lh_buf_t *retour) {
@@ -325,6 +328,13 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
 
     uint8_t output[65536];
     uint8_t *w = output;
+
+    if (mitm.state == STATE_PLAY) {
+        if (is_client)
+            import_clpacket(ptr, len);
+        else
+            import_packet(ptr, len);
+    }
 
     switch (stype) {
         ////////////////////////////////////////////////////////////////////////
@@ -478,10 +488,6 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             Rshort(item);
             //TODO: metadata
 
-            // track players
-            import_packet(ptr, len);
-            hexdump(ptr, len);
-
             char msg[32768];
             sprintf(msg, "Player %s at %d,%d,%d",name,x>>5,y>>5,z>>5);
             chat_message(msg, forw, "blue");
@@ -519,24 +525,6 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             }
             break;
         }
-
-        case SP_PlayerPositionLook:
-        case SP_SpawnObject:
-        case SP_SpawnMob:
-        case SP_SpawnPainting:
-        case SP_SpawnExperienceOrb:
-        case SP_DestroyEntities:
-        //case SP_Entity:
-        case SP_EntityRelMove:
-        //case SP_EntityLook:
-        case SP_EntityLookRelMove:
-        case SP_EntityTeleport:
-        {
-            import_packet(ptr, len);
-            write_packet(ptr, len, forw);
-            break;
-        }
-
 
         case CP_ChatMessage: {
             Rstr(msg);
@@ -619,7 +607,7 @@ ssize_t handle_proxy(lh_conn *conn) {
     printf("************************\n");
 #endif
 
-    assert(bx->C(data)==0);
+    //assert(bx->C(data)==0);
 
     // try to extract as many packets from the stream as we can in a loop
     while(rx->C(data) > 0) {
@@ -665,7 +653,6 @@ ssize_t handle_proxy(lh_conn *conn) {
                 AES_cfb8_encrypt(bx->P(data), bx->P(data), bx->C(data),
                                  &mitm.s_aes, mitm.s_enc_iv, &num, AES_ENCRYPT);
         }
-        hexdump(AR(bx->data));
         lh_conn_write(is_client?mitm.cs_conn:mitm.ms_conn, AR(bx->data));
         bx->C(data) = bx->ridx = 0;
     }
@@ -906,6 +893,9 @@ int handle_async() {
         //TODO: sort entities by how dangerous and how close they are
         int nhent = get_entities_in_range(hent,MAX_ENTITIES,6.0,is_hostile_entity,NULL);
 
+        if (nhent > 0)
+            printf("%s : got %d entities to kill\n",__func__,nhent);
+
         //TODO: select primary weapon for priority targets
 
         //TODO: turn to target
@@ -918,6 +908,7 @@ int handle_async() {
             // wave arm
             p = pkt;
             write_varint(p,0x0a); // Animation
+            write_int(p,gs.own.id);
             write_char(p,0x01);
             write_packet(pkt, p-pkt, &mitm.cs_tx);
 

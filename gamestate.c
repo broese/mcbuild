@@ -259,12 +259,70 @@ static inline int find_entity(int eid) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+int import_clpacket(uint8_t *ptr, ssize_t size) {
+    uint8_t *p = ptr;
+
+    uint32_t type = lh_read_varint(p);
+    switch (type) {
+        case 0x04: {
+            Rdouble(x);
+            Rdouble(heady);
+            Rdouble(feety);
+            Rdouble(z);
+            Rchar(ground);
+
+            gs.own.x = (int)(x*32);
+            gs.own.y = (int)(feety*32);
+            gs.own.z = (int)(z*32);
+
+            //printf("Player position: %d,%d,%d\n",gs.own.x/32,gs.own.y/32,gs.own.z/32);
+            break;
+        }
+        case 0x05: {
+            Rfloat(yaw);
+            Rfloat(pitch);
+            Rchar(ground);
+            break;
+        }
+        case 0x06: {
+            Rdouble(x);
+            Rdouble(heady);
+            Rdouble(feety);
+            Rdouble(z);
+            Rfloat(yaw);
+            Rfloat(pitch);
+            Rchar(ground);
+
+            gs.own.x = (int)(x*32);
+            gs.own.y = (int)(feety*32);
+            gs.own.z = (int)(z*32);
+
+            //printf("Player position: %d,%d,%d\n",gs.own.x/32,gs.own.y/32,gs.own.z/32);
+            break;
+        }
+    }
+}
+
+
+
 int import_packet(uint8_t *ptr, ssize_t size) {
     uint8_t *p = ptr;
 
     uint32_t type = lh_read_varint(p);
     switch (type) {
         ///// Entity data
+        case 0x01: { // JoinGame
+            Rint(pid);
+            Rchar(gamemode);
+            Rchar(dim);
+            Rchar(diff);
+            Rchar(maxpl);
+            Rstr(leveltype);
+
+            gs.own.id = pid;
+            
+            break;
+        }
 
         case 0x08: { // PlayerPositionAndLook
             Rdouble(x);
@@ -277,6 +335,9 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             gs.own.x = (int)(x*32);
             gs.own.y = (int)(y*32);
             gs.own.z = (int)(z*32);
+
+            //printf("Player position: %d,%d,%d\n",gs.own.x/32,gs.own.y/32,gs.own.z/32);
+
             break;
         }
 
@@ -396,7 +457,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
                 int idx = find_entity(eid);
                 if (idx < 0) continue;
 
-                lh_arr_delete_c(GAR(gs.entity),idx);
+                lh_arr_delete(GAR(gs.entity),idx);
             }
             break;
         }
@@ -412,17 +473,17 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             if (idx<0) break;
 
             entity *e =P(gs.entity)+idx;
-            e->x += (int)dx;
-            e->y += (int)dy;
-            e->z += (int)dz;
+            e->x += (char)dx;
+            e->y += (char)dy;
+            e->z += (char)dz;
             break;
         }
 
         case 0x18: { // EntityTeleport
             Rint(eid);
-            Rchar(x);
-            Rchar(y);
-            Rchar(z);
+            Rint(x);
+            Rint(y);
+            Rint(z);
             Rchar(yaw);
             Rchar(pitch);
 
@@ -599,6 +660,14 @@ int search_spawners() {
 int entity_in_range(entity * e, float range) {
     int sdist = SQ(gs.own.x-e->x)+SQ(gs.own.y-e->y)+SQ(gs.own.z-e->z);
     sdist >>= 10;
+#if 0
+    if (e->type == ENTITY_MOB)
+    printf("%08x %2d %2d : %d,%d,%d - %d,%d,%d => %f < %f\n",
+           e->id,e->type,e->mtype,
+           gs.own.x/32,gs.own.y/32,gs.own.z/32,
+           e->x/32,e->y/32,e->z/32,
+           (float)sdist,SQ(range));
+#endif
     return ((float)sdist < SQ(range));
 }
 
