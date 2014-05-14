@@ -74,6 +74,7 @@ typedef struct _entity {
     int  type;          // one of the ENTITY_ variables
     int  mtype;         // mob/object type as used natively
     int  hostile;       // whether marked hostile
+    uint64_t lasthit;   // timestamp when this entity was last attacked - for limiting the attack rate
     char name[256];     // only valid for players
 } entity;
 
@@ -98,6 +99,8 @@ typedef struct _gamestate {
 
     // entities
     lh_arr_declare(entity, entity);
+
+    uint64_t last_attack;   
 
 } gamestate;
 

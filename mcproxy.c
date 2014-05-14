@@ -876,34 +876,43 @@ int query_auth_server() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define MAX_ENTITIES 4096
-#define MAX_ATTACK   1
+#define MAX_ENTITIES     4096
+#define MAX_ATTACK       1
+#define MIN_ENTITY_DELAY 200000  // minimum interval between hitting the same entity (us)
+#define MIN_ATTACK_DELAY 50000   // minimum interval between attacking any entity
 
 int is_hostile_entity(entity *e) {
     return e->hostile > 0;
 }
 
 int handle_async() {
-    if (mitm.opt.autokill) {
-        //TODO: limit message rate
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    uint64_t ts = (uint64_t)tv.tv_sec*1000000+(uint64_t)tv.tv_usec;
 
+    // Auto Kill
+    if (mitm.opt.autokill && (ts-gs.last_attack)>MIN_ATTACK_DELAY ) {
         // calculate list of hostile entities in range
         int hent[MAX_ENTITIES];
 
         //TODO: sort entities by how dangerous and how close they are
         int nhent = get_entities_in_range(hent,MAX_ENTITIES,6.0,is_hostile_entity,NULL);
 
-        if (nhent > 0)
-            printf("%s : got %d entities to kill\n",__func__,nhent);
+        //if (nhent > 0) printf("%s : got %d entities to kill\n",__func__,nhent);
 
         //TODO: select primary weapon for priority targets
 
-        //TODO: turn to target
+        //TODO: turn to target?
 
-        int i;
-        for(i=0; i<MAX_ATTACK && i<nhent; i++) {
+        int i,h;
+        for(i=0,h=0; h<MAX_ATTACK && i<nhent; i++) {
             entity *e = gs.P(entity)+hent[i];
+            if ((ts-e->lasthit) < MIN_ATTACK_DELAY)
+                continue;
+
             uint8_t pkt[4096], *p;
+
+            printf("%lld : Attack entity %d\n", ts, e->id);
 
             // wave arm
             p = pkt;
@@ -918,6 +927,10 @@ int handle_async() {
             write_int(p, e->id);
             write_char(p, 0x01);
             write_packet(pkt, p-pkt, &mitm.cs_tx);
+
+            e->lasthit = ts;
+            gs.last_attack = ts;
+            h++;
         }
     }
 
