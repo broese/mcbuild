@@ -527,8 +527,8 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             if (!strcmp(name,"ambient.weather.thunder")) {
                 printf("**** THUNDER ****\n"
                        "coords=%d,%d,%d vol=%.4f pitch=%d\n",
-                       x,y,z,volume,pitch);
-                close(mitm.ms);
+                       x/8,y/8,z/8,volume,pitch);
+                //close(mitm.ms);
             }
             write_packet(ptr, len, forw);
             break;
@@ -918,8 +918,8 @@ int query_auth_server() {
 
 #define MAX_ENTITIES     4096
 #define MAX_ATTACK       1
-#define MIN_ENTITY_DELAY 200000  // minimum interval between hitting the same entity (us)
-#define MIN_ATTACK_DELAY 50000   // minimum interval between attacking any entity
+#define MIN_ENTITY_DELAY 300000  // minimum interval between hitting the same entity (us)
+#define MIN_ATTACK_DELAY 100000  // minimum interval between attacking any entity
 
 int is_hostile_entity(entity *e) {
     return e->hostile > 0;
@@ -952,7 +952,7 @@ int handle_async() {
 
             uint8_t pkt[4096], *p;
 
-            printf("%lld : Attack entity %d\n", ts, e->id);
+            //printf("%lld : Attack entity %d\n", ts, e->id);
 
             // wave arm
             p = pkt;
