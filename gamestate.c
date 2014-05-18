@@ -619,7 +619,7 @@ int search_spawners() {
     for(i=0; i<gs.C(spawner); i++)
         if (
             //gs.P(spawner)[i].type == SPAWNER_TYPE_ZOMBIE   ||
-            //gs.P(spawner)[i].type == SPAWNER_TYPE_UNKNOWN  ||
+            gs.P(spawner)[i].type == SPAWNER_TYPE_UNKNOWN  ||
             gs.P(spawner)[i].type == SPAWNER_TYPE_SKELETON
             )
             *lh_arr_new(GAR(s)) = gs.P(spawner)[i];
@@ -647,10 +647,11 @@ int search_spawners() {
     }
                 
     printf("Dumping %zd spawners\n",C(s));
+    printf(" Coords            Chunk  / Off   Ty Nearest\n");
     for(i=0; i<C(s); i++) {
         spawner *s = P(s)+i;
         bcoord bc = c2b(s->co);
-        printf(" %d,%d,%d  %d:%d/%5d  %d  %.1f\n",bc.x,bc.y,bc.z,
+        printf(" %5d,%2d,%5d  %4d:%4d/%5d  %d  %.1f\n",bc.x,bc.y,bc.z,
                s->co.X,s->co.Z,s->co.i,s->type, s->nearest);
     }
 }

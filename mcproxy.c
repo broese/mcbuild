@@ -528,7 +528,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                 printf("**** THUNDER ****\n"
                        "coords=%d,%d,%d vol=%.4f pitch=%d\n",
                        x/8,y/8,z/8,volume,pitch);
-                //close(mitm.ms);
+                close(mitm.ms);
             }
             write_packet(ptr, len, forw);
             break;
@@ -981,7 +981,6 @@ int handle_async() {
 ////////////////////////////////////////////////////////////////////////////////
 
 int handle_server(int sfd, uint32_t ip, uint16_t port) {
-    LH_HERE;
     // accept connection from the local client
     struct sockaddr_in cadr;
     int cs = lh_accept_tcp4(sfd, &cadr);
@@ -1003,7 +1002,7 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     
     // initialize mitm struct, terminate old state if any
     if (mitm.output) fclose(mitm.output);
-    if (mitm.output) fclose(mitm.dbg);
+    if (mitm.dbg)    fclose(mitm.dbg);
     if (mitm.s_rsa) RSA_free(mitm.s_rsa);
     if (mitm.c_rsa) RSA_free(mitm.c_rsa);
     CLEAR(mitm);
@@ -1019,9 +1018,9 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     strftime(fname, sizeof(fname), "saved/%Y%m%d_%H%M%S.mcs",localtime(&t));
     mitm.output = fopen(fname, "w");
     setvbuf(mitm.output, NULL, _IONBF, 0);
-    strftime(fname, sizeof(fname), "saved/%Y%m%d_%H%M%S.dbg",localtime(&t));
-    mitm.dbg = fopen(fname, "w");
-    setvbuf(mitm.dbg, NULL, _IONBF, 0);
+    //strftime(fname, sizeof(fname), "saved/%Y%m%d_%H%M%S.dbg",localtime(&t));
+    //mitm.dbg = fopen(fname, "w");
+    //setvbuf(mitm.dbg, NULL, _IONBF, 0);
 
     // handle_server was able to accept the client connection and
     // also open the server-side connection, we need to add these
