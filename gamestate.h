@@ -68,6 +68,10 @@ typedef struct _spawner {
 #define ENTITY_OBJECT   4
 #define ENTITY_OTHER    5
 
+#define DIM_OVERWORLD   0
+#define DIM_NETHER      -1
+#define DIM_END         1
+
 typedef struct _entity {
     int32_t id;
     int32_t x,y,z;      // note: fixed-point coords, shift by ???
@@ -91,8 +95,18 @@ typedef struct _gamestate {
         uint32_t id;
     } own;
             
-    // chunks
+    char current_dimension;
+    // current chunks
     lh_arr_declare(chunkid, chunk);
+
+    // Overworld chunks
+    lh_arr_declare(chunkid, chunko);
+
+    // Nether chunks
+    lh_arr_declare(chunkid, chunkn);
+
+    // Nether chunks
+    lh_arr_declare(chunkid, chunke);
 
     // spawners
     lh_arr_declare(spawner, spawner);
@@ -121,3 +135,6 @@ int get_entities_in_range(int *dst, int max, float range,
 
 int is_in_range(entity * e, float range);
 int import_clpacket(uint8_t *ptr, ssize_t size);
+
+uint8_t * export_cuboid(int Xl, int Xh, int Zl, int Zh, int yl, int yh);
+int get_chunks_dim(int *Xl, int *Xh, int *Zl, int *Zh);

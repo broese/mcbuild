@@ -97,10 +97,8 @@ static uint8_t * read_string(uint8_t *p, char *s) {
 
 static inline int count_bits(uint32_t bitmask) {
     int i,c=0;
-    while(bitmask) {
-        c++;
-        bitmask>>=1;
-    }
+    for(c=0; bitmask; bitmask>>=1)
+        c += (bitmask&1);
     return c;
 }
 
@@ -122,6 +120,9 @@ int import_chunk(int X, int Z, uint16_t pbm, uint16_t abm, int skylight, int bio
         cid = gs.P(chunk)+idx;
     }
 
+    //printf("import_chunk %d,%d, pbm=%04x, abm=%04x, skylight=%d biomes=%d len=%zd\n",
+    //       X,Z,pbm,abm,skylight,biomes,length);
+
     cid->X = X;
     cid->Z = Z;
     lh_alloc_obj(cid->c);
@@ -133,7 +134,7 @@ int import_chunk(int X, int Z, uint16_t pbm, uint16_t abm, int skylight, int bio
     uint8_t *p = data;
     uint16_t bm;
     int i;
-
+    
     // blocks
     for(i=0,bm=pbm; bm; i++,bm>>=1) {
         if (bm&1) {
@@ -197,6 +198,108 @@ int prune_chunk(int X, int Z) {
     lh_arr_delete(GAR(gs.chunk),i);
 
     return 0;
+}
+
+void switch_dimension(char dim) {
+    if (gs.opt.prune_chunks) {
+        // no need to save anything, just delete current data
+        if (P(gs.chunk)) free(P(gs.chunk));
+    }
+    else {
+        // save the current chunk data to their respective variable
+        switch (gs.current_dimension) {
+        case DIM_OVERWORLD:
+            C(gs.chunko) = C(gs.chunk);
+            P(gs.chunko) = P(gs.chunk);
+            break;
+        case DIM_NETHER:
+            C(gs.chunkn) = C(gs.chunk);
+            P(gs.chunkn) = P(gs.chunk);
+            break;
+        case DIM_END:
+            C(gs.chunke) = C(gs.chunk);
+            P(gs.chunke) = P(gs.chunk);
+            break;
+        }
+    }
+
+    // restore data to the current variables
+    switch (dim) {
+    case DIM_OVERWORLD:
+        C(gs.chunk) = C(gs.chunko);
+        P(gs.chunk) = P(gs.chunko);
+        break;
+    case DIM_NETHER:
+        C(gs.chunk) = C(gs.chunkn);
+        P(gs.chunk) = P(gs.chunkn);
+        break;
+    case DIM_END:
+        C(gs.chunk) = C(gs.chunke);
+        P(gs.chunk) = P(gs.chunke);
+        break;
+    }
+    
+    gs.current_dimension = dim;
+}
+
+int get_chunks_dim(int *Xl, int *Xh, int *Zl, int *Zh) {
+    int i;
+
+    *Xl = *Xh = P(gs.chunk)[0].X;
+    *Zl = *Zh = P(gs.chunk)[0].Z;
+
+    for(i=0; i<C(gs.chunk); i++) {
+        chunkid *c = P(gs.chunk)+i;
+        if (c->X < *Xl) *Xl=c->X;
+        if (c->X > *Xh) *Xh=c->X;
+        if (c->Z < *Zl) *Zl=c->Z;
+        if (c->Z > *Zh) *Zh=c->Z;
+    }
+
+    return C(gs.chunk);
+}
+
+uint8_t * export_cuboid(int Xl, int Xh, int Zl, int Zh, int yl, int yh) {
+    int Xsz = (Xh-Xl+1);   // x-size of cuboid in chunks
+    int Zsz = (Zh-Zl+1);   // z-size of cuboid in chunks
+    int ysz = (yh-yl+1);   // y-size of cuboid in blocks
+    int lsz = Xsz*Zsz*256; // size of a single layer
+    ssize_t sz = ysz*lsz;  // total size of the cuboid in bytes
+
+    printf("Cuboid %d*%d*%d = %zd bytes\n",Xsz,Zsz,ysz,sz);
+    lh_create_buf(data, sz);
+    memset(data, 0xff, sz);
+
+    int i,j,k;
+    for(i=0; i<C(gs.chunk); i++) {
+        chunkid *c = P(gs.chunk)+i;
+
+        // offset of this chunk's data where it will be placed in the cuboid
+        int xoff = (c->X-Xl)*16;
+        int zoff = (c->Z-Zl)*16;
+
+        int boff = xoff + zoff*Xsz*16; // byte offset of the chunk's start in the cuboid buffer
+
+        for(j=0; j<ysz; j++) {
+            int yoff = (j+yl)*256; // byte offset of y slice in the chunk's block data
+            int doff = boff + Xsz*Zsz*256*j;
+            for(k=0; k<16; k++) {
+                memcpy(data+doff, c->c->blocks+yoff, 16);
+                yoff += 16;
+                doff += Xsz*16;
+            }            
+        }        
+    }
+
+    return data;    
+}
+
+static inline int find_chunk(int X, int Z) {
+    int i;
+    for(i=0; i<C(gs.chunk); i++)
+        if (P(gs.chunk)[i].X == X && P(gs.chunk)[i].Z == Z)
+            return i;
+    return -1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -320,7 +423,18 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             Rstr(leveltype);
 
             gs.own.id = pid;
+            switch_dimension(dim);
             
+            break;
+        }
+
+        case 0x07: { // Respawn
+            Rint(dim);
+            Rchar(diff);
+            Rchar(maxpl);
+            Rstr(leveltype);
+
+            switch_dimension(dim);
             break;
         }
 
@@ -498,8 +612,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
         }
 
 
-        ///// Chunk data
-        case 0x21: {
+        case 0x21: { // ChunkData
             Rint(X);
             Rint(Z);
             Rchar(cont);
@@ -521,7 +634,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x26: {
+        case 0x26: { // MapChunkBulk
             Rshort(nchunks);
             Rint(dsize);
             Rchar(skylight);
@@ -570,6 +683,25 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             Rvarint(bid);
             Rchar(bmeta);
             //printf("BlockChange %d,%d,%d  id=%02x meta=%02x\n",x,y,z,bid,bmeta);
+
+            bcoord bc = {x,z,y};
+            ccoord cc = b2c(bc);
+
+            int i = find_chunk(cc.X, cc.Z);
+            if (i>=0) {
+                P(gs.chunk)[i].c->blocks[cc.i] = bid;
+                if (cc.i&1) {
+                    P(gs.chunk)[i].c->meta[cc.i] &= 0x0f;
+                    P(gs.chunk)[i].c->meta[cc.i] |= (bmeta<<4);
+                }
+                else {
+                    P(gs.chunk)[i].c->meta[cc.i] &= 0xf0;
+                    P(gs.chunk)[i].c->meta[cc.i] |= (bmeta&0x0f);
+                }
+            }
+            else
+                printf("Cannot find chunk %d,%d\n",cc.X,cc.Z);
+
             break;
         }
 

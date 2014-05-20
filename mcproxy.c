@@ -191,6 +191,91 @@ void chat_message(const char *str, lh_buf_t *buf, const char *color) {
     write_packet(wbuf, (wp-wbuf)+jlen, buf);
 }
 
+#define TUNNEL_TRESHOLD 0.4
+
+void find_tunnels(lh_buf_t *answer, int l, int h) {
+    int i;
+
+    int Xl,Xh,Zl,Zh;
+    int nc = get_chunks_dim(&Xl,&Xh,&Zl,&Zh);
+    uint8_t *data = export_cuboid(Xl,Xh,Zl,Zh,l,h);
+
+    int xsz = (Xh-Xl+1)*16;
+    int zsz = (Zh-Zl+1)*16;
+    int ysz = (h-l+1);
+
+    char reply[32768];
+    //sprintf(reply,"got %d chunks (%d,%d) to (%d,%d)",nc,Xl,Zl,Xh,Zh);
+    //chat_message(reply, answer, "blue");
+
+    // search for tunnels
+
+    for(i=l; i<=h; i++) {
+        uint8_t * slice = data+(i-l)*xsz*zsz;
+
+        int x,z;
+        for(x=0; x<xsz; x++) {
+            int nair=0, nfilled=0;
+            uint8_t * p=slice+x;
+            for(z=0; z<zsz; z++) {
+                if (*p!=0xff) {
+                    if (*p)
+                        nfilled++;
+                    else
+                        nair++;
+                }
+                p += xsz;
+            }
+
+            //printf("level=%d x=%d : %d/%d\n",i,x+Xl*16,nair,nfilled);
+            if ((float)(nair) > (float)(nair+nfilled)*TUNNEL_TRESHOLD) {
+                sprintf(reply,"Tunnel NS at level=%d x=%d  (%d/%d)\n",i,x+Xl*16,nair,nfilled);
+                chat_message(reply, answer, "yellow");
+            }
+        }
+    }
+
+    for(i=l; i<=h; i++) {
+        uint8_t * slice = data+(i-l)*xsz*zsz;
+        int x,z;
+
+#if 0
+        if (i=122) {
+            for(z=0; z<zsz; z++) {
+                uint8_t * p=slice+z*xsz;
+                printf("%4d  ",z+Zl*16);
+                for(x=0; x<200; x++) {
+                    printf("%c",p[x]==0x57?'#':' ');
+                }
+                printf("\n");
+            }
+        }
+#endif
+
+        for(z=0; z<zsz; z++) {
+            int nair=0, nfilled=0;
+            uint8_t * p=slice+z*xsz;
+
+            for(x=0; x<xsz; x++) {
+                if (*p!=0xff) {
+                    if (*p)
+                        nfilled++;
+                    else
+                        nair++;
+                }
+                p++;
+            }
+
+            //printf("level=%d x=%d : %d/%d\n",i,x+Xl*16,nair,nfilled);
+            if ((float)(nair) > (float)(nair+nfilled)*TUNNEL_TRESHOLD)
+                printf("Tunnel WE at level=%d z=%d  (%d/%d)\n",i,z+Zl*16,nair,nfilled);
+        }
+    }
+
+    free(data);
+}
+
+
 int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
     if (msg[0] != '#') return 0;
 
@@ -248,6 +333,28 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
             mitm.opt.maxlevel = maxlevel;
             sprintf(reply,"Grinding to level %d",mitm.opt.maxlevel);
         }
+    }
+    else if (!strcmp(words[0],"ft")) {
+        int ll = 119;
+        int lh = 122;
+        int error = 0;
+        if (words[1]) {
+            if (sscanf(words[1],"%d",&ll)!=1)
+                error++;
+
+            if (words[2]) {
+                if (sscanf(words[2],"%d",&lh)!=1)
+                    error++;
+            }
+        }
+
+        if (ll<0 || lh<0 || lh<ll || lh>((gs.current_dimension==DIM_NETHER)?126:254))
+            error++;
+
+        if (error)
+            sprintf(reply, "incorrect level range specified");
+        else
+            find_tunnels(retour,ll,lh);
     }
 
     if (reply[0])
