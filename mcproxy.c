@@ -275,6 +275,7 @@ void find_tunnels(lh_buf_t *answer, int l, int h) {
     free(data);
 }
 
+#include "blocks_ansi.h"
 
 int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
     if (msg[0] != '#') return 0;
@@ -355,6 +356,44 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
             sprintf(reply, "incorrect level range specified");
         else
             find_tunnels(retour,ll,lh);
+    }
+    else if (!strcmp(words[0],"map")) {
+        int error=0;
+        int y = gs.own.y>>5;
+
+        if (words[1]) {
+            if (sscanf(words[1],"%d",&y)!=1)
+                error++;
+        }
+
+        if (error) {
+            sprintf(reply, "incorrect level specified");
+        }
+        else {
+            int xp = gs.own.x>>5;
+            int zp = gs.own.z>>5;
+            int X = gs.own.x>>9;
+            int Z = gs.own.z>>9;
+            uint8_t *map = export_cuboid(X-5,X+5,Z-5,Z+5,y,y);
+
+            int xoff = (X-5)*16;
+            int zoff = (Z-5)*16;
+
+            int x,z;
+            printf("MAP x=%d:%d z=%d:%d y=%d\n",(X-5)*16,(X+6)*16-1,(Z-5)*16,(Z+6)*16-1,y);
+            for(z=0; z<(11*16); z++) {
+                uint8_t * p = map+z*(11*16);
+                printf("%s%6d  ",ANSI_CLEAR,z);
+                for(x=0; x<(11*16); x++,p++) {
+                    if (x+xoff==xp && z+zoff==zp)
+                        printf("%s",ANSI_PLAYER);
+                    else
+                        printf("%s",ANSI_BLOCK[*p]);
+                }
+                printf("%s\n",ANSI_CLEAR);
+            }
+            free(map);
+        }
     }
 
     if (reply[0])

@@ -274,6 +274,9 @@ uint8_t * export_cuboid(int Xl, int Xh, int Zl, int Zh, int yl, int yh) {
     for(i=0; i<C(gs.chunk); i++) {
         chunkid *c = P(gs.chunk)+i;
 
+        if (c->X<Xl || c->X>Xh || c->Z<Zl || c->Z>Zh)
+            continue;
+
         // offset of this chunk's data where it will be placed in the cuboid
         int xoff = (c->X-Xl)*16;
         int zoff = (c->Z-Zl)*16;
