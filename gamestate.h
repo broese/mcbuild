@@ -91,8 +91,9 @@ typedef struct _gamestate {
     } opt;
 
     struct {
-        int32_t x,y,z;
         uint32_t id;
+        int32_t x,y,z;
+        float yaw,pitch;
     } own;
             
     char current_dimension;

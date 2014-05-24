@@ -266,7 +266,7 @@ uint8_t * export_cuboid(int Xl, int Xh, int Zl, int Zh, int yl, int yh) {
     int lsz = Xsz*Zsz*256; // size of a single layer
     ssize_t sz = ysz*lsz;  // total size of the cuboid in bytes
 
-    printf("Cuboid %d*%d*%d = %zd bytes\n",Xsz,Zsz,ysz,sz);
+    //printf("Cuboid %d*%d*%d = %zd bytes\n",Xsz,Zsz,ysz,sz);
     lh_create_buf(data, sz);
     memset(data, 0xff, sz);
 
@@ -388,6 +388,9 @@ int import_clpacket(uint8_t *ptr, ssize_t size) {
             Rfloat(yaw);
             Rfloat(pitch);
             Rchar(ground);
+
+            gs.own.yaw = yaw;
+            gs.own.pitch = pitch;
             break;
         }
         case 0x06: {
@@ -402,6 +405,9 @@ int import_clpacket(uint8_t *ptr, ssize_t size) {
             gs.own.x = (int)(x*32);
             gs.own.y = (int)(feety*32);
             gs.own.z = (int)(z*32);
+
+            gs.own.yaw = yaw;
+            gs.own.pitch = pitch;
 
             //printf("Player position: %d,%d,%d\n",gs.own.x/32,gs.own.y/32,gs.own.z/32);
             break;
@@ -452,6 +458,9 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             gs.own.x = (int)(x*32);
             gs.own.y = (int)(y*32);
             gs.own.z = (int)(z*32);
+
+            gs.own.yaw = yaw;
+            gs.own.pitch = pitch;
 
             //printf("Player position: %d,%d,%d\n",gs.own.x/32,gs.own.y/32,gs.own.z/32);
 
@@ -678,6 +687,43 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             
             break;
         }
+            
+        case 0x22: { // MultiBlockChange
+            Rint(X);
+            Rint(Z);
+            Rshort(nrec);
+            Rint(dsize);
+
+            int idx = find_chunk(X,Z);
+            if (idx<0) {
+                printf("Cannot find chunk %d:%d\n",X,Z);
+                break;
+            }
+            chunk *c = P(gs.chunk)[idx].c;
+
+            int i;
+            for(i=0; i<nrec; i++) {
+                Rint(rec);
+                int xr   = (rec>>28)&0x0f;
+                int zr   = (rec>>24)&0x0f;
+                int y    = (rec>>16)&0xff;
+                int bid  = (rec>>4)&0xff;
+                int meta = rec&0xf;
+
+                idx = y*256+zr*16+xr;
+                uint8_t *m = c->meta+idx/2;
+
+                if (xr&1) {
+                    *m &= 0x0f;
+                    *m |= (meta<<4);
+                }
+                else {
+                    *m &= 0xf0;
+                    *m |= (meta&0x0f);
+                }
+            }
+            break;
+        }
 
         case 0x23: {
             Rint(x);
@@ -693,13 +739,14 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             int i = find_chunk(cc.X, cc.Z);
             if (i>=0) {
                 P(gs.chunk)[i].c->blocks[cc.i] = bid;
+                uint8_t * m = P(gs.chunk)[i].c->meta + cc.i/2;
                 if (cc.i&1) {
-                    P(gs.chunk)[i].c->meta[cc.i] &= 0x0f;
-                    P(gs.chunk)[i].c->meta[cc.i] |= (bmeta<<4);
+                    *m &= 0x0f;
+                    *m |= (bmeta<<4);
                 }
                 else {
-                    P(gs.chunk)[i].c->meta[cc.i] &= 0xf0;
-                    P(gs.chunk)[i].c->meta[cc.i] |= (bmeta&0x0f);
+                    *m &= 0xf0;
+                    *m |= (bmeta&0x0f);
                 }
             }
             else

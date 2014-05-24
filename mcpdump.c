@@ -41,7 +41,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
         uint8_t *pkt = p;
         Rvarint(type);
-        //printf("%d.%06d: %c  type=%x\n",sec,usec,is_client?'C':'S',type);
+        printf("%d.%06d: %c  type=%x\n",sec,usec,is_client?'C':'S',type);
 
         if (!is_client) {
             switch (type) {

@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <assert.h>
 #include <time.h>
+#include <math.h>
 
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
@@ -59,6 +60,13 @@ void signal_handler(int signum) {
 ////////////////////////////////////////////////////////////////////////////////
 
 lh_pollarray pa;
+
+typedef struct {
+    int x,y,z;          // block coordinates
+    int id;             // block type ID
+    uint8_t offset;     // 
+    uint8_t cx,cy,cz;   // cursor x,y,z
+} bblock;
 
 struct {
     int state;          // handshake state
@@ -128,9 +136,29 @@ struct {
     // Various options
     struct {
         int autokill;
+
         int grinding;
         int maxlevel;
+
+        int holeradar;
+
+        //int autobuild;
     } opt;
+
+    // Auto-Building
+    struct {
+        int active;                 // building is in progress
+        uint64_t last_placement;    // timestamp when the most recent block was placed
+        lh_arr_declare(bblock,all);     // all blocks to be built - init by chat command
+        lh_arr_declare(bblock,inreach); // all blocks in reach - updated by player position change
+        int last_x, last_y, last_z;
+    } build;
+
+    // Hole radar
+    int hr_last_x;
+    int hr_last_y;
+    int hr_last_z;
+    int hr_last_yaw;
 
     int64_t last[2];
 } mitm;
@@ -267,12 +295,82 @@ void find_tunnels(lh_buf_t *answer, int l, int h) {
             }
 
             //printf("level=%d x=%d : %d/%d\n",i,x+Xl*16,nair,nfilled);
-            if ((float)(nair) > (float)(nair+nfilled)*TUNNEL_TRESHOLD)
-                printf("Tunnel WE at level=%d z=%d  (%d/%d)\n",i,z+Zl*16,nair,nfilled);
+            if ((float)(nair) > (float)(nair+nfilled)*TUNNEL_TRESHOLD) {
+                sprintf(reply,"Tunnel WE at level=%d z=%d  (%d/%d)\n",i,z+Zl*16,nair,nfilled);
+                chat_message(reply, answer, "yellow");
+            }
         }
     }
 
     free(data);
+}
+
+#define MIN(a,b) ((a<b)?(a):(b))
+#define MAX(a,b) ((a>b)?(a):(b))
+
+#define HR_DISTC 2
+#define HR_DISTB (HR_DISTC<<4)
+
+void hole_radar(lh_buf_t *client) {
+    int x = gs.own.x>>5;
+    int y = (gs.own.y>>5)-2;
+    int z = gs.own.z>>5;
+
+    int lx=-(int)(65536*sin(gs.own.yaw/180*M_PI));
+    int lz=(int)(65536*cos(gs.own.yaw/180*M_PI));
+
+    int X=x>>4;
+    int Z=z>>4;
+
+    uint8_t * data;
+    int off,sh;
+    if (abs(lx) > abs(lz)) {
+        lz=0;
+        // looking into east or west direction
+        if (lx<0) {
+            //to west
+            lx=-1;
+            data = export_cuboid(X-HR_DISTC,X,Z,Z,y,y);
+            off = (x&0x0f)+HR_DISTB+(z&0x0f)*(HR_DISTB+16);
+        }
+        else {
+            // east
+            lx=1;
+            data = export_cuboid(X,X+HR_DISTC,Z,Z,y,y);
+            off = (x&0x0f)+(z&0x0f)*(HR_DISTB+16);
+        }
+        sh=lx;
+    }
+    else {
+        lx=0;
+        // looking into north or south direction
+        if (lz<0) {
+            //to north
+            lz=-1;
+            data = export_cuboid(X,X,Z-HR_DISTC,Z,y,y);
+            off = (x&0x0f)+((z&0x0f)+HR_DISTB)*16;
+        }
+        else {
+            // south
+            lz=1;
+            data = export_cuboid(X,X,Z,Z+HR_DISTC,y,y);
+            off = (x&0x0f)+(z&0x0f)*16;
+        }
+        sh = 16*lz;
+    }
+
+    int i;
+    for(i=1; i<=HR_DISTB; i++) {
+        off+=sh;
+        if (data[off]==0) {
+            char reply[32768];
+            sprintf(reply, "*** HOLE *** : %d,%d d=%d",x+lx*i,z+lz*i,i);
+            chat_message(reply, client, NULL);
+            break;
+        }
+    }
+
+    free(data);    
 }
 
 #include "blocks_ansi.h"
@@ -394,6 +492,11 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
             }
             free(map);
         }
+    }
+    else if (!strcmp(words[0],"holeradar")) {
+        mitm.opt.holeradar = !mitm.opt.holeradar;
+        sprintf(reply,"Hole radar is %s",mitm.opt.holeradar?"enabled":"disabled");
+        //hole_radar(retour);
     }
 
     if (reply[0])
@@ -695,7 +798,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             break;
         }
 
-        case  SP_SetExperience: {
+        case SP_SetExperience: {
             Rfloat(bar);
             Rshort(level);
             Rshort(exp);
@@ -707,6 +810,29 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                 char msg[4096];
                 sprintf(msg, "Grinding finished at level %d",level);
                 chat_message(msg, forw, "green");                
+            }
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        case SP_PlayerPositionLook:
+        case CP_PlayerPositionLook:
+        case CP_PlayerPosition:
+        case CP_PlayerLook: {
+            if (mitm.opt.holeradar) {
+                int x = gs.own.x>>5;
+                int y = gs.own.y>>5;
+                int z = gs.own.z>>5;
+                int yaw = (int)gs.own.yaw/90;
+
+                if (x!= mitm.hr_last_x || y!= mitm.hr_last_y || 
+                    z!= mitm.hr_last_z || yaw!= mitm.hr_last_yaw ) {
+                    mitm.hr_last_x = x;
+                    mitm.hr_last_y = y;
+                    mitm.hr_last_z = z;
+                    mitm.hr_last_yaw = yaw;
+                    hole_radar(is_client?retour:forw);
+                }
             }
             write_packet(ptr, len, forw);
             break;
@@ -1064,8 +1190,9 @@ int query_auth_server() {
 
 #define MAX_ENTITIES     4096
 #define MAX_ATTACK       1
-#define MIN_ENTITY_DELAY 300000  // minimum interval between hitting the same entity (us)
-#define MIN_ATTACK_DELAY 100000  // minimum interval between attacking any entity
+#define MIN_ENTITY_DELAY 250000  // minimum interval between hitting the same entity (us)
+#define MIN_ATTACK_DELAY  50000  // minimum interval between attacking any entity
+#define MIN_BUILD_DELAY  500000
 
 int is_hostile_entity(entity *e) {
     return e->hostile > 0;
@@ -1100,18 +1227,18 @@ int handle_async() {
 
             //printf("%lld : Attack entity %d\n", ts, e->id);
 
-            // wave arm
-            p = pkt;
-            write_varint(p,0x0a); // Animation
-            write_int(p,gs.own.id);
-            write_char(p,0x01);
-            write_packet(pkt, p-pkt, &mitm.cs_tx);
-
             // attack entity
             p = pkt;
             write_varint(p,0x02); // Use Entity
             write_int(p, e->id);
             write_char(p, 0x01);
+            write_packet(pkt, p-pkt, &mitm.cs_tx);
+
+            // wave arm
+            p = pkt;
+            write_varint(p,0x0a); // Animation
+            write_int(p,gs.own.id);
+            write_char(p,0x01);
             write_packet(pkt, p-pkt, &mitm.cs_tx);
 
             e->lasthit = ts;
@@ -1120,6 +1247,10 @@ int handle_async() {
         }
     }
 
+    // Autobuild
+    if (mitm.build.active && (ts-mitm.build.last_placement)>MIN_BUILD_DELAY ) {
+        
+    }
 
     return 0;
 }
