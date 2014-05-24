@@ -15,6 +15,29 @@ uint8_t * read_string(uint8_t *p, char *s) {
     return p+len;
 }
 
+typedef struct _slot_t {
+    uint16_t id;
+    uint8_t  count;
+    uint16_t damage;
+    uint16_t dlen;
+    uint8_t  data[65536];
+} slot_t;
+
+uint8_t * read_slot(uint8_t *p, slot_t *s) {
+    lh_clear_ptr(s);
+
+    s->id     = lh_read_short_be(p);
+    s->count  = lh_read_char(p);
+    s->damage = lh_read_short_be(p);
+    s->dlen   = lh_read_short_be(p);
+    if (s->dlen!=0 && s->dlen!=0xffff) {
+        memcpy(s->data, p, s->dlen);
+        p += s->dlen;
+    }
+    return p;
+}
+    
+
 #define Rx(n,type,fun) type n = lh_read_ ## fun ## _be(p);
 
 #define Rchar(n)  Rx(n,uint8_t,char)
@@ -26,6 +49,7 @@ uint8_t * read_string(uint8_t *p, char *s) {
 #define Rstr(n)   char n[4096]; p=read_string(p,n)
 #define Rskip(n)  p+=n;
 #define Rvarint(n) uint32_t n = lh_read_varint(p);
+#define Rslot(n)  slot_t n; p=read_slot(p,&n)
 
 
 
@@ -41,7 +65,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
         uint8_t *pkt = p;
         Rvarint(type);
-        printf("%d.%06d: %c  type=%x\n",sec,usec,is_client?'C':'S',type);
+        //printf("%d.%06d: %c  type=%x\n",sec,usec,is_client?'C':'S',type);
 
         if (!is_client) {
             switch (type) {
@@ -101,6 +125,27 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                     break;
             }
         }
+        else {
+            switch (type) {
+                case 0x08: {
+                    Rint(x);
+                    Rchar(y);
+                    Rint(z);
+                    Rchar(dir);
+                    Rslot(held);
+                    Rchar(cx);
+                    Rchar(cy);
+                    Rchar(cz);
+                    printf("%d.%06d: PlayerBlockPlacement %d:%d:%d dir=%d "
+                           "item: id=%d count=%d dmg=%d dlen=%d "
+                           "cursor=%d,%d,%d\n",
+                           sec,usec,x,y,z,dir,held.id,held.count,held.damage,held.dlen,cx,cy,cz);
+
+                    break;
+                }
+            }
+        }
+    
         
         p = pkt+len;
     }
