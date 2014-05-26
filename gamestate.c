@@ -200,7 +200,9 @@ int prune_chunk(int X, int Z) {
     return 0;
 }
 
-void switch_dimension(char dim) {
+void switch_dimension(uint8_t dim) {
+    printf("Switching to %02x\n",dim);
+
     if (gs.opt.prune_chunks) {
         // no need to save anything, just delete current data
         if (P(gs.chunk)) free(P(gs.chunk));
@@ -241,6 +243,8 @@ void switch_dimension(char dim) {
     
     gs.current_dimension = dim;
 }
+
+
 
 int get_chunks_dim(int *Xl, int *Xh, int *Zl, int *Zh) {
     int i;
@@ -370,18 +374,24 @@ int import_clpacket(uint8_t *ptr, ssize_t size) {
 
     uint32_t type = lh_read_varint(p);
     switch (type) {
-        case 0x04: {
+        case 0x04: { // PlayerPosition
             Rdouble(x);
-            Rdouble(heady);
             Rdouble(feety);
+            Rdouble(heady);
             Rdouble(z);
             Rchar(ground);
 
             gs.own.x = (int)(x*32);
-            gs.own.y = (int)(feety*32);
+            gs.own.y = (int)(nearbyint(feety)*32);
             gs.own.z = (int)(z*32);
+            gs.own.dx = x;
+            gs.own.dz = z;
+            gs.own.dheady = heady;
+            gs.own.dfeety = feety;
+            gs.own.ground = ground;
 
-            //printf("Player position: %d,%d,%d\n",gs.own.x/32,gs.own.y/32,gs.own.z/32);
+            //printf("Player position: %d,%d,%d heady=%.2f feety=%.2f\n",
+            //       gs.own.x/32,gs.own.y/32,gs.own.z/32,heady,feety);
             break;
         }
         case 0x05: {
@@ -391,25 +401,32 @@ int import_clpacket(uint8_t *ptr, ssize_t size) {
 
             gs.own.yaw = yaw;
             gs.own.pitch = pitch;
+            gs.own.ground = ground;
             break;
         }
         case 0x06: {
             Rdouble(x);
-            Rdouble(heady);
             Rdouble(feety);
+            Rdouble(heady);
             Rdouble(z);
             Rfloat(yaw);
             Rfloat(pitch);
             Rchar(ground);
 
             gs.own.x = (int)(x*32);
-            gs.own.y = (int)(feety*32);
+            gs.own.y = (int)(nearbyint(feety)*32);
             gs.own.z = (int)(z*32);
+            gs.own.dx = x;
+            gs.own.dz = z;
+            gs.own.dheady = heady;
+            gs.own.dfeety = feety;
+            gs.own.ground = ground;
 
             gs.own.yaw = yaw;
             gs.own.pitch = pitch;
 
-            //printf("Player position: %d,%d,%d\n",gs.own.x/32,gs.own.y/32,gs.own.z/32);
+            //printf("Player position: %d,%d,%d\n",
+            //       gs.own.x/32,gs.own.y/32,gs.own.z/32);
             break;
         }
     }
@@ -427,11 +444,15 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             Rint(pid);
             Rchar(gamemode);
             Rchar(dim);
+            if (dim != DIM_OVERWORLD && dim !=DIM_NETHER && dim != DIM_END)
+                break;
             Rchar(diff);
             Rchar(maxpl);
             Rstr(leveltype);
 
             gs.own.id = pid;
+            printf("Join Game pid=%d gamemode=%d dim=%d diff=%d maxpl=%d level=%s\n",
+                   pid,gamemode,dim,diff,maxpl,leveltype);
             switch_dimension(dim);
             
             break;
@@ -456,13 +477,19 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             Rchar(ground);
             
             gs.own.x = (int)(x*32);
-            gs.own.y = (int)(y*32);
+            gs.own.y = (int)(nearbyint(y-1.62)*32);
             gs.own.z = (int)(z*32);
+            gs.own.dx = x;
+            gs.own.dz = z;
+            gs.own.dheady = y;
+            gs.own.dfeety = y-1.62;
 
             gs.own.yaw = yaw;
             gs.own.pitch = pitch;
+            gs.own.ground = ground;
 
-            //printf("Player position: %d,%d,%d\n",gs.own.x/32,gs.own.y/32,gs.own.z/32);
+            //printf("Player position: %d,%d,%d y from server=%.2f\n",
+            //       gs.own.x/32,gs.own.y/32,gs.own.z/32,y);
 
             break;
         }
@@ -696,7 +723,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
 
             int idx = find_chunk(X,Z);
             if (idx<0) {
-                printf("Cannot find chunk %d:%d\n",X,Z);
+                //printf("Cannot find chunk %d:%d\n",X,Z);
                 break;
             }
             chunk *c = P(gs.chunk)[idx].c;
@@ -749,8 +776,9 @@ int import_packet(uint8_t *ptr, ssize_t size) {
                     *m |= (bmeta&0x0f);
                 }
             }
-            else
-                printf("Cannot find chunk %d,%d\n",cc.X,cc.Z);
+            else {
+                //printf("Cannot find chunk %d,%d\n",cc.X,cc.Z);
+            }
 
             break;
         }
@@ -841,20 +869,10 @@ int search_spawners() {
 #define SQ(x) ((x)*(x))
 
 int entity_in_range(entity * e, float range) {
-    int sdist = SQ(gs.own.x-e->x)+SQ(gs.own.y-e->y)+SQ(gs.own.z-e->z);
+    int sdist = SQ(gs.own.x-e->x)+SQ((gs.own.y+32)-e->y)+SQ(gs.own.z-e->z);
     sdist >>= 10;
-#if 0
-    if (e->type == ENTITY_MOB)
-    printf("%08x %2d %2d : %d,%d,%d - %d,%d,%d => %f < %f\n",
-           e->id,e->type,e->mtype,
-           gs.own.x/32,gs.own.y/32,gs.own.z/32,
-           e->x/32,e->y/32,e->z/32,
-           (float)sdist,SQ(range));
-#endif
     return ((float)sdist < SQ(range));
 }
-
-
 
 int get_entities_in_range(int *dst, int max, float range,
     int (*filt_pred)(entity *), int (*sort_pred)(entity *, entity *)) {

@@ -68,7 +68,19 @@ void parse_mcp(uint8_t *data, ssize_t size) {
         //printf("%d.%06d: %c  type=%x\n",sec,usec,is_client?'C':'S',type);
 
         if (!is_client) {
+            import_packet(pkt, len);
+#if 0
             switch (type) {
+                case 0x08: {
+                    Rdouble(x);
+                    Rdouble(y);
+                    Rdouble(z);
+                    Rfloat(yaw);
+                    Rfloat(pitch);
+                    Rchar(ground);
+                    //printf("S PlayerPositionAndLook: %.1f\n",y);
+                }
+
                 case 0x0a: {
                     Rint(eid);
                     Rint(X);
@@ -84,7 +96,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
                     Rvarint(dcount);
 
-                    printf("%d.%06d: Spawn Player  eid=%d uuid=%s\n",sec,usec,eid,uuid);
+                    //printf("%d.%06d: Spawn Player  eid=%d uuid=%s\n",sec,usec,eid,uuid);
                     break;
                 }
                 case 0x28: {
@@ -124,9 +136,42 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                     import_packet(pkt, len);
                     break;
             }
+#endif
         }
         else {
+            import_clpacket(pkt, len);
+
             switch (type) {
+                case 0x04: {
+                    Rdouble(x);
+                    Rdouble(feety);
+                    Rdouble(heady);
+                    Rdouble(z);
+                    Rchar(ground);
+                    //printf("C PlayerPosition: feet=%.1f head=%.1f\n",feety,heady);
+                    break;
+                }
+
+                case 0x05: {
+                    Rfloat(yaw);
+                    Rfloat(pitch);
+                    Rchar(ground);
+                    //printf("C PlayerLook\n");
+                    break;
+                }
+
+                case 0x06: {
+                    Rdouble(x);
+                    Rdouble(feety);
+                    Rdouble(heady);
+                    Rdouble(z);
+                    Rfloat(yaw);
+                    Rfloat(pitch);
+                    Rchar(ground);
+                    //printf("C PlayerPositionAndLook: feet=%.1f head=%.1f\n",feety,heady);
+                    break;
+                }
+
                 case 0x08: {
                     Rint(x);
                     Rchar(y);
@@ -136,10 +181,10 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                     Rchar(cx);
                     Rchar(cy);
                     Rchar(cz);
-                    printf("%d.%06d: PlayerBlockPlacement %d:%d:%d dir=%d "
-                           "item: id=%d count=%d dmg=%d dlen=%d "
-                           "cursor=%d,%d,%d\n",
-                           sec,usec,x,y,z,dir,held.id,held.count,held.damage,held.dlen,cx,cy,cz);
+                    //printf("%d.%06d: PlayerBlockPlacement %d:%d:%d dir=%d "
+                    //       "item: id=%d count=%d dmg=%d dlen=%d "
+                    //       "cursor=%d,%d,%d\n",
+                    //       sec,usec,x,y,z,dir,held.id,held.count,held.damage,held.dlen,cx,cy,cz);
 
                     break;
                 }
@@ -231,6 +276,27 @@ void parse_mcp2(uint8_t *data, ssize_t size) {
     }
 }
 
+void search_blocks(uint8_t id) {
+    int i,j;
+    switch_dimension(DIM_END);
+    printf("Current: %zd, Overworld: %zd, Nether: %zd, End: %zd\n",
+           gs.C(chunk),gs.C(chunko),gs.C(chunkn),gs.C(chunke));
+
+    printf("searching through %zd chunks\n",gs.C(chunko));
+
+    for(i=0; i<gs.C(chunko); i++) {
+        int X = P(gs.chunko)[i].X;
+        int Z = P(gs.chunko)[i].Z;
+        chunk *c = P(gs.chunko)[i].c;
+        for(j=0; j<65536; j++) {
+            if (c->blocks[j] == id) {
+                printf("%d,%d\n",X,Z);
+                break;
+            }
+        }
+    }
+}
+
 int main(int ac, char **av) {
     reset_gamestate();
     set_option(GSOP_PRUNE_CHUNKS, 0);
@@ -250,5 +316,6 @@ int main(int ac, char **av) {
             free(data);
         }
     }
-    search_spawners();
+    //search_spawners();
+    search_blocks(0xa2);
 }

@@ -64,7 +64,7 @@ lh_pollarray pa;
 typedef struct {
     int x,y,z;          // block coordinates
     int id;             // block type ID
-    uint8_t offset;     // 
+    uint8_t dir;        // 
     uint8_t cx,cy,cz;   // cursor x,y,z
 } bblock;
 
@@ -300,7 +300,7 @@ void find_tunnels(lh_buf_t *answer, int l, int h) {
 
 void hole_radar(lh_buf_t *client) {
     int x = gs.own.x>>5;
-    int y = (gs.own.y>>5)-2;
+    int y = (gs.own.y>>5)-1;
     int z = gs.own.z>>5;
 
     int lx=-(int)(65536*sin(gs.own.yaw/180*M_PI));
@@ -380,12 +380,14 @@ void build_request(char **words, lh_buf_t *client) {
         if (!words[2] || !words[3] || 
             sscanf(words[2],"%d",&xsize)!=1 || 
             sscanf(words[3],"%d",&zsize)!=1 ) {
-            sprintf(reply, "Usage: build floor <xsize> <zsize>");
+            sprintf(reply, "Usage: build floor <xsize> <zsize> [ypos]");
         }
         else {
             int x = gs.own.x>>5;
-            int y = (gs.own.y>>5)-2; // coords of the block just below your feet
+            int y = (gs.own.y>>5)-1; // coords of the block just below your feet
             int z = gs.own.z>>5;
+
+            if (words[4]) sscanf(words[4],"%d",&y);
 
             lh_arr_free(GAR(mitm.build.all)); // cancel any current build
 
@@ -421,12 +423,22 @@ static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
     return SQ(x-x2)+SQ(y-y2)+SQ(z-z2);
 }
 
+static inline int is_solid(int type) {
+    return !(type==0 ||                  // air
+             type==0x08 || type==0x09 || // water
+             type==0x0a || type==0x0b || // lava
+             type==0x1f ||               // tallgrass  
+             type==0x06 ||               // saplings
+             type==0x33                  // fire
+             );
+}
+
 void build_process(lh_buf_t *client) {
     lh_arr_free(GAR(mitm.build.inreach));
 
     // get a cuboid in range
     int x = gs.own.x>>5;
-    int y = gs.own.y>>5;
+    int y = (gs.own.y>>5)+1;
     int z = gs.own.z>>5;
 
     int Xl = (x>>4)-1;
@@ -437,8 +449,8 @@ void build_process(lh_buf_t *client) {
     int Zh = Zl+2;
     int zoff = Zl*16;
 
-    int yl = MAX(y-REACH_RANGE,1);
-    int yh = MIN(y+REACH_RANGE,255);
+    int yl = MAX(y-REACH_RANGE-1,1);
+    int yh = MIN(y+REACH_RANGE+1,255);
 
     uint8_t *data = export_cuboid(Xl,Xh,Zl,Zh,yl,yh);
     
@@ -461,15 +473,18 @@ void build_process(lh_buf_t *client) {
         uint8_t *b = ydata+cx+cz*48;
 
         // is the block type suitable to build in ?
-        if (*b==0 ||                  // air
-            *b==0x08 || *b==0x09 ||   // water
-            *b==0x0a || *b==0x0b ||   // lava
-            *b==0x1f ||               // tallgrass  
-            *b==0x33                  // fire
-            ) {
+        if (!is_solid(*b)) {
+            bb->dir = 255;
 
+            // find direction from which the block can be built
+            if      (is_solid(b[48*48]))    { bb->dir = 0; bb->cx=8;  bb->cy=0;  bb->cz=8;  } // U
+            else if (is_solid(b[-(48*48)])) { bb->dir = 1; bb->cx=8;  bb->cy=16; bb->cz=8;  } // D
+            else if (is_solid(b[48]))       { bb->dir = 2; bb->cx=8;  bb->cy=8;  bb->cz=0;  } // S
+            else if (is_solid(b[-48]))      { bb->dir = 3; bb->cx=8;  bb->cy=8;  bb->cz=16; } // N
+            else if (is_solid(b[1]))        { bb->dir = 4; bb->cx=0;  bb->cy=8;  bb->cz=8;  } // E
+            else if (is_solid(b[-1]))       { bb->dir = 5; bb->cx=16; bb->cy=8;  bb->cz=8;  } // W
+            else { continue; }
             
-
 
 
             // schedule it for handle_async
@@ -493,6 +508,30 @@ void build_process(lh_buf_t *client) {
 
     // update mitm.build.inreach array
     // schedule blocks for handle_async
+}
+
+void salt_request(int x, int y, int z) {
+    uint8_t pkt[4096], *p;
+
+    // place block
+    p = pkt;
+    write_varint(p,0x08); // PlayerBlockPlacement
+    write_int(p,x);
+    write_char(p,y);
+    write_int(p,z);
+    write_char(p,4);
+    write_short(p,0xffff); //TODO: proper slot data
+    write_char(p,1);       
+    write_char(p,7);       
+    write_char(p,4);        
+    write_packet(pkt, p-pkt, &mitm.cs_tx);
+
+    // wave arm
+    p = pkt;
+    write_varint(p,0x0a); // Animation
+    write_int(p,gs.own.id);
+    write_char(p,0x01);
+    write_packet(pkt, p-pkt, &mitm.cs_tx);
 }
 
 
@@ -602,10 +641,10 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
 
             int x,z;
             printf("MAP x=%d:%d z=%d:%d y=%d\n",(X-5)*16,(X+6)*16-1,(Z-5)*16,(Z+6)*16-1,y);
-            for(z=0; z<(11*16); z++) {
-                uint8_t * p = map+z*(11*16);
+            for(z=(5*16); z<(7*16); z++) {
+                uint8_t * p = map+z*(11*16)+5*16;
                 printf("%s%6d  ",ANSI_CLEAR,z);
-                for(x=0; x<(11*16); x++,p++) {
+                for(x=(5*16); x<(7*16); x++,p++) {
                     if (x+xoff==xp && z+zoff==zp)
                         printf("%s",ANSI_PLAYER);
                     else
@@ -618,6 +657,17 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
     }
     else if (!strcmp(words[0],"build")) {
         build_request(words, retour);
+    }
+    else if (!strcmp(words[0],"salt")) {
+        int x,y,z;
+        if (!words[1] || !words[2] || !words[3] || 
+            sscanf(words[1],"%d",&x)!=1 || 
+            sscanf(words[2],"%d",&y)!=1 || 
+            sscanf(words[3],"%d",&z)!=1 ) {
+            sprintf(reply, "Usage: #salt x y z");
+        }
+        salt_request(x,y,z);
+        
     }
     else if (!strcmp(words[0],"holeradar")) {
         mitm.opt.holeradar = !mitm.opt.holeradar;
@@ -943,7 +993,10 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
         case SP_PlayerPositionLook:
         case CP_PlayerPositionLook:
         case CP_PlayerPosition:
-        case CP_PlayerLook: {
+        case CP_PlayerLook:
+        case SP_MultiBlockChange:
+        case SP_BlockChange:
+        {
             if (mitm.opt.holeradar) {
                 int x = gs.own.x>>5;
                 int y = gs.own.y>>5;
@@ -960,15 +1013,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                 }
             }
             if (mitm.opt.build) {
-                int x = gs.own.x>>5;
-                int y = gs.own.y>>5;
-                int z = gs.own.z>>5;
-
-                if (x!= mitm.build.last_x || 
-                    y!= mitm.build.last_y || 
-                    z!= mitm.build.last_z) {
-                    build_process(is_client?retour:forw);
-                }
+                build_process(is_client?retour:forw);
             }
 
             write_packet(ptr, len, forw);
@@ -1329,7 +1374,7 @@ int query_auth_server() {
 #define MAX_ATTACK       1
 #define MIN_ENTITY_DELAY 250000  // minimum interval between hitting the same entity (us)
 #define MIN_ATTACK_DELAY  50000  // minimum interval between attacking any entity
-#define MIN_BUILD_DELAY  100000
+#define MIN_BUILD_DELAY  250000
 
 int is_hostile_entity(entity *e) {
     return e->hostile > 0;
@@ -1346,7 +1391,7 @@ int handle_async() {
         int hent[MAX_ENTITIES];
 
         //TODO: sort entities by how dangerous and how close they are
-        int nhent = get_entities_in_range(hent,MAX_ENTITIES,6.0,is_hostile_entity,NULL);
+        int nhent = get_entities_in_range(hent,MAX_ENTITIES,5.0,is_hostile_entity,NULL);
 
         //if (nhent > 0) printf("%s : got %d entities to kill\n",__func__,nhent);
 
@@ -1386,7 +1431,9 @@ int handle_async() {
 
     // Autobuild
     if (C(mitm.build.inreach)>0 && (ts-mitm.build.last_placement)>MIN_BUILD_DELAY ) {
-        bblock *bb = P(mitm.build.inreach);
+        int idx = random()%C(mitm.build.inreach);
+
+        bblock *bb = P(mitm.build.inreach)+idx;
 
         printf("Placing at %d,%d,%d\n",bb->x,bb->y,bb->z);
         
@@ -1395,10 +1442,41 @@ int handle_async() {
         // place block
         p = pkt;
         write_varint(p,0x08); // PlayerBlockPlacement
-        write_int(p,bb->x);         // block coords
-        write_char(p,(char)bb->y-1);// placing on a block below
-        write_int(p,bb->z);
-        write_char(p,1);            // direction - DOWN
+
+        switch (bb->dir) {
+            case 0: //UP
+                write_int(p,bb->x);         
+                write_char(p,(char)bb->y+1);
+                write_int(p,bb->z);
+                break;
+            case 1: //DOWN
+                write_int(p,bb->x);         
+                write_char(p,(char)bb->y-1);
+                write_int(p,bb->z);
+                break;
+            case 2: //SOUTH
+                write_int(p,bb->x);         
+                write_char(p,(char)bb->y);
+                write_int(p,bb->z+1);
+                break;
+            case 3: //NORTH
+                write_int(p,bb->x);         
+                write_char(p,(char)bb->y);
+                write_int(p,bb->z-1);
+                break;
+            case 4: //EAST
+                write_int(p,bb->x+1);         
+                write_char(p,(char)bb->y);
+                write_int(p,bb->z);
+                break;
+            case 5: //WEST
+                write_int(p,bb->x-1);         
+                write_char(p,(char)bb->y);
+                write_int(p,bb->z);
+                break;
+        }
+
+        write_char(p,bb->dir);      // direction
 
         // TODO: take slot data from the appropriate slot
 
@@ -1409,9 +1487,13 @@ int handle_async() {
 #endif
         write_short(p,0xffff);      // no data
 
-        write_char(p,6);       // cursor position
-        write_char(p,16);      // since we are placing on top, cy must be the maximum: 16
-        write_char(p,7);        
+        int cx = bb->cx; if (cx==8) cx+=((random()%7)-4);
+        int cy = bb->cy; if (cy==8) cy+=((random()%7)-4);
+        int cz = bb->cz; if (cz==8) cz+=((random()%7)-4);
+
+        write_char(p,cx);       // cursor position
+        write_char(p,cy);       
+        write_char(p,cz);        
         write_packet(pkt, p-pkt, &mitm.cs_tx);
 
         // wave arm

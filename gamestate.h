@@ -68,9 +68,9 @@ typedef struct _spawner {
 #define ENTITY_OBJECT   4
 #define ENTITY_OTHER    5
 
-#define DIM_OVERWORLD   0
-#define DIM_NETHER      -1
-#define DIM_END         1
+#define DIM_OVERWORLD   0x00
+#define DIM_NETHER      0xff
+#define DIM_END         0x01
 
 typedef struct _entity {
     int32_t id;
@@ -93,10 +93,12 @@ typedef struct _gamestate {
     struct {
         uint32_t id;
         int32_t x,y,z;
+        double  dx,dheady,dfeety,dz;
+        uint8_t ground;
         float yaw,pitch;
     } own;
             
-    char current_dimension;
+    uint8_t current_dimension;
     // current chunks
     lh_arr_declare(chunkid, chunk);
 
