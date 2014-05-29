@@ -43,11 +43,6 @@
 #define G_WEBSERVER 2
 #define G_PROXY     3
 
-#define STATE_IDLE     0
-#define STATE_STATUS   1
-#define STATE_LOGIN    2
-#define STATE_PLAY     3
-
 ////////////////////////////////////////////////////////////////////////////////
 
 int signal_caught;
@@ -682,61 +677,7 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define CI(x) ((0x10<<24)|(0x##x))
-#define SI(x) ((0x00<<24)|(0x##x))
-#define CS(x) ((0x11<<24)|(0x##x))
-#define SS(x) ((0x01<<24)|(0x##x))
-#define CL(x) ((0x12<<24)|(0x##x))
-#define SL(x) ((0x02<<24)|(0x##x))
-#define CP(x) ((0x13<<24)|(0x##x))
-#define SP(x) ((0x03<<24)|(0x##x))
-
-// Handshakes
-
-#define CI_Handshake            CI(00)
-
-// Status Query
-
-#define CS_Request              CS(00)
-#define CS_PingRequest          CS(01)
-#define SS_Response             SS(00)
-#define SS_PingResponse         SS(01)
-
-// Login Process
-
-#define CL_LoginStart           CL(00)
-#define CL_EncryptionResponse   CL(01)
-#define SL_Disconnect           SL(00)
-#define SL_EncryptionRequest    SL(01)
-#define SL_LoginSuccess         SL(02)
-
-// Play
-
-#define SP_PlayerPositionLook   SP(08)
-#define SP_SpawnPlayer          SP(0c)
-#define SP_SpawnObject          SP(0e)
-#define SP_SpawnMob             SP(0f)
-#define SP_SpawnPainting        SP(10)
-#define SP_SpawnExperienceOrb   SP(11)
-#define SP_DestroyEntities      SP(13)
-#define SP_Entity               SP(14)
-#define SP_EntityRelMove        SP(15)
-#define SP_EntityLook           SP(16)
-#define SP_EntityLookRelMove    SP(17)
-#define SP_EntityTeleport       SP(18)
-#define SP_SetExperience        SP(1f)
-
-#define SP_ChunkData            SP(21)
-#define SP_MultiBlockChange     SP(22)
-#define SP_BlockChange          SP(23)
-#define SP_MapChunkBulk         SP(26)
-#define SP_Effect               SP(28)
-#define SP_SoundEffect          SP(29)
-
-#define CP_ChatMessage          CP(01)
-#define CP_PlayerPosition       CP(04)
-#define CP_PlayerLook           CP(05)
-#define CP_PlayerPositionLook   CP(06)
+#include "ids.h"
 
 void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                     lh_buf_t *forw, lh_buf_t *retour) {
@@ -775,12 +716,8 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
     uint8_t output[65536];
     uint8_t *w = output;
 
-    if (mitm.state == STATE_PLAY) {
-        if (is_client)
-            import_clpacket(ptr, len);
-        else
-            import_packet(ptr, len);
-    }
+    if (mitm.state == STATE_PLAY)
+        import_packet(ptr, len, is_client);
 
     switch (stype) {
         ////////////////////////////////////////////////////////////////////////

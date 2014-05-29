@@ -12,7 +12,8 @@
 #include <lh_compress.h>
 
 #include "gamestate.h"
-#include "nbt.h"
+#include "ids.h"
+//#include "nbt.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -244,8 +245,6 @@ void switch_dimension(uint8_t dim) {
     gs.current_dimension = dim;
 }
 
-
-
 int get_chunks_dim(int *Xl, int *Xh, int *Zl, int *Zh) {
     int i;
 
@@ -369,12 +368,14 @@ static inline int find_entity(int eid) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int import_clpacket(uint8_t *ptr, ssize_t size) {
+int import_packet(uint8_t *ptr, ssize_t size, int is_client) {
     uint8_t *p = ptr;
 
     uint32_t type = lh_read_varint(p);
-    switch (type) {
-        case 0x04: { // PlayerPosition
+    uint32_t stype = 0x03000000|(is_client<<28)|type;
+
+    switch (stype) {
+        case CP_PlayerPosition: { // PlayerPosition
             Rdouble(x);
             Rdouble(feety);
             Rdouble(heady);
@@ -394,7 +395,7 @@ int import_clpacket(uint8_t *ptr, ssize_t size) {
             //       gs.own.x/32,gs.own.y/32,gs.own.z/32,heady,feety);
             break;
         }
-        case 0x05: {
+        case CP_PlayerLook: {
             Rfloat(yaw);
             Rfloat(pitch);
             Rchar(ground);
@@ -404,7 +405,7 @@ int import_clpacket(uint8_t *ptr, ssize_t size) {
             gs.own.ground = ground;
             break;
         }
-        case 0x06: {
+        case CP_PlayerPositionLook: {
             Rdouble(x);
             Rdouble(feety);
             Rdouble(heady);
@@ -429,23 +430,11 @@ int import_clpacket(uint8_t *ptr, ssize_t size) {
             //       gs.own.x/32,gs.own.y/32,gs.own.z/32);
             break;
         }
-    }
-}
 
-
-
-int import_packet(uint8_t *ptr, ssize_t size) {
-    uint8_t *p = ptr;
-
-    uint32_t type = lh_read_varint(p);
-    switch (type) {
-        ///// Entity data
-        case 0x01: { // JoinGame
+        case SP_JoinGame: {
             Rint(pid);
             Rchar(gamemode);
             Rchar(dim);
-            if (dim != DIM_OVERWORLD && dim !=DIM_NETHER && dim != DIM_END)
-                break;
             Rchar(diff);
             Rchar(maxpl);
             Rstr(leveltype);
@@ -458,7 +447,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x07: { // Respawn
+        case SP_Respawn: {
             Rint(dim);
             Rchar(diff);
             Rchar(maxpl);
@@ -468,7 +457,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x08: { // PlayerPositionAndLook
+        case SP_PlayerPositionLook: {
             Rdouble(x);
             Rdouble(y);
             Rdouble(z);
@@ -494,7 +483,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x0c: { // SpawnPlayer
+        case SP_SpawnPlayer: {
             Rvarint(eid);
             Rstr(uuid);
             Rstr(name);
@@ -518,7 +507,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x0e: { // SpawnObject
+        case SP_SpawnObject: {
             Rvarint(eid);
             Rchar(mtype);
             Rint(x);
@@ -537,7 +526,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x0f: { // SpawnMob
+        case SP_SpawnMob: {
             Rvarint(eid);
             Rchar(mtype);
             Rint(x);
@@ -568,7 +557,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x10: { // SpawnPainting
+        case SP_SpawnPainting: {
             Rvarint(eid);
             Rstr(name);
             Rint(x);
@@ -586,7 +575,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x11: { // SpawnExperienceOrb
+        case SP_SpawnExperienceOrb: {
             Rvarint(eid);
             Rint(x);
             Rint(y);
@@ -602,7 +591,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x13: { // DestroyEntities
+        case SP_DestroyEntities: {
             Rchar(count);
             int i,cnt=(unsigned int)count;
             for(i=0; i<cnt; i++) {
@@ -615,8 +604,8 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x15:   // EntityRelMove
-        case 0x17: { // EntityLookRelMove
+        case SP_EntityRelMove:
+        case SP_EntityLookRelMove: {
             Rint(eid);
             Rchar(dx);
             Rchar(dy);
@@ -632,7 +621,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x18: { // EntityTeleport
+        case SP_EntityTeleport: {
             Rint(eid);
             Rint(x);
             Rint(y);
@@ -651,7 +640,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
         }
 
 
-        case 0x21: { // ChunkData
+        case SP_ChunkData: {
             Rint(X);
             Rint(Z);
             Rchar(cont);
@@ -673,7 +662,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x26: { // MapChunkBulk
+        case SP_MapChunkBulk: {
             Rshort(nchunks);
             Rint(dsize);
             Rchar(skylight);
@@ -715,7 +704,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
             
-        case 0x22: { // MultiBlockChange
+        case SP_MultiBlockChange: {
             Rint(X);
             Rint(Z);
             Rshort(nrec);
@@ -752,7 +741,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x23: {
+        case SP_BlockChange: {
             Rint(x);
             Rchar(y);
             Rint(z);
@@ -783,7 +772,7 @@ int import_packet(uint8_t *ptr, ssize_t size) {
             break;
         }
 
-        case 0x35: {
+        case SP_UpdateBlockEntity: {
             Rint(x);
             Rshort(y);
             Rint(z);

@@ -130,7 +130,7 @@ int reset_gamestate();
 int set_option(int optid, int value);
 int get_option(int optid);
 
-int import_packet(uint8_t *p, ssize_t size);
+int import_packet(uint8_t *p, ssize_t size, int is_client);
 int search_spawners();
 
 int get_entities_in_range(int *dst, int max, float range,

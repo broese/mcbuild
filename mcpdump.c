@@ -7,6 +7,7 @@
 #include <lh_files.h>
 
 #include "gamestate.h"
+#include "ids.h"
 
 uint8_t * read_string(uint8_t *p, char *s) {
     uint32_t len = lh_read_varint(p);
@@ -51,10 +52,15 @@ uint8_t * read_slot(uint8_t *p, slot_t *s) {
 #define Rvarint(n) uint32_t n = lh_read_varint(p);
 #define Rslot(n)  slot_t n; p=read_slot(p,&n)
 
-
+#define STATE_IDLE     0
+#define STATE_STATUS   1
+#define STATE_LOGIN    2
+#define STATE_PLAY     3
 
 void parse_mcp(uint8_t *data, ssize_t size) {
     uint8_t *p = data;
+    int state = STATE_IDLE;
+
     while(p-data < (size-16)) {
         Rint(is_client);
         Rint(sec);
@@ -67,127 +73,63 @@ void parse_mcp(uint8_t *data, ssize_t size) {
         Rvarint(type);
         //printf("%d.%06d: %c  type=%x\n",sec,usec,is_client?'C':'S',type);
 
-        if (!is_client) {
-            import_packet(pkt, len);
-#if 0
-            switch (type) {
-                case 0x08: {
-                    Rdouble(x);
-                    Rdouble(y);
-                    Rdouble(z);
-                    Rfloat(yaw);
-                    Rfloat(pitch);
-                    Rchar(ground);
-                    //printf("S PlayerPositionAndLook: %.1f\n",y);
-                }
-
-                case 0x0a: {
-                    Rint(eid);
-                    Rint(X);
-                    Rchar(Y);
-                    Rint(Z);
-                    //printf("%d.%06d: Use Bed  eid=%d bcoord=%d:%d:%d\n",sec,usec,eid,X,Y,Z);
-                    break;
-                }
-                case 0x0c: {
-                    Rint(eid);
-                    Rstr(uuid);
-                    char name[4096]; p=read_string(p,name);
-
-                    Rvarint(dcount);
-
-                    //printf("%d.%06d: Spawn Player  eid=%d uuid=%s\n",sec,usec,eid,uuid);
-                    break;
-                }
-                case 0x28: {
-                    Rint(efid);
-                    Rint(x);
-                    Rchar(y);
-                    Rint(z);
-                    Rint(data);
-                    Rchar(disrv);
-                    if (efid == 1013 || efid == 1014)
-                        printf("%d.%06d: Effect  efid=%d data=%d bcoord=%d:%d:%d %s\n",
-                               sec,usec,efid,data,x,y,z,disrv?"disable relative volume":"");
-                    break;
-                }
-                case 0x29: {
-                    Rstr(name);
-                    Rint(x);
-                    Rint(y);
-                    Rint(z);
-                    Rfloat(volume);
-                    Rchar(pitch);
-                    if (!strcmp(name,"ambient.weather.thunder"))
-                        printf("%d.%06d: Sound Effect  name=%s bcoord=%d:%d:%d vol=%.3f pitch=%d\n",
-                               sec,usec,name,(int)x/8,(int)y/8,(int)z/8,volume,pitch);
-                    break;
-                }
-                case 0x34: {
-                    Rvarint(damage);
-                    Rshort(length);
-                    //printf("%d.%06d: Maps  dmg=%d length=%d\n",sec,usec,damage,length);
-                    break;
-                }
-                case 0x21: // Chunk Data
-                case 0x23: // Block Change
-                case 0x26: // Map Chunk Bulk
-                case 0x35: // Update Block Entity
-                    import_packet(pkt, len);
-                    break;
+        uint32_t stype = ((state<<24)|(is_client<<28)|(type&0xffffff));
+        
+        if (state == STATE_PLAY)
+            import_packet(pkt, len, is_client);
+        
+        switch (stype) {
+            case CI_Handshake: {
+                Rvarint(protocolVer);
+                Rstr(serverAddr);
+                Rshort(serverPort);
+                Rvarint(nextState);
+                state = nextState;
+                break;
             }
-#endif
-        }
-        else {
-            import_clpacket(pkt, len);
+            case CL_EncryptionResponse: {
+                state = STATE_PLAY;
+                break;
+            }
+            case SP_SpawnPlayer: {
+                Rint(eid);
+                Rstr(uuid);
+                char name[4096]; p=read_string(p,name);
 
-            switch (type) {
-                case 0x04: {
-                    Rdouble(x);
-                    Rdouble(feety);
-                    Rdouble(heady);
-                    Rdouble(z);
-                    Rchar(ground);
-                    //printf("C PlayerPosition: feet=%.1f head=%.1f\n",feety,heady);
-                    break;
-                }
+                Rvarint(dcount);
 
-                case 0x05: {
-                    Rfloat(yaw);
-                    Rfloat(pitch);
-                    Rchar(ground);
-                    //printf("C PlayerLook\n");
-                    break;
-                }
-
-                case 0x06: {
-                    Rdouble(x);
-                    Rdouble(feety);
-                    Rdouble(heady);
-                    Rdouble(z);
-                    Rfloat(yaw);
-                    Rfloat(pitch);
-                    Rchar(ground);
-                    //printf("C PlayerPositionAndLook: feet=%.1f head=%.1f\n",feety,heady);
-                    break;
-                }
-
-                case 0x08: {
-                    Rint(x);
-                    Rchar(y);
-                    Rint(z);
-                    Rchar(dir);
-                    Rslot(held);
-                    Rchar(cx);
-                    Rchar(cy);
-                    Rchar(cz);
-                    //printf("%d.%06d: PlayerBlockPlacement %d:%d:%d dir=%d "
-                    //       "item: id=%d count=%d dmg=%d dlen=%d "
-                    //       "cursor=%d,%d,%d\n",
-                    //       sec,usec,x,y,z,dir,held.id,held.count,held.damage,held.dlen,cx,cy,cz);
-
-                    break;
-                }
+                printf("%d.%06d: Spawn Player  eid=%d uuid=%s\n",sec,usec,eid,uuid);
+                break;
+            }
+            case SP_Effect: {
+                Rint(efid);
+                Rint(x);
+                Rchar(y);
+                Rint(z);
+                Rint(data);
+                Rchar(disrv);
+                if (efid == 1013 || efid == 1014)
+                    printf("%d.%06d: Effect  efid=%d data=%d bcoord=%d:%d:%d %s\n",
+                           sec,usec,efid,data,x,y,z,disrv?"disable relative volume":"");
+                break;
+            }
+            case SP_SoundEffect: {
+                Rstr(name);
+                Rint(x);
+                Rint(y);
+                Rint(z);
+                Rfloat(volume);
+                Rchar(pitch);
+                if (!strcmp(name,"ambient.weather.thunder"))
+                    printf("%d.%06d: Sound Effect  name=%s bcoord=%d:%d:%d vol=%.3f pitch=%d\n",
+                           sec,usec,name,(int)x/8,(int)y/8,(int)z/8,volume,pitch);
+                break;
+            }
+            case SP_Maps: {
+                Rvarint(damage);
+                Rshort(length);
+                printf("%d.%06d: Maps  dmg=%d length=%d\n",sec,usec,damage,length);
+                break;
             }
         }
     
@@ -195,6 +137,9 @@ void parse_mcp(uint8_t *data, ssize_t size) {
         p = pkt+len;
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Parser for pre-1.6 protocol format
 
 uint8_t * read_string_old(uint8_t *p, char *s) {
     uint16_t len = lh_read_short_be(p);
@@ -209,8 +154,7 @@ uint8_t * read_string_old(uint8_t *p, char *s) {
 
 #define Rstro(n) char n[4096]; p=read_string_old(p,n)
 
-
-void parse_mcp2(uint8_t *data, ssize_t size) {
+void parse_mcp_old(uint8_t *data, ssize_t size) {
     uint8_t *p = data;
     while(p-data < (size-16)) {
         uint8_t *pkts = p;
@@ -275,6 +219,8 @@ void parse_mcp2(uint8_t *data, ssize_t size) {
         p = pkt+len;
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 void search_blocks(uint8_t id) {
     int i,j;
