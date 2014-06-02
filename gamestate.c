@@ -42,18 +42,18 @@ int reset_gamestate() {
 
 int set_option(int optid, int value) {
     switch (optid) {
-    case GSOP_PRUNE_CHUNKS:
-        gs.opt.prune_chunks = value;
-        break;
-    case GSOP_SEARCH_SPAWNERS:
-        gs.opt.search_spawners = value;
-        break;
-    case GSOP_TRACK_ENTITIES:
-        gs.opt.track_entities = value;
-        break;
+        case GSOP_PRUNE_CHUNKS:
+            gs.opt.prune_chunks = value;
+            break;
+        case GSOP_SEARCH_SPAWNERS:
+            gs.opt.search_spawners = value;
+            break;
+        case GSOP_TRACK_ENTITIES:
+            gs.opt.track_entities = value;
+            break;
 
-    default:
-        LH_ERROR(-1,"Unknown option ID %d\n", optid);
+        default:
+            LH_ERROR(-1,"Unknown option ID %d\n", optid);
     }
 
     return 0;
@@ -61,15 +61,15 @@ int set_option(int optid, int value) {
 
 int get_option(int optid) {
     switch (optid) {
-    case GSOP_PRUNE_CHUNKS:
-        return gs.opt.prune_chunks;
-    case GSOP_SEARCH_SPAWNERS:
-        return gs.opt.search_spawners;
-    case GSOP_TRACK_ENTITIES:
-        return gs.opt.track_entities;
-
-    default:
-        LH_ERROR(-1,"Unknown option ID %d\n", optid);
+        case GSOP_PRUNE_CHUNKS:
+            return gs.opt.prune_chunks;
+        case GSOP_SEARCH_SPAWNERS:
+            return gs.opt.search_spawners;
+        case GSOP_TRACK_ENTITIES:
+            return gs.opt.track_entities;
+            
+        default:
+            LH_ERROR(-1,"Unknown option ID %d\n", optid);
     }
 }
 
@@ -211,35 +211,35 @@ void switch_dimension(uint8_t dim) {
     else {
         // save the current chunk data to their respective variable
         switch (gs.current_dimension) {
-        case DIM_OVERWORLD:
-            C(gs.chunko) = C(gs.chunk);
-            P(gs.chunko) = P(gs.chunk);
-            break;
-        case DIM_NETHER:
-            C(gs.chunkn) = C(gs.chunk);
-            P(gs.chunkn) = P(gs.chunk);
-            break;
-        case DIM_END:
-            C(gs.chunke) = C(gs.chunk);
-            P(gs.chunke) = P(gs.chunk);
+            case DIM_OVERWORLD:
+                C(gs.chunko) = C(gs.chunk);
+                P(gs.chunko) = P(gs.chunk);
+                break;
+            case DIM_NETHER:
+                C(gs.chunkn) = C(gs.chunk);
+                P(gs.chunkn) = P(gs.chunk);
+                break;
+            case DIM_END:
+                C(gs.chunke) = C(gs.chunk);
+                P(gs.chunke) = P(gs.chunk);
             break;
         }
     }
 
     // restore data to the current variables
     switch (dim) {
-    case DIM_OVERWORLD:
-        C(gs.chunk) = C(gs.chunko);
-        P(gs.chunk) = P(gs.chunko);
-        break;
-    case DIM_NETHER:
-        C(gs.chunk) = C(gs.chunkn);
-        P(gs.chunk) = P(gs.chunkn);
-        break;
-    case DIM_END:
-        C(gs.chunk) = C(gs.chunke);
-        P(gs.chunk) = P(gs.chunke);
-        break;
+        case DIM_OVERWORLD:
+            C(gs.chunk) = C(gs.chunko);
+            P(gs.chunk) = P(gs.chunko);
+            break;
+        case DIM_NETHER:
+            C(gs.chunk) = C(gs.chunkn);
+            P(gs.chunk) = P(gs.chunkn);
+            break;
+        case DIM_END:
+            C(gs.chunk) = C(gs.chunke);
+            P(gs.chunk) = P(gs.chunke);
+            break;
     }
     
     gs.current_dimension = dim;

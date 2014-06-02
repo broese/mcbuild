@@ -1,5 +1,10 @@
 #pragma once
 
+#include <stdlib.h>
+#include <stdint.h>
+
+#include "lh_arr.h"
+
 #define GSOP_PRUNE_CHUNKS       1
 #define GSOP_SEARCH_SPAWNERS    2
 #define GSOP_TRACK_ENTITIES     3

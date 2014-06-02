@@ -17,6 +17,8 @@
 #define SP(x) ((0x03<<24)|(0x##x))
 #define CP(x) ((0x13<<24)|(0x##x))
 
+#define PID(x) ((x)&0xffffff)
+
 // Handshakes
 
 #define CI_Handshake            CI(00)

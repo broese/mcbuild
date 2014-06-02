@@ -33,7 +33,7 @@ mcsanvil: mcsanvil.o anvil.o nbt.o
 
 mcproxy-rebuild: mcproxy.o ../libhelper/libhelper.a mcproxy
 
-mcproxy: mcproxy.o gamestate.o
+mcproxy: mcproxy.o gamestate.o mcp_game.o
 	$(CC) -o $@ $^ $(LIBS)
 
 mcpdump: mcpdump.o gamestate.o

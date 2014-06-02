@@ -18,6 +18,8 @@
 #include <openssl/sha.h>
 #include <openssl/aes.h>
 
+#include <curl/curl.h>
+
 #define LH_DECLARE_SHORT_NAMES 1
 
 #include "lh_debug.h"
@@ -29,7 +31,9 @@
 #include "lh_compress.h"
 #include "lh_arr.h"
 
+#include "ids.h"
 #include "gamestate.h"
+#include "mcp_game.h"
 
 #define SERVER_ADDR "2b2t.org"
 
@@ -42,6 +46,12 @@
 #define G_MCSERVER  1
 #define G_WEBSERVER 2
 #define G_PROXY     3
+
+#define MIN(a,b) ((a<b)?(a):(b))
+#define MAX(a,b) ((a>b)?(a):(b))
+#define SGN(x) (((x)>=0)?1:-1)
+#define SQ(x) ((x)*(x))
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -58,6 +68,7 @@ lh_pollarray pa;
 
 typedef struct {
     int x,y,z;          // block coordinates
+    int v;              // type of placement, only applicable to slabs: 'u'=upper, 'd'=bottom, 'm'=default
     int id;             // block type ID
     uint8_t dir;        // 
     uint8_t cx,cy,cz;   // cursor x,y,z
@@ -199,164 +210,6 @@ uint8_t * read_string(uint8_t *p, char *s) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void chat_message(const char *str, lh_buf_t *buf, const char *color) {
-    uint8_t jreply[32768];
-    ssize_t jlen = sprintf(jreply,
-                           "{"
-                           "\"text\":\"[MCP] %s\","
-                           "\"color\":\"%s\""
-                           "}",str,color?color:"red");
-    uint8_t wbuf[65536];
-    uint8_t *wp = wbuf;
-    write_varint(wp, 0x02);
-    write_varint(wp, jlen);
-    memcpy(wp,jreply,jlen);
-    write_packet(wbuf, (wp-wbuf)+jlen, buf);
-}
-
-#define TUNNEL_TRESHOLD 0.4
-
-void find_tunnels(lh_buf_t *answer, int l, int h) {
-    int i;
-
-    int Xl,Xh,Zl,Zh;
-    int nc = get_chunks_dim(&Xl,&Xh,&Zl,&Zh);
-    uint8_t *data = export_cuboid(Xl,Xh,Zl,Zh,l,h);
-
-    int xsz = (Xh-Xl+1)*16;
-    int zsz = (Zh-Zl+1)*16;
-    int ysz = (h-l+1);
-
-    char reply[32768];
-    //sprintf(reply,"got %d chunks (%d,%d) to (%d,%d)",nc,Xl,Zl,Xh,Zh);
-    //chat_message(reply, answer, "blue");
-
-    // search for tunnels
-
-    for(i=l; i<=h; i++) {
-        uint8_t * slice = data+(i-l)*xsz*zsz;
-
-        int x,z;
-        for(x=0; x<xsz; x++) {
-            int nair=0, nfilled=0;
-            uint8_t * p=slice+x;
-            for(z=0; z<zsz; z++) {
-                if (*p!=0xff) {
-                    if (*p)
-                        nfilled++;
-                    else
-                        nair++;
-                }
-                p += xsz;
-            }
-
-            //printf("level=%d x=%d : %d/%d\n",i,x+Xl*16,nair,nfilled);
-            if ((float)(nair) > (float)(nair+nfilled)*TUNNEL_TRESHOLD) {
-                sprintf(reply,"Tunnel NS at level=%d x=%d  (%d/%d)",i,x+Xl*16,nair,nfilled);
-                chat_message(reply, answer, "yellow");
-            }
-        }
-    }
-
-    for(i=l; i<=h; i++) {
-        uint8_t * slice = data+(i-l)*xsz*zsz;
-        int x,z;
-
-        for(z=0; z<zsz; z++) {
-            int nair=0, nfilled=0;
-            uint8_t * p=slice+z*xsz;
-
-            for(x=0; x<xsz; x++) {
-                if (*p!=0xff) {
-                    if (*p)
-                        nfilled++;
-                    else
-                        nair++;
-                }
-                p++;
-            }
-
-            //printf("level=%d x=%d : %d/%d\n",i,x+Xl*16,nair,nfilled);
-            if ((float)(nair) > (float)(nair+nfilled)*TUNNEL_TRESHOLD) {
-                sprintf(reply,"Tunnel WE at level=%d z=%d  (%d/%d)",i,z+Zl*16,nair,nfilled);
-                chat_message(reply, answer, "yellow");
-            }
-        }
-    }
-
-    free(data);
-}
-
-#define MIN(a,b) ((a<b)?(a):(b))
-#define MAX(a,b) ((a>b)?(a):(b))
-
-#define HR_DISTC 2
-#define HR_DISTB (HR_DISTC<<4)
-
-void hole_radar(lh_buf_t *client) {
-    int x = gs.own.x>>5;
-    int y = (gs.own.y>>5)-1;
-    int z = gs.own.z>>5;
-
-    int lx=-(int)(65536*sin(gs.own.yaw/180*M_PI));
-    int lz=(int)(65536*cos(gs.own.yaw/180*M_PI));
-
-    int X=x>>4;
-    int Z=z>>4;
-
-    uint8_t * data;
-    int off,sh;
-    if (abs(lx) > abs(lz)) {
-        lz=0;
-        // looking into east or west direction
-        if (lx<0) {
-            //to west
-            lx=-1;
-            data = export_cuboid(X-HR_DISTC,X,Z,Z,y,y);
-            off = (x&0x0f)+HR_DISTB+(z&0x0f)*(HR_DISTB+16);
-        }
-        else {
-            // east
-            lx=1;
-            data = export_cuboid(X,X+HR_DISTC,Z,Z,y,y);
-            off = (x&0x0f)+(z&0x0f)*(HR_DISTB+16);
-        }
-        sh=lx;
-    }
-    else {
-        lx=0;
-        // looking into north or south direction
-        if (lz<0) {
-            //to north
-            lz=-1;
-            data = export_cuboid(X,X,Z-HR_DISTC,Z,y,y);
-            off = (x&0x0f)+((z&0x0f)+HR_DISTB)*16;
-        }
-        else {
-            // south
-            lz=1;
-            data = export_cuboid(X,X,Z,Z+HR_DISTC,y,y);
-            off = (x&0x0f)+(z&0x0f)*16;
-        }
-        sh = 16*lz;
-    }
-
-    int i;
-    for(i=1; i<=HR_DISTB; i++) {
-        off+=sh;
-        if (data[off]==0) {
-            char reply[32768];
-            sprintf(reply, "*** HOLE *** : %d,%d d=%d",x+lx*i,z+lz*i,i);
-            chat_message(reply, client, NULL);
-            break;
-        }
-    }
-
-    free(data);    
-}
-
-#define SGN(x) (((x)>=0)?1:-1)
-
 void build_request(char **words, lh_buf_t *client) {
     char reply[32768];
     reply[0]=0;
@@ -375,7 +228,7 @@ void build_request(char **words, lh_buf_t *client) {
         if (!words[2] || !words[3] || 
             sscanf(words[2],"%d",&xsize)!=1 || 
             sscanf(words[3],"%d",&zsize)!=1 ) {
-            sprintf(reply, "Usage: build floor <xsize> <zsize> [ypos]");
+            sprintf(reply, "Usage: build floor <xsize> <zsize> [ypos] [u|d]");
         }
         else {
             int x = gs.own.x>>5;
@@ -383,6 +236,20 @@ void build_request(char **words, lh_buf_t *client) {
             int z = gs.own.z>>5;
 
             if (words[4]) sscanf(words[4],"%d",&y);
+            
+            char slab = 'm';
+            if (words[5]) {
+                if (sscanf(words[5],"%c",&slab)!=1) {
+                    sprintf(reply, "Usage: build floor <xsize> <zsize> [ypos] [u|d]");
+                    chat_message(reply, client, NULL);
+                    return;
+                }
+                if (slab != 'u' && slab != 'd') {
+                    sprintf(reply, "Usage: build floor <xsize> <zsize> [ypos] [u|d]");
+                    chat_message(reply, client, NULL);
+                    return;
+                }
+            }   
 
             lh_arr_free(GAR(mitm.build.all)); // cancel any current build
 
@@ -397,6 +264,7 @@ void build_request(char **words, lh_buf_t *client) {
                     bb->x = x+i*dx;
                     bb->y = y;
                     bb->z = z+j*dz;
+                    bb->v = slab;
                     //TODO: block ID
                     //printf("Scheduled block at %d,%d,%d\n",bb->x,bb->y,bb->z);
                     n++;
@@ -412,7 +280,6 @@ void build_request(char **words, lh_buf_t *client) {
 }
 
 #define REACH_RANGE 5
-#define SQ(x) ((x)*(x))
 
 static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
     return SQ(x-x2)+SQ(y-y2)+SQ(z-z2);
@@ -472,14 +339,23 @@ void build_process(lh_buf_t *client) {
             bb->dir = 255;
 
             // find direction from which the block can be built
-            if      (is_solid(b[48*48]))    { bb->dir = 0; bb->cx=8;  bb->cy=0;  bb->cz=8;  } // U
-            else if (is_solid(b[-(48*48)])) { bb->dir = 1; bb->cx=8;  bb->cy=16; bb->cz=8;  } // D
+            if (is_solid(b[48*48]) && bb->v!='d')         {  // U
+                bb->dir = 0; bb->cx=8;  bb->cy=0;  bb->cz=8;
+            }
+            else if (is_solid(b[-(48*48)]) && bb->v!='u') {  // D
+                bb->dir = 1; bb->cx=8;  bb->cy=16; bb->cz=8;
+            }
             else if (is_solid(b[48]))       { bb->dir = 2; bb->cx=8;  bb->cy=8;  bb->cz=0;  } // S
             else if (is_solid(b[-48]))      { bb->dir = 3; bb->cx=8;  bb->cy=8;  bb->cz=16; } // N
             else if (is_solid(b[1]))        { bb->dir = 4; bb->cx=0;  bb->cy=8;  bb->cz=8;  } // E
             else if (is_solid(b[-1]))       { bb->dir = 5; bb->cx=16; bb->cy=8;  bb->cz=8;  } // W
             else { continue; }
             
+            // adjust the block placement for the slabs
+            if ( bb->cy == 8) {
+                if (bb->v == 'u') bb->cy = 12;
+                if (bb->v == 'd') bb->cy = 4;
+            }
 
 
             // schedule it for handle_async
@@ -679,6 +555,125 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
 
 #include "ids.h"
 
+void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
+    Rstr(serverID);
+
+    Rshort(klen);
+    memmove(mitm.s_pkey,p,klen);
+    Rskip(klen);
+
+    Rshort(tlen);
+    memmove(mitm.s_token,p,tlen);
+    Rskip(tlen);
+
+    printf("Encryption Request\n");
+                
+    sprintf(mitm.s_id,"%s",serverID);
+    mitm.s_pklen = klen;
+                
+    // decode server PUBKEY to an RSA struct
+    unsigned char *pp = mitm.s_pkey;
+    d2i_RSA_PUBKEY(&mitm.s_rsa, (const unsigned char **)&pp, klen);
+    if (mitm.s_rsa == NULL) {
+        printf("Failed to decode the server's public key\n");
+        exit(1);
+    }
+    RSA_print_fp(stdout, mitm.s_rsa, 4);
+
+    // generate the server-side shared key pair
+    RAND_pseudo_bytes(mitm.s_skey, 16);
+    printf("Server-side shared key: ");
+    hexprint(mitm.s_skey, 16);
+
+    // create a client-side RSA
+    mitm.c_rsa = RSA_generate_key(1024, RSA_F4, NULL, NULL);
+    if (mitm.c_rsa == NULL) {
+        printf("Failed to generate client-side RSA key\n");
+        exit(1);
+    }
+    RSA_print_fp(stdout, mitm.c_rsa, 4);
+    
+    // encode the client-side pubkey as DER
+    pp = mitm.c_pkey;
+    mitm.c_pklen = i2d_RSA_PUBKEY(mitm.c_rsa, &pp);
+
+    // generate the client-side verification token
+    RAND_pseudo_bytes(mitm.c_token, 4);
+
+    // combine it to a MCP message to the client
+    uint8_t output[65536];
+    uint8_t *w = output;
+
+    write_varint(w, PID(SL_EncryptionRequest));
+    write_varint(w, strlen(serverID));
+    memmove(w, serverID, strlen(serverID));
+    w+=strlen(serverID);
+    write_short(w, mitm.c_pklen);
+    memmove(w, mitm.c_pkey, mitm.c_pklen);
+    w+=mitm.c_pklen;
+    write_short(w, 4);
+    memmove(w, mitm.c_token, 4);
+    w+=4;
+    
+    write_packet(output, w-output, forw);
+}
+
+void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
+    Rshort(sklen);
+    uint8_t *skey = p;
+    Rskip(sklen);
+    Rshort(tklen);
+    uint8_t *token = p;
+    Rskip(tklen);
+
+    char buf[4096];
+    int dklen = RSA_private_decrypt(sklen, skey, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
+    if (dklen < 0) {
+        printf("Failed to decrypt the shared key received from the client\n");
+        exit(1);
+    }
+    printf("Decrypted client shared key, keylen=%d ",dklen);
+    hexprint(buf, dklen);
+    memcpy(mitm.c_skey, buf, 16);
+    
+    int dtlen = RSA_private_decrypt(tklen, token, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
+    if (dtlen < 0) {
+        printf("Failed to decrypt the verification token received from the client\n");
+        exit(1);
+    }
+    printf("Decrypted client token, len=%d ",dtlen);
+    hexprint(buf, dtlen);
+    printf("Original token: ");
+    hexprint(mitm.c_token,4);
+    if (memcmp(buf, mitm.c_token, 4)) {
+        printf("Token does not match!\n");
+        exit(1);
+    }
+            
+    uint8_t output[65536];
+    uint8_t *w = output;
+
+    // at this point, the client side is verified and the key is established
+    // now send our response to the server
+    write_varint(w, PID(CL_EncryptionResponse));
+
+    int eklen = RSA_public_encrypt(sizeof(mitm.s_skey), mitm.s_skey, buf, mitm.s_rsa, RSA_PKCS1_PADDING);
+    write_short(w,(short)eklen);
+    memcpy(w, buf, eklen);
+    w += eklen;
+            
+    int etlen = RSA_public_encrypt(sizeof(mitm.s_token), mitm.s_token, buf, mitm.s_rsa, RSA_PKCS1_PADDING);
+    write_short(w,(short)etlen);
+    memcpy(w, buf, etlen);
+    w += etlen;
+                
+    query_auth_server();
+    hexdump(output, w-output);
+    write_packet(output, w-output, forw);
+
+    mitm.enable_encryption = 1;
+}
+
 void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                     lh_buf_t *forw, lh_buf_t *retour) {
 
@@ -738,123 +733,13 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
         ////////////////////////////////////////////////////////////////////////
         // Login
 
-        case CL_EncryptionResponse: {
-            Rshort(sklen);
-            uint8_t *skey = p;
-            Rskip(sklen);
-            Rshort(tklen);
-            uint8_t *token = p;
-            Rskip(tklen);
-            
-            char buf[4096];
-            int dklen = RSA_private_decrypt(sklen, skey, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
-            if (dklen < 0) {
-                    printf("Failed to decrypt the shared key received from the client\n");
-                    exit(1);
-            }
-            printf("Decrypted client shared key, keylen=%d ",dklen);
-            hexprint(buf, dklen);
-            memcpy(mitm.c_skey, buf, 16);
-            
-            int dtlen = RSA_private_decrypt(tklen, token, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
-            if (dtlen < 0) {
-                    printf("Failed to decrypt the verification token received from the client\n");
-                    exit(1);
-            }
-            printf("Decrypted client token, len=%d ",dtlen);
-            hexprint(buf, dtlen);
-            printf("Original token: ");
-            hexprint(mitm.c_token,4);
-            if (memcmp(buf, mitm.c_token, 4)) {
-                printf("Token does not match!\n");
-                    exit(1);
-            }
-            
-            // at this point, the client side is verified and the key is established
-            // now send our response to the server
-            write_varint(w, 0x01);
-
-            int eklen = RSA_public_encrypt(sizeof(mitm.s_skey), mitm.s_skey, buf, mitm.s_rsa, RSA_PKCS1_PADDING);
-            write_short(w,(short)eklen);
-            memcpy(w, buf, eklen);
-            w += eklen;
-            
-            int etlen = RSA_public_encrypt(sizeof(mitm.s_token), mitm.s_token, buf, mitm.s_rsa, RSA_PKCS1_PADDING);
-            write_short(w,(short)etlen);
-            memcpy(w, buf, etlen);
-            w += etlen;
-                
-            LH_HERE;
-            query_auth_server();
-            LH_HERE;
-            hexdump(output, w-output);
-            write_packet(output, w-output, forw);
-            mitm.enable_encryption = 1;
-            LH_HERE;
+        case CL_EncryptionResponse:
+            process_encryption_response(p, forw);
             break;
-        }
 
-        case SL_EncryptionRequest: {
-            Rstr(serverID);
-
-            Rshort(klen);
-            memmove(mitm.s_pkey,p,klen);
-            Rskip(klen);
-
-            Rshort(tlen);
-            memmove(mitm.s_token,p,tlen);
-            Rskip(tlen);
-            printf("Encryption Request\n");
-                
-            sprintf(mitm.s_id,"%s",serverID);
-            mitm.s_pklen = klen;
-                
-            LH_HERE;
-            // decode server PUBKEY to an RSA struct
-            unsigned char *pp = mitm.s_pkey;
-            d2i_RSA_PUBKEY(&mitm.s_rsa, (const unsigned char **)&pp, klen);
-            if (mitm.s_rsa == NULL) {
-                printf("Failed to decode the server's public key\n");
-                exit(1);
-            }
-            RSA_print_fp(stdout, mitm.s_rsa, 4);
-
-            // generate the server-side shared key pair
-            RAND_pseudo_bytes(mitm.s_skey, 16);
-            printf("Server-side shared key: ");
-            hexprint(mitm.s_skey, 16);
-
-            // create a client-side RSA
-            mitm.c_rsa = RSA_generate_key(1024, RSA_F4, NULL, NULL);
-            if (mitm.c_rsa == NULL) {
-                printf("Failed to generate client-side RSA key\n");
-                exit(1);
-            }
-            RSA_print_fp(stdout, mitm.c_rsa, 4);
-
-            // encode the client-side pubkey as DER
-            pp = mitm.c_pkey;
-            mitm.c_pklen = i2d_RSA_PUBKEY(mitm.c_rsa, &pp);
-
-            // generate the client-side verification token
-            RAND_pseudo_bytes(mitm.c_token, 4);
-
-            LH_HERE;
-            // combine it to a MCP message to the client
-            write_varint(w, 0x01);
-            write_varint(w, strlen(serverID));
-            memmove(w, serverID, strlen(serverID));
-            w+=strlen(serverID);
-            write_short(w, mitm.c_pklen);
-            memmove(w, mitm.c_pkey, mitm.c_pklen);
-            w+=mitm.c_pklen;
-            write_short(w, 4);
-            memmove(w, mitm.c_token, 4);
-            w+=4;
-
-            write_packet(output, w-output, forw);
+        case SL_EncryptionRequest:
+            process_encryption_request(p, forw);
             break;
-        }
 
         ////////////////////////////////////////////////////////////////////////
         // Play
@@ -891,7 +776,8 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                        x/8,y/8,z/8,volume,pitch);
                 close(mitm.ms);
             }
-            write_packet(ptr, len, forw);
+            if (strcmp(name,"mob.sheep.say") && strcmp(name,"mob.sheep.step"))
+                write_packet(ptr, len, forw);
             break;
         }
 
@@ -932,8 +818,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
         case CP_PlayerPosition:
         case CP_PlayerLook:
         case SP_MultiBlockChange:
-        case SP_BlockChange:
-        {
+        case SP_BlockChange: {
             if (mitm.opt.holeradar) {
                 int x = gs.own.x>>5;
                 int y = gs.own.y>>5;
@@ -1115,6 +1000,148 @@ ssize_t handle_proxy(lh_conn *conn) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define MAX_ENTITIES     4096
+#define MAX_ATTACK       1
+#define MIN_ENTITY_DELAY 250000  // minimum interval between hitting the same entity (us)
+#define MIN_ATTACK_DELAY  50000  // minimum interval between attacking any entity
+#define MIN_BUILD_DELAY  200000
+
+int is_hostile_entity(entity *e) {
+    return e->hostile > 0;
+}
+
+int handle_async() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    uint64_t ts = (uint64_t)tv.tv_sec*1000000+(uint64_t)tv.tv_usec;
+
+    // Auto Kill
+    if (mitm.opt.autokill && (ts-gs.last_attack)>MIN_ATTACK_DELAY ) {
+        // calculate list of hostile entities in range
+        int hent[MAX_ENTITIES];
+
+        //TODO: sort entities by how dangerous and how close they are
+        int nhent = get_entities_in_range(hent,MAX_ENTITIES,5.0,is_hostile_entity,NULL);
+
+        //if (nhent > 0) printf("%s : got %d entities to kill\n",__func__,nhent);
+
+        //TODO: select primary weapon for priority targets
+
+        //TODO: turn to target?
+
+        int i,h;
+        for(i=0,h=0; h<MAX_ATTACK && i<nhent; i++) {
+            entity *e = gs.P(entity)+hent[i];
+            if ((ts-e->lasthit) < MIN_ATTACK_DELAY)
+                continue;
+
+            uint8_t pkt[4096], *p;
+
+            //printf("%lld : Attack entity %d\n", ts, e->id);
+
+            // attack entity
+            p = pkt;
+            write_varint(p,0x02); // Use Entity
+            write_int(p, e->id);
+            write_char(p, 0x01);
+            write_packet(pkt, p-pkt, &mitm.cs_tx);
+
+            // wave arm
+            p = pkt;
+            write_varint(p,0x0a); // Animation
+            write_int(p,gs.own.id);
+            write_char(p,0x01);
+            write_packet(pkt, p-pkt, &mitm.cs_tx);
+
+            e->lasthit = ts;
+            gs.last_attack = ts;
+            h++;
+        }
+    }
+
+    // Autobuild
+    if (C(mitm.build.inreach)>0 && (ts-mitm.build.last_placement)>MIN_BUILD_DELAY ) {
+        int idx = random()%C(mitm.build.inreach);
+
+        bblock *bb = P(mitm.build.inreach)+idx;
+
+        printf("Placing at %d,%d,%d\n",bb->x,bb->y,bb->z);
+        
+        uint8_t pkt[4096], *p;
+        
+        // place block
+        p = pkt;
+        write_varint(p,0x08); // PlayerBlockPlacement
+
+        switch (bb->dir) {
+            case 0: //UP
+                write_int(p,bb->x);         
+                write_char(p,(char)bb->y+1);
+                write_int(p,bb->z);
+                break;
+            case 1: //DOWN
+                write_int(p,bb->x);         
+                write_char(p,(char)bb->y-1);
+                write_int(p,bb->z);
+                break;
+            case 2: //SOUTH
+                write_int(p,bb->x);         
+                write_char(p,(char)bb->y);
+                write_int(p,bb->z+1);
+                break;
+            case 3: //NORTH
+                write_int(p,bb->x);         
+                write_char(p,(char)bb->y);
+                write_int(p,bb->z-1);
+                break;
+            case 4: //EAST
+                write_int(p,bb->x+1);         
+                write_char(p,(char)bb->y);
+                write_int(p,bb->z);
+                break;
+            case 5: //WEST
+                write_int(p,bb->x-1);         
+                write_char(p,(char)bb->y);
+                write_int(p,bb->z);
+                break;
+        }
+
+        write_char(p,bb->dir);      // direction
+
+        // TODO: take slot data from the appropriate slot
+
+#if 0
+        write_short(p,87);          // netherrack
+        write_char(p,1);            // count
+        write_short(p,0);           // damage
+#endif
+        write_short(p,0xffff);      // no data
+
+        int cx = bb->cx; //if (cx==8) cx+=((random()%7)-4);
+        int cy = bb->cy; //if (cy==8) cy+=((random()%7)-4);
+        int cz = bb->cz; //if (cz==8) cz+=((random()%7)-4);
+
+        write_char(p,cx);       // cursor position
+        write_char(p,cy);       
+        write_char(p,cz);        
+        write_packet(pkt, p-pkt, &mitm.cs_tx);
+
+        // wave arm
+        p = pkt;
+        write_varint(p,0x0a); // Animation
+        write_int(p,gs.own.id);
+        write_char(p,0x01);
+        write_packet(pkt, p-pkt, &mitm.cs_tx);
+
+        mitm.build.last_placement = ts;
+    }
+
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Session Server
+
 #if 0
 //POST /session/minecraft/join HTTP/1.1
 //Content-Type: application/json; charset=utf-8
@@ -1255,8 +1282,6 @@ void print_hex(char *buf, const char *data, ssize_t len) {
     *w++ = 0;
 }
 
-#include <curl/curl.h>
-
 int query_auth_server() {
     // the final touch - send the authentication token to the session server
     unsigned char md[SHA_DIGEST_LENGTH];
@@ -1306,147 +1331,7 @@ int query_auth_server() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-#define MAX_ENTITIES     4096
-#define MAX_ATTACK       1
-#define MIN_ENTITY_DELAY 250000  // minimum interval between hitting the same entity (us)
-#define MIN_ATTACK_DELAY  50000  // minimum interval between attacking any entity
-#define MIN_BUILD_DELAY  250000
-
-int is_hostile_entity(entity *e) {
-    return e->hostile > 0;
-}
-
-int handle_async() {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    uint64_t ts = (uint64_t)tv.tv_sec*1000000+(uint64_t)tv.tv_usec;
-
-    // Auto Kill
-    if (mitm.opt.autokill && (ts-gs.last_attack)>MIN_ATTACK_DELAY ) {
-        // calculate list of hostile entities in range
-        int hent[MAX_ENTITIES];
-
-        //TODO: sort entities by how dangerous and how close they are
-        int nhent = get_entities_in_range(hent,MAX_ENTITIES,5.0,is_hostile_entity,NULL);
-
-        //if (nhent > 0) printf("%s : got %d entities to kill\n",__func__,nhent);
-
-        //TODO: select primary weapon for priority targets
-
-        //TODO: turn to target?
-
-        int i,h;
-        for(i=0,h=0; h<MAX_ATTACK && i<nhent; i++) {
-            entity *e = gs.P(entity)+hent[i];
-            if ((ts-e->lasthit) < MIN_ATTACK_DELAY)
-                continue;
-
-            uint8_t pkt[4096], *p;
-
-            //printf("%lld : Attack entity %d\n", ts, e->id);
-
-            // attack entity
-            p = pkt;
-            write_varint(p,0x02); // Use Entity
-            write_int(p, e->id);
-            write_char(p, 0x01);
-            write_packet(pkt, p-pkt, &mitm.cs_tx);
-
-            // wave arm
-            p = pkt;
-            write_varint(p,0x0a); // Animation
-            write_int(p,gs.own.id);
-            write_char(p,0x01);
-            write_packet(pkt, p-pkt, &mitm.cs_tx);
-
-            e->lasthit = ts;
-            gs.last_attack = ts;
-            h++;
-        }
-    }
-
-    // Autobuild
-    if (C(mitm.build.inreach)>0 && (ts-mitm.build.last_placement)>MIN_BUILD_DELAY ) {
-        int idx = random()%C(mitm.build.inreach);
-
-        bblock *bb = P(mitm.build.inreach)+idx;
-
-        printf("Placing at %d,%d,%d\n",bb->x,bb->y,bb->z);
-        
-        uint8_t pkt[4096], *p;
-        
-        // place block
-        p = pkt;
-        write_varint(p,0x08); // PlayerBlockPlacement
-
-        switch (bb->dir) {
-            case 0: //UP
-                write_int(p,bb->x);         
-                write_char(p,(char)bb->y+1);
-                write_int(p,bb->z);
-                break;
-            case 1: //DOWN
-                write_int(p,bb->x);         
-                write_char(p,(char)bb->y-1);
-                write_int(p,bb->z);
-                break;
-            case 2: //SOUTH
-                write_int(p,bb->x);         
-                write_char(p,(char)bb->y);
-                write_int(p,bb->z+1);
-                break;
-            case 3: //NORTH
-                write_int(p,bb->x);         
-                write_char(p,(char)bb->y);
-                write_int(p,bb->z-1);
-                break;
-            case 4: //EAST
-                write_int(p,bb->x+1);         
-                write_char(p,(char)bb->y);
-                write_int(p,bb->z);
-                break;
-            case 5: //WEST
-                write_int(p,bb->x-1);         
-                write_char(p,(char)bb->y);
-                write_int(p,bb->z);
-                break;
-        }
-
-        write_char(p,bb->dir);      // direction
-
-        // TODO: take slot data from the appropriate slot
-
-#if 0
-        write_short(p,87);          // netherrack
-        write_char(p,1);            // count
-        write_short(p,0);           // damage
-#endif
-        write_short(p,0xffff);      // no data
-
-        int cx = bb->cx; if (cx==8) cx+=((random()%7)-4);
-        int cy = bb->cy; if (cy==8) cy+=((random()%7)-4);
-        int cz = bb->cz; if (cz==8) cz+=((random()%7)-4);
-
-        write_char(p,cx);       // cursor position
-        write_char(p,cy);       
-        write_char(p,cz);        
-        write_packet(pkt, p-pkt, &mitm.cs_tx);
-
-        // wave arm
-        p = pkt;
-        write_varint(p,0x0a); // Animation
-        write_int(p,gs.own.id);
-        write_char(p,0x01);
-        write_packet(pkt, p-pkt, &mitm.cs_tx);
-
-        mitm.build.last_placement = ts;
-    }
-
-    return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////
+// Minecraft client connections
 
 int handle_server(int sfd, uint32_t ip, uint16_t port) {
     // accept connection from the local client
@@ -1502,6 +1387,7 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Main loop
 
 int proxy_pump(uint32_t ip, uint16_t port) {
     CLEAR(pa);
