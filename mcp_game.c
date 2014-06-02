@@ -28,6 +28,7 @@ int hr_last_z;
 int hr_last_yaw;
 
 ////////////////////////////////////////////////////////////////////////////////
+// helpers
 
 uint64_t gettimestamp() {
     struct timeval tv;
@@ -39,6 +40,9 @@ uint64_t gettimestamp() {
 #define MAX(a,b) ((a>b)?(a):(b))
 #define SGN(x) (((x)>=0)?1:-1)
 #define SQ(x) ((x)*(x))
+static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
+    return SQ(x-x2)+SQ(y-y2)+SQ(z-z2);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -202,16 +206,18 @@ void autokill(lh_buf_t *server) {
 ////////////////////////////////////////////////////////////////////////////////
 // Autobuild
 
-#define MIN_BUILD_DELAY  200000
+#define MIN_BUILD_DELAY  100000     // minimum delay between building two blocks
+#define MIN_BLOCK_DELAY  1000000    // minimum delay between retrying to place the same block again
 #define REACH_RANGE 5
 
+#if 0
 typedef struct {
     int x,y,z;          // block coordinates
     int v;              // type of placement, only applicable to slabs: 'u'=upper, 'd'=bottom, 'm'=default
     int id;             // block type ID
     uint8_t dir;        // 
     uint8_t cx,cy,cz;   // cursor x,y,z
-} bblock;
+} _bblock;
 
 struct {
     int active;                 // building is in progress
@@ -221,16 +227,42 @@ struct {
     int last_x, last_y, last_z;
 } build;
 
-static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
-    return SQ(x-x2)+SQ(y-y2)+SQ(z-z2);
-}
+#endif
 
+#define DIR_UP      0
+#define DIR_DOWN    1
+#define DIR_SOUTH   2
+#define DIR_NORTH   3
+#define DIR_EAST    4
+#define DIR_WEST    5
+
+typedef struct {
+    uint64_t ts;        // last timestamp we attempted to place this block
+    int x,y,z;          // block coordinates
+    int bid;            // block ID to place
+    uint32_t place[6];  // block placement methods in 6 available directions
+                        // bits 31..28 : enabled
+                        // bits 27..24 : possible (in reach)
+                        // bits 23..16 : cx
+                        // bits 15..8  : cy
+                        // bits  7..0  : cz
+} bblock;
+
+struct {
+    int active;                     // build is in progress
+    uint64_t last_placement;        // last time we placed any block
+    lh_arr_declare(bblock, all);    // all blocks scheduled for build
+    int inreach[256];               // blocks in reach (indexes to .all)
+    int ninr;                       // number of blocks in reach
+} build;
+
+// does a block need to be destroyed before we can place in its position?
 static inline int is_solid(int type) {
     return !(type==0 ||                  // air
              type==0x08 || type==0x09 || // water
              type==0x0a || type==0x0b || // lava
              type==0x1f ||               // tallgrass  
-             type==0x06 ||               // saplings
+             //type==0x06 ||               // saplings
              type==0x33                  // fire
              );
 }
@@ -239,86 +271,95 @@ void autobuild(lh_buf_t *server) {
     uint64_t ts = gettimestamp();
     if ((ts-build.last_placement)<MIN_BUILD_DELAY) return;
 
-    if (C(build.inreach)<=0) return;
+    if (build.ninr<=0) return;
 
-    int idx = random()%C(build.inreach);
+    int idx;
+    bblock *bb;
+    for(idx=0; idx<build.ninr; idx++) {
+        bb = P(build.all) + build.inreach[idx];
+        //printf("idx=%d at %d,%d,%d, ts-bb->ts=%lld\n",idx,bb->x,bb->y,bb->z,(ts-bb->ts));
+        if ((ts-bb->ts)>MIN_BLOCK_DELAY)
+            break;
+    }
+    if (idx == build.ninr) return;
 
-    bblock *bb = P(build.inreach)+idx;
-
-    printf("Placing at %d,%d,%d\n",bb->x,bb->y,bb->z);
+#if 0
+    printf("Placing at %d,%d,%d %08x %08x %08x %08x %08x %08x\n",
+           bb->x,bb->y,bb->z,
+           bb->place[0],bb->place[1],bb->place[2],bb->place[3],bb->place[4],bb->place[5]
+           );
+#endif
         
     uint8_t pkt[4096], *p;
         
     // place block
     p = pkt;
-    write_varint(p,0x08); // PlayerBlockPlacement
+    write_varint(p,PID(CP_PlayerBlockPlacement));
 
-    switch (bb->dir) {
-        case 0: //UP
-            write_int(p,bb->x);         
-            write_char(p,(char)bb->y+1);
-            write_int(p,bb->z);
+    int dir;
+    for(dir=0; dir<6; dir++) {
+        if (bb->place[dir] & 0x0f000000) {
+            // coords of the neighbor block
+            switch (dir) {
+                case 0: //UP
+                    write_int(p,bb->x);         
+                    write_char(p,(char)bb->y+1);
+                    write_int(p,bb->z);
+                    break;
+                case 1: //DOWN
+                    write_int(p,bb->x);         
+                    write_char(p,(char)bb->y-1);
+                    write_int(p,bb->z);
+                    break;
+                case 2: //SOUTH
+                    write_int(p,bb->x);         
+                    write_char(p,(char)bb->y);
+                    write_int(p,bb->z+1);
+                    break;
+                case 3: //NORTH
+                    write_int(p,bb->x);         
+                    write_char(p,(char)bb->y);
+                    write_int(p,bb->z-1);
+                    break;
+                case 4: //EAST
+                    write_int(p,bb->x+1);         
+                    write_char(p,(char)bb->y);
+                    write_int(p,bb->z);
+                    break;
+                case 5: //WEST
+                    write_int(p,bb->x-1);         
+                    write_char(p,(char)bb->y);
+                    write_int(p,bb->z);
+                    break;
+            }
+
+            write_char(p,dir);      // direction
+
+            write_short(p,0xffff);  //TODO: write proper slot
+
+            write_char(p,(bb->place[dir]>>16)&0xff); // cx
+            write_char(p,(bb->place[dir]>>8)&0xff);  // cy
+            write_char(p,(bb->place[dir])&0xff);     // cz
+
+            bb->ts = ts;
+            build.last_placement = ts;
+
             break;
-        case 1: //DOWN
-            write_int(p,bb->x);         
-            write_char(p,(char)bb->y-1);
-            write_int(p,bb->z);
-            break;
-        case 2: //SOUTH
-            write_int(p,bb->x);         
-            write_char(p,(char)bb->y);
-            write_int(p,bb->z+1);
-            break;
-        case 3: //NORTH
-            write_int(p,bb->x);         
-            write_char(p,(char)bb->y);
-            write_int(p,bb->z-1);
-            break;
-        case 4: //EAST
-            write_int(p,bb->x+1);         
-            write_char(p,(char)bb->y);
-            write_int(p,bb->z);
-            break;
-        case 5: //WEST
-            write_int(p,bb->x-1);         
-            write_char(p,(char)bb->y);
-            write_int(p,bb->z);
-            break;
+        }
     }
-    
-    write_char(p,bb->dir);      // direction
 
-    // TODO: take slot data from the appropriate slot
-
-#if 0
-    write_short(p,87);          // netherrack
-    write_char(p,1);            // count
-    write_short(p,0);           // damage
-#endif
-    write_short(p,0xffff);      // no data
-
-    int cx = bb->cx; //if (cx==8) cx+=((random()%7)-4);
-    int cy = bb->cy; //if (cy==8) cy+=((random()%7)-4);
-    int cz = bb->cz; //if (cz==8) cz+=((random()%7)-4);
-    
-    write_char(p,cx);       // cursor position
-    write_char(p,cy);       
-    write_char(p,cz);        
     write_packet(pkt, p-pkt, server);
     
     // wave arm
     p = pkt;
-    write_varint(p,0x0a); // Animation
+    write_varint(p,PID(CP_Animation));
     write_int(p,gs.own.id);
     write_char(p,0x01);
     write_packet(pkt, p-pkt, server);
-    
-    build.last_placement = ts;
 }
 
 void clear_autobuild() {
-    lh_free(GAR(build.all));
-    lh_free(GAR(build.inreach));
+    lh_arr_free(GAR(build.all));
     lh_clear_obj(build);
 }
 
@@ -364,20 +405,48 @@ void build_request(char **words, lh_buf_t *client) {
 
             clear_autobuild(); // cancel any current build
 
-            int i,j;
+            int i,j,dir;
             int dx = SGN(xsize);
             int dz = SGN(zsize);
             int n=0;
 
             for(i=0; i<abs(xsize); i++) {
                 for(j=0; j<abs(zsize); j++) {
-                    bblock * bb = lh_arr_new(GAR(build.all));
+                    bblock * bb = lh_arr_new_c(GAR(build.all));
                     bb->x = x+i*dx;
                     bb->y = y;
                     bb->z = z+j*dz;
-                    bb->v = slab;
+
+                    switch (slab) {
+                        case 'u':
+                            bb->place[DIR_UP]    = 0x10080008;
+                            bb->place[DIR_SOUTH] = 0x10080c00;
+                            bb->place[DIR_NORTH] = 0x10080c10;
+                            bb->place[DIR_EAST]  = 0x10000c08;
+                            bb->place[DIR_WEST]  = 0x10100c08;
+                            break;
+                        case 'd':
+                            bb->place[DIR_DOWN]  = 0x10081008;
+                            bb->place[DIR_SOUTH] = 0x10080400;
+                            bb->place[DIR_NORTH] = 0x10080410;
+                            bb->place[DIR_EAST]  = 0x10000408;
+                            bb->place[DIR_WEST]  = 0x10100408;
+                            break;
+                        default:
+                            bb->place[DIR_UP]    = 0x10080008;
+                            bb->place[DIR_DOWN]  = 0x10081008;
+                            bb->place[DIR_SOUTH] = 0x10080800;
+                            bb->place[DIR_NORTH] = 0x10080810;
+                            bb->place[DIR_EAST]  = 0x10000808;
+                            bb->place[DIR_WEST]  = 0x10100808;
+                            break;
+                    }
+
                     //TODO: block ID
-                    //printf("Scheduled block at %d,%d,%d\n",bb->x,bb->y,bb->z);
+#if 0
+                    printf("Scheduled block at %d,%d,%d %08x %08x %08x %08x %08x %08x\n",bb->x,bb->y,bb->z,
+                           bb->place[0],bb->place[1],bb->place[2],bb->place[3],bb->place[4],bb->place[5]);
+#endif
                     n++;
                 }
             }
@@ -391,7 +460,8 @@ void build_request(char **words, lh_buf_t *client) {
 }
 
 void build_process(lh_buf_t *client) {
-    lh_arr_free(GAR(build.inreach));
+    lh_clear_obj(build.inreach);
+    build.ninr = 0;
 
     // get a cuboid in range
     int x = gs.own.x>>5;
@@ -413,8 +483,8 @@ void build_process(lh_buf_t *client) {
     
     // detect which blocks are OK to place in
 
-    int i,n=0;
-    for(i=0; i<C(build.all); i++) {
+    int i;
+    for(i=0; i<C(build.all) && build.ninr<256; i++) {
         bblock * bb = P(build.all)+i;
 
         if (bb->x == x && bb->z == z && (bb->y == y || bb->y == y-1))
@@ -431,42 +501,25 @@ void build_process(lh_buf_t *client) {
 
         // is the block type suitable to build in ?
         if (!is_solid(*b)) {
-            bb->dir = 255;
+            int build_ok=0;
 
-            // find direction from which the block can be built
-            if (is_solid(b[48*48]) && bb->v!='d')         {  // U
-                bb->dir = 0; bb->cx=8;  bb->cy=0;  bb->cz=8;
-            }
-            else if (is_solid(b[-(48*48)]) && bb->v!='u') {  // D
-                bb->dir = 1; bb->cx=8;  bb->cy=16; bb->cz=8;
-            }
-            else if (is_solid(b[48]))       { bb->dir = 2; bb->cx=8;  bb->cy=8;  bb->cz=0;  } // S
-            else if (is_solid(b[-48]))      { bb->dir = 3; bb->cx=8;  bb->cy=8;  bb->cz=16; } // N
-            else if (is_solid(b[1]))        { bb->dir = 4; bb->cx=0;  bb->cy=8;  bb->cz=8;  } // E
-            else if (is_solid(b[-1]))       { bb->dir = 5; bb->cx=16; bb->cy=8;  bb->cz=8;  } // W
-            else { continue; }
-            
-            // adjust the block placement for the slabs
-            if ( bb->cy == 8) {
-                if (bb->v == 'u') bb->cy = 12;
-                if (bb->v == 'd') bb->cy = 4;
-            }
+            // check which directions are suitable
+            if ((bb->place[DIR_UP   ]&0xf0000000) && is_solid(b[48*48]))  {bb->place[DIR_UP   ] |= 0x01000000; build_ok++;}
+            if ((bb->place[DIR_DOWN ]&0xf0000000) && is_solid(b[-48*48])) {bb->place[DIR_DOWN ] |= 0x01000000; build_ok++;}
+            if ((bb->place[DIR_SOUTH]&0xf0000000) && is_solid(b[48]))     {bb->place[DIR_SOUTH] |= 0x01000000; build_ok++;}
+            if ((bb->place[DIR_NORTH]&0xf0000000) && is_solid(b[-48]))    {bb->place[DIR_NORTH] |= 0x01000000; build_ok++;}
+            if ((bb->place[DIR_EAST ]&0xf0000000) && is_solid(b[1]))      {bb->place[DIR_EAST ] |= 0x01000000; build_ok++;}
+            if ((bb->place[DIR_WEST ]&0xf0000000) && is_solid(b[-1]))     {bb->place[DIR_WEST ] |= 0x01000000; build_ok++;}
 
-
-            // schedule it for handle_async
-            bblock * ir = lh_arr_new(GAR(build.inreach));
-            *ir = *bb;
-            n++;
+            // if any of the directions is suitable for building, put it into inreach array
+            if (build_ok)
+                build.inreach[build.ninr++] = i;
         }
     }
 
-#if 0
-    char reply[32768];
-    sprintf(reply,"Scheduled %d blocks for handle_async",n);
-    chat_message(reply,client,NULL);
-#endif
+    //printf("%d blocks in reach\n",build.ninr);
 
-    build.active = (n>0);
+    build.active = (build.ninr>0);
 
     free(data);
 }
