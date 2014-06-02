@@ -47,12 +47,6 @@
 #define G_WEBSERVER 2
 #define G_PROXY     3
 
-#define MIN(a,b) ((a<b)?(a):(b))
-#define MAX(a,b) ((a>b)?(a):(b))
-#define SGN(x) (((x)>=0)?1:-1)
-#define SQ(x) ((x)*(x))
-
-
 ////////////////////////////////////////////////////////////////////////////////
 
 int signal_caught;
@@ -65,14 +59,6 @@ void signal_handler(int signum) {
 ////////////////////////////////////////////////////////////////////////////////
 
 lh_pollarray pa;
-
-typedef struct {
-    int x,y,z;          // block coordinates
-    int v;              // type of placement, only applicable to slabs: 'u'=upper, 'd'=bottom, 'm'=default
-    int id;             // block type ID
-    uint8_t dir;        // 
-    uint8_t cx,cy,cz;   // cursor x,y,z
-} bblock;
 
 struct {
     int state;          // handshake state
@@ -138,58 +124,11 @@ struct {
 
     FILE * output;
     FILE * dbg;
-
-    // Various options
-    struct {
-        int autokill;
-
-        int grinding;
-        int maxlevel;
-
-        int holeradar;
-
-        int build;
-    } opt;
-
-    // Auto-Building
-    struct {
-        int active;                 // building is in progress
-        uint64_t last_placement;    // timestamp when the most recent block was placed
-        lh_arr_declare(bblock,all);     // all blocks to be built - init by chat command
-        lh_arr_declare(bblock,inreach); // all blocks in reach - updated by player position change
-        int last_x, last_y, last_z;
-    } build;
-
-    // Hole radar
-    int hr_last_x;
-    int hr_last_y;
-    int hr_last_z;
-    int hr_last_yaw;
-
-    int64_t last[2];
 } mitm;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void write_packet(uint8_t *ptr, ssize_t len, lh_buf_t *buf) {
-    uint8_t hbuf[16]; CLEAR(hbuf);
-    ssize_t ll = lh_place_varint(hbuf,len) - hbuf;
-
-    ssize_t widx = buf->C(data);
-    if (mitm.dbg)
-        fprintf(mitm.dbg, "%s:%d buf=%p ptr=%16p cnt=%zd adding %zd\n",
-                __func__,__LINE__,buf,AR(buf->data),(len+ll));
-    
-    lh_arr_add(GAR4(buf->data),(len+ll));
-    if (mitm.dbg)
-        fprintf(mitm.dbg, "%s:%d buf=%p ptr=%16p cnt=%zd\n",
-                __func__,__LINE__,buf,AR(buf->data));
-
-    memmove(P(buf->data)+widx, hbuf, ll);
-    memmove(P(buf->data)+widx+ll, ptr, len);
-}
-
-uint8_t * read_string(uint8_t *p, char *s) {
+static uint8_t * read_string(uint8_t *p, char *s) {
     uint32_t len = lh_read_varint(p);
     memmove(s, p, len);
     s[len] = 0;
@@ -210,346 +149,6 @@ uint8_t * read_string(uint8_t *p, char *s) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void build_request(char **words, lh_buf_t *client) {
-    char reply[32768];
-    reply[0]=0;
-
-    if (!words[1]) {
-        sprintf(reply, "Usage: build <type> [ parameters ... ] or build cancel");
-    }
-    else if (!strcmp(words[1], "cancel")) {
-        lh_arr_free(GAR(mitm.build.all));
-        lh_arr_free(GAR(mitm.build.inreach));
-        sprintf(reply, "Current build canceled");
-        mitm.opt.build = 0;
-    }
-    else if (!strcmp(words[1], "floor")) {
-        int xsize,zsize;
-        if (!words[2] || !words[3] || 
-            sscanf(words[2],"%d",&xsize)!=1 || 
-            sscanf(words[3],"%d",&zsize)!=1 ) {
-            sprintf(reply, "Usage: build floor <xsize> <zsize> [ypos] [u|d]");
-        }
-        else {
-            int x = gs.own.x>>5;
-            int y = (gs.own.y>>5)-1; // coords of the block just below your feet
-            int z = gs.own.z>>5;
-
-            if (words[4]) sscanf(words[4],"%d",&y);
-            
-            char slab = 'm';
-            if (words[5]) {
-                if (sscanf(words[5],"%c",&slab)!=1) {
-                    sprintf(reply, "Usage: build floor <xsize> <zsize> [ypos] [u|d]");
-                    chat_message(reply, client, NULL);
-                    return;
-                }
-                if (slab != 'u' && slab != 'd') {
-                    sprintf(reply, "Usage: build floor <xsize> <zsize> [ypos] [u|d]");
-                    chat_message(reply, client, NULL);
-                    return;
-                }
-            }   
-
-            lh_arr_free(GAR(mitm.build.all)); // cancel any current build
-
-            int i,j;
-            int dx = SGN(xsize);
-            int dz = SGN(zsize);
-            int n=0;
-
-            for(i=0; i<abs(xsize); i++) {
-                for(j=0; j<abs(zsize); j++) {
-                    bblock * bb = lh_arr_new(GAR(mitm.build.all));
-                    bb->x = x+i*dx;
-                    bb->y = y;
-                    bb->z = z+j*dz;
-                    bb->v = slab;
-                    //TODO: block ID
-                    //printf("Scheduled block at %d,%d,%d\n",bb->x,bb->y,bb->z);
-                    n++;
-                }
-            }
-            sprintf(reply,"Scheduled %d blocks to build",n);
-            mitm.opt.build = 1;
-        }        
-    }
-
-    if (reply[0])
-        chat_message(reply, client, NULL);
-}
-
-#define REACH_RANGE 5
-
-static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
-    return SQ(x-x2)+SQ(y-y2)+SQ(z-z2);
-}
-
-static inline int is_solid(int type) {
-    return !(type==0 ||                  // air
-             type==0x08 || type==0x09 || // water
-             type==0x0a || type==0x0b || // lava
-             type==0x1f ||               // tallgrass  
-             type==0x06 ||               // saplings
-             type==0x33                  // fire
-             );
-}
-
-void build_process(lh_buf_t *client) {
-    lh_arr_free(GAR(mitm.build.inreach));
-
-    // get a cuboid in range
-    int x = gs.own.x>>5;
-    int y = (gs.own.y>>5)+1;
-    int z = gs.own.z>>5;
-
-    int Xl = (x>>4)-1;
-    int Xh = Xl+2;
-    int xoff = Xl*16;
-
-    int Zl = (z>>4)-1;
-    int Zh = Zl+2;
-    int zoff = Zl*16;
-
-    int yl = MAX(y-REACH_RANGE-1,1);
-    int yh = MIN(y+REACH_RANGE+1,255);
-
-    uint8_t *data = export_cuboid(Xl,Xh,Zl,Zh,yl,yh);
-    
-    // detect which blocks are OK to place in
-
-    int i,n=0;
-    for(i=0; i<C(mitm.build.all); i++) {
-        bblock * bb = P(mitm.build.all)+i;
-
-        if (bb->x == x && bb->z == z && (bb->y == y || bb->y == y-1))
-            continue; // don't try to build at our own position
-
-        if (sqdist(x,y,z,bb->x,bb->y,bb->z) > SQ(REACH_RANGE))
-            continue; // this block is too far away
-
-        int cx = bb->x-xoff;
-        int cz = bb->z-zoff;
-
-        uint8_t *ydata = data+48*48*(bb->y-yl);
-        uint8_t *b = ydata+cx+cz*48;
-
-        // is the block type suitable to build in ?
-        if (!is_solid(*b)) {
-            bb->dir = 255;
-
-            // find direction from which the block can be built
-            if (is_solid(b[48*48]) && bb->v!='d')         {  // U
-                bb->dir = 0; bb->cx=8;  bb->cy=0;  bb->cz=8;
-            }
-            else if (is_solid(b[-(48*48)]) && bb->v!='u') {  // D
-                bb->dir = 1; bb->cx=8;  bb->cy=16; bb->cz=8;
-            }
-            else if (is_solid(b[48]))       { bb->dir = 2; bb->cx=8;  bb->cy=8;  bb->cz=0;  } // S
-            else if (is_solid(b[-48]))      { bb->dir = 3; bb->cx=8;  bb->cy=8;  bb->cz=16; } // N
-            else if (is_solid(b[1]))        { bb->dir = 4; bb->cx=0;  bb->cy=8;  bb->cz=8;  } // E
-            else if (is_solid(b[-1]))       { bb->dir = 5; bb->cx=16; bb->cy=8;  bb->cz=8;  } // W
-            else { continue; }
-            
-            // adjust the block placement for the slabs
-            if ( bb->cy == 8) {
-                if (bb->v == 'u') bb->cy = 12;
-                if (bb->v == 'd') bb->cy = 4;
-            }
-
-
-            // schedule it for handle_async
-            bblock * ir = lh_arr_new(GAR(mitm.build.inreach));
-            *ir = *bb;
-            n++;
-        }
-    }
-
-#if 0
-    char reply[32768];
-    sprintf(reply,"Scheduled %d blocks for handle_async",n);
-    chat_message(reply,client,NULL);
-#endif
-
-    mitm.build.active = (n>0);
-
-    free(data);
-
-
-
-    // update mitm.build.inreach array
-    // schedule blocks for handle_async
-}
-
-void salt_request(int x, int y, int z) {
-    uint8_t pkt[4096], *p;
-
-    // place block
-    p = pkt;
-    write_varint(p,0x08); // PlayerBlockPlacement
-    write_int(p,x);
-    write_char(p,y);
-    write_int(p,z);
-    write_char(p,4);
-    write_short(p,0xffff); //TODO: proper slot data
-    write_char(p,1);       
-    write_char(p,7);       
-    write_char(p,4);        
-    write_packet(pkt, p-pkt, &mitm.cs_tx);
-
-    // wave arm
-    p = pkt;
-    write_varint(p,0x0a); // Animation
-    write_int(p,gs.own.id);
-    write_char(p,0x01);
-    write_packet(pkt, p-pkt, &mitm.cs_tx);
-}
-
-
-#include "blocks_ansi.h"
-
-int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
-    if (msg[0] != '#') return 0;
-
-    // tokenize
-    char *words[256];
-    CLEAR(words);
-    int w=0;
-
-    char wbuf[4096];
-    strncpy(wbuf, msg+1, sizeof(wbuf));
-    char *wsave;
-
-    char *wstr = wbuf;
-    do {
-        words[w++] = strtok_r(wstr, " ", &wsave);
-        wstr = NULL;
-    } while(words[w-1]);
-    w--;
-
-    if (w==0) return 0;
-
-
-    uint8_t reply[32768];
-    reply[0] = 0;
-
-    if (!strcmp(words[0],"test")) {
-        sprintf(reply,"Chat test response");
-    }
-    else if (!strcmp(words[0],"entities")) {
-        sprintf(reply,"Tracking %zd entities",gs.C(entity));
-    }
-    else if (!strcmp(words[0],"autokill")) {
-        mitm.opt.autokill = !mitm.opt.autokill;
-        sprintf(reply,"Autokill is %s",mitm.opt.autokill?"enabled":"disabled");
-    }
-    else if (!strcmp(words[0],"grind")) {
-        int maxlevel=30;
-        int start = 1;
-
-        if (words[1]) {
-            if (!strcmp(words[1],"stop")) {
-                mitm.opt.grinding = 0;
-                mitm.opt.autokill = 0;
-                sprintf(reply,"Grinding is stopped");
-                start = 0;
-            }
-            else if (sscanf(words[1],"%d",&maxlevel)!=1) {
-                maxlevel = 30;
-            }
-        }
-
-        if (start) {
-            mitm.opt.grinding = 1;
-            mitm.opt.autokill = 1;
-            mitm.opt.maxlevel = maxlevel;
-            sprintf(reply,"Grinding to level %d",mitm.opt.maxlevel);
-        }
-    }
-    else if (!strcmp(words[0],"ft")) {
-        int ll = 119;
-        int lh = 122;
-        int error = 0;
-        if (words[1]) {
-            if (sscanf(words[1],"%d",&ll)!=1)
-                error++;
-
-            if (words[2]) {
-                if (sscanf(words[2],"%d",&lh)!=1)
-                    error++;
-            }
-        }
-
-        if (ll<0 || lh<0 || lh<ll || lh>((gs.current_dimension==DIM_NETHER)?126:254))
-            error++;
-
-        if (error)
-            sprintf(reply, "incorrect level range specified");
-        else
-            find_tunnels(retour,ll,lh);
-    }
-    else if (!strcmp(words[0],"map")) {
-        int error=0;
-        int y = gs.own.y>>5;
-
-        if (words[1]) {
-            if (sscanf(words[1],"%d",&y)!=1)
-                error++;
-        }
-
-        if (error) {
-            sprintf(reply, "incorrect level specified");
-        }
-        else {
-            int xp = gs.own.x>>5;
-            int zp = gs.own.z>>5;
-            int X = gs.own.x>>9;
-            int Z = gs.own.z>>9;
-            uint8_t *map = export_cuboid(X-5,X+5,Z-5,Z+5,y,y);
-
-            int xoff = (X-5)*16;
-            int zoff = (Z-5)*16;
-
-            int x,z;
-            printf("MAP x=%d:%d z=%d:%d y=%d\n",(X-5)*16,(X+6)*16-1,(Z-5)*16,(Z+6)*16-1,y);
-            for(z=(5*16); z<(7*16); z++) {
-                uint8_t * p = map+z*(11*16)+5*16;
-                printf("%s%6d  ",ANSI_CLEAR,z);
-                for(x=(5*16); x<(7*16); x++,p++) {
-                    if (x+xoff==xp && z+zoff==zp)
-                        printf("%s",ANSI_PLAYER);
-                    else
-                        printf("%s",ANSI_BLOCK[*p]);
-                }
-                printf("%s\n",ANSI_CLEAR);
-            }
-            free(map);
-        }
-    }
-    else if (!strcmp(words[0],"build")) {
-        build_request(words, retour);
-    }
-    else if (!strcmp(words[0],"salt")) {
-        int x,y,z;
-        if (!words[1] || !words[2] || !words[3] || 
-            sscanf(words[1],"%d",&x)!=1 || 
-            sscanf(words[2],"%d",&y)!=1 || 
-            sscanf(words[3],"%d",&z)!=1 ) {
-            sprintf(reply, "Usage: #salt x y z");
-        }
-        salt_request(x,y,z);
-        
-    }
-    else if (!strcmp(words[0],"holeradar")) {
-        mitm.opt.holeradar = !mitm.opt.holeradar;
-        sprintf(reply,"Hole radar is %s",mitm.opt.holeradar?"enabled":"disabled");
-    }
-
-    if (reply[0])
-        chat_message(reply, retour, NULL);
-
-    return 1;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -674,195 +273,6 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
     mitm.enable_encryption = 1;
 }
 
-void process_packet(int is_client, uint8_t *ptr, ssize_t len,
-                    lh_buf_t *forw, lh_buf_t *retour) {
-
-    // one nice advantage - we can be sure that we have all data in the buffer,
-    // so there's no need for limit checking with the new protocol
-
-    if (mitm.output) {
-        // write packet to the MCS file
-        struct timeval tv;
-        gettimeofday(&tv, NULL);
-
-        uint8_t header[4096];
-        uint8_t *hp = header;
-        write_int(hp, is_client);
-        write_int(hp, tv.tv_sec);
-        write_int(hp, tv.tv_usec);
-        write_int(hp, len);
-        fwrite(header, 1, hp-header, mitm.output);
-        fwrite(ptr, 1, len, mitm.output);
-        fflush(mitm.output);
-    }
-
-    uint8_t *p = ptr;
-    uint32_t type = lh_read_varint(p);
-    uint32_t stype = ((mitm.state<<24)|(is_client<<28)|(type&0xffffff));
-
-    char *states = "ISLP";
-
-#if 0
-    printf("%c %c type=%02x, len=%zd\n", is_client?'C':'S',
-           states[mitm.state],type,len);
-    hexdump(ptr, len);
-#endif
-
-    uint8_t output[65536];
-    uint8_t *w = output;
-
-    if (mitm.state == STATE_PLAY)
-        import_packet(ptr, len, is_client);
-
-    switch (stype) {
-        ////////////////////////////////////////////////////////////////////////
-        // Idle state
-
-        case CI_Handshake: {
-            Rvarint(protocolVer);
-            Rstr(serverAddr);
-            Rshort(serverPort);
-            Rvarint(nextState);
-            mitm.state = nextState;
-            printf("C %-30s protocol=%d server=%s:%d nextState=%d\n",
-                   "Handshake",protocolVer,serverAddr,serverPort,nextState);
-            write_packet(ptr, len, forw);
-            break;
-        }
-
-        ////////////////////////////////////////////////////////////////////////
-        // Login
-
-        case CL_EncryptionResponse:
-            process_encryption_response(p, forw);
-            break;
-
-        case SL_EncryptionRequest:
-            process_encryption_request(p, forw);
-            break;
-
-        ////////////////////////////////////////////////////////////////////////
-        // Play
-
-        case SP_SpawnPlayer: {
-            Rvarint(eid);
-            Rstr(uuid);
-            Rstr(name);
-            Rint(x);
-            Rint(y);
-            Rint(z);
-            Rchar(yaw);
-            Rchar(pitch);
-            Rshort(item);
-            //TODO: metadata
-
-            char msg[32768];
-            sprintf(msg, "Player %s at %d,%d,%d",name,x>>5,y>>5,z>>5);
-            chat_message(msg, forw, "blue");
-            write_packet(ptr, len, forw);
-            break;
-        }
-
-        case SP_SoundEffect: {
-            Rstr(name);
-            Rint(x);
-            Rint(y);
-            Rint(z);
-            Rfloat(volume);
-            Rchar(pitch);
-            if (!strcmp(name,"ambient.weather.thunder")) {
-                printf("**** THUNDER ****\n"
-                       "coords=%d,%d,%d vol=%.4f pitch=%d\n",
-                       x/8,y/8,z/8,volume,pitch);
-                close(mitm.ms);
-            }
-            if (strcmp(name,"mob.sheep.say") && strcmp(name,"mob.sheep.step"))
-                write_packet(ptr, len, forw);
-            break;
-        }
-
-        case SP_Effect: {
-            Rint(efid);
-            Rint(x);
-            Rchar(y);
-            Rint(z);
-            Rint(data);
-            Rchar(disrv);
-            if (efid == 1013) {
-                printf("**** Wither Spawn ****  efid=%d data=%d bcoord=%d:%d:%d %s\n",
-                       efid,data,x,y,z,disrv?"disable relative volume":"");
-            }
-            write_packet(ptr, len, forw);
-            break;
-        }
-
-        case SP_SetExperience: {
-            Rfloat(bar);
-            Rshort(level);
-            Rshort(exp);
-
-            if (mitm.opt.grinding && level >= mitm.opt.maxlevel) {
-                mitm.opt.grinding = 0;
-                mitm.opt.autokill = 0;
-
-                char msg[4096];
-                sprintf(msg, "Grinding finished at level %d",level);
-                chat_message(msg, forw, "green");                
-            }
-            write_packet(ptr, len, forw);
-            break;
-        }
-
-        case SP_PlayerPositionLook:
-        case CP_PlayerPositionLook:
-        case CP_PlayerPosition:
-        case CP_PlayerLook:
-        case SP_MultiBlockChange:
-        case SP_BlockChange: {
-            if (mitm.opt.holeradar) {
-                int x = gs.own.x>>5;
-                int y = gs.own.y>>5;
-                int z = gs.own.z>>5;
-                int yaw = (int)gs.own.yaw/90;
-
-                if (x!= mitm.hr_last_x || y!= mitm.hr_last_y || 
-                    z!= mitm.hr_last_z || yaw!= mitm.hr_last_yaw ) {
-                    mitm.hr_last_x = x;
-                    mitm.hr_last_y = y;
-                    mitm.hr_last_z = z;
-                    mitm.hr_last_yaw = yaw;
-                    hole_radar(is_client?retour:forw);
-                }
-            }
-            if (mitm.opt.build) {
-                build_process(is_client?retour:forw);
-            }
-
-            write_packet(ptr, len, forw);
-            break;
-        }
-
-        case CP_ChatMessage: {
-            Rstr(msg);
-            if (msg[0] == '#') {
-                if (process_message(msg, forw, retour))
-                    break;
-            }
-
-            // if it was a normal chat message, just forward it
-            write_packet(ptr, len, forw);
-            break;
-        }
-
-        ////////////////////////////////////////////////////////////////////////
-        default: {
-            // by default, just forward the packet as is
-            write_packet(ptr, len, forw);
-        }
-    }
-
-}
-
 ssize_t handle_proxy(lh_conn *conn) {
     int is_client = (conn->priv != NULL);
 
@@ -938,7 +348,23 @@ ssize_t handle_proxy(lh_conn *conn) {
         ssize_t ll = p-rx->P(data); // length of the varint
         if (plen+ll > rx->C(data)) break; // packet is incomplete
 
-        process_packet(is_client, p, plen, tx, bx);
+        if (mitm.output) {
+            // write packet to the MCS file
+            struct timeval tv;
+            gettimeofday(&tv, NULL);
+
+            uint8_t header[4096];
+            uint8_t *hp = header;
+            write_int(hp, is_client);
+            write_int(hp, tv.tv_sec);
+            write_int(hp, tv.tv_usec);
+            write_int(hp, plen);
+            fwrite(header, 1, hp-header, mitm.output);
+            fwrite(p, 1, plen, mitm.output);
+            fflush(mitm.output);
+        }        
+
+        process_packet(is_client, p, plen, tx, bx, &mitm.state);
         lh_arr_delete_range(GAR4(rx->data),0,ll+plen);
     }
 
@@ -998,145 +424,9 @@ ssize_t handle_proxy(lh_conn *conn) {
     return slen;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
-#define MAX_ENTITIES     4096
-#define MAX_ATTACK       1
-#define MIN_ENTITY_DELAY 250000  // minimum interval between hitting the same entity (us)
-#define MIN_ATTACK_DELAY  50000  // minimum interval between attacking any entity
-#define MIN_BUILD_DELAY  200000
-
-int is_hostile_entity(entity *e) {
-    return e->hostile > 0;
-}
-
-int handle_async() {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    uint64_t ts = (uint64_t)tv.tv_sec*1000000+(uint64_t)tv.tv_usec;
-
-    // Auto Kill
-    if (mitm.opt.autokill && (ts-gs.last_attack)>MIN_ATTACK_DELAY ) {
-        // calculate list of hostile entities in range
-        int hent[MAX_ENTITIES];
-
-        //TODO: sort entities by how dangerous and how close they are
-        int nhent = get_entities_in_range(hent,MAX_ENTITIES,5.0,is_hostile_entity,NULL);
-
-        //if (nhent > 0) printf("%s : got %d entities to kill\n",__func__,nhent);
-
-        //TODO: select primary weapon for priority targets
-
-        //TODO: turn to target?
-
-        int i,h;
-        for(i=0,h=0; h<MAX_ATTACK && i<nhent; i++) {
-            entity *e = gs.P(entity)+hent[i];
-            if ((ts-e->lasthit) < MIN_ATTACK_DELAY)
-                continue;
-
-            uint8_t pkt[4096], *p;
-
-            //printf("%lld : Attack entity %d\n", ts, e->id);
-
-            // attack entity
-            p = pkt;
-            write_varint(p,0x02); // Use Entity
-            write_int(p, e->id);
-            write_char(p, 0x01);
-            write_packet(pkt, p-pkt, &mitm.cs_tx);
-
-            // wave arm
-            p = pkt;
-            write_varint(p,0x0a); // Animation
-            write_int(p,gs.own.id);
-            write_char(p,0x01);
-            write_packet(pkt, p-pkt, &mitm.cs_tx);
-
-            e->lasthit = ts;
-            gs.last_attack = ts;
-            h++;
-        }
-    }
-
-    // Autobuild
-    if (C(mitm.build.inreach)>0 && (ts-mitm.build.last_placement)>MIN_BUILD_DELAY ) {
-        int idx = random()%C(mitm.build.inreach);
-
-        bblock *bb = P(mitm.build.inreach)+idx;
-
-        printf("Placing at %d,%d,%d\n",bb->x,bb->y,bb->z);
-        
-        uint8_t pkt[4096], *p;
-        
-        // place block
-        p = pkt;
-        write_varint(p,0x08); // PlayerBlockPlacement
-
-        switch (bb->dir) {
-            case 0: //UP
-                write_int(p,bb->x);         
-                write_char(p,(char)bb->y+1);
-                write_int(p,bb->z);
-                break;
-            case 1: //DOWN
-                write_int(p,bb->x);         
-                write_char(p,(char)bb->y-1);
-                write_int(p,bb->z);
-                break;
-            case 2: //SOUTH
-                write_int(p,bb->x);         
-                write_char(p,(char)bb->y);
-                write_int(p,bb->z+1);
-                break;
-            case 3: //NORTH
-                write_int(p,bb->x);         
-                write_char(p,(char)bb->y);
-                write_int(p,bb->z-1);
-                break;
-            case 4: //EAST
-                write_int(p,bb->x+1);         
-                write_char(p,(char)bb->y);
-                write_int(p,bb->z);
-                break;
-            case 5: //WEST
-                write_int(p,bb->x-1);         
-                write_char(p,(char)bb->y);
-                write_int(p,bb->z);
-                break;
-        }
-
-        write_char(p,bb->dir);      // direction
-
-        // TODO: take slot data from the appropriate slot
-
-#if 0
-        write_short(p,87);          // netherrack
-        write_char(p,1);            // count
-        write_short(p,0);           // damage
-#endif
-        write_short(p,0xffff);      // no data
-
-        int cx = bb->cx; //if (cx==8) cx+=((random()%7)-4);
-        int cy = bb->cy; //if (cy==8) cy+=((random()%7)-4);
-        int cz = bb->cz; //if (cz==8) cz+=((random()%7)-4);
-
-        write_char(p,cx);       // cursor position
-        write_char(p,cy);       
-        write_char(p,cz);        
-        write_packet(pkt, p-pkt, &mitm.cs_tx);
-
-        // wave arm
-        p = pkt;
-        write_varint(p,0x0a); // Animation
-        write_int(p,gs.own.id);
-        write_char(p,0x01);
-        write_packet(pkt, p-pkt, &mitm.cs_tx);
-
-        mitm.build.last_placement = ts;
-    }
-
-    return 0;
+void drop_connection() {
+    close(mitm.ms);
+    close(mitm.cs);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1359,6 +649,7 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     if (mitm.s_rsa) RSA_free(mitm.s_rsa);
     if (mitm.c_rsa) RSA_free(mitm.c_rsa);
     CLEAR(mitm);
+    clear_autobuild();
 
     reset_gamestate();
     set_option(GSOP_PRUNE_CHUNKS, 1);
@@ -1393,6 +684,7 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     CLEAR(pa);
 
     CLEAR(mitm);
+    clear_autobuild();
     mitm.cs = mitm.ms = -1;
 
     // Minecraft proxy server
@@ -1433,7 +725,7 @@ int proxy_pump(uint32_t ip, uint16_t port) {
 
         // handle asynchronous events
         if (mitm.state == STATE_PLAY)
-            handle_async();
+            handle_async(&mitm.ms_tx, &mitm.cs_tx);
     }
 
     printf("Terminating...\n");
