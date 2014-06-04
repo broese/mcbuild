@@ -273,13 +273,19 @@ void autobuild(lh_buf_t *server) {
 
     if (build.ninr<=0) return;
 
+    int bid = gs.inventory.slots[gs.held+36].id;
+
     int idx;
     bblock *bb;
     for(idx=0; idx<build.ninr; idx++) {
         bb = P(build.all) + build.inreach[idx];
         //printf("idx=%d at %d,%d,%d, ts-bb->ts=%lld\n",idx,bb->x,bb->y,bb->z,(ts-bb->ts));
+
+        if (bb->bid != bid) continue; // don't build this block if we are holding a wrong item
+
         if ((ts-bb->ts)>MIN_BLOCK_DELAY)
             break;
+
     }
     if (idx == build.ninr) return;
 
@@ -405,7 +411,7 @@ void build_request(char **words, lh_buf_t *client) {
 
             clear_autobuild(); // cancel any current build
 
-            int bid = gs.inventory.slots[gs.held].id;
+            int bid = gs.inventory.slots[gs.held+36].id;
             if (bid == 0xffff) {
                 sprintf(reply, "You need to hold an item to start building.");
                 chat_message(reply, client, NULL);
@@ -416,6 +422,8 @@ void build_request(char **words, lh_buf_t *client) {
             int dx = SGN(xsize);
             int dz = SGN(zsize);
             int n=0;
+
+            printf("Building with the block ID %d (in slot %d (%d))\n", bid, gs.held, gs.held+36);
 
             for(i=0; i<abs(xsize); i++) {
                 for(j=0; j<abs(zsize); j++) {
@@ -489,7 +497,7 @@ void build_process(lh_buf_t *client) {
 
     uint8_t *data = export_cuboid(Xl,Xh,Zl,Zh,yl,yh);
 
-    int bid = gs.inventory.slots[gs.held].id;
+    int bid = gs.inventory.slots[gs.held+36].id;
     
     // detect which blocks are OK to place in
     int i;

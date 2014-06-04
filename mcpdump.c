@@ -131,6 +131,59 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 printf("%d.%06d: Maps  dmg=%d length=%d\n",sec,usec,damage,length);
                 break;
             }
+
+            case SP_SetSlot: {
+                Rchar(wid);
+                Rshort(sid);
+                Rshort(iid);
+                
+                // TODO: support other windows
+                if (wid != 0) break;
+                window * w = &gs.inventory;
+                
+                slot * s = &w->slots[sid];
+                s->id = iid;
+                
+                if (iid != 0xffff) {
+                    Rchar(count);
+                    Rshort(dmg);
+                    s->count = count;
+                    s->dmg = dmg;
+
+                    //TODO: import aux data
+                    Rshort(dlen);
+                    printf("SetSlot wid=%d sid=%d iid=%d count=%d dmg=%d followed by %d bytes of data\n",
+                           wid, sid, iid, count, dmg, dlen);
+                }
+                else {
+                    s->count=0;
+                    s->dmg=0;
+                    printf("SetSlot wid=%d sid=%d iid=%d\n",
+                           wid, sid, iid);
+                }
+                break;
+            }
+
+            case SP_HeldItemChange: {
+                Rchar(sid);
+                gs.held = sid;
+                printf("HeldItemChange (S) sid=%d\n",sid);
+                break;
+            }
+                
+            case CP_HeldItemChange: {
+                Rshort(sid);
+                gs.held = sid;
+                printf("HeldItemChange (C) sid=%d\n",sid);
+                break;
+            }
+
+            case CP_ChatMessage: {
+                Rstr(msg);
+                printf("ChatMessage: %s\n",msg);
+                break;
+            }
+
         }
     
         
