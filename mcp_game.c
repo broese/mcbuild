@@ -405,6 +405,13 @@ void build_request(char **words, lh_buf_t *client) {
 
             clear_autobuild(); // cancel any current build
 
+            int bid = gs.inventory.slots[gs.held].id;
+            if (bid == 0xffff) {
+                sprintf(reply, "You need to hold an item to start building.");
+                chat_message(reply, client, NULL);
+                return;
+            }
+
             int i,j,dir;
             int dx = SGN(xsize);
             int dz = SGN(zsize);
@@ -416,6 +423,7 @@ void build_request(char **words, lh_buf_t *client) {
                     bb->x = x+i*dx;
                     bb->y = y;
                     bb->z = z+j*dz;
+                    bb->bid = bid;
 
                     switch (slab) {
                         case 'u':
@@ -480,12 +488,17 @@ void build_process(lh_buf_t *client) {
     int yh = MIN(y+REACH_RANGE+1,255);
 
     uint8_t *data = export_cuboid(Xl,Xh,Zl,Zh,yl,yh);
+
+    int bid = gs.inventory.slots[gs.held].id;
     
     // detect which blocks are OK to place in
-
     int i;
     for(i=0; i<C(build.all) && build.ninr<256; i++) {
         bblock * bb = P(build.all)+i;
+
+        if (bb->bid != bid)
+            continue; //TODO: allow switching to a different inv slot
+                      // for now, we just don't allow building if we hold wrong material
 
         if (bb->x == x && bb->z == z && (bb->y == y || bb->y == y-1))
             continue; // don't try to build at our own position

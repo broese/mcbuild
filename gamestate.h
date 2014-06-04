@@ -87,6 +87,20 @@ typedef struct _entity {
     char name[256];     // only valid for players
 } entity;
 
+typedef struct _slot {
+    int16_t  id;        // item id, -1 if empty
+    int16_t  dmg;       // damage level
+    int8_t   count;     // number of items in the slot
+
+    //TODO: aux data
+} slot;
+
+typedef struct _window {
+    int nslots;
+    int id;
+    slot slots[64];
+} window;
+
 typedef struct _gamestate {
     // options
     struct {
@@ -102,6 +116,9 @@ typedef struct _gamestate {
         uint8_t ground;
         float yaw,pitch;
     } own;
+
+    window inventory;
+    int    held;
             
     uint8_t current_dimension;
     // current chunks
