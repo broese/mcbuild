@@ -1,6 +1,6 @@
 CFLAGS=-g -pg -I../libhelper
 LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lcurl
-DEFS=-DDEBUG_MEMORY=0
+DEFS=-DDEBUG_MEMORY=0 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
 INC=
 
 UNAME := $(shell uname -s)

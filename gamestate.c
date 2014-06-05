@@ -35,6 +35,12 @@ int reset_gamestate() {
     }
     
     CLEAR(gs);
+
+    // set all items in the inventory to -1 to define them as empty
+    for(i=0; i<64; i++) {
+        gs.inventory.slots[i].id = 0xffff;
+    }
+
     gs_used = 1;
 
     return 0;
@@ -72,27 +78,6 @@ int get_option(int optid) {
             LH_ERROR(-1,"Unknown option ID %d\n", optid);
     }
 }
-
-////////////////////////////////////////////////////////////////////////////////
-
-static uint8_t * read_string(uint8_t *p, char *s) {
-    uint32_t len = lh_read_varint(p);
-    memmove(s, p, len);
-    s[len] = 0;
-    return p+len;
-}
-
-#define Rx(n,type,fun) type n = lh_read_ ## fun ## _be(p);
-
-#define Rchar(n)  Rx(n,uint8_t,char)
-#define Rshort(n) Rx(n,uint16_t,short)
-#define Rint(n)   Rx(n,uint32_t,int)
-#define Rlong(n)  Rx(n,uint64_t,long);
-#define Rfloat(n) Rx(n,float,float)
-#define Rdouble(n) Rx(n,double,double)
-#define Rstr(n)   char n[4096]; p=read_string(p,n)
-#define Rskip(n)  p+=n;
-#define Rvarint(n) uint32_t n = lh_read_varint(p);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -807,29 +792,23 @@ int import_packet(uint8_t *ptr, ssize_t size, int is_client) {
 
         case SP_SetSlot: {
             Rchar(wid);
-            Rshort(sid);
-            Rshort(iid);
-
             // TODO: support other windows
             if (wid != 0) break;
             window * w = &gs.inventory;
+            Rshort(sid);
+            slot_t * s = &w->slots[sid];
+            p = read_slot(p, s);
 
-            slot * s = &w->slots[sid];
-            s->id = iid;
+            break;
+        }
 
-            if (iid != 0xffff) {
-                Rchar(count);
-                Rshort(dmg);
-                s->count = count;
-                s->dmg = dmg;
+        case SP_WindowItems: {
+            Rchar(wid);
+            Rshort(nslots);
 
-                //TODO: import aux data
-                Rshort(dlen);
-            }
-            else {
-                s->count=0;
-                s->dmg=0;
-            }
+            int i;
+            for(i=0; i<nslots; i++)
+                p = read_slot(p, &gs.inventory.slots[i]);
             break;
         }
 

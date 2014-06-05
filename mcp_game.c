@@ -6,6 +6,8 @@
 
 #include "lh_bytes.h"
 
+#include "ids.h"
+#include "gamestate.h"
 #include "mcp_game.h"
 #include "blocks_ansi.h"
 
@@ -798,25 +800,6 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-static uint8_t * read_string(uint8_t *p, char *s) {
-    uint32_t len = lh_read_varint(p);
-    memmove(s, p, len);
-    s[len] = 0;
-    return p+len;
-}
-
-#define Rx(n,type,fun) type n = lh_read_ ## fun ## _be(p);
-
-#define Rchar(n)  Rx(n,uint8_t,char)
-#define Rshort(n) Rx(n,uint16_t,short)
-#define Rint(n)   Rx(n,uint32_t,int)
-#define Rlong(n)  Rx(n,uint64_t,long);
-#define Rfloat(n) Rx(n,float,float)
-#define Rdouble(n) Rx(n,double,double)
-#define Rstr(n)   char n[4096]; p=read_string(p,n)
-#define Rskip(n)  p+=n;
-#define Rvarint(n) uint32_t n = lh_read_varint(p);
 
 void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                     lh_buf_t *forw, lh_buf_t *retour, int *state) {

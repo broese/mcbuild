@@ -5,52 +5,10 @@
 #include <lh_debug.h>
 #include <lh_bytes.h>
 #include <lh_files.h>
+#include <lh_compress.h>
 
 #include "gamestate.h"
 #include "ids.h"
-
-uint8_t * read_string(uint8_t *p, char *s) {
-    uint32_t len = lh_read_varint(p);
-    memmove(s, p, len);
-    s[len] = 0;
-    return p+len;
-}
-
-typedef struct _slot_t {
-    uint16_t id;
-    uint8_t  count;
-    uint16_t damage;
-    uint16_t dlen;
-    uint8_t  data[65536];
-} slot_t;
-
-uint8_t * read_slot(uint8_t *p, slot_t *s) {
-    lh_clear_ptr(s);
-
-    s->id     = lh_read_short_be(p);
-    s->count  = lh_read_char(p);
-    s->damage = lh_read_short_be(p);
-    s->dlen   = lh_read_short_be(p);
-    if (s->dlen!=0 && s->dlen!=0xffff) {
-        memcpy(s->data, p, s->dlen);
-        p += s->dlen;
-    }
-    return p;
-}
-    
-
-#define Rx(n,type,fun) type n = lh_read_ ## fun ## _be(p);
-
-#define Rchar(n)  Rx(n,uint8_t,char)
-#define Rshort(n) Rx(n,uint16_t,short)
-#define Rint(n)   Rx(n,uint32_t,int)
-#define Rlong(n)  Rx(n,uint64_t,long);
-#define Rfloat(n) Rx(n,float,float)
-#define Rdouble(n) Rx(n,double,double)
-#define Rstr(n)   char n[4096]; p=read_string(p,n)
-#define Rskip(n)  p+=n;
-#define Rvarint(n) uint32_t n = lh_read_varint(p);
-#define Rslot(n)  slot_t n; p=read_slot(p,&n)
 
 #define STATE_IDLE     0
 #define STATE_STATUS   1
@@ -134,32 +92,17 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
             case SP_SetSlot: {
                 Rchar(wid);
-                Rshort(sid);
-                Rshort(iid);
-                
                 // TODO: support other windows
                 if (wid != 0) break;
-                window * w = &gs.inventory;
-                
-                slot * s = &w->slots[sid];
-                s->id = iid;
-                
-                if (iid != 0xffff) {
-                    Rchar(count);
-                    Rshort(dmg);
-                    s->count = count;
-                    s->dmg = dmg;
-
-                    //TODO: import aux data
-                    Rshort(dlen);
-                    printf("SetSlot wid=%d sid=%d iid=%d count=%d dmg=%d followed by %d bytes of data\n",
-                           wid, sid, iid, count, dmg, dlen);
+                Rshort(sid);
+                Rslot(s);
+                printf("SetSlot wid=%d sid=%d iid=%d count=%d dmg=%d",
+                       wid, sid, s.id, s.count, s.damage);
+                if (s.dlen == 0 || s.dlen == 0xffff) {
+                    printf(" no aux data\n");
                 }
                 else {
-                    s->count=0;
-                    s->dmg=0;
-                    printf("SetSlot wid=%d sid=%d iid=%d\n",
-                           wid, sid, iid);
+                    printf(" %d bytes of aux data\n", s.dlen);
                 }
                 break;
             }
@@ -184,6 +127,25 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 break;
             }
 
+            case SP_WindowItems: {
+                Rchar(wid);
+                Rshort(nslots);
+
+                int i;
+                printf("WindowItems : %d slots\n",nslots);
+                for(i=0; i<nslots; i++) {
+                    Rslot(s);
+                    printf("  %2d: iid=%-3d count=%-2d dmg=%-5d dlen=%d bytes\n",
+                           i, s.id, s.count, s.damage, s.dlen);
+                    if (s.dlen!=0 && s.dlen!=0xffff) {
+                        uint8_t buf[256*1024];
+                        ssize_t olen = lh_gzip_decode_to(s.data, s.dlen, buf, sizeof(buf));
+                        if (olen > 0)
+                            hexdump(buf, 128);
+                    }
+                }
+                break;
+            }
         }
     
         

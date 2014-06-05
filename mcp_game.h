@@ -1,8 +1,5 @@
 #pragma once
 
-#include "ids.h"
-#include "gamestate.h"
-
 #include "lh_files.h"
 
 void write_packet(uint8_t *ptr, ssize_t len, lh_buf_t *buf);
