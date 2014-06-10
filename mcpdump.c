@@ -135,15 +135,56 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 printf("WindowItems : %d slots\n",nslots);
                 for(i=0; i<nslots; i++) {
                     Rslot(s);
-                    printf("  %2d: iid=%-3d count=%-2d dmg=%-5d dlen=%d bytes\n",
-                           i, s.id, s.count, s.damage, s.dlen);
+                    printf("  %2d: iid=%-3d count=%-2d dmg=%-5d dlen=%d bytes\n", i, s.id, s.count, s.damage, s.dlen);
                     if (s.dlen!=0 && s.dlen!=0xffff) {
                         uint8_t buf[256*1024];
                         ssize_t olen = lh_gzip_decode_to(s.data, s.dlen, buf, sizeof(buf));
-                        if (olen > 0)
-                            hexdump(buf, 128);
+                        //if (olen > 0) hexdump(buf, 128);
                     }
                 }
+                break;
+            }
+
+            case SP_OpenWindow: {
+                Rchar(wid);
+                Rchar(invtype);
+                Rstr(title);
+                Rshort(nslots);
+                Rchar(usetitle);
+                printf("OpenWindow: wid=%d type=%d title=%s nslots=%d usetitle=%d\n",
+                       wid, invtype, title, nslots, usetitle);
+                break;
+            }
+
+            case SP_CloseWindow: {
+                Rchar(wid);
+                printf("CloseWindow (S): wid=%d\n", wid);
+                break;
+            }
+
+            case CP_CloseWindow: {
+                Rchar(wid);
+                printf("CloseWindow (C): wid=%d\n", wid);
+                break;
+            }
+
+            case SP_ConfirmTransaction: {
+                Rchar(wid);
+                Rshort(action);
+                Rchar(accepted);
+                printf("ConfirmTransaction: wid=%d action=%04x accepted=%d\n",wid,action,accepted);
+                break;
+            }
+
+            case CP_ClickWindow: {
+                Rchar(wid);
+                Rshort(sid);
+                Rchar(button);
+                Rshort(action);
+                Rchar(mode);
+                Rslot(s);
+
+                printf("ClickWindow: wid=%d action=%04x sid=%d mode=%d button=%d\n",wid, action, (short)sid, mode, button);
                 break;
             }
         }

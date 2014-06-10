@@ -40,6 +40,7 @@ int reset_gamestate() {
     for(i=0; i<64; i++) {
         gs.inventory.slots[i].id = 0xffff;
     }
+    gs.drag.id = 0xffff;
 
     gs_used = 1;
 
@@ -349,6 +350,102 @@ static inline int find_entity(int eid) {
         if (P(gs.entity)[i].id == eid)
             return i;
     return -1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+static inline int is_same_type(slot_t *a, slot_t *b) {
+    // possibilities can be:
+    // 1. different block/item type
+    // 2. same block ID, but different meta (=damage),
+    //    e.g. oak planks vs. birch planks
+    // 3. same item ID, but different damage level
+    // 4. same item and damage, buf different enchantment
+
+    if (a->id != b->id) return 0;
+    if (a->damage != b->damage) return 0;
+    if (a->dlen != b->dlen) return 0;
+    if (a->dlen == 0xffff) return 1;
+    return !memcmp(a->data, b->data, a->dlen);
+}
+
+static inline int get_max_stackable(int id) {
+    const item_id * iid = &ITEMS[id];
+    if (!iid->name) {
+        printf("unknown item/block ID %d, assuming stack size 64\n",id);
+        return 64;
+    }
+
+    if (iid->flags & I_1) return 1;
+    if (iid->flags & I_16) return 16;
+    return 64;
+}
+
+void inv_transaction(slot_t *s, int button, int mode) {
+    switch (mode) {
+        case 0: // simple click
+            if (button == 0) { // left click
+                if (gs.drag.id == 0xffff) {
+                    // not dragging anything currently
+                    if (s && s->id != 0xffff) {
+                        // there is something in the slot we clicked
+                        // so we pick it up and start dragging it
+                        gs.drag = *s;
+                        lh_clear_ptr(s);
+                        s->id = 0xffff;
+                    }
+                    return;
+                }
+
+                // we are dragging something
+                if (!s) {
+                    // clicked outside the window
+                    // drop the dragged item
+                    lh_clear_obj(gs.drag);
+                    gs.drag.id = 0xffff;
+                    return;
+                }
+
+                // clicked on a normal slot
+                if (s->id == 0xffff) {
+                    // there is nothing in the slot
+                    // just put our stuff there
+                    *s = gs.drag;
+                    gs.drag.id = 0xffff;
+                    return;
+                }
+
+                // there is something in the slot
+                if (!is_same_type(s,&gs.drag)) {
+                    // the clicked slot contains a completely
+                    // different type of item than what we are dragging
+                    // simply swap with what we are dragging
+                    slot_t temp = gs.drag;
+                    gs.drag = *s;
+                    *s = temp;
+                    return;
+                }
+
+                // we have the same type of item in the slot
+                // we need to redistribute the counts
+
+                int max_stack = get_max_stackable(s->id);
+                int left_stack = max_stack - s->count;
+                if (left_stack >= gs.drag.count) {
+                    s->count += gs.drag.count;
+                    lh_clear_obj(gs.drag);
+                    gs.drag.id = 0xffff;
+                    return;
+                }
+                else {
+                    s->count = max_stack;
+                    gs.drag.count-=left_stack;
+                    return;
+                }
+                
+            }
+            break;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -806,6 +903,8 @@ int import_packet(uint8_t *ptr, ssize_t size, int is_client) {
             Rchar(wid);
             Rshort(nslots);
 
+            if (wid!=0) break;
+
             int i;
             for(i=0; i<nslots; i++)
                 p = read_slot(p, &gs.inventory.slots[i]);
@@ -821,6 +920,39 @@ int import_packet(uint8_t *ptr, ssize_t size, int is_client) {
         case CP_HeldItemChange: {
             Rshort(sid);
             gs.held = sid;
+            break;
+        }
+
+        case CP_ClickWindow: {
+            Rchar(wid);
+            Rshort(sid);
+            Rchar(button);
+            Rshort(tid);
+            Rchar(mode);
+            Rslot(s);
+
+            transaction *tr = &gs.tr[tid];
+            tr->active = 1;
+            tr->wid    = wid;
+            tr->sid    = sid;
+            tr->button = button;
+            tr->mode   = mode;
+
+            break;
+        }
+
+        case SP_ConfirmTransaction: {
+            Rchar(wid);
+            Rshort(tid);
+            Rchar(accepted);
+
+            transaction *tr = &gs.tr[tid];
+            if (tr->active && accepted) {
+                slot_t * s = (tr->sid>=0)?&gs.inventory.slots[tr->sid]:NULL;
+                inv_transaction(s, tr->button, tr->mode);
+            }
+            tr->active = 0;
+
             break;
         }
 

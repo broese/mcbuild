@@ -102,6 +102,14 @@ typedef struct _window {
     slot_t slots[64];
 } window;
 
+typedef struct _transaction {
+    uint8_t  active;
+    uint8_t  wid;
+    int16_t  sid;
+    uint8_t  button;
+    uint8_t  mode;
+} transaction;
+
 typedef struct _gamestate {
     // options
     struct {
@@ -118,8 +126,10 @@ typedef struct _gamestate {
         float yaw,pitch;
     } own;
 
-    window inventory;
-    int    held;
+    window      inventory;
+    int         held;
+    transaction tr[65536];
+    slot_t      drag;
             
     uint8_t current_dimension;
     // current chunks

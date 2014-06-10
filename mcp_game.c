@@ -206,6 +206,46 @@ void autokill(lh_buf_t *server) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Inventory
+
+char * get_item_name(char *buf, int id, int dmg) {
+    int i=0;
+
+    if (id == 0xffff) {
+        sprintf(buf, "-");
+        return buf;
+    }
+
+    while(ITEMS[i].id != 0xffff) {
+        if (ITEMS[i].id == id) {
+            int pos = sprintf(buf, "%s", ITEMS[i].name);
+            if (ITEMS[i].mname[dmg])
+                sprintf(buf+pos, " (%s)",ITEMS[i].mname[dmg]);
+            return buf;
+        }
+        i++;
+    }
+    return NULL;
+}
+
+void print_inventory() {
+    int i,j;
+    printf("---------------------------\n");
+    printf("Inventory dump:\n");
+    for(i=0; i<45; i++) {
+        slot_t * s = &gs.inventory.slots[i];
+        char buf[4096];
+
+        if (get_item_name(buf, s->id, s->damage))
+            printf(" %2d : %-20s x%-2d\n", i, buf, s->count);
+        else
+            printf(" %2d : %4x x%-2d dmg=%d %s\n",
+                   i,s->id,s->count,s->damage,(s->dlen!=0xffff && s->dlen!=0)?"+data":"");
+    }
+    printf("---------------------------\n");
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Autobuild
 
 #define MIN_BUILD_DELAY  100000     // minimum delay between building two blocks
@@ -792,6 +832,9 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
         opt.holeradar = !opt.holeradar;
         sprintf(reply,"Hole radar is %s",opt.holeradar?"enabled":"disabled");
     }
+    else if (!strcmp(words[0],"pinv")) {
+        print_inventory();
+    }
 
     if (reply[0])
         chat_message(reply, retour, NULL);
@@ -966,6 +1009,80 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             break;
         }
 
+            case CP_HeldItemChange: {
+                Rshort(sid);
+                gs.held = sid;
+                printf("HeldItemChange (C) sid=%d\n",sid);
+                write_packet(ptr, len, forw);
+                break;
+            }
+
+            case SP_WindowItems: {
+                Rchar(wid);
+                Rshort(nslots);
+
+                int i;
+                printf("WindowItems : %d slots\n",nslots);
+                for(i=0; i<nslots; i++) {
+                    Rslot(s);
+                    printf("  %2d: iid=%-3d count=%-2d dmg=%-5d dlen=%d bytes\n", i, s.id, s.count, s.damage, s.dlen);
+                    if (s.dlen!=0 && s.dlen!=0xffff) {
+                        uint8_t buf[256*1024];
+                        ssize_t olen = lh_gzip_decode_to(s.data, s.dlen, buf, sizeof(buf));
+                        //if (olen > 0) hexdump(buf, 128);
+                    }
+                }
+                write_packet(ptr, len, forw);
+                break;
+            }
+
+            case SP_OpenWindow: {
+                Rchar(wid);
+                Rchar(invtype);
+                Rstr(title);
+                Rshort(nslots);
+                Rchar(usetitle);
+                printf("OpenWindow: wid=%d type=%d title=%s nslots=%d usetitle=%d\n",
+                       wid, invtype, title, nslots, usetitle);
+                write_packet(ptr, len, forw);
+                break;
+            }
+
+            case SP_CloseWindow: {
+                Rchar(wid);
+                printf("CloseWindow (S): wid=%d\n", wid);
+                write_packet(ptr, len, forw);
+                break;
+            }
+
+            case CP_CloseWindow: {
+                Rchar(wid);
+                printf("CloseWindow (C): wid=%d\n", wid);
+                write_packet(ptr, len, forw);
+                break;
+            }
+
+            case SP_ConfirmTransaction: {
+                Rchar(wid);
+                Rshort(action);
+                Rchar(accepted);
+                printf("ConfirmTransaction: wid=%d action=%04x accepted=%d\n",wid,action,accepted);
+                write_packet(ptr, len, forw);
+                break;
+            }
+
+            case CP_ClickWindow: {
+                Rchar(wid);
+                Rshort(sid);
+                Rchar(button);
+                Rshort(action);
+                Rchar(mode);
+                Rslot(s);
+
+                printf("ClickWindow: wid=%d action=%04x sid=%d mode=%d button=%d\n",wid, action, (short)sid, mode, button);
+                write_packet(ptr, len, forw);
+                break;
+            }
         ////////////////////////////////////////////////////////////////////////
         default: {
             // by default, just forward the packet as is
