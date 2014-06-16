@@ -209,21 +209,16 @@ void autokill(lh_buf_t *server) {
 // Inventory
 
 char * get_item_name(char *buf, int id, int dmg) {
-    int i=0;
-
     if (id == 0xffff) {
         sprintf(buf, "-");
         return buf;
     }
 
-    while(ITEMS[i].id != 0xffff) {
-        if (ITEMS[i].id == id) {
-            int pos = sprintf(buf, "%s", ITEMS[i].name);
-            if (ITEMS[i].mname[dmg])
-                sprintf(buf+pos, " (%s)",ITEMS[i].mname[dmg]);
-            return buf;
-        }
-        i++;
+    if (ITEMS[id].name) {
+        int pos = sprintf(buf, "%s", ITEMS[id].name);
+        if ((ITEMS[id].flags&I_MTYPE) && ITEMS[id].mname[dmg])
+            sprintf(buf+pos, " (%s)",ITEMS[id].mname[dmg]);
+        return buf;
     }
     return NULL;
 }

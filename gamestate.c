@@ -376,12 +376,14 @@ static inline int get_max_stackable(int id) {
         return 64;
     }
 
-    if (iid->flags & I_1) return 1;
-    if (iid->flags & I_16) return 16;
+    if (iid->flags & I_NSTACK) return 1;
+    if (iid->flags & I_S16) return 16;
     return 64;
 }
 
-void inv_transaction(slot_t *s, int button, int mode) {
+void inv_transaction(int sid, int button, int mode) {
+    slot_t *s = (sid>=0)?&gs.inventory.slots[sid]:NULL;
+
     switch (mode) {
         case 0: // simple click
             if (button == 0) { // left click
@@ -435,14 +437,130 @@ void inv_transaction(slot_t *s, int button, int mode) {
                     s->count += gs.drag.count;
                     lh_clear_obj(gs.drag);
                     gs.drag.id = 0xffff;
-                    return;
                 }
                 else {
                     s->count = max_stack;
                     gs.drag.count-=left_stack;
+                }
+
+                return;                
+            }
+
+            if (button == 1) { // right click
+                if (gs.drag.id == 0xffff) {
+                    // not dragging anything currently
+                    if (s && s->id != 0xffff) {
+                        // there is something in the slot we clicked
+                        // so we pick half of it up and start dragging it
+                        gs.drag = *s;
+                        s->count /= 2;
+                        gs.drag.count -= s->count;
+                        // note : if the count was odd, the remaining half will be lesser one
+
+                        if (s->count == 0) {
+                            // if the inventory slot became empty, reset it properly
+                            lh_clear_ptr(s);
+                            s->id = 0xffff;
+                        }
+                    }
                     return;
                 }
-                
+
+                if (!s) {
+                    // right-click outside the window
+                    gs.drag.count --;
+                    if (gs.drag.count == 0) {
+                        // that was the last piece we were dragging
+                        lh_clear_obj(gs.drag);
+                        gs.drag.id = 0xffff;
+                    }
+                    return;
+                }
+
+                if (s->id == 0xffff) {
+                    // right-click on an empty slot
+                    // put one item there
+                    *s = gs.drag;
+                    s->count = 1;
+                    gs.drag.count --;
+                    if (gs.drag.count == 0) {
+                        // that was the last piece we were dragging
+                        lh_clear_obj(gs.drag);
+                        gs.drag.id = 0xffff;
+                    }
+                    return;
+                }
+
+                // there is something in the slot
+                if (!is_same_type(s,&gs.drag)) {
+                    // the clicked slot contains a completely
+                    // different type of item than what we are dragging
+                    // simply swap with what we are dragging
+                    // yes, it's the same as with the left-click
+                    slot_t temp = gs.drag;
+                    gs.drag = *s;
+                    *s = temp;
+                    return;
+                }
+
+                int max_stack = get_max_stackable(s->id);
+                if (s->count == max_stack) return;
+
+                s->count ++;
+                gs.drag.count --;
+                if (gs.drag.count == 0) {
+                    // that was the last piece we were dragging
+                    lh_clear_obj(gs.drag);
+                    gs.drag.id = 0xffff;
+                }
+                return;
+            }
+            break;
+
+        //////////////////////////////////////////////////////
+        case 5: // painting mode
+            switch (button) {
+                case 0:
+                case 4: // start dragging
+                    lh_clear_obj(gs.paint);
+                    break;
+
+                case 1:
+                    gs.paint[sid] = 1;
+                    break;
+                case 5:
+                    gs.paint[sid] ++;
+                    break;
+
+                case 2: {
+                    int i=0,n=0;
+                    for(i=0; i<64; i++) n+=gs.paint[i];
+                    
+                    if (n>0)
+                        gs.drag.count = gs.drag.count%n;
+
+                    if (gs.drag.count == 0) {
+                        lh_clear_obj(gs.drag);
+                        gs.drag.id = 0xffff;
+                    }
+
+                    break;
+                }
+                    
+                case 6: {
+                    int i=0,n=0;
+                    for(i=0; i<64; i++) n+=gs.paint[i];
+                    
+                    if (n>0)
+                        gs.drag.count -= n;
+
+                    if (gs.drag.count == 0) {
+                        lh_clear_obj(gs.drag);
+                        gs.drag.id = 0xffff;
+                    }
+
+                    break;
+                }
             }
             break;
     }
@@ -948,8 +1066,8 @@ int import_packet(uint8_t *ptr, ssize_t size, int is_client) {
 
             transaction *tr = &gs.tr[tid];
             if (tr->active && accepted) {
-                slot_t * s = (tr->sid>=0)?&gs.inventory.slots[tr->sid]:NULL;
-                inv_transaction(s, tr->button, tr->mode);
+                //slot_t * s = (tr->sid>=0)?&gs.inventory.slots[tr->sid]:NULL;
+                inv_transaction(tr->sid, tr->button, tr->mode);
             }
             tr->active = 0;
 

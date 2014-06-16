@@ -130,6 +130,7 @@ typedef struct _gamestate {
     int         held;
     transaction tr[65536];
     slot_t      drag;
+    int         paint[64];
             
     uint8_t current_dimension;
     // current chunks
