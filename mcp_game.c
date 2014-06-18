@@ -21,6 +21,7 @@ struct {
     int holeradar;
     
     int build;
+
 } opt;
 
 // used for detecting player position changes
@@ -277,6 +278,7 @@ typedef struct {
     uint64_t ts;        // last timestamp we attempted to place this block
     int x,y,z;          // block coordinates
     int bid;            // block ID to place
+    int meta;           // meta-value for the subtype
     uint32_t place[6];  // block placement methods in 6 available directions
                         // bits 31..28 : enabled
                         // bits 27..24 : possible (in reach)
@@ -326,7 +328,7 @@ void autobuild(lh_buf_t *server) {
     }
     if (idx == build.ninr) return;
 
-#if 0
+#if 1
     printf("Placing at %d,%d,%d %08x %08x %08x %08x %08x %08x\n",
            bb->x,bb->y,bb->z,
            bb->place[0],bb->place[1],bb->place[2],bb->place[3],bb->place[4],bb->place[5]
@@ -399,11 +401,6 @@ void autobuild(lh_buf_t *server) {
     write_int(p,gs.own.id);
     write_char(p,0x01);
     write_packet(pkt, p-pkt, server);
-}
-
-void clear_autobuild() {
-    lh_arr_free(GAR(build.all));
-    lh_clear_obj(build);
 }
 
 void build_request(char **words, lh_buf_t *client) {
@@ -580,6 +577,170 @@ void build_process(lh_buf_t *client) {
     build.active = (build.ninr>0);
 
     free(data);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+/*
+
+#br start
+#br stop
+#br build
+#br dump
+#br save <name>
+#br load <name>
+
+*/
+
+struct {
+    int state;
+    lh_arr_declare(bblock,blocks);
+
+    int pset;     // pivot set
+    int px,py,pz; // pivot block coords
+    int pdir;     // pivot direction
+} brec;
+
+#define BREC_IDLE   0
+#define BREC_REC    1
+#define BREC_BUILD  2
+
+void build_recorder(char **words, lh_buf_t *client) {
+    char buf[4096];
+
+    if (!words[1]) {
+        sprintf(buf, "BREC: state=%d, recorded=%zd",brec.state,brec.C(blocks));
+        chat_message(buf, client, "#ff7f00");
+        return;
+    }
+
+    if (!strcmp(words[1], "start")) {
+        lh_arr_free(GAR(brec.blocks));
+        lh_clear_obj(brec);
+        brec.state = BREC_REC;
+        chat_message("BREC: recording, place the pivot block to start", client, "#ff7f00");
+        return;
+    }
+
+    if (!strcmp(words[1], "stop")) {
+        brec.state = BREC_IDLE;
+        chat_message("BREC: idle", client, "#ff7f00");
+        return;
+    }
+
+    if (!strcmp(words[1], "build")) {
+        brec.state = BREC_BUILD;
+        clear_autobuild();
+        chat_message("BREC: building, place the pivot block to start", client, "#ff7f00");
+        return;
+    }
+
+    if (!strcmp(words[1], "dump")) {
+        sprintf(buf, "BREC: state=%d, recorded=%zd, dumping to stdout",brec.state,brec.C(blocks));
+        chat_message(buf, client, "#ff7f00");
+        if (brec.pset) {
+            sprintf(buf, "pivot at %d,%d,%d dir=%d",brec.px,brec.py,brec.pz,brec.pdir);
+            chat_message(buf, client, "#ff7f00");
+        }
+
+        int i,j;
+        for(i=0; i<C(brec.blocks); i++) {
+            bblock * bb = P(brec.blocks)+i;
+            printf("%3d : %2x (%-30s) at [ %6d %6d %3d ] ",
+                   i, bb->bid, ITEMS[bb->bid].name?ITEMS[bb->bid].name:"<unknown>",
+                   bb->x, bb->z, bb->y);
+            for(j=0; j<6; j++)
+                printf(" %08x",bb->place[j]);
+            printf("\n");
+        }
+
+        return;
+    }
+}
+
+int calc_direction(float yaw) {
+    int lx=-(int)(65536*sin(yaw/180*M_PI));
+    int lz=(int)(65536*cos(yaw/180*M_PI));
+
+    if (abs(lx) > abs(lz))
+        return (lx<0) ? DIR_WEST : DIR_EAST;
+    else
+        return (lz<0) ? DIR_NORTH : DIR_SOUTH;
+}
+
+void brec_record(int x, uint8_t y, int z, char dir, 
+                 uint16_t bid, uint16_t damage, 
+                 char cx, char cy, char cz) {
+
+    if (dir == -1) return; // ignore fake placements
+
+    // coordinates of the block being placed
+    int bx=x - (dir==DIR_EAST)  + (dir==DIR_WEST);
+    int by=y - (dir==DIR_UP)    + (dir==DIR_DOWN);
+    int bz=z - (dir==DIR_SOUTH) + (dir==DIR_NORTH);
+
+    if (!brec.pset) {
+        brec.pset = 1;
+        brec.px = bx;
+        brec.py = by;
+        brec.pz = bz;
+        brec.pdir = calc_direction(gs.own.yaw);
+
+        printf("Pivot set, at %d %d %d , dir=%d\n",bx,by,bz,brec.pdir);
+    }
+
+    bblock * bb = lh_arr_new_c(GAR(brec.blocks));
+    bb->x = bx-brec.px;
+    bb->y = by-brec.py;
+    bb->z = bz-brec.pz;
+    bb->bid = bid;
+    bb->meta = damage;
+
+    if (ITEMS[bid].flags & I_MPOS) {
+        // block meta is position-dependent, only allow
+        // this block to be placed as specified by the player
+        bb->place[dir] = 0x10000000|(cx<<16)|(cy<<8)|cz;
+    }
+    else {
+        // this block can be placed any way
+        bb->place[DIR_UP]    = 0x10080008;
+        bb->place[DIR_DOWN]  = 0x10081008;
+        bb->place[DIR_SOUTH] = 0x10080800;
+        bb->place[DIR_NORTH] = 0x10080810;
+        bb->place[DIR_EAST]  = 0x10000808;
+        bb->place[DIR_WEST]  = 0x10100808;
+    }
+}
+
+void brec_place_pivot(int x, uint8_t y, int z, int dir) {
+    if (dir == -1) return; // ignore fake placements
+
+    // coordinates of the block being placed
+    int bx=x - (dir==DIR_EAST)  + (dir==DIR_WEST);
+    int by=y - (dir==DIR_UP)    + (dir==DIR_DOWN);
+    int bz=z - (dir==DIR_SOUTH) + (dir==DIR_NORTH);
+    int pdir = calc_direction(gs.own.yaw);
+
+    printf("Pivot set, at %d %d %d , dir=%d\n",bx,by,bz,pdir);
+
+    int i;
+    for(i=0; i<C(brec.blocks); i++) {
+        bblock * rb = P(brec.blocks) + i;
+        bblock * bb = lh_arr_new_c(GAR(build.all));
+        *bb = *rb;
+
+        bb->x += bx;
+        bb->y += by;
+        bb->z += bz;
+    }
+
+    brec.state = BREC_IDLE;
+    opt.build = 1;
+}
+
+void clear_autobuild() {
+    lh_arr_free(GAR(build.all));
+    lh_clear_obj(build);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -812,6 +973,9 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
     else if (!strcmp(words[0],"build")) {
         build_request(words, retour);
     }
+    else if (!strcmp(words[0],"br")) {
+        build_recorder(words, retour);
+    }
     else if (!strcmp(words[0],"salt")) {
         int x,y,z;
         if (!words[1] || !words[2] || !words[3] || 
@@ -1004,81 +1168,116 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             break;
         }
 
-            case CP_HeldItemChange: {
-                Rshort(sid);
-                gs.held = sid;
-                printf("HeldItemChange (C) sid=%d\n",sid);
-                write_packet(ptr, len, forw);
-                break;
-            }
-
-            case SP_WindowItems: {
-                Rchar(wid);
-                Rshort(nslots);
-
-                int i;
-                printf("WindowItems : %d slots\n",nslots);
-                for(i=0; i<nslots; i++) {
-                    Rslot(s);
-                    printf("  %2d: iid=%-3d count=%-2d dmg=%-5d dlen=%d bytes\n", i, s.id, s.count, s.damage, s.dlen);
-                    if (s.dlen!=0 && s.dlen!=0xffff) {
-                        uint8_t buf[256*1024];
-                        ssize_t olen = lh_gzip_decode_to(s.data, s.dlen, buf, sizeof(buf));
-                        //if (olen > 0) hexdump(buf, 128);
-                    }
-                }
-                write_packet(ptr, len, forw);
-                break;
-            }
-
-            case SP_OpenWindow: {
-                Rchar(wid);
-                Rchar(invtype);
-                Rstr(title);
-                Rshort(nslots);
-                Rchar(usetitle);
-                printf("OpenWindow: wid=%d type=%d title=%s nslots=%d usetitle=%d\n",
-                       wid, invtype, title, nslots, usetitle);
-                write_packet(ptr, len, forw);
-                break;
-            }
-
-            case SP_CloseWindow: {
-                Rchar(wid);
-                printf("CloseWindow (S): wid=%d\n", wid);
-                write_packet(ptr, len, forw);
-                break;
-            }
-
-            case CP_CloseWindow: {
-                Rchar(wid);
-                printf("CloseWindow (C): wid=%d\n", wid);
-                write_packet(ptr, len, forw);
-                break;
-            }
-
-            case SP_ConfirmTransaction: {
-                Rchar(wid);
-                Rshort(action);
-                Rchar(accepted);
-                printf("ConfirmTransaction: wid=%d action=%04x accepted=%d\n",wid,action,accepted);
-                write_packet(ptr, len, forw);
-                break;
-            }
-
-            case CP_ClickWindow: {
-                Rchar(wid);
-                Rshort(sid);
-                Rchar(button);
-                Rshort(action);
-                Rchar(mode);
-                Rslot(s);
-
-                printf("ClickWindow: wid=%d action=%04x sid=%d mode=%d button=%d\n",wid, action, (short)sid, mode, button);
-                write_packet(ptr, len, forw);
-                break;
-            }
         ////////////////////////////////////////////////////////////////////////
+
+        case CP_HeldItemChange: {
+            Rshort(sid);
+            gs.held = sid;
+            printf("HeldItemChange (C) sid=%d\n",sid);
+            write_packet(ptr, len, forw);
+            break;
+        }
+            
+        case SP_WindowItems: {
+            Rchar(wid);
+            Rshort(nslots);
+            
+            int i;
+            printf("WindowItems : %d slots\n",nslots);
+            for(i=0; i<nslots; i++) {
+                Rslot(s);
+                printf("  %2d: iid=%-3d count=%-2d dmg=%-5d dlen=%d bytes\n", i, s.id, s.count, s.damage, s.dlen);
+                if (s.dlen!=0 && s.dlen!=0xffff) {
+                    uint8_t buf[256*1024];
+                    ssize_t olen = lh_gzip_decode_to(s.data, s.dlen, buf, sizeof(buf));
+                    //if (olen > 0) hexdump(buf, 128);
+                }
+            }
+            write_packet(ptr, len, forw);
+            break;
+        }
+            
+        case SP_OpenWindow: {
+            Rchar(wid);
+            Rchar(invtype);
+            Rstr(title);
+            Rshort(nslots);
+            Rchar(usetitle);
+            printf("OpenWindow: wid=%d type=%d title=%s nslots=%d usetitle=%d\n",
+                   wid, invtype, title, nslots, usetitle);
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        case SP_CloseWindow: {
+            Rchar(wid);
+            printf("CloseWindow (S): wid=%d\n", wid);
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        case CP_CloseWindow: {
+            Rchar(wid);
+            printf("CloseWindow (C): wid=%d\n", wid);
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        case SP_ConfirmTransaction: {
+            Rchar(wid);
+            Rshort(action);
+            Rchar(accepted);
+            printf("ConfirmTransaction: wid=%d action=%04x accepted=%d\n",wid,action,accepted);
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        case CP_ClickWindow: {
+            Rchar(wid);
+            Rshort(sid);
+            Rchar(button);
+            Rshort(action);
+            Rchar(mode);
+            Rslot(s);
+
+            printf("ClickWindow: wid=%d action=%04x sid=%d mode=%d button=%d\n",wid, action, (short)sid, mode, button);
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+
+        case CP_PlayerBlockPlacement: {
+            Rint(x);
+            Rchar(y);
+            Rint(z);
+            Rchar(dir);
+            Rslot(held);
+            Rchar(cx);
+            Rchar(cy);
+            Rchar(cz);
+
+            printf("PlayerBlockPlacement %d,%d,%d dir=%d c=%d,%d,%d\n",x,y,z,dir,cx,cy,cz);
+
+            int forward = 1;
+            switch (brec.state) {
+                case BREC_REC:
+                    brec_record(x,y,z,dir,held.id,held.damage,cx,cy,cz);
+                    break;
+                case BREC_BUILD:
+                    brec_place_pivot(x,y,z,dir);
+                    forward = 0;
+                    break;
+                    
+            }
+
+            if (forward)
+                write_packet(ptr, len, forw);
+            break;
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+
         default: {
             // by default, just forward the packet as is
             write_packet(ptr, len, forw);
