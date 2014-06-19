@@ -306,27 +306,74 @@ static inline int is_solid(int type) {
              );
 }
 
-void autobuild(lh_buf_t *server) {
-    uint64_t ts = gettimestamp();
-    if ((ts-build.last_placement)<MIN_BUILD_DELAY) return;
-
-    if (build.ninr<=0) return;
-
-    int bid = gs.inventory.slots[gs.held+36].id;
+// try to find a block in the inreach[] that can be build with the specific inventory slot
+int find_buildable(uint64_t ts, int sid) {
+    int bid  = gs.inventory.slots[sid].id;
+    int meta = gs.inventory.slots[sid].damage;
 
     int idx;
     bblock *bb;
     for(idx=0; idx<build.ninr; idx++) {
         bb = P(build.all) + build.inreach[idx];
-        //printf("idx=%d at %d,%d,%d, ts-bb->ts=%lld\n",idx,bb->x,bb->y,bb->z,(ts-bb->ts));
 
-        if (bb->bid != bid) continue; // don't build this block if we are holding a wrong item
+        if (bb->bid != bid) // wrong block ID
+            continue;
+
+        if ((ITEMS[bb->bid].flags & I_MTYPE) && bb->meta!=meta) // wrong subtype
+            continue;
 
         if ((ts-bb->ts)>MIN_BLOCK_DELAY)
             break;
-
     }
-    if (idx == build.ninr) return;
+
+    if (idx == build.ninr)
+        return -1; // could not find anything suitable
+
+    return idx;
+}
+
+void switch_slot(int slot, lh_buf_t *server) {
+    uint8_t pkt[4096], *p;
+
+    printf("switching to slot %d\n",slot);
+
+    p=pkt;
+    write_varint(p,PID(CP_HeldItemChange));
+    write_short(p,(short)slot);
+    write_packet(pkt, p-pkt, server);
+}
+
+void autobuild(lh_buf_t *server) {
+        
+    uint64_t ts = gettimestamp();
+    if ((ts-build.last_placement)<MIN_BUILD_DELAY) return;
+
+    if (build.ninr<=0) return; // no blocks in reach
+
+    int sid = gs.held+36;
+
+    int idx = find_buildable(ts, sid);
+    printf("found idx=%d for sid=%d\n",idx,sid);
+    if (idx < 0) {
+        // current slot cannot be used, try to find another block type in the inventory bar
+
+        int i;
+        // note: only slots 3..7 are searched, others are for the tools and food
+        // TODO: make this configurable
+        for(i=3; i<=7; i++) {
+            sid = i+36;
+            idx = find_buildable(ts, sid);
+            printf("found idx=%d for sid=%d (searching in slots)\n",idx,sid);
+            if (idx>=0) break;
+        }
+    }
+
+    if (idx<0) return; // nothing could be found
+
+    bblock *bb = P(build.all) + build.inreach[idx];
+
+    if (sid != gs.held+36)
+        switch_slot(sid-36, server);
 
 #if 1
     printf("Placing at %d,%d,%d %08x %08x %08x %08x %08x %08x\n",
@@ -336,7 +383,7 @@ void autobuild(lh_buf_t *server) {
 #endif
         
     uint8_t pkt[4096], *p;
-        
+
     // place block
     p = pkt;
     write_varint(p,PID(CP_PlayerBlockPlacement));
@@ -401,6 +448,10 @@ void autobuild(lh_buf_t *server) {
     write_int(p,gs.own.id);
     write_char(p,0x01);
     write_packet(pkt, p-pkt, server);
+
+    // switch slot back
+    if (sid != gs.held+36)
+        switch_slot(gs.held, server);
 }
 
 void build_request(char **words, lh_buf_t *client) {
@@ -451,6 +502,7 @@ void build_request(char **words, lh_buf_t *client) {
                 chat_message(reply, client, NULL);
                 return;
             }
+            int meta = gs.inventory.slots[gs.held+36].damage;
 
             int i,j,dir;
             int dx = SGN(xsize);
@@ -466,6 +518,7 @@ void build_request(char **words, lh_buf_t *client) {
                     bb->y = y;
                     bb->z = z+j*dz;
                     bb->bid = bid;
+                    bb->meta = meta;
 
                     switch (slab) {
                         case 'u':
@@ -538,8 +591,9 @@ void build_process(lh_buf_t *client) {
     for(i=0; i<C(build.all) && build.ninr<256; i++) {
         bblock * bb = P(build.all)+i;
 
-        if (bb->bid != bid)
-            continue; //TODO: allow switching to a different inv slot
+
+        //if (bb->bid != bid)
+        //    continue; //TODO: allow switching to a different inv slot
                       // for now, we just don't allow building if we hold wrong material
 
         if (bb->x == x && bb->z == z && (bb->y == y || bb->y == y-1))
@@ -1222,7 +1276,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
         case CP_HeldItemChange: {
             Rshort(sid);
             gs.held = sid;
-            printf("HeldItemChange (C) sid=%d\n",sid);
+            //printf("HeldItemChange (C) sid=%d\n",sid);
             write_packet(ptr, len, forw);
             break;
         }
@@ -1235,7 +1289,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             printf("WindowItems : %d slots\n",nslots);
             for(i=0; i<nslots; i++) {
                 Rslot(s);
-                printf("  %2d: iid=%-3d count=%-2d dmg=%-5d dlen=%d bytes\n", i, s.id, s.count, s.damage, s.dlen);
+                //printf("  %2d: iid=%-3d count=%-2d dmg=%-5d dlen=%d bytes\n", i, s.id, s.count, s.damage, s.dlen);
                 if (s.dlen!=0 && s.dlen!=0xffff) {
                     uint8_t buf[256*1024];
                     ssize_t olen = lh_gzip_decode_to(s.data, s.dlen, buf, sizeof(buf));
@@ -1252,22 +1306,21 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             Rstr(title);
             Rshort(nslots);
             Rchar(usetitle);
-            printf("OpenWindow: wid=%d type=%d title=%s nslots=%d usetitle=%d\n",
-                   wid, invtype, title, nslots, usetitle);
+            //printf("OpenWindow: wid=%d type=%d title=%s nslots=%d usetitle=%d\n", wid, invtype, title, nslots, usetitle);
             write_packet(ptr, len, forw);
             break;
         }
 
         case SP_CloseWindow: {
             Rchar(wid);
-            printf("CloseWindow (S): wid=%d\n", wid);
+            //printf("CloseWindow (S): wid=%d\n", wid);
             write_packet(ptr, len, forw);
             break;
         }
 
         case CP_CloseWindow: {
             Rchar(wid);
-            printf("CloseWindow (C): wid=%d\n", wid);
+            //printf("CloseWindow (C): wid=%d\n", wid);
             write_packet(ptr, len, forw);
             break;
         }
@@ -1276,7 +1329,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             Rchar(wid);
             Rshort(action);
             Rchar(accepted);
-            printf("ConfirmTransaction: wid=%d action=%04x accepted=%d\n",wid,action,accepted);
+            //printf("ConfirmTransaction: wid=%d action=%04x accepted=%d\n",wid,action,accepted);
             write_packet(ptr, len, forw);
             break;
         }
@@ -1289,7 +1342,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             Rchar(mode);
             Rslot(s);
 
-            printf("ClickWindow: wid=%d action=%04x sid=%d mode=%d button=%d\n",wid, action, (short)sid, mode, button);
+            //printf("ClickWindow: wid=%d action=%04x sid=%d mode=%d button=%d\n",wid, action, (short)sid, mode, button);
             write_packet(ptr, len, forw);
             break;
         }
