@@ -689,13 +689,48 @@ void brec_record(int x, uint8_t y, int z, char dir,
         printf("Pivot set, at %d %d %d , dir=%d\n",bx,by,bz,brec.pdir);
     }
 
+    // storing the recorded block in the list
     bblock * bb = lh_arr_new_c(GAR(brec.blocks));
-    bb->x = bx-brec.px;
-    bb->y = by-brec.py;
-    bb->z = bz-brec.pz;
+
+    // block type and optional meta 
     bb->bid = bid;
     bb->meta = damage;
 
+    // the y coordinate stays same
+    bb->y = by-brec.py;
+
+    // the x and z coordinates are stored in terms of 
+    // 'forward' and 'right' directions from the pivot
+
+    switch (brec.pdir) {
+        case DIR_NORTH:
+            bb->x = -(bz-brec.pz);
+            bb->z = bx-brec.px;
+            break;
+        case DIR_SOUTH:
+            bb->x = bz-brec.pz;
+            bb->z = -(bx-brec.px);
+            break;
+        case DIR_EAST:
+            bb->x = bx-brec.px;
+            bb->z = bz-brec.pz;
+            break;
+        case DIR_WEST:
+            bb->x = -(bx-brec.px);
+            bb->z = -(bz-brec.pz);
+            break;
+    }
+
+    bb->place[DIR_UP]    = 0x10080008;
+    bb->place[DIR_DOWN]  = 0x10081008;
+    bb->place[DIR_SOUTH] = 0x10080800;
+    bb->place[DIR_NORTH] = 0x10080810;
+    bb->place[DIR_EAST]  = 0x10000808;
+    bb->place[DIR_WEST]  = 0x10100808;
+
+    //TODO: come up with a better solution to place direction-dependent blocks
+
+#if 0
     if (ITEMS[bid].flags & I_MPOS) {
         // block meta is position-dependent, only allow
         // this block to be placed as specified by the player
@@ -703,13 +738,8 @@ void brec_record(int x, uint8_t y, int z, char dir,
     }
     else {
         // this block can be placed any way
-        bb->place[DIR_UP]    = 0x10080008;
-        bb->place[DIR_DOWN]  = 0x10081008;
-        bb->place[DIR_SOUTH] = 0x10080800;
-        bb->place[DIR_NORTH] = 0x10080810;
-        bb->place[DIR_EAST]  = 0x10000808;
-        bb->place[DIR_WEST]  = 0x10100808;
     }
+#endif
 }
 
 void brec_place_pivot(int x, uint8_t y, int z, int dir) {
@@ -729,9 +759,28 @@ void brec_place_pivot(int x, uint8_t y, int z, int dir) {
         bblock * bb = lh_arr_new_c(GAR(build.all));
         *bb = *rb;
 
-        bb->x += bx;
         bb->y += by;
-        bb->z += bz;
+        bb->x = bx;
+        bb->z = bz;
+
+        switch (pdir) {
+            case DIR_NORTH:
+                bb->x +=rb->z;
+                bb->z -=rb->x;
+                break;
+            case DIR_SOUTH:
+                bb->x -=rb->z;
+                bb->z +=rb->x;
+                break;
+            case DIR_EAST:
+                bb->x +=rb->x;
+                bb->z +=rb->z;
+                break;
+            case DIR_WEST:
+                bb->x -=rb->x;
+                bb->z -=rb->z;
+                break;
+        }
     }
 
     brec.state = BREC_IDLE;
