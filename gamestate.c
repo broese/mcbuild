@@ -1043,6 +1043,7 @@ int import_packet(uint8_t *ptr, ssize_t size, int is_client) {
 
         case CP_ClickWindow: {
             Rchar(wid);
+            if (wid!=0) break;
             Rshort(sid);
             Rchar(button);
             Rshort(tid);
@@ -1061,6 +1062,7 @@ int import_packet(uint8_t *ptr, ssize_t size, int is_client) {
 
         case SP_ConfirmTransaction: {
             Rchar(wid);
+            if (wid!=0) break;
             Rshort(tid);
             Rchar(accepted);
 

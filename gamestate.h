@@ -99,7 +99,7 @@ typedef struct _slot_t {
 typedef struct _window {
     int nslots;
     int id;
-    slot_t slots[64];
+    slot_t slots[256];
 } window;
 
 typedef struct _transaction {

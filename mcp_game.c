@@ -335,8 +335,6 @@ int find_buildable(uint64_t ts, int sid) {
 void switch_slot(int slot, lh_buf_t *server) {
     uint8_t pkt[4096], *p;
 
-    printf("switching to slot %d\n",slot);
-
     p=pkt;
     write_varint(p,PID(CP_HeldItemChange));
     write_short(p,(short)slot);
@@ -353,7 +351,7 @@ void autobuild(lh_buf_t *server) {
     int sid = gs.held+36;
 
     int idx = find_buildable(ts, sid);
-    printf("found idx=%d for sid=%d\n",idx,sid);
+    //printf("found idx=%d for sid=%d\n",idx,sid);
     if (idx < 0) {
         // current slot cannot be used, try to find another block type in the inventory bar
 
@@ -363,7 +361,7 @@ void autobuild(lh_buf_t *server) {
         for(i=3; i<=7; i++) {
             sid = i+36;
             idx = find_buildable(ts, sid);
-            printf("found idx=%d for sid=%d (searching in slots)\n",idx,sid);
+            //printf("found idx=%d for sid=%d (searching in slots)\n",idx,sid);
             if (idx>=0) break;
         }
     }
@@ -375,7 +373,7 @@ void autobuild(lh_buf_t *server) {
     if (sid != gs.held+36)
         switch_slot(sid-36, server);
 
-#if 1
+#if 0
     printf("Placing at %d,%d,%d %08x %08x %08x %08x %08x %08x\n",
            bb->x,bb->y,bb->z,
            bb->place[0],bb->place[1],bb->place[2],bb->place[3],bb->place[4],bb->place[5]
@@ -658,13 +656,36 @@ struct {
 #define BREC_IDLE   0
 #define BREC_REC    1
 #define BREC_BUILD  2
+#define BREC_SUSP   3
+
+
+int brec_save(const char *fname) {
+    ssize_t wlen = lh_save(fname, (uint8_t *)P(brec.blocks), C(brec.blocks)*sizeof(bblock));
+    return (wlen>=0)?1:0;
+}
+
+int brec_load(const char *fname) {
+    uint8_t * buf = NULL;
+    ssize_t wlen = lh_load_alloc(fname, &buf);
+    if (wlen<0) return 0;
+
+    ssize_t n = wlen/sizeof(bblock);
+
+    lh_arr_free(GAR(brec.blocks));
+    lh_arr_allocate(GAR(brec.blocks),n);
+    memcpy(P(brec.blocks),buf,wlen);
+    free(buf);
+
+    return 1;
+}
+
 
 void build_recorder(char **words, lh_buf_t *client) {
     char buf[4096];
 
     if (!words[1]) {
         sprintf(buf, "BREC: state=%d, recorded=%zd",brec.state,brec.C(blocks));
-        chat_message(buf, client, "#ff7f00");
+        chat_message(buf, client, "yellow");
         return;
     }
 
@@ -672,29 +693,29 @@ void build_recorder(char **words, lh_buf_t *client) {
         lh_arr_free(GAR(brec.blocks));
         lh_clear_obj(brec);
         brec.state = BREC_REC;
-        chat_message("BREC: recording, place the pivot block to start", client, "#ff7f00");
+        chat_message("BREC: recording, place the pivot block to start", client, "yellow");
         return;
     }
 
     if (!strcmp(words[1], "stop")) {
         brec.state = BREC_IDLE;
-        chat_message("BREC: idle", client, "#ff7f00");
+        chat_message("BREC: idle", client, "yellow");
         return;
     }
 
     if (!strcmp(words[1], "build")) {
         brec.state = BREC_BUILD;
         clear_autobuild();
-        chat_message("BREC: building, place the pivot block to start", client, "#ff7f00");
+        chat_message("BREC: building, place the pivot block to start", client, "yellow");
         return;
     }
 
     if (!strcmp(words[1], "dump")) {
         sprintf(buf, "BREC: state=%d, recorded=%zd, dumping to stdout",brec.state,brec.C(blocks));
-        chat_message(buf, client, "#ff7f00");
+        chat_message(buf, client, "yellow");
         if (brec.pset) {
             sprintf(buf, "pivot at %d,%d,%d dir=%d",brec.px,brec.py,brec.pz,brec.pdir);
-            chat_message(buf, client, "#ff7f00");
+            chat_message(buf, client, "yellow");
         }
 
         int i,j;
@@ -710,8 +731,49 @@ void build_recorder(char **words, lh_buf_t *client) {
 
         return;
     }
+
+    if (!strcmp(words[1], "suspend")) {
+        if (brec.state == BREC_REC) {
+            brec.state = BREC_SUSP;
+            chat_message("BREC: suspended", client, "yellow");
+        }
+        else if (brec.state == BREC_SUSP) {
+            brec.state = BREC_REC;
+            chat_message("BREC: resumed", client, "yellow");
+        }
+        return;
+    }
+
+    if (!strcmp(words[1], "save")) {
+        if (!words[2]) {
+            chat_message("usage: #br save <filename>", client, "yellow");
+            return;
+        }
+
+        if (brec_save(words[2]))
+            sprintf(buf,"saved a brec segment with %zd blocks to %s",C(brec.blocks),words[2]);
+        else
+            sprintf(buf,"could not save brec state to %s",words[2]);
+        chat_message(buf, client, "yellow");
+        return;
+    }
+
+    if (!strcmp(words[1], "load")) {
+        if (!words[2]) {
+            chat_message("usage: #br load <filename>", client, "yellow");
+            return;
+        }
+
+        if (brec_load(words[2]))
+            sprintf(buf,"loaded a brec segment with %zd blocks from %s",C(brec.blocks),words[2]);
+        else
+            sprintf(buf,"could not load brec state from %s",words[2]);
+        chat_message(buf, client, "yellow");
+        return;
+    }
 }
 
+// generate the direction constant from our yaw
 int calc_direction(float yaw) {
     int lx=-(int)(65536*sin(yaw/180*M_PI));
     int lz=(int)(65536*cos(yaw/180*M_PI));
@@ -1173,7 +1235,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             //TODO: metadata
 
             char msg[32768];
-            sprintf(msg, "Player %s at %d,%d,%d",name,x>>5,y>>5,z>>5);
+            sprintf(msg, "Player %s at %d,%d,%d",name,(int)x>>5,(int)y>>5,(int)z>>5);
             chat_message(msg, forw, "blue");
             write_packet(ptr, len, forw);
             break;
@@ -1286,7 +1348,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             Rshort(nslots);
             
             int i;
-            printf("WindowItems : %d slots\n",nslots);
+            //printf("WindowItems : %d slots\n",nslots);
             for(i=0; i<nslots; i++) {
                 Rslot(s);
                 //printf("  %2d: iid=%-3d count=%-2d dmg=%-5d dlen=%d bytes\n", i, s.id, s.count, s.damage, s.dlen);
@@ -1359,7 +1421,8 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             Rchar(cy);
             Rchar(cz);
 
-            printf("PlayerBlockPlacement %d,%d,%d dir=%d c=%d,%d,%d\n",x,y,z,dir,cx,cy,cz);
+            //printf("PlayerBlockPlacement %d,%d,%d dir=%d c=%d,%d,%d yaw=%.1f (%d)\n",
+            //       x,y,z,dir,cx,cy,cz,gs.own.yaw,calc_direction(gs.own.yaw));
 
             int forward = 1;
             switch (brec.state) {
