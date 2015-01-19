@@ -13,42 +13,52 @@ ifeq ($(UNAME),Linux)
 endif
 
 
-all: mcproxy mcpdump
-#all: minemap netmine mcproxy mcsanvil chunkradar invedit
+all: mcproxy
 
-minemap: main.o anvil.o nbt.o draw.o
+mcproxy: mcproxy.o mcp_gamestate.o mcp_game.o
 	$(CC) -o $@ $^ $(LIBS)
 
-netmine: netmine.o anvil.o nbt.o
-	$(CC) -o $@ $^ $(LIBS)
 
-invedit: invedit.o nbt.o
-	$(CC) -o $@ $^ $(LIBS)
 
-chunkradar: chunkradar.o 
-	$(CC) -o $@ $^ $(LIBS) -lSDL
 
-mcsanvil: mcsanvil.o anvil.o nbt.o
-	$(CC) -o $@ $^ $(LIBS)
+#all: minemap netmine mcproxy mcpdump mcsanvil chunkradar invedit
 
-mcproxy-rebuild: mcproxy.o ../libhelper/libhelper.a mcproxy
+#minemap: main.o anvil.o nbt.o draw.o
+#	$(CC) -o $@ $^ $(LIBS)
 
-mcproxy: mcproxy.o gamestate.o mcp_game.o
-	$(CC) -o $@ $^ $(LIBS)
+#netmine: netmine.o anvil.o nbt.o
+#	$(CC) -o $@ $^ $(LIBS)
 
-mcpdump: mcpdump.o gamestate.o
-	$(CC) -o $@ $^ $(LIBS)
+#invedit: invedit.o nbt.o
+#	$(CC) -o $@ $^ $(LIBS)
+
+#chunkradar: chunkradar.o 
+#	$(CC) -o $@ $^ $(LIBS) -lSDL
+
+#mcsanvil: mcsanvil.o anvil.o nbt.o
+#	$(CC) -o $@ $^ $(LIBS)
+
+#mcpdump: mcpdump.o mcp_gamestate.o
+#	$(CC) -o $@ $^ $(LIBS)
 
 .c.o:
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -o $@ -c $<
 
-main.o: anvil.h nbt.h draw.h
+mcproxy.o: mcp_gamestate.h mcp_game.h mcp_ids.h
 
-anvil.o: anvil.h nbt.h
+mcp_gamestate.o: mcp_gamestate.h mcp_ids.h
 
-nbt.o: nbt.h
+mcp_game.o: mcp_gamestate.h mcp_game.h mcp_ids.h
 
-draw.o: anvil.h nbt.h draw.h
+
+
+#main.o: anvil.h nbt.h draw.h
+
+#anvil.o: anvil.h nbt.h
+
+#nbt.o: nbt.h
+
+#draw.o: anvil.h nbt.h draw.h
 
 clean:
 	rm -f *.o *~

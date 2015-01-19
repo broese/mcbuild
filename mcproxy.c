@@ -31,8 +31,8 @@
 #include "lh_compress.h"
 #include "lh_arr.h"
 
-#include "ids.h"
-#include "gamestate.h"
+#include "mcp_ids.h"
+#include "mcp_gamestate.h"
 #include "mcp_game.h"
 
 #define SERVER_ADDR "2b2t.org"
@@ -127,8 +127,6 @@ struct {
 } mitm;
 
 ////////////////////////////////////////////////////////////////////////////////
-
-#include "ids.h"
 
 void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
     Rstr(serverID);

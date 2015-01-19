@@ -11,8 +11,8 @@
 #include <lh_buffers.h>
 #include <lh_compress.h>
 
-#include "gamestate.h"
-#include "ids.h"
+#include "mcp_gamestate.h"
+#include "mcp_ids.h"
 //#include "nbt.h"
 
 ////////////////////////////////////////////////////////////////////////////////

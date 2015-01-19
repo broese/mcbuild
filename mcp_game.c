@@ -6,10 +6,9 @@
 
 #include "lh_bytes.h"
 
-#include "ids.h"
-#include "gamestate.h"
+#include "mcp_ids.h"
+#include "mcp_gamestate.h"
 #include "mcp_game.h"
-#include "blocks_ansi.h"
 
 // Various options
 struct {
