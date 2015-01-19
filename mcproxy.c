@@ -247,6 +247,9 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
     mitm.enable_encryption = 1;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+// handle data incoming on the server or client connection
 ssize_t handle_proxy(lh_conn *conn) {
     int is_client = (conn->priv != NULL);
 
@@ -287,7 +290,7 @@ ssize_t handle_proxy(lh_conn *conn) {
 #endif
 
     if (mitm.state == STATE_PLAY) {
-        // decryption needed
+        // the connection is already authenticated, decrypt data
         int num = 0;
         if (is_client)
             AES_cfb8_encrypt(sptr, rx->P(data)+widx, slen,
@@ -297,9 +300,13 @@ ssize_t handle_proxy(lh_conn *conn) {
                              &mitm.s_aes, mitm.s_dec_iv, &num, AES_DECRYPT);
     }
     else {
-        // plaintext communication
+        // the authentication phase is not over yet - plaintext data
         memmove(rx->P(data)+widx, sptr, slen);
     }
+
+    // at this point, the rx buffer contains raw, but decrypted data,
+    // possibly also packets that could not be processed before
+    // (because they were incomplete)
 
 #if 0
     printf("*** decrypted data %s ***\n",is_client?"C->S":"C<-S");
@@ -338,10 +345,15 @@ ssize_t handle_proxy(lh_conn *conn) {
             fflush(mitm.output);
         }        
 
+        // decode and process packet - this will also put a forwarded
+        // data and/or responses into tx and bx buffers respectively as needed
         process_packet(is_client, p, plen, tx, bx, &mitm.state);
+
+        // remove processed packet from the buffer
         lh_arr_delete_range(GAR4(rx->data),0,ll+plen);
     }
 
+    // if there's data in the transmission buffer, encrypt it if needed and send off
     if (tx->C(data) > 0) {
         if (mitm.state == STATE_PLAY) {
             // since we always write out all data, we just encrypt this in-place
@@ -354,10 +366,12 @@ ssize_t handle_proxy(lh_conn *conn) {
                                  &mitm.c_aes, mitm.c_enc_iv, &num, AES_ENCRYPT);
         }
         
+        // send everything
         lh_conn_write(is_client?mitm.ms_conn:mitm.cs_conn, AR(tx->data));
         tx->C(data) = tx->ridx = 0;
     }
     
+    // if there's data in the response buffer, encrypt it if needed and send off
     if (bx->C(data) > 0) {
         if (mitm.state == STATE_PLAY) {
             // since we always write out all data, we just encrypt this in-place
@@ -369,13 +383,15 @@ ssize_t handle_proxy(lh_conn *conn) {
                 AES_cfb8_encrypt(bx->P(data), bx->P(data), bx->C(data),
                                  &mitm.s_aes, mitm.s_enc_iv, &num, AES_ENCRYPT);
         }
+
+        // send everything
         lh_conn_write(is_client?mitm.cs_conn:mitm.ms_conn, AR(bx->data));
         bx->C(data) = bx->ridx = 0;
     }
     
     if (mitm.enable_encryption) {
-        // init the encryption
-        // this is delayed so the last packet (CL_EncryptionResponse) can go out unencrypted
+        // Set up the encryption. This is delayed so the last auth phase packet
+        // CL_EncryptionResponse can go out unencrypted
         AES_set_encrypt_key(mitm.c_skey, 128, &mitm.c_aes);
         memcpy(mitm.c_enc_iv, mitm.c_skey, 16);
         memcpy(mitm.c_dec_iv, mitm.c_skey, 16);
@@ -393,11 +409,13 @@ ssize_t handle_proxy(lh_conn *conn) {
 
         mitm.state = STATE_PLAY;
         mitm.enable_encryption=0;
+        // from now on the connection is authenticated and encrypted
     }
 
     return slen;
 }
 
+// emergency connection drop - used to protect ourselves from the thunder
 void drop_connection() {
     close(mitm.ms);
     close(mitm.cs);
@@ -405,6 +423,13 @@ void drop_connection() {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Session Server
+
+// This is needed to handle the authentication process - we need to intercept
+// the HTTP request to the session server to get the necessary access token
+// Note that for this to work at all you need to modify the Minecraft launcher
+// libraries and hack in a http URL pointing to mcproxy
+// (i.e. http://localhost:8080) instead of the official HTTPS server
+// (https://sessionserver.mojang.com)
 
 #if 0
 //POST /session/minecraft/join HTTP/1.1
@@ -486,7 +511,7 @@ int handle_session_server(int sfd) {
     buf[clen] = 0;
     printf(">%s<\n",buf);
 
-    // parse the JSON (Q&D)
+    // parse the JSON (Q&D) and store the extracted tokens in the mitm struct
     if ( ! (
             parseJson(buf,"accessToken",mitm.accessToken,sizeof(mitm.accessToken))&&
             parseJson(buf,"selectedProfile",mitm.selectedProfile,sizeof(mitm.selectedProfile))&&
@@ -546,6 +571,8 @@ void print_hex(char *buf, const char *data, ssize_t len) {
     *w++ = 0;
 }
 
+// this is the server-side handling of the session authentication
+// we use Curl to send an HTTPS request to Mojangs session server
 int query_auth_server() {
     // the final touch - send the authentication token to the session server
     unsigned char md[SHA_DIGEST_LENGTH];
@@ -597,6 +624,7 @@ int query_auth_server() {
 ////////////////////////////////////////////////////////////////////////////////
 // Minecraft client connections
 
+// this function is called when a MC client tries to connect to our proxy
 int handle_server(int sfd, uint32_t ip, uint16_t port) {
     // accept connection from the local client
     struct sockaddr_in cadr;
@@ -607,14 +635,14 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     printf("Accepted from %s:%d\n",
            inet_ntoa(cadr.sin_addr),ntohs(cadr.sin_port));
     
-    // open connection to the remote server
+    // open connection to the remote server (the real MC server)
     int ms = lh_connect_tcp4(ip, port);
     if (ms < 0) {
         close(mitm.cs);
         LH_ERROR(0, "Failed to open the client-side connection");
     }
 
-    // TCP connections established, 
+    // both client-side and server-side connections are now established
     printf("New connection: cs=%d ms=%d\n", cs, ms);
     
     // initialize mitm struct, terminate old state if any
@@ -630,12 +658,15 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     set_option(GSOP_SEARCH_SPAWNERS, 1);
     set_option(GSOP_TRACK_ENTITIES, 1);
 
+    // open a new .mcp file to capture MC protocol data
     char fname[4096];
     time_t t;
     time(&t);
     strftime(fname, sizeof(fname), "saved/%Y%m%d_%H%M%S.mcs",localtime(&t));
     mitm.output = fopen(fname, "w");
     setvbuf(mitm.output, NULL, _IONBF, 0);
+
+    // open debug log file
     //strftime(fname, sizeof(fname), "saved/%Y%m%d_%H%M%S.dbg",localtime(&t));
     //mitm.dbg = fopen(fname, "w");
     //setvbuf(mitm.dbg, NULL, _IONBF, 0);
@@ -647,6 +678,9 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     mitm.ms = ms;
     mitm.cs_conn = lh_conn_add(&pa, cs, G_PROXY, (void*)1);
     mitm.ms_conn = lh_conn_add(&pa, ms, G_PROXY, (void*)0);
+
+    // from now on, all data arriving from the server or client will be
+    // handled by handle_proxy called from the event loop
 
     return 1;
 }
@@ -679,35 +713,39 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     if (sigaction(SIGINT, &sa, NULL))
         LH_ERROR(1,"Failed to set sigaction\n");
 
-    // main pump
+    // main event loop
     int i;
     while(!signal_caught) {
-        lh_poll(&pa, 1000);
+        lh_poll(&pa, 1000); // poll all sockets
 
         lh_polldata *pd;
-        int pos;
 
-        // handle connection requests on the web server
+        // handle connection requests on the web server socket
         if ( pd=lh_poll_getfirst(&pa, G_WEBSERVER, POLLIN))
             handle_session_server(pd->fd);
 
+        // handle connection requests on the MC server socket
         if ( pd=lh_poll_getfirst(&pa, G_MCSERVER, POLLIN))
             handle_server(pd->fd, ip, port);
 
         // handle client- and server-side connection
         lh_conn_process(&pa, G_PROXY, handle_proxy);
 
-        // handle asynchronous events
+        // handle asynchronous events (timers etc.)
         if (mitm.state == STATE_PLAY)
             handle_async(&mitm.ms_tx, &mitm.cs_tx);
     }
 
     printf("Terminating...\n");
+
+    // flush MCP saved file
     if (mitm.output) {
         fflush(mitm.output);
         fclose(mitm.output);
         mitm.output = NULL;
     }
+
+    // flush debug log if active
     if (mitm.dbg) {
         fclose(mitm.dbg);
         mitm.dbg = NULL;
@@ -715,10 +753,13 @@ int proxy_pump(uint32_t ip, uint16_t port) {
 }
 
 int main(int ac, char **av) {
+    // if an argument is specified - it's the server address we want to
+    // forward connections to, otherwise - 2b2t.org
     uint32_t server_ip = lh_dns_addr_ipv4(av[1]?av[1]:SERVER_ADDR);
     if (server_ip == 0xffffffff)
         LH_ERROR(-1, "Failed to obtain IP address for the server %s",SERVER_ADDR);
-        
+
+    // start monitoring connection events
     proxy_pump(server_ip, SERVER_PORT);
 
     return 0;

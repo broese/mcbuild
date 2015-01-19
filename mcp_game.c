@@ -1188,6 +1188,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
     uint8_t output[65536];
     uint8_t *w = output;
 
+    // let the gamestate process this packet too and update various tracked data
     if (*state == STATE_PLAY)
         import_packet(ptr, len, is_client);
 
