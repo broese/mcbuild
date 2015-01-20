@@ -1180,8 +1180,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
     char *states = "ISLP";
 
 #if 0
-    printf("%c %c type=%02x, len=%zd\n", is_client?'C':'S',
-           states[*state],type,len);
+    printf("%c %c type=%02x, len=%zd\n", is_client?'C':'S', states[*state],type,len);
     hexdump(ptr, len);
 #endif
 
@@ -1189,8 +1188,8 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
     uint8_t *w = output;
 
     // let the gamestate process this packet too and update various tracked data
-    if (*state == STATE_PLAY)
-        import_packet(ptr, len, is_client);
+    //if (*state == STATE_PLAY)
+    //    import_packet(ptr, len, is_client);
 
     switch (stype) {
         ////////////////////////////////////////////////////////////////////////
@@ -1207,6 +1206,36 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             write_packet(ptr, len, forw);
             break;
         }
+            
+        ////////////////////////////////////////////////////////////////////////////////
+        // Status
+        
+        case CS_Request: {
+            printf("C %-30s\n", "Status Request");
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        case SS_Response: {
+            Rstr(jsonStatus);
+            printf("S %-30s %s\n", "Status Response", jsonStatus);
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        case CS_PingRequest: {
+            Rlong(time);
+            printf("C %-30s %ld\n", "Ping Request", time);
+            write_packet(ptr, len, forw);
+            break;
+        }
+
+        case SS_PingResponse: {
+            Rlong(time);
+            printf("S %-30s %ld\n", "Ping Response", time);
+            write_packet(ptr, len, forw);
+            break;
+        }
 
         ////////////////////////////////////////////////////////////////////////
         // Login
@@ -1219,6 +1248,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             process_encryption_request(p, forw);
             break;
 
+#if 0
         ////////////////////////////////////////////////////////////////////////
         // Play
 
@@ -1442,6 +1472,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
         }
 
         ////////////////////////////////////////////////////////////////////////
+#endif
 
         default: {
             // by default, just forward the packet as is

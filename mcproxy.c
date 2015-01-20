@@ -131,11 +131,11 @@ struct {
 void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
     Rstr(serverID);
 
-    Rshort(klen);
+    Rvarint(klen);
     memmove(mitm.s_pkey,p,klen);
     Rskip(klen);
 
-    Rshort(tlen);
+    Rvarint(tlen);
     memmove(mitm.s_token,p,tlen);
     Rskip(tlen);
 
@@ -181,21 +181,24 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
     write_varint(w, strlen(serverID));
     memmove(w, serverID, strlen(serverID));
     w+=strlen(serverID);
-    write_short(w, mitm.c_pklen);
+    write_varint(w, mitm.c_pklen);
     memmove(w, mitm.c_pkey, mitm.c_pklen);
     w+=mitm.c_pklen;
-    write_short(w, 4);
+    write_varint(w, 4);
     memmove(w, mitm.c_token, 4);
     w+=4;
     
+    printf("Sending to client %zd bytes:\n",w-output);
+    hexdump(output, w-output);
     write_packet(output, w-output, forw);
 }
 
 void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
-    Rshort(sklen);
+    Rvarint(sklen);
     uint8_t *skey = p;
     Rskip(sklen);
-    Rshort(tklen);
+
+    Rvarint(tklen);
     uint8_t *token = p;
     Rskip(tklen);
 
@@ -231,12 +234,12 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
     write_varint(w, PID(CL_EncryptionResponse));
 
     int eklen = RSA_public_encrypt(sizeof(mitm.s_skey), mitm.s_skey, buf, mitm.s_rsa, RSA_PKCS1_PADDING);
-    write_short(w,(short)eklen);
+    write_varint(w,(short)eklen);
     memcpy(w, buf, eklen);
     w += eklen;
             
     int etlen = RSA_public_encrypt(sizeof(mitm.s_token), mitm.s_token, buf, mitm.s_rsa, RSA_PKCS1_PADDING);
-    write_short(w,(short)etlen);
+    write_varint(w,(short)etlen);
     memcpy(w, buf, etlen);
     w += etlen;
                 
@@ -593,6 +596,8 @@ int query_auth_server() {
     sprintf(buf,"{\"accessToken\":\"%s\",\"selectedProfile\":\"%s\",\"serverId\":\"%s\"}",
             mitm.accessToken, mitm.selectedProfile, auth);
 
+    printf("request to session server: %s\n",buf);
+
     // perform a request with a cURL client
 
     CURL *curl = curl_easy_init();
@@ -664,11 +669,22 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     time(&t);
     strftime(fname, sizeof(fname), "saved/%Y%m%d_%H%M%S.mcs",localtime(&t));
     mitm.output = fopen(fname, "w");
+    if (!mitm.output) {
+        close(mitm.ms);
+        close(mitm.cs);
+        LH_ERROR(0, "Failed to open the .mcp trace %s for writing", fname);
+    }
     setvbuf(mitm.output, NULL, _IONBF, 0);
 
     // open debug log file
     //strftime(fname, sizeof(fname), "saved/%Y%m%d_%H%M%S.dbg",localtime(&t));
     //mitm.dbg = fopen(fname, "w");
+    //if (!mitm.dbg) {
+    //    close(mitm.ms);
+    //    close(mitm.cs);
+    //    fclose(mitm.output);
+    //    LH_ERROR(0, "Failed to open the debug trace %s for writing", fname);
+    //}
     //setvbuf(mitm.dbg, NULL, _IONBF, 0);
 
     // handle_server was able to accept the client connection and
