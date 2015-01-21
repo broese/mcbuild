@@ -13,9 +13,12 @@ ifeq ($(UNAME),Linux)
 endif
 
 
-all: mcproxy
+all: mcproxy mcpdump
 
 mcproxy: mcproxy.o mcp_gamestate.o mcp_game.o
+	$(CC) -o $@ $^ $(LIBS)
+
+mcpdump: mcpdump.o mcp_gamestate.o
 	$(CC) -o $@ $^ $(LIBS)
 
 
@@ -36,9 +39,6 @@ mcproxy: mcproxy.o mcp_gamestate.o mcp_game.o
 #	$(CC) -o $@ $^ $(LIBS) -lSDL
 
 #mcsanvil: mcsanvil.o anvil.o nbt.o
-#	$(CC) -o $@ $^ $(LIBS)
-
-#mcpdump: mcpdump.o mcp_gamestate.o
 #	$(CC) -o $@ $^ $(LIBS)
 
 .c.o:

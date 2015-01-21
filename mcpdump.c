@@ -7,8 +7,8 @@
 #include <lh_files.h>
 #include <lh_compress.h>
 
-#include "gamestate.h"
-#include "ids.h"
+#include "mcp_gamestate.h"
+#include "mcp_ids.h"
 
 #define STATE_IDLE     0
 #define STATE_STATUS   1
@@ -29,13 +29,15 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
         uint8_t *pkt = p;
         Rvarint(type);
-        //printf("%d.%06d: %c  type=%x\n",sec,usec,is_client?'C':'S',type);
+        printf("%d.%06d: %c type=%x len=%zd\n",sec,usec,is_client?'C':'S',type,len);
 
         uint32_t stype = ((state<<24)|(is_client<<28)|(type&0xffffff));
         
-        if (state == STATE_PLAY)
-            import_packet(pkt, len, is_client);
+        //if (state == STATE_PLAY)
+        //    import_packet(pkt, len, is_client);
         
+
+
         switch (stype) {
             case CI_Handshake: {
                 Rvarint(protocolVer);
@@ -49,7 +51,12 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 state = STATE_PLAY;
                 break;
             }
+
+            // PLAY    
             case SP_SpawnPlayer: {
+                hexdump(pkt-16, len);
+
+#if 0
                 Rint(eid);
                 Rstr(uuid);
                 char name[4096]; p=read_string(p,name);
@@ -57,8 +64,10 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 Rvarint(dcount);
 
                 printf("%d.%06d: Spawn Player  eid=%d uuid=%s\n",sec,usec,eid,uuid);
+#endif
                 break;
             }
+#if 0
             case SP_Effect: {
                 Rint(efid);
                 Rint(x);
@@ -187,6 +196,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 printf("ClickWindow: wid=%d action=%04x sid=%d mode=%d button=%d\n",wid, action, (short)sid, mode, button);
                 break;
             }
+#endif
         }
     
         
@@ -319,5 +329,5 @@ int main(int ac, char **av) {
         }
     }
     //search_spawners();
-    search_blocks(0xa2);
+    //search_blocks(0xa2);
 }
