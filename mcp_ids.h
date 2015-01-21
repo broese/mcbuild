@@ -27,6 +27,7 @@
 
 #define SS_Response             SS(00)
 #define SS_PingResponse         SS(01)
+
 #define CS_Request              CS(00)
 #define CS_PingRequest          CS(01)
 
@@ -35,6 +36,8 @@
 #define SL_Disconnect           SL(00)
 #define SL_EncryptionRequest    SL(01)
 #define SL_LoginSuccess         SL(02)
+#define SL_SetCompression       SL(03)
+
 #define CL_LoginStart           CL(00)
 #define CL_EncryptionResponse   CL(01)
 
@@ -105,6 +108,15 @@
 #define SP_Teams                SP(3e)
 #define SP_PluginMessage        SP(3f)
 #define SP_Disconnect           SP(40)
+#define SP_ServerDifficulty     SP(41)
+#define SP_CombatEffect         SP(42)
+#define SP_Camera               SP(43)
+#define SP_WorldBorder          SP(44)
+#define SP_Title                SP(45)
+#define SP_SetCompression       SP(46)
+#define SP_PlayerListHeader     SP(47)
+#define SP_ResourcePackSent     SP(48)
+#define SP_UpdateEntityNbt      SP(49)
 
 #define CP_KeepAlive            CP(00)
 #define CP_ChatMessage          CP(01)
@@ -130,6 +142,8 @@
 #define CP_ClientSettings       CP(15)
 #define CP_ClientStatus         CP(16)
 #define CP_PluginMessage        CP(17)
+#define CP_Spectate             CP(18)
+#define CP_ResourcePackStatus   CP(19)
 
 ////////////////////////////////////////////////////////////////////////////////
 // Block IDs
