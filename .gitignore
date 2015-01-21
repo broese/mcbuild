@@ -5,8 +5,10 @@ junk
 reg
 region
 *.dat
+*.mcs
 saved
 mcproxy
+mcpdump
 mcsanvil
 minemap
 netmine
@@ -17,6 +19,5 @@ docs
 crstate.dat*
 invedit
 chunkradar
-
 *.o
 *~
