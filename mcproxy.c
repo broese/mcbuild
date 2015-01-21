@@ -252,6 +252,65 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+/* process a single MC protocol packet coming from either side
+   We will only handle packets related to connection/authentication
+   phase here. Everything else will go to process_play_packet in
+   mcp_game module
+*/
+void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
+    // one nice advantage - we can be sure that we have all data in the buffer,
+    // so there's no need for limit checking with the new protocol
+
+    uint8_t *p = ptr;
+    uint32_t type = lh_read_varint(p);
+    uint32_t stype = ((mitm.state<<24)|(is_client<<28)|(type&0xffffff));
+
+    char *states = "ISLP";
+    printf("%c %c type=%02x, len=%zd\n", is_client?'C':'S', states[mitm.state],type,len);
+    hexdump(ptr, len);
+
+    uint8_t output[65536];
+    uint8_t *w = output;
+
+    switch (stype) {
+        ////////////////////////////////////////////////////////////////////////
+        // Idle state
+
+        case CI_Handshake: {
+            Rvarint(protocolVer);
+            Rstr(serverAddr);
+            Rshort(serverPort);
+            Rvarint(nextState);
+            mitm.state = nextState;
+            printf("C %-30s protocol=%d server=%s:%d nextState=%d\n",
+                   "Handshake",protocolVer,serverAddr,serverPort,nextState);
+            write_packet(ptr, len, tx);
+            break;
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        // Login
+
+        case CL_EncryptionResponse:
+            process_encryption_response(p, tx);
+            break;
+
+        case SL_EncryptionRequest:
+            process_encryption_request(p, tx);
+            break;
+
+        ////////////////////////////////////////////////////////////////////////
+
+        default: {
+            // by default, just forward the packet as is
+            write_packet(ptr, len, tx);
+        }
+    }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+
 // handle data incoming on the server or client connection
 ssize_t handle_proxy(lh_conn *conn) {
     int is_client = (conn->priv != NULL);
@@ -350,7 +409,12 @@ ssize_t handle_proxy(lh_conn *conn) {
 
         // decode and process packet - this will also put a forwarded
         // data and/or responses into tx and bx buffers respectively as needed
-        process_packet(is_client, p, plen, tx, bx, &mitm.state);
+        if ( mitm.state == STATE_PLAY )
+            // PLAY packets are processed in mcp_game module
+            process_play_packet(is_client, p, plen, tx, bx);
+        else
+            // handle IDLE, STATUS and LOGIN packets here
+            process_packet(is_client, p, plen, tx);
 
         // remove processed packet from the buffer
         lh_arr_delete_range(GAR4(rx->data),0,ll+plen);
@@ -427,14 +491,23 @@ void drop_connection() {
 ////////////////////////////////////////////////////////////////////////////////
 // Session Server
 
-// This is needed to handle the authentication process - we need to intercept
-// the HTTP request to the session server to get the necessary access token
-// Note that for this to work at all you need to modify the Minecraft launcher
-// libraries and hack in a http URL pointing to mcproxy
-// (i.e. http://localhost:8080) instead of the official HTTPS server
-// (https://sessionserver.mojang.com)
+/*
+  This is needed to handle the authentication process - we need to intercept
+  the HTTP request to the session server to get the necessary access token
+  Note that for this to work at all, you need to modify the Minecraft launcher
+  libraries and hack in a http URL pointing to mcproxy
+  (i.e. http://localhost:8080) instead of the official HTTPS server
+  (https://sessionserver.mojang.com). This can be done by unpacking
+  ~/.minecraft/libraries/com/mojang/authlib/<VER>/authlib-<VER>.jar and editing
+  com/mojang/authlib/yggdrasil/YggdrasilMinecraftSessionService.class within
+  using a hexeditor. With this neat trick we can avoid having to MITM an
+  HTTPS connection, which would be a pain in the ass to implement.
+
+*/                                                                                                                                             
 
 #if 0
+//Example of the HTTP conversation:
+
 //POST /session/minecraft/join HTTP/1.1
 //Content-Type: application/json; charset=utf-8
 //Cache-Control: no-cache
@@ -453,8 +526,8 @@ void drop_connection() {
 //Date: Mon, 21 Apr 2014 13:13:54 GMT                                                                                                   
 //Server: Restlet-Framework/2.2.0                                                                                                       
 //Connection: keep-alive                                                                                                                
-                                                                                                                                             
 #endif
+
 
 int parseJson(const char *buf, const char *str, char *dst, ssize_t size) {
     const char *name = strstr(buf, str);

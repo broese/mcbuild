@@ -1167,91 +1167,23 @@ int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void process_packet(int is_client, uint8_t *ptr, ssize_t len,
-                    lh_buf_t *forw, lh_buf_t *retour, int *state) {
-
-    // one nice advantage - we can be sure that we have all data in the buffer,
-    // so there's no need for limit checking with the new protocol
+void process_play_packet(int is_client, uint8_t *ptr, ssize_t len,
+                         lh_buf_t *tx, lh_buf_t *bx) {
 
     uint8_t *p = ptr;
     uint32_t type = lh_read_varint(p);
-    uint32_t stype = ((*state<<24)|(is_client<<28)|(type&0xffffff));
-
-    char *states = "ISLP";
+    uint32_t stype = ((STATE_PLAY<<24)|(is_client<<28)|(type&0xffffff));
 
 #if 0
-    printf("%c %c type=%02x, len=%zd\n", is_client?'C':'S', states[*state],type,len);
+    printf("%c P type=%02x, len=%zd\n", is_client?'C':'S', type, len);
     hexdump(ptr, len);
 #endif
 
     uint8_t output[65536];
     uint8_t *w = output;
 
-    // let the gamestate process this packet too and update various tracked data
-    //if (*state == STATE_PLAY)
-    //    import_packet(ptr, len, is_client);
-
     switch (stype) {
-        ////////////////////////////////////////////////////////////////////////
-        // Idle state
-
-        case CI_Handshake: {
-            Rvarint(protocolVer);
-            Rstr(serverAddr);
-            Rshort(serverPort);
-            Rvarint(nextState);
-            *state = nextState;
-            printf("C %-30s protocol=%d server=%s:%d nextState=%d\n",
-                   "Handshake",protocolVer,serverAddr,serverPort,nextState);
-            write_packet(ptr, len, forw);
-            break;
-        }
-            
-        ////////////////////////////////////////////////////////////////////////////////
-        // Status
-        
-        case CS_Request: {
-            printf("C %-30s\n", "Status Request");
-            write_packet(ptr, len, forw);
-            break;
-        }
-
-        case SS_Response: {
-            Rstr(jsonStatus);
-            printf("S %-30s %s\n", "Status Response", jsonStatus);
-            write_packet(ptr, len, forw);
-            break;
-        }
-
-        case CS_PingRequest: {
-            Rlong(time);
-            printf("C %-30s %ld\n", "Ping Request", time);
-            write_packet(ptr, len, forw);
-            break;
-        }
-
-        case SS_PingResponse: {
-            Rlong(time);
-            printf("S %-30s %ld\n", "Ping Response", time);
-            write_packet(ptr, len, forw);
-            break;
-        }
-
-        ////////////////////////////////////////////////////////////////////////
-        // Login
-
-        case CL_EncryptionResponse:
-            process_encryption_response(p, forw);
-            break;
-
-        case SL_EncryptionRequest:
-            process_encryption_request(p, forw);
-            break;
-
 #if 0
-        ////////////////////////////////////////////////////////////////////////
-        // Play
-
         case SP_SpawnPlayer: {
             Rvarint(eid);
             Rstr(uuid);
@@ -1266,8 +1198,8 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
 
             char msg[32768];
             sprintf(msg, "Player %s at %d,%d,%d",name,(int)x>>5,(int)y>>5,(int)z>>5);
-            chat_message(msg, forw, "blue");
-            write_packet(ptr, len, forw);
+            chat_message(msg, tx, "blue");
+            write_packet(ptr, len, tx);
             break;
         }
 
@@ -1286,7 +1218,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                 //close(mitm.ms);
             }
             if (strcmp(name,"mob.sheep.say") && strcmp(name,"mob.sheep.step"))
-                write_packet(ptr, len, forw);
+                write_packet(ptr, len, tx);
             break;
         }
 
@@ -1301,7 +1233,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                 printf("**** Wither Spawn ****  efid=%d data=%d bcoord=%d:%d:%d %s\n",
                        efid,data,x,y,z,disrv?"disable relative volume":"");
             }
-            write_packet(ptr, len, forw);
+            write_packet(ptr, len, tx);
             break;
         }
 
@@ -1316,9 +1248,9 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
 
                 char msg[4096];
                 sprintf(msg, "Grinding finished at level %d",level);
-                chat_message(msg, forw, "green");                
+                chat_message(msg, tx, "green");
             }
-            write_packet(ptr, len, forw);
+            write_packet(ptr, len, tx);
             break;
         }
 
@@ -1340,26 +1272,26 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                     hr_last_y = y;
                     hr_last_z = z;
                     hr_last_yaw = yaw;
-                    hole_radar(is_client?retour:forw);
+                    hole_radar(is_client?bx:tx);
                 }
             }
             if (opt.build) {
-                build_process(is_client?retour:forw);
+                build_process(is_client?bx:tx);
             }
 
-            write_packet(ptr, len, forw);
+            write_packet(ptr, len, tx);
             break;
         }
 
         case CP_ChatMessage: {
             Rstr(msg);
             if (msg[0] == '#') {
-                if (process_message(msg, forw, retour))
+                if (process_message(msg, tx, bx))
                     break;
             }
 
             // if it was a normal chat message, just forward it
-            write_packet(ptr, len, forw);
+            write_packet(ptr, len, tx);
             break;
         }
 
@@ -1369,7 +1301,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             Rshort(sid);
             gs.held = sid;
             //printf("HeldItemChange (C) sid=%d\n",sid);
-            write_packet(ptr, len, forw);
+            write_packet(ptr, len, tx);
             break;
         }
             
@@ -1388,7 +1320,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
                     //if (olen > 0) hexdump(buf, 128);
                 }
             }
-            write_packet(ptr, len, forw);
+            write_packet(ptr, len, tx);
             break;
         }
             
@@ -1399,21 +1331,21 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             Rshort(nslots);
             Rchar(usetitle);
             //printf("OpenWindow: wid=%d type=%d title=%s nslots=%d usetitle=%d\n", wid, invtype, title, nslots, usetitle);
-            write_packet(ptr, len, forw);
+            write_packet(ptr, len, tx);
             break;
         }
 
         case SP_CloseWindow: {
             Rchar(wid);
             //printf("CloseWindow (S): wid=%d\n", wid);
-            write_packet(ptr, len, forw);
+            write_packet(ptr, len, tx);
             break;
         }
 
         case CP_CloseWindow: {
             Rchar(wid);
             //printf("CloseWindow (C): wid=%d\n", wid);
-            write_packet(ptr, len, forw);
+            write_packet(ptr, len, tx);
             break;
         }
 
@@ -1422,7 +1354,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             Rshort(action);
             Rchar(accepted);
             //printf("ConfirmTransaction: wid=%d action=%04x accepted=%d\n",wid,action,accepted);
-            write_packet(ptr, len, forw);
+            write_packet(ptr, len, tx);
             break;
         }
 
@@ -1435,7 +1367,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             Rslot(s);
 
             //printf("ClickWindow: wid=%d action=%04x sid=%d mode=%d button=%d\n",wid, action, (short)sid, mode, button);
-            write_packet(ptr, len, forw);
+            write_packet(ptr, len, tx);
             break;
         }
 
@@ -1467,7 +1399,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
             }
 
             if (forward)
-                write_packet(ptr, len, forw);
+                write_packet(ptr, len, tx);
             break;
         }
 
@@ -1476,7 +1408,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len,
 
         default: {
             // by default, just forward the packet as is
-            write_packet(ptr, len, forw);
+            write_packet(ptr, len, tx);
         }
     }
 

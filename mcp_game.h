@@ -16,9 +16,7 @@ void build_request(char **words, lh_buf_t *client);
 void build_process(lh_buf_t *client);
 
 int process_message(const char *msg, lh_buf_t *forw, lh_buf_t *retour);
-void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *forw, lh_buf_t *retour, int *state);
+void process_play_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx, lh_buf_t *bx);
 int handle_async(lh_buf_t *client, lh_buf_t *server);
 
-void process_encryption_request(uint8_t *p, lh_buf_t *forw);
-void process_encryption_response(uint8_t *p, lh_buf_t *forw);
 void drop_connection();
