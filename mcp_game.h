@@ -2,6 +2,8 @@
 
 #include "lh_files.h"
 
+extern ssize_t compthreshold;
+
 void write_packet(uint8_t *ptr, ssize_t len, lh_buf_t *buf);
 void chat_message(const char *str, lh_buf_t *buf, const char *color);
 

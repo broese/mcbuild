@@ -48,6 +48,8 @@ static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+ssize_t compthreshold = -1; // >=0, compression is enabled
+
 void write_packet(uint8_t *ptr, ssize_t len, lh_buf_t *buf) {
     uint8_t hbuf[16]; CLEAR(hbuf);
     ssize_t ll = lh_place_varint(hbuf,len) - hbuf;
@@ -59,6 +61,10 @@ void write_packet(uint8_t *ptr, ssize_t len, lh_buf_t *buf) {
     memmove(P(buf->data)+widx, hbuf, ll);
     memmove(P(buf->data)+widx+ll, ptr, len);
 }
+
+
+
+////////////////////////////////////////////////////////////////////////////////
 
 void chat_message(const char *str, lh_buf_t *buf, const char *color) {
     uint8_t jreply[32768];

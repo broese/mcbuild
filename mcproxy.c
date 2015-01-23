@@ -299,6 +299,18 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
             process_encryption_request(p, tx);
             break;
 
+        case SL_SetCompression:
+            printf("SetCompression during login phase!\n");
+            exit(1);
+            break;
+
+        case SL_LoginSuccess:
+            printf("S Login Success\n");
+            mitm.state = STATE_PLAY;
+            compthreshold = -1;             // reset compression state
+            write_packet(ptr, len, tx);
+            break;
+
         ////////////////////////////////////////////////////////////////////////
 
         default: {
@@ -474,7 +486,6 @@ ssize_t handle_proxy(lh_conn *conn) {
         printf("s_enc_iv: "); hexdump(mitm.s_enc_iv,16);
         printf("s_dec_iv: "); hexdump(mitm.s_dec_iv,16);
 
-        mitm.state = STATE_PLAY;
         mitm.enable_encryption=0;
         // from now on the connection is authenticated and encrypted
     }
