@@ -121,12 +121,25 @@ struct {
     char s_dec_iv[16];
 
     int enable_encryption;
+    int encryption_active;
 
     FILE * output;
     FILE * dbg;
 } mitm;
 
 ////////////////////////////////////////////////////////////////////////////////
+
+void write_packet_raw(uint8_t *ptr, ssize_t len, lh_buf_t *buf) {
+    uint8_t hbuf[16]; CLEAR(hbuf);
+    ssize_t ll = lh_place_varint(hbuf,len) - hbuf;
+
+    ssize_t widx = buf->C(data);
+    
+    lh_arr_add(GAR4(buf->data),(len+ll));
+
+    memmove(P(buf->data)+widx, hbuf, ll);
+    memmove(P(buf->data)+widx+ll, ptr, len);
+}
 
 void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
     Rstr(serverID);
@@ -151,12 +164,12 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
         printf("Failed to decode the server's public key\n");
         exit(1);
     }
-    RSA_print_fp(stdout, mitm.s_rsa, 4);
+    //RSA_print_fp(stdout, mitm.s_rsa, 4);
 
     // generate the server-side shared key pair
     RAND_pseudo_bytes(mitm.s_skey, 16);
-    printf("Server-side shared key: ");
-    hexprint(mitm.s_skey, 16);
+    //printf("Server-side shared key: ");
+    //hexprint(mitm.s_skey, 16);
 
     // create a client-side RSA
     mitm.c_rsa = RSA_generate_key(1024, RSA_F4, NULL, NULL);
@@ -164,7 +177,7 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
         printf("Failed to generate client-side RSA key\n");
         exit(1);
     }
-    RSA_print_fp(stdout, mitm.c_rsa, 4);
+    //RSA_print_fp(stdout, mitm.c_rsa, 4);
     
     // encode the client-side pubkey as DER
     pp = mitm.c_pkey;
@@ -177,6 +190,11 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
     uint8_t output[65536];
     uint8_t *w = output;
 
+    if (compthreshold>=0) {
+        printf("Warning: sending pseudo-compressed Encryption Request\n");
+        write_varint(w, 0);
+    }
+
     write_varint(w, PID(SL_EncryptionRequest));
     write_varint(w, strlen(serverID));
     memmove(w, serverID, strlen(serverID));
@@ -188,9 +206,9 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
     memmove(w, mitm.c_token, 4);
     w+=4;
     
-    printf("Sending to client %zd bytes:\n",w-output);
-    hexdump(output, w-output);
-    write_packet(output, w-output, forw);
+    //printf("Sending to client %zd bytes:\n",w-output);
+    //hexdump(output, w-output);
+    write_packet_raw(output, w-output, forw);
 }
 
 void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
@@ -208,8 +226,8 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
         printf("Failed to decrypt the shared key received from the client\n");
         exit(1);
     }
-    printf("Decrypted client shared key, keylen=%d ",dklen);
-    hexprint(buf, dklen);
+    //printf("Decrypted client shared key, keylen=%d ",dklen);
+    //hexprint(buf, dklen);
     memcpy(mitm.c_skey, buf, 16);
     
     int dtlen = RSA_private_decrypt(tklen, token, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
@@ -217,10 +235,10 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
         printf("Failed to decrypt the verification token received from the client\n");
         exit(1);
     }
-    printf("Decrypted client token, len=%d ",dtlen);
-    hexprint(buf, dtlen);
-    printf("Original token: ");
-    hexprint(mitm.c_token,4);
+    //printf("Decrypted client token, len=%d ",dtlen);
+    //hexprint(buf, dtlen);
+    //printf("Original token: ");
+    //hexprint(mitm.c_token,4);
     if (memcmp(buf, mitm.c_token, 4)) {
         printf("Token does not match!\n");
         exit(1);
@@ -228,6 +246,11 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
             
     uint8_t output[65536];
     uint8_t *w = output;
+
+    if (compthreshold>=0) {
+        printf("Warning: sending pseudo-compressed Encryption Response\n");
+        write_varint(w, 0);
+    }
 
     // at this point, the client side is verified and the key is established
     // now send our response to the server
@@ -244,8 +267,8 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
     w += etlen;
                 
     query_auth_server();
-    hexdump(output, w-output);
-    write_packet(output, w-output, forw);
+    //hexdump(output, w-output);
+    write_packet_raw(output, w-output, forw);
 
     mitm.enable_encryption = 1;
 }
@@ -262,12 +285,22 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
     // so there's no need for limit checking with the new protocol
 
     uint8_t *p = ptr;
+
+    if (compthreshold>=0) {
+        // compression is active
+        // quick-and-dirty for compressed packets during the login phase
+        // just strip the leading 0 byte
+        int32_t uclen=lh_read_varint(p);
+        assert(uclen==0);
+        // I simply can't comprehend the retardedness of people at Mojang
+    }
+
     uint32_t type = lh_read_varint(p);
     uint32_t stype = ((mitm.state<<24)|(is_client<<28)|(type&0xffffff));
 
     char *states = "ISLP";
     printf("%c %c type=%02x, len=%zd\n", is_client?'C':'S', states[mitm.state],type,len);
-    hexdump(ptr, len);
+    //hexdump(ptr, len);
 
     uint8_t output[65536];
     uint8_t *w = output;
@@ -284,7 +317,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
             mitm.state = nextState;
             printf("C %-30s protocol=%d server=%s:%d nextState=%d\n",
                    "Handshake",protocolVer,serverAddr,serverPort,nextState);
-            write_packet(ptr, len, tx);
+            write_packet_raw(ptr, len, tx);
             break;
         }
 
@@ -299,23 +332,25 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
             process_encryption_request(p, tx);
             break;
 
-        case SL_SetCompression:
+        case SL_SetCompression: {
             printf("SetCompression during login phase!\n");
-            exit(1);
+            Rvarint(threshold);
+            write_packet_raw(ptr, len, tx);
+            compthreshold = threshold;
             break;
+        }
 
         case SL_LoginSuccess:
             printf("S Login Success\n");
             mitm.state = STATE_PLAY;
-            compthreshold = -1;             // reset compression state
-            write_packet(ptr, len, tx);
+            write_packet_raw(ptr, len, tx);
             break;
 
         ////////////////////////////////////////////////////////////////////////
 
         default: {
             // by default, just forward the packet as is
-            write_packet(ptr, len, tx);
+            write_packet_raw(ptr, len, tx);
         }
     }
 }
@@ -338,6 +373,7 @@ ssize_t handle_proxy(lh_conn *conn) {
         mitm.cs = mitm.ms = -1;
         lh_conn_remove(mitm.cs_conn);
         lh_conn_remove(mitm.ms_conn);
+        compthreshold = -1;
 
         return 0;
     }
@@ -363,7 +399,7 @@ ssize_t handle_proxy(lh_conn *conn) {
     printf("************************\n");
 #endif
 
-    if (mitm.state == STATE_PLAY) {
+    if (mitm.encryption_active) {
         // the connection is already authenticated, decrypt data
         int num = 0;
         if (is_client)
@@ -417,13 +453,34 @@ ssize_t handle_proxy(lh_conn *conn) {
             fwrite(header, 1, hp-header, mitm.output);
             fwrite(p, 1, plen, mitm.output);
             fflush(mitm.output);
-        }        
+        }
+
+#if 0
+        printf("--------------------------------------------------------------------------------\n");
+        uint8_t * pos = p+plen;
+        ssize_t rawlen = pos-rx->P(data);
+        printf("%c IN  len=%d state=%d comp=%zd\n",
+               is_client?'C':'S',plen,mitm.state,compthreshold);
+        hexdump(rx->P(data), rawlen);
+
+        if (rawlen>20000) {
+            uint8_t * pp = p;
+            uint32_t uclen = lh_read_varint(pp);
+            printf("Decoding %zd bytes to %d\n",pos-pp,uclen);
+            ssize_t ulen;
+            uint8_t * dec = lh_zlib_decode(pp, pos-pp, &ulen);
+            printf("Decoded %zd bytes to %zd\n",pos-pp,ulen);
+            lh_save("longpacket-decode", dec, ulen);
+            exit(1);
+        }
+#endif
 
         // decode and process packet - this will also put a forwarded
         // data and/or responses into tx and bx buffers respectively as needed
         if ( mitm.state == STATE_PLAY )
             // PLAY packets are processed in mcp_game module
-            process_play_packet(is_client, p, plen, tx, bx);
+            //process_play_packet(is_client, p, p+plen, tx, bx);
+            write_packet_raw(p, plen, tx);
         else
             // handle IDLE, STATUS and LOGIN packets here
             process_packet(is_client, p, plen, tx);
@@ -434,7 +491,7 @@ ssize_t handle_proxy(lh_conn *conn) {
 
     // if there's data in the transmission buffer, encrypt it if needed and send off
     if (tx->C(data) > 0) {
-        if (mitm.state == STATE_PLAY) {
+        if (mitm.encryption_active) {
             // since we always write out all data, we just encrypt this in-place
             int num=0;
             if (is_client)
@@ -452,7 +509,7 @@ ssize_t handle_proxy(lh_conn *conn) {
     
     // if there's data in the response buffer, encrypt it if needed and send off
     if (bx->C(data) > 0) {
-        if (mitm.state == STATE_PLAY) {
+        if (mitm.encryption_active) {
             // since we always write out all data, we just encrypt this in-place
             int num=0;
             if (is_client)
@@ -479,14 +536,17 @@ ssize_t handle_proxy(lh_conn *conn) {
         memcpy(mitm.s_enc_iv, mitm.s_skey, 16);
         memcpy(mitm.s_dec_iv, mitm.s_skey, 16);
 
+#if 0
         printf("c_skey:   "); hexdump(mitm.c_skey,16);
         printf("c_enc_iv: "); hexdump(mitm.c_enc_iv,16);
         printf("c_dec_iv: "); hexdump(mitm.c_dec_iv,16);
         printf("s_skey:   "); hexdump(mitm.s_skey,16);
         printf("s_enc_iv: "); hexdump(mitm.s_enc_iv,16);
         printf("s_dec_iv: "); hexdump(mitm.s_dec_iv,16);
+#endif
 
         mitm.enable_encryption=0;
+        mitm.encryption_active=1;
         // from now on the connection is authenticated and encrypted
     }
 
@@ -581,7 +641,7 @@ int handle_session_server(int sfd) {
             LH_ERROR(0, "Failed to read the header");
         }
 
-        printf(">%s<\n",buf);
+        //printf(">%s<\n",buf);
 
         if (!memcmp(buf, "\r\n\0", 3))
             break;
@@ -589,14 +649,14 @@ int handle_session_server(int sfd) {
         if (sscanf(buf, "Content-Length: %u", &clen)==1)
             printf("parsed the content length : %d\n",clen);
     }
-    printf("parsed the header completely\n");
+    //printf("parsed the header completely\n");
 
     // read the POST body
     fread(buf, 1, clen, fp);
 
-    hexdump(buf, clen);
+    //hexdump(buf, clen);
     buf[clen] = 0;
-    printf(">%s<\n",buf);
+    //printf(">%s<\n",buf);
 
     // parse the JSON (Q&D) and store the extracted tokens in the mitm struct
     if ( ! (
@@ -672,7 +732,7 @@ int query_auth_server() {
     SHA1_Final(md, &sha);
     
     char auth[4096];
-    hexdump(md, SHA_DIGEST_LENGTH);
+    //hexdump(md, SHA_DIGEST_LENGTH);
     print_hex(auth, md, SHA_DIGEST_LENGTH);
     printf("sessionId : %s\n", auth);
 
@@ -680,7 +740,7 @@ int query_auth_server() {
     sprintf(buf,"{\"accessToken\":\"%s\",\"selectedProfile\":\"%s\",\"serverId\":\"%s\"}",
             mitm.accessToken, mitm.selectedProfile, auth);
 
-    printf("request to session server: %s\n",buf);
+    //printf("request to session server: %s\n",buf);
 
     // perform a request with a cURL client
 
@@ -740,12 +800,15 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     if (mitm.s_rsa) RSA_free(mitm.s_rsa);
     if (mitm.c_rsa) RSA_free(mitm.c_rsa);
     CLEAR(mitm);
-    clear_autobuild();
+    //DISABLED clear_autobuild();
 
+#if 0
+    //DISABLED
     reset_gamestate();
     set_option(GSOP_PRUNE_CHUNKS, 1);
     set_option(GSOP_SEARCH_SPAWNERS, 1);
     set_option(GSOP_TRACK_ENTITIES, 1);
+#endif
 
     // open a new .mcp file to capture MC protocol data
     char fname[4096];
@@ -792,7 +855,7 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     CLEAR(pa);
 
     CLEAR(mitm);
-    clear_autobuild();
+    //DISABLED clear_autobuild();
     mitm.cs = mitm.ms = -1;
 
     // Minecraft proxy server
@@ -831,9 +894,12 @@ int proxy_pump(uint32_t ip, uint16_t port) {
         // handle client- and server-side connection
         lh_conn_process(&pa, G_PROXY, handle_proxy);
 
+#if 0
+        //DISABLED
         // handle asynchronous events (timers etc.)
         if (mitm.state == STATE_PLAY)
             handle_async(&mitm.ms_tx, &mitm.cs_tx);
+#endif
     }
 
     printf("Terminating...\n");
