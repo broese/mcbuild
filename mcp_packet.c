@@ -101,17 +101,15 @@ MCPacket * decode_packet_1_8(int is_client, MCPacket *pkt, uint8_t *data, ssize_
         // reset the protocol ID, since we didn't decode the packet
         pkt->protocol = PROTO_NONE;
 
-        hexdump((char *)pkt, 512);
-
         return pkt;
     }
 
-    // Decode packet
+    // decode packet
     switch(pkt->type) {
 
 
         default:
-            //TODO: pass the packet to the lower version decoder
+            //TODO: pass the packet to the next lower version decoder
             assert(0); // lowest version decoder should bail out with assert
                        // either declare the packet unsupported or write a decoding routine
     }
@@ -120,12 +118,36 @@ MCPacket * decode_packet_1_8(int is_client, MCPacket *pkt, uint8_t *data, ssize_
 }
 
 ssize_t    encode_packet_1_8(MCPacket *pkt, uint8_t *buf) {
+    uint8_t *p = buf;
+
+    int type = pkt->type&0xffffff;
+
+    if (pkt->protocol == PROTO_NONE) {
+        // this is a generic UnknownPacket
+        lh_write_varint(p, type);
+        memmove(p, pkt->p_UnknownPacket.data, pkt->p_UnknownPacket.length);
+        return p-buf+pkt->p_UnknownPacket.length;
+    }
+
+    // encode packet
+    switch (pkt->type) {
+
+        default:
+            //TODO: pass the packet to the next lower version encoder
+            assert(0);
+    }
+
+
+    return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-MCPacket * decode_packet(int is_client, MCPacket *pkt, uint8_t *data, ssize_t len) {
-    return decode_packet_1_8(is_client,pkt,data,len);
+MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
+    lh_create_obj(MCPacket, pkt);
+    MCPacket *res = decode_packet_1_8(is_client,pkt,data,len);
+    if (!res) free(pkt);
+    return res;
 }
 
 ssize_t    encode_packet(MCPacket *pkt, uint8_t *buf) {
