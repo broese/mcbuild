@@ -12,11 +12,14 @@
 
 #include "mcp_gamestate.h"
 #include "mcp_ids.h"
+#include "mcp_packet.h"
 
 #define STATE_IDLE     0
 #define STATE_STATUS   1
 #define STATE_LOGIN    2
 #define STATE_PLAY     3
+
+static char * states = "ISLP";
 
 void parse_mcp(uint8_t *data, ssize_t size) {
     uint8_t *hdr = data;
@@ -25,7 +28,9 @@ void parse_mcp(uint8_t *data, ssize_t size) {
     int compression = 0; // compression disabled initially
     BUFI(udata);         // buffer for decompressed data
 
-    while(hdr-data < (size-16)) {
+    int max=20;
+    while(hdr-data < (size-16) && max>0) {
+        max--;
         uint8_t *p = hdr;
 
         Rint(is_client);
@@ -33,8 +38,9 @@ void parse_mcp(uint8_t *data, ssize_t size) {
         Rint(usec);
         Rint(len);
 
-        //printf("%d.%06d: len=%d\n",sec,usec,len);
-        if (p+len > data+size) {printf("incomplete packet\n"); break;}
+        printf("%d.%06d: len=%d\n",sec,usec,len);
+        uint8_t *lim = p+len;
+        if (lim > data+size) {printf("incomplete packet\n"); break;}
 
         if (compression) {
             // compression was enabled previously - we need to handle packets differently now
@@ -44,12 +50,29 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 arr_resize(GAR(udata), usize);
                 ssize_t usize_ret = zlib_decode_to(p, data+size-p, AR(udata));
                 p = P(udata);
+                lim = p+usize;
             }
             // usize==0 means the packet is not compressed, so in effect we simply moved the
             // decoding pointer to the start of the actual packet data
         }
 
-        uint8_t *pkt = p;
+        ssize_t plen=lim-p;
+        printf("%d.%06d: %c %c type=?? plen=%6zd    ",sec,usec,is_client?'C':'S',states[state],plen);
+        hexprint(p, (plen>64)?64:plen);
+
+        if (state == STATE_PLAY) {
+            MCPacket *pkt = decode_packet(is_client, p, plen);
+
+            printf("MCPacket @%p:\n",pkt);
+            printf("  type =%08x\n",pkt->type);
+            printf("  proto=%08x\n",pkt->protocol);
+            printf("    data=%p, len=%zd\n",pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length);
+
+            hexdump(pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length);
+            printf("--------------------------------------------------------------------------------\n");
+        }
+
+        uint8_t *ptr = p;
         // pkt will point at the start of packet (specifically at the type field)
         // while p will move to the next field to be parsed.
 
@@ -71,7 +94,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 state = nextState;
                 break;
             }
-            case CL_EncryptionResponse: {
+            case SL_LoginSuccess: {
                 state = STATE_PLAY;
                 break;
             }
@@ -82,11 +105,9 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 break;
             }
 
+#if 0
             // PLAY    
             case SP_SpawnPlayer: {
-                hexdump(pkt, len);
-
-#if 0
                 Rint(eid);
                 Rstr(uuid);
                 char name[4096]; p=read_string(p,name);
@@ -94,10 +115,8 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 Rvarint(dcount);
 
                 printf("%d.%06d: Spawn Player  eid=%d uuid=%s\n",sec,usec,eid,uuid);
-#endif
                 break;
             }
-#if 0
             case SP_Effect: {
                 Rint(efid);
                 Rint(x);

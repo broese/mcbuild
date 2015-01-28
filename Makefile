@@ -18,7 +18,7 @@ all: mcproxy mcpdump
 mcproxy: mcproxy.o mcp_gamestate.o mcp_game.o mcp_packet.o
 	$(CC) -o $@ $^ $(LIBS)
 
-mcpdump: mcpdump.o mcp_gamestate.o
+mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o
 	$(CC) -o $@ $^ $(LIBS)
 
 
