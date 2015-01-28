@@ -1,7 +1,7 @@
-CFLAGS=-g -pg -I../libhelper
+CFLAGS=-g -pg
 LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lcurl
 DEFS=-DDEBUG_MEMORY=0 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
-INC=
+INC=-I../libhelper
 
 UNAME := $(shell uname -s)
 ifeq ($(UNAME),SunOS)
@@ -21,7 +21,8 @@ mcproxy: mcproxy.o mcp_gamestate.o mcp_game.o mcp_packet.o
 mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o
 	$(CC) -o $@ $^ $(LIBS)
 
-
+varint: varint.c
+	$(CC) $(CFLAGS) $(INC) -o $@ $^ $(LIBS)
 
 
 #all: minemap netmine mcproxy mcpdump mcsanvil chunkradar invedit

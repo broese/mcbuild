@@ -19,5 +19,6 @@ docs
 crstate.dat*
 invedit
 chunkradar
+varint
 *.o
 *~
