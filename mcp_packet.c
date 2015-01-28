@@ -1,6 +1,8 @@
 #include <string.h>
 #include <assert.h>
 
+#define LH_DECLARE_SHORT_NAMES 1
+#include <lh_buffers.h>
 #include <lh_bytes.h>
 
 #include "mcp_packet.h"
@@ -52,6 +54,8 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 #define Rvarint(n)  uint32_t n = lh_read_varint(p)
 //#define Rslot(n)    slot_t n; p=read_slot(p,&n)
 
+
+
 #define Px(n,fun)   pkt->n = lh_read_ ## fun ## _be(p)
 
 #define Pchar(n)    Px(n,char)
@@ -65,9 +69,11 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 //#define Pslot(n)    p=read_slot(p,pkt->n)
 #define Pdata(n,l)  memmove(pkt->n,p,l); p+=l
 
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
-const char *SUPPORT_1_8[2] = {
+const static char *SUPPORT_1_8[2] = {
     "................"
     "................"
     "................"
@@ -78,35 +84,9 @@ const char *SUPPORT_1_8[2] = {
     ".........."
 };
 
-MCPacket * decode_packet_1_8(int is_client, MCPacket *pkt, uint8_t *data, ssize_t len) {
-    uint8_t * p = data;
-    uint8_t * lim = data+len;
-
-    Rvarint(type);
-    pkt->type = ((STATE_PLAY<<24)|(is_client<<28)|(type&0xffffff));
-    pkt->protocol = PROTO_1_8_1;
-
-    if (SUPPORT_1_8[is_client][type]!='*') {
-        // decode of this packet type is not supported by the current
-        // protocol version implementation, neither direct or deferred
-        // decode this as a generic UnknownPacket
-
-        // check the length of data - should not exceed MAXPLEN
-        assert(lim-p < sizeof(pkt->p_UnknownPacket.data));
-
-        // store the remaining payload data
-        pkt->p_UnknownPacket.length = lim-p;
-        memmove(pkt->p_UnknownPacket.data, p, pkt->p_UnknownPacket.length);
-
-        // reset the protocol ID, since we didn't decode the packet
-        pkt->protocol = PROTO_NONE;
-
-        return pkt;
-    }
-
+MCPacket * decode_packet_1_8(MCPacket *pkt, uint8_t *data, ssize_t len) {
     // decode packet
     switch(pkt->type) {
-
 
         default:
             //TODO: pass the packet to the next lower version decoder
@@ -117,17 +97,10 @@ MCPacket * decode_packet_1_8(int is_client, MCPacket *pkt, uint8_t *data, ssize_
     return pkt;
 }
 
-ssize_t    encode_packet_1_8(MCPacket *pkt, uint8_t *buf) {
+ssize_t encode_packet_1_8(MCPacket *pkt, uint8_t *buf) {
     uint8_t *p = buf;
 
-    int type = pkt->type&0xffffff;
-
-    if (pkt->protocol == PROTO_NONE) {
-        // this is a generic UnknownPacket
-        lh_write_varint(p, type);
-        memmove(p, pkt->p_UnknownPacket.data, pkt->p_UnknownPacket.length);
-        return p-buf+pkt->p_UnknownPacket.length;
-    }
+    lh_write_varint(p, PID(pkt->type));
 
     // encode packet
     switch (pkt->type) {
@@ -137,19 +110,73 @@ ssize_t    encode_packet_1_8(MCPacket *pkt, uint8_t *buf) {
             assert(0);
     }
 
-
     return 0;
+}
+
+void free_packet_1_8(MCPacket *pkt) {
+    switch (pkt->type) {
+
+        default:
+            //TODO: pass the packet to the next lower version encoder
+            assert(0);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define SUPPORT SUPPORT_1_8
+
 MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
+
+    uint8_t * p = data;
+    Rvarint(type);              // type field
+
     lh_create_obj(MCPacket, pkt);
-    MCPacket *res = decode_packet_1_8(is_client,pkt,data,len);
-    if (!res) free(pkt);
-    return res;
+
+    pkt->type = ((STATE_PLAY<<24)|(is_client<<28)|(type&0xffffff));
+    pkt->protocol = PROTO_NONE; // this will be later set by the function that
+                                // decoded the packet, or not - then it will be
+                                // an unknown packet
+
+    ssize_t psize = data+len-p; // length of the data that follows the type field
+
+    if (SUPPORT[is_client][type]=='*') {
+        // we support decode (directly or differred), pass the rest of the data
+        // to the decoder routine
+        return decode_packet_1_8(pkt, p, psize);
+    }
+    else {
+        // no support - decode as UnknownPacket
+        lh_alloc_buf(pkt->p_UnknownPacket.data,psize);
+        pkt->p_UnknownPacket.length = psize;
+        memmove(pkt->p_UnknownPacket.data, p, psize);
+        return pkt;
+    }
 }
 
-ssize_t    encode_packet(MCPacket *pkt, uint8_t *buf) {
-    return encode_packet_1_8(pkt,buf);
+//FIXME: for now we assume static buffer allocation and sufficient buffer size
+//FIXME: we should convert this to lh_buf_t or a resizeable buffer later
+ssize_t encode_packet(MCPacket *pkt, uint8_t *buf) {
+    uint8_t * p = buf;
+    
+    if (pkt->protocol == PROTO_NONE) {
+        // UnknownPacket
+        lh_write_varint(p, PID(pkt->type));
+        memmove(p,pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length);
+        return p+pkt->p_UnknownPacket.length-buf;
+    }
+    else {
+        return encode_packet_1_8(pkt,buf);
+    }
+}
+ 
+void free_packet(MCPacket *pkt) {
+    if (pkt->protocol == PROTO_NONE) {
+        if (pkt->p_UnknownPacket.data)
+            free(pkt->p_UnknownPacket.data);
+        pkt->p_UnknownPacket.data = NULL;
+    }
+    else {
+        free_packet_1_8(pkt);
+    }
 }

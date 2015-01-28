@@ -13,17 +13,16 @@ typedef int32_t fixp;
 // Packets will be decoded as this if there's no support for this type
 // The encoder will still be able to correctly encode it back to network format
 
-#define MAXPLEN (4*1024*1024-16)
-
 typedef struct {
     ssize_t     length;
-    uint8_t     data[MAXPLEN];
+    uint8_t     *data;
 } UnknownPacket;
 
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
     int32_t     type;       // packet type, from original MC packet+is_client+STATE_PLAY
+                            // therefore - one of the CP_ or SP_ constants
     int32_t     protocol;   // decoder will mark this with its version, so in
                             // difficult cases you can differentiate between 
                             // changed interpretation
@@ -34,6 +33,8 @@ typedef struct {
 
 MCPacket * decode_packet(int is_client, uint8_t *p, ssize_t len);
 ssize_t    encode_packet(MCPacket *pkt, uint8_t *buf);
+void       free_packet  (MCPacket *pkt);
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
