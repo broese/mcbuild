@@ -12,5 +12,5 @@ int main(int ac, char ** av) {
 
     //hexdump(buf,len);
     int32_t v = lh_parse_varint(buf);
-    printf("%x\n",v);
+    printf("%x %d\n",v,v);
 }
