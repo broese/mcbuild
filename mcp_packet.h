@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#include <lh_arr.h>
+
 // special data types used in the MC packets
 
 typedef uint8_t uuid_t[16];
@@ -31,9 +33,16 @@ typedef struct {
     };
 } MCPacket;
 
+typedef struct {
+    lh_arr_declare(MCPacket *,queue);
+} MCPacketQueue;
+
+////////////////////////////////////////////////////////////////////////////////
+
 MCPacket * decode_packet(int is_client, uint8_t *p, ssize_t len);
 ssize_t    encode_packet(MCPacket *pkt, uint8_t *buf);
 void       free_packet  (MCPacket *pkt);
+void       queue_packet (MCPacket *pkt, MCPacketQueue *q);
 
 ////////////////////////////////////////////////////////////////////////////////
 

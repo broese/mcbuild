@@ -179,4 +179,9 @@ void free_packet(MCPacket *pkt) {
     else {
         free_packet_1_8(pkt);
     }
+    free(pkt);
+}
+
+void queue_packet (MCPacket *pkt, MCPacketQueue *q) {
+    *lh_arr_new(GAR(q->queue)) = pkt;
 }

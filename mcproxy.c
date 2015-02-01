@@ -358,11 +358,60 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
     }
 }
 
+
+//TODO: this will move to mcp_game
+void handle_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
+    switch (pkt->type) {
+        default:
+            queue_packet(pkt, tq);
+    }
+}
+
 #define MAXPLEN (4*1024*1024)
 
 uint8_t ubuf[MAXPLEN];
+uint8_t cbuf[MAXPLEN];
 #define LIM64(len) ((len)>64?64:(len))
 #define LIM128(len) ((len)>128?128:(len))
+
+void write_packet(MCPacket *pkt, lh_buf_t *tx) {
+    ssize_t ulen = encode_packet(pkt, ubuf);
+
+    if (mitm.comptr >= 0) {
+        // compression is active
+        uint8_t *w = cbuf;
+        ssize_t clen = 0;
+        if (ulen >= mitm.comptr) {
+            // length is at or over threshold - compress it
+            write_varint(w, (int32_t)ulen);
+            clen = lh_zlib_encode_to(ubuf, ulen, w, cbuf+sizeof(cbuf)-w);
+            assert(clen > 0);
+        }
+        else {
+            // packet is below compression threshold, send uncompressed
+            write_varint(w, 0);
+            memmove(w, ubuf, ulen);
+            clen = ulen;
+        }
+        clen += (w-cbuf);
+        write_packet_raw(cbuf, clen, tx);
+
+#if 0
+        printf("%c P clen=%6zd    ",(pkt->type&0x1000000)?'C':'S',clen);
+        hexprint(cbuf, LIM64(clen));
+#endif
+
+    }
+    else {
+        // no compression - simply append the packet to the transmission buffer
+        write_packet_raw(ubuf, ulen, tx);
+#if 0
+        printf("%c P ulen=%6zd    ",(pkt->type&0x1000000)?'C':'S',ulen);
+        hexprint(ubuf, LIM64(ulen));
+#endif
+
+    }
+}
 
 void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
                          lh_buf_t *tx, lh_buf_t *bx) {
@@ -402,7 +451,9 @@ void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
 #if 0
     printf("%c P  len=%6zd %c  ",is_client?'C':'S',raw_len,comp);
     hexprint(raw_ptr, LIM64(raw_len));
+#endif
 
+#if 0
     printf("%c P plen=%6zd    ",is_client?'C':'S',plen,comp);
     hexprint(p, LIM64(plen));
 #endif
@@ -413,7 +464,9 @@ void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
         return;
     }
 
-#if 1
+    //TODO: enable compression if SP_SetCompression is received
+
+#if 0
     printf("MCPacket @%p:\n",pkt);
     printf("  type =%08x\n",pkt->type);
     printf("  proto=%08x\n",pkt->protocol);
@@ -422,19 +475,28 @@ void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
     hexdump(pkt->p_UnknownPacket.data,LIM128(pkt->p_UnknownPacket.length));
     printf("--------------------------------------------------------------------------------\n");
 #endif
-   
 
-#if 0
-    switch (pkt->type) {
+    ////////////////////////////////////////////////////////////////////////////
 
-        default:
-            write_packet(pkt, tx);
+    MCPacketQueue tq = {NULL,0}, bq = {NULL,0};
+
+    handle_packet(pkt, &tq, &bq);
+
+    ////////////////////////////////////////////////////////////////////////////
+
+    int i;
+    for(i=0; i<C(tq.queue); i++) {
+        MCPacket * tpkt = P(tq.queue)[i];
+        write_packet(tpkt, tx);
+        free_packet(tpkt);
     }
-#endif
-
-    write_packet_raw(raw_ptr, raw_len, tx);
+    for(i=0; i<C(bq.queue); i++) {
+        MCPacket * bpkt = P(bq.queue)[i];
+        write_packet(bpkt, bx);
+        free_packet(bpkt);
+    }
+    //write_packet_raw(raw_ptr, raw_len, tx);
 }
-
 
 
 ////////////////////////////////////////////////////////////////////////////////
