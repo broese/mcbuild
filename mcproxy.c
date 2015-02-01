@@ -495,7 +495,6 @@ void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
         write_packet(bpkt, bx);
         free_packet(bpkt);
     }
-    //write_packet_raw(raw_ptr, raw_len, tx);
 }
 
 
@@ -597,26 +596,6 @@ ssize_t handle_proxy(lh_conn *conn) {
             fwrite(p, 1, plen, mitm.output);
             fflush(mitm.output);
         }
-
-#if 0
-        printf("--------------------------------------------------------------------------------\n");
-        uint8_t * pos = p+plen;
-        ssize_t rawlen = pos-rx->P(data);
-        printf("%c IN  len=%d state=%d comp=%zd\n",
-               is_client?'C':'S',plen,mitm.state,mitm.comptr);
-        hexdump(rx->P(data), rawlen);
-
-        if (rawlen>20000) {
-            uint8_t * pp = p;
-            uint32_t uclen = lh_read_varint(pp);
-            printf("Decoding %zd bytes to %d\n",pos-pp,uclen);
-            ssize_t ulen;
-            uint8_t * dec = lh_zlib_decode(pp, pos-pp, &ulen);
-            printf("Decoded %zd bytes to %zd\n",pos-pp,ulen);
-            lh_save("longpacket-decode", dec, ulen);
-            exit(1);
-        }
-#endif
 
         // decode and process packet - this will also put a forwarded
         // data and/or responses into tx and bx buffers respectively as needed
@@ -790,7 +769,7 @@ int handle_session_server(int sfd) {
             break;
 
         if (sscanf(buf, "Content-Length: %u", &clen)==1)
-            printf("parsed the content length : %d\n",clen);
+            clen=clen; //printf("parsed the content length : %d\n",clen);
     }
     //printf("parsed the header completely\n");
 
@@ -811,9 +790,11 @@ int handle_session_server(int sfd) {
         LH_ERROR(0, "Failed to parse JSON");
     }
 
+#if 0
     printf("accessToken:     >%s<\n",mitm.accessToken);
     printf("selectedProfile: >%s<\n",mitm.selectedProfile);
     printf("serverId:        >%s<\n",mitm.serverId);
+#endif
 
 
     // send response
