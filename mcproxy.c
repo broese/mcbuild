@@ -32,6 +32,7 @@
 #include "lh_arr.h"
 
 #include "mcp_ids.h"
+#include "mcp_packet.h"
 #include "mcp_gamestate.h"
 //#include "mcp_game.h"
 
@@ -361,6 +362,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
 
 uint8_t ubuf[MAXPLEN];
 #define LIM64(len) ((len)>64?64:(len))
+#define LIM128(len) ((len)>128?128:(len))
 
 void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
                          lh_buf_t *tx, lh_buf_t *bx) {
@@ -397,19 +399,32 @@ void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
         plen = plim-p;
     }
 
+#if 0
     printf("%c P  len=%6zd %c  ",is_client?'C':'S',raw_len,comp);
     hexprint(raw_ptr, LIM64(raw_len));
 
     printf("%c P plen=%6zd    ",is_client?'C':'S',plen,comp);
     hexprint(p, LIM64(plen));
+#endif
 
-#if 0
-    MCPacket *pkt=decode_packet(is_client, p, lim-p);
+    MCPacket *pkt=decode_packet(is_client, p, plen);
     if (!pkt) {
         printf("Failed to decode packet\n");
         return;
     }
 
+#if 1
+    printf("MCPacket @%p:\n",pkt);
+    printf("  type =%08x\n",pkt->type);
+    printf("  proto=%08x\n",pkt->protocol);
+    printf("    data=%p, len=%zd\n",pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length);
+
+    hexdump(pkt->p_UnknownPacket.data,LIM128(pkt->p_UnknownPacket.length));
+    printf("--------------------------------------------------------------------------------\n");
+#endif
+   
+
+#if 0
     switch (pkt->type) {
 
         default:
