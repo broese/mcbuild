@@ -22,3 +22,5 @@ chunkradar
 varint
 *.o
 *~
+gmon.out
+
