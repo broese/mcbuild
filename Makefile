@@ -1,6 +1,6 @@
 CFLAGS=-g -pg
 LIBS=-lm -lpng -lz -L../libhelper -lhelper -lpcap -lcurl
-DEFS=-DDEBUG_MEMORY=0 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
+DEFS=-DDEBUG_MEMORY=1 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
 INC=-I../libhelper
 
 UNAME := $(shell uname -s)
@@ -64,9 +64,8 @@ mcp_game.o: mcp_gamestate.h mcp_game.h mcp_ids.h mcp_packet.h
 clean:
 	rm -f *.o *~
 
-mtrace: mcsanvil
-	rm -rf region/*
-	MALLOC_TRACE=mtrace ./mcsanvil 20120726_from-3rd-base-to-1nd-base.mcs
-#	mtrace mtrace | awk '{ if ( $$1 ~ /^0x/ ) { addr2line -e filemap $$4 | getline $$fileline ; print $$fileline $$0 $$1; } }'
-	mtrace mtrace | perl -e 'while (<>) { if (/^(0x\S+)\s+(0x\S+)\s+at\s+(0x\S+)/) { print "$$1 $$2 at ".`addr2line -e mcsanvil $$3`; } }'
+mtrace: mcproxy
+	MALLOC_TRACE=mtrace ./mcproxy 10.0.0.1
+#	mtrace mtrace | awk '{ if ( $$1 ~ /^0x/ ) { addr2line -e mcproxy $$4 | getline $$fileline ; print $$fileline $$0 $$1; } }'
+	mtrace mtrace | perl -e 'while (<>) { if (/^(0x\S+)\s+(0x\S+)\s+at\s+(0x\S+)/) { print "$1 $2 at ".`addr2line -e mcproxy $3`; } }'
 

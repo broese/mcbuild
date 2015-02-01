@@ -1003,6 +1003,10 @@ int proxy_pump(uint32_t ip, uint16_t port) {
 }
 
 int main(int ac, char **av) {
+#if DEBUG_MEMORY
+    mtrace();
+#endif
+
     // if an argument is specified - it's the server address we want to
     // forward connections to, otherwise - 2b2t.org
     uint32_t server_ip = lh_dns_addr_ipv4(av[1]?av[1]:SERVER_ADDR);
@@ -1011,6 +1015,10 @@ int main(int ac, char **av) {
 
     // start monitoring connection events
     proxy_pump(server_ip, SERVER_PORT);
+
+#if DEBUG_MEMORY
+    muntrace();
+#endif
 
     return 0;
 }
