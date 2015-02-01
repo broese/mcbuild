@@ -33,7 +33,7 @@
 
 #include "mcp_ids.h"
 #include "mcp_gamestate.h"
-#include "mcp_game.h"
+//#include "mcp_game.h"
 
 #define SERVER_ADDR "2b2t.org"
 
@@ -125,6 +125,8 @@ struct {
 
     FILE * output;
     FILE * dbg;
+
+    int comptr; // compression threshold, -1 means compression is disabled
 } mitm;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -190,7 +192,7 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
     uint8_t output[65536];
     uint8_t *w = output;
 
-    if (compthreshold>=0) {
+    if (mitm.comptr>=0) {
         printf("Warning: sending pseudo-compressed Encryption Request\n");
         write_varint(w, 0);
     }
@@ -247,7 +249,7 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
     uint8_t output[65536];
     uint8_t *w = output;
 
-    if (compthreshold>=0) {
+    if (mitm.comptr>=0) {
         printf("Warning: sending pseudo-compressed Encryption Response\n");
         write_varint(w, 0);
     }
@@ -286,7 +288,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
 
     uint8_t *p = ptr;
 
-    if (compthreshold>=0) {
+    if (mitm.comptr>=0) {
         // compression is active
         // quick-and-dirty for compressed packets during the login phase
         // just strip the leading 0 byte
@@ -336,7 +338,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
             printf("SetCompression during login phase!\n");
             Rvarint(threshold);
             write_packet_raw(ptr, len, tx);
-            compthreshold = threshold;
+            mitm.comptr = threshold;
             break;
         }
 
@@ -354,6 +356,70 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
         }
     }
 }
+
+#define MAXPLEN (4*1024*1024)
+
+uint8_t ubuf[MAXPLEN];
+#define LIM64(len) ((len)>64?64:(len))
+
+void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
+                         lh_buf_t *tx, lh_buf_t *bx) {
+
+    char comp = ' ';
+
+    uint8_t *raw_ptr = ptr;       // start of the raw packet (with the complen field)
+    uint8_t *raw_lim = lim;       // limit ptr of the raw data
+    ssize_t  raw_len = lim-ptr;   // and its length
+
+    uint8_t *p       = ptr;       // decoding pointer, after passing the decomp code
+                                  // it should be pointing at the packet type field
+    uint8_t *plim    = lim;       // limit ptr of the packet data
+    ssize_t  plen    = plim-p;    // length of the decompressed data
+
+    if (mitm.comptr>=0) {
+        // compression is enabled
+        comp = '.';
+        Rvarint(usize); // supposed size of uncompressed data
+
+        if (usize>0) {
+            // packet is compressed - uncompress into temp buffer
+            comp = '*';
+            plen = lh_zlib_decode_to(p,plen,ubuf,sizeof(ubuf));
+            assert(plen==usize);
+
+            // correct p and lim to match the decompressed packet
+            p=ubuf;
+            plim = p+plen;
+        }
+        // usize==0 means the packet is not compressed, so in effect we simply
+        // moved the decoding pointer to the start of the actual packet data
+
+        plen = plim-p;
+    }
+
+    printf("%c P  len=%6zd %c  ",is_client?'C':'S',raw_len,comp);
+    hexprint(raw_ptr, LIM64(raw_len));
+
+    printf("%c P plen=%6zd    ",is_client?'C':'S',plen,comp);
+    hexprint(p, LIM64(plen));
+
+#if 0
+    MCPacket *pkt=decode_packet(is_client, p, lim-p);
+    if (!pkt) {
+        printf("Failed to decode packet\n");
+        return;
+    }
+
+    switch (pkt->type) {
+
+        default:
+            write_packet(pkt, tx);
+    }
+#endif
+
+    write_packet_raw(raw_ptr, raw_len, tx);
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -373,7 +439,7 @@ ssize_t handle_proxy(lh_conn *conn) {
         mitm.cs = mitm.ms = -1;
         lh_conn_remove(mitm.cs_conn);
         lh_conn_remove(mitm.ms_conn);
-        compthreshold = -1;
+        mitm.comptr = -1;
 
         return 0;
     }
@@ -460,7 +526,7 @@ ssize_t handle_proxy(lh_conn *conn) {
         uint8_t * pos = p+plen;
         ssize_t rawlen = pos-rx->P(data);
         printf("%c IN  len=%d state=%d comp=%zd\n",
-               is_client?'C':'S',plen,mitm.state,compthreshold);
+               is_client?'C':'S',plen,mitm.state,mitm.comptr);
         hexdump(rx->P(data), rawlen);
 
         if (rawlen>20000) {
@@ -479,8 +545,8 @@ ssize_t handle_proxy(lh_conn *conn) {
         // data and/or responses into tx and bx buffers respectively as needed
         if ( mitm.state == STATE_PLAY )
             // PLAY packets are processed in mcp_game module
-            //process_play_packet(is_client, p, p+plen, tx, bx);
-            write_packet_raw(p, plen, tx);
+            process_play_packet(is_client, p, p+plen, tx, bx);
+            //write_packet_raw(p, plen, tx);
         else
             // handle IDLE, STATUS and LOGIN packets here
             process_packet(is_client, p, plen, tx);
@@ -841,6 +907,9 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     mitm.ms = ms;
     mitm.cs_conn = lh_conn_add(&pa, cs, G_PROXY, (void*)1);
     mitm.ms_conn = lh_conn_add(&pa, ms, G_PROXY, (void*)0);
+
+    // disable compression state
+    mitm.comptr = -1;
 
     // from now on, all data arriving from the server or client will be
     // handled by handle_proxy called from the event loop
