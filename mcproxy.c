@@ -871,11 +871,12 @@ int query_auth_server() {
 
     // perform a request with a cURL client
 
+    // init curl
+    curl_global_init(CURL_GLOBAL_DEFAULT);
     CURL *curl = curl_easy_init();
     CURLcode res;
 
     // set header options
-    curl_global_init(CURL_GLOBAL_DEFAULT);
     curl_easy_setopt(curl, CURLOPT_URL, "https://sessionserver.mojang.com/session/minecraft/join");
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "Java/1.6.0_27");
     
@@ -893,6 +894,7 @@ int query_auth_server() {
 
     curl_slist_free_all(headerlist);
     curl_easy_cleanup(curl);
+    ERR_free_strings();
     curl_global_cleanup();
 
     return 1;
