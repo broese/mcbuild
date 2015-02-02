@@ -169,6 +169,38 @@ ssize_t encode_packet(MCPacket *pkt, uint8_t *buf) {
         return encode_packet_1_8(pkt,buf);
     }
 }
+
+char limhexbuf[4100];
+static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
+    assert(len<(sizeof(limhexbuf)-4)/2);
+    assert(maxbyte >= 4);
+
+    int i;
+    //TODO: implement aaaaaa....bbbbbb - type of printing
+    if (len > maxbyte) len = maxbyte;
+    for(i=0;i<len;i++)
+        sprintf(limhexbuf+i*2,"%02x ",data[i]);
+    return limhexbuf;
+}
+
+void dump_packet(MCPacket *pkt) {
+    char *states="ISLP";
+    printf("%c %c %2x ",PCLIENT(pkt->type)?'C':'S',states[PSTATE(pkt->type)],PID(pkt->type));
+
+    if (pkt->protocol == PROTO_NONE) {
+        printf("%-24s len=%6d, data=%s\n","[UnknownPacket]",pkt->p_UnknownPacket.length,
+               limhex(pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length,64));
+        return;
+    }
+
+    switch (pkt->type) {
+
+        default:
+            printf("%-24s\n","[UnsupportedType]");
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
  
 void free_packet(MCPacket *pkt) {
     if (pkt->protocol == PROTO_NONE) {

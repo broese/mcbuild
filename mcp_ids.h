@@ -23,7 +23,9 @@
 #define SP(x) ((0x03<<24)|(0x##x))
 #define CP(x) ((0x13<<24)|(0x##x))
 
-#define PID(x) ((x)&0xffffff)
+#define PID(x)     ((x)&0xffffff)
+#define PCLIENT(x) (((x)&0x10000000)!=0)
+#define PSTATE(x)  (((x)>>24)&0x0f)
 
 // Handshakes
 

@@ -38,7 +38,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
         Rint(usec);
         Rint(len);
 
-        printf("%d.%06d: len=%d\n",sec,usec,len);
+        //printf("%d.%06d: len=%d\n",sec,usec,len);
         uint8_t *lim = p+len;
         if (lim > data+size) {printf("incomplete packet\n"); break;}
 
@@ -57,12 +57,14 @@ void parse_mcp(uint8_t *data, ssize_t size) {
         }
 
         ssize_t plen=lim-p;
-        printf("%d.%06d: %c %c type=?? plen=%6zd    ",sec,usec,is_client?'C':'S',states[state],plen);
-        hexprint(p, (plen>64)?64:plen);
+        //printf("%d.%06d: %c %c type=?? plen=%6zd    ",sec,usec,is_client?'C':'S',states[state],plen);
+        //hexprint(p, (plen>64)?64:plen);
 
         if (state == STATE_PLAY) {
             MCPacket *pkt = decode_packet(is_client, p, plen);
+            dump_packet(pkt);
 
+#if 0
             printf("MCPacket @%p:\n",pkt);
             printf("  type =%08x\n",pkt->type);
             printf("  proto=%08x\n",pkt->protocol);
@@ -70,6 +72,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
             hexdump(pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length);
             printf("--------------------------------------------------------------------------------\n");
+#endif
         }
 
         uint8_t *ptr = p;
