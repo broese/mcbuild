@@ -495,6 +495,9 @@ void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
         write_packet(bpkt, bx);
         free_packet(bpkt);
     }
+
+    lh_free(P(tq.queue));
+    lh_free(P(bq.queue));
 }
 
 
@@ -923,6 +926,10 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     if (mitm.dbg)    fclose(mitm.dbg);
     if (mitm.s_rsa) RSA_free(mitm.s_rsa);
     if (mitm.c_rsa) RSA_free(mitm.c_rsa);
+    lh_free(P(mitm.cs_rx.data));
+    lh_free(P(mitm.cs_tx.data));
+    lh_free(P(mitm.ms_rx.data));
+    lh_free(P(mitm.ms_tx.data));
     CLEAR(mitm);
     //DISABLED clear_autobuild();
 
@@ -1043,6 +1050,12 @@ int proxy_pump(uint32_t ip, uint16_t port) {
         fclose(mitm.dbg);
         mitm.dbg = NULL;
     }
+
+    // free buffers
+    lh_free(P(mitm.cs_rx.data));
+    lh_free(P(mitm.cs_tx.data));
+    lh_free(P(mitm.ms_rx.data));
+    lh_free(P(mitm.ms_tx.data));
 }
 
 int main(int ac, char **av) {
