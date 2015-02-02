@@ -872,7 +872,6 @@ int query_auth_server() {
     // perform a request with a cURL client
 
     // init curl
-    curl_global_init(CURL_GLOBAL_DEFAULT);
     CURL *curl = curl_easy_init();
     CURLcode res;
 
@@ -894,8 +893,6 @@ int query_auth_server() {
 
     curl_slist_free_all(headerlist);
     curl_easy_cleanup(curl);
-    ERR_free_strings();
-    curl_global_cleanup();
 
     return 1;
 }
@@ -1075,6 +1072,8 @@ int main(int ac, char **av) {
     mtrace();
 #endif
 
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+
     // if an argument is specified - it's the server address we want to
     // forward connections to, otherwise - 2b2t.org
     uint32_t server_ip = lh_dns_addr_ipv4(av[1]?av[1]:SERVER_ADDR);
@@ -1083,6 +1082,9 @@ int main(int ac, char **av) {
 
     // start monitoring connection events
     proxy_pump(server_ip, SERVER_PORT);
+
+    ERR_free_strings();
+    curl_global_cleanup();
 
 #if DEBUG_MEMORY
     muntrace();
