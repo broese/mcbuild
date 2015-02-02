@@ -1065,6 +1065,9 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     lh_free(P(mitm.cs_tx.data));
     lh_free(P(mitm.ms_rx.data));
     lh_free(P(mitm.ms_tx.data));
+
+    if (mitm.s_rsa) RSA_free(mitm.s_rsa);
+    if (mitm.c_rsa) RSA_free(mitm.c_rsa);
 }
 
 int main(int ac, char **av) {
@@ -1083,6 +1086,8 @@ int main(int ac, char **av) {
     // start monitoring connection events
     proxy_pump(server_ip, SERVER_PORT);
 
+    // cleanup openssl and curl
+    ERR_remove_state();
     ERR_free_strings();
     curl_global_cleanup();
 
