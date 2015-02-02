@@ -516,8 +516,8 @@ ssize_t handle_proxy(lh_conn *conn) {
         close(mitm.ms);
         mitm.state = STATE_IDLE;
         mitm.cs = mitm.ms = -1;
-        lh_conn_remove(mitm.cs_conn);
-        lh_conn_remove(mitm.ms_conn);
+        if (mitm.cs_conn) { lh_conn_remove(mitm.cs_conn); mitm.cs_conn=NULL; }
+        if (mitm.ms_conn) { lh_conn_remove(mitm.ms_conn); mitm.ms_conn=NULL; }
         mitm.comptr = -1;
 
         return 0;
@@ -931,6 +931,9 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     lh_free(P(mitm.cs_tx.data));
     lh_free(P(mitm.ms_rx.data));
     lh_free(P(mitm.ms_tx.data));
+    if (mitm.cs_conn) lh_conn_remove(mitm.cs_conn);
+    if (mitm.ms_conn) lh_conn_remove(mitm.ms_conn);
+
     CLEAR(mitm);
     //DISABLED clear_autobuild();
 
@@ -1038,6 +1041,12 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     }
 
     printf("Terminating...\n");
+
+    close(mitm.ms);
+    close(mitm.cs);
+    if (mitm.cs_conn) lh_conn_remove(mitm.cs_conn);
+    if (mitm.ms_conn) lh_conn_remove(mitm.ms_conn);
+    lh_poll_free(&pa);
 
     // flush MCP saved file
     if (mitm.output) {
