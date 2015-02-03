@@ -69,6 +69,21 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 //#define Pslot(n)    p=read_slot(p,tpkt->n)
 #define Pdata(n,l)  memmove(tpkt->n,p,l); p+=l
 
+
+
+#define Wx(n,fun)   lh_write_ ## fun ## _be(w, tpkt->n)
+
+#define Wchar(n)    Wx(n,char)
+#define Wshort(n)   Wx(n,short)
+#define Wint(n)     Wx(n,int)
+#define Wlong(n)    Wx(n,long)
+#define Wfloat(n)   Wx(n,float)
+#define Wdouble(n)  Wx(n,double)
+//#define Wstr(n)     w=write_string(w, tpkt->n)
+#define Wvarint(n)  lh_write_varint(w, tpkt->n)
+//#define Pslot(n)    p=read_slot(p,tpkt->n)
+#define Wdata(n,l)  memmove(w,tpkt->n,l); w+=l
+
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
@@ -94,7 +109,7 @@ ssize_t encode_SetCompression_1_8_1(MCPacket *pkt, uint8_t *buf) {
     SetCompression * tpkt = &pkt->p_SetCompression;
     uint8_t *w = buf;
 
-    lh_write_varint(w, tpkt->threshold);
+    Wvarint(threshold);
 
     return w-buf;
 }
