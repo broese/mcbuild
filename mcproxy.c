@@ -397,7 +397,7 @@ void write_packet(MCPacket *pkt, lh_buf_t *tx) {
         write_packet_raw(cbuf, clen, tx);
 
 #if 1
-        printf("%c P clen=%6zd    ",(pkt->type&0x1000000)?'C':'S',clen);
+        printf("%c P clen=%6zd    ",pkt->cl?'C':'S',clen);
         hexprint(cbuf, LIM64(clen));
 #endif
 
@@ -406,7 +406,7 @@ void write_packet(MCPacket *pkt, lh_buf_t *tx) {
         // no compression - simply append the packet to the transmission buffer
         write_packet_raw(ubuf, ulen, tx);
 #if 1
-        printf("%c P ulen=%6zd    ",(pkt->type&0x1000000)?'C':'S',ulen);
+        printf("%c P ulen=%6zd    ",pkt->cl?'C':'S',ulen);
         hexprint(ubuf, LIM64(ulen));
 #endif
 
