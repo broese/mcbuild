@@ -70,8 +70,8 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 #define Pdata(n,l)  memmove(tpkt->n,p,l); p+=l
 
 
-
 ////////////////////////////////////////////////////////////////////////////////
+
 
 const static char *SUPPORT_1_8[2] = {
     "........+......."
@@ -170,42 +170,45 @@ MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
 
     lh_create_obj(MCPacket, pkt);
 
-    pkt->type = ((STATE_PLAY<<24)|(is_client<<28)|(type&0xffffff));
-    pkt->protocol = PROTO_NONE; // this will be later set by the function that
-                                // decoded the packet, or not - then it will be
-                                // an unknown packet
+    // fill in basic data
+    pkt->type = type;
+    pkt->cl   = is_client;
+    pkt->mode = STATE_PLAY;
+    pkt->protocol = PROTO_NONE;
 
-    ssize_t psize = data+len-p; // length of the data that follows the type field
+    // make a raw data copy
+    pkt->rawlen = data+len-p;
+    pkt->raw = malloc(pkt->rawlen);
+    memmove(pkt->raw, p, pkt->rawlen);
 
-    if (SUPPORT[is_client][type]=='*' || SUPPORT[is_client][type]=='+') {
-        // we support decode (directly or differred), pass the rest of the data
-        // to the decoder routine
-        return decode_packet_1_8(pkt, p, psize);
+    // decode packet if supported
+    if (SUPPORT[pkt->cl][pkt->type].decode_method) {
+        SUPPORT[pkt->cl][pkt->type].decode_method(pkt);
     }
-    else {
-        // no support - decode as UnknownPacket
-        lh_alloc_buf(pkt->p_UnknownPacket.data,psize);
-        pkt->p_UnknownPacket.length = psize;
-        memmove(pkt->p_UnknownPacket.data, p, psize);
-        return pkt;
-    }
+
+    return pkt;
 }
 
 //FIXME: for now we assume static buffer allocation and sufficient buffer size
 //FIXME: we should convert this to lh_buf_t or a resizeable buffer later
 ssize_t encode_packet(MCPacket *pkt, uint8_t *buf) {
     uint8_t * p = buf;
-    
-    if (pkt->protocol == PROTO_NONE) {
-        // UnknownPacket
-        lh_write_varint(p, PID(pkt->type));
-        memmove(p,pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length);
-        return p+pkt->p_UnknownPacket.length-buf;
+
+    // write packet type
+    lh_write_varint(p, pkt->type);
+    ssize_t ll = p-buf;
+
+    if (!SUPPORT[pkt->cl][pkt->type].encode_method || pkt->protocol == PROTO_NONE) {
+        assert(pkt->raw);
+        memmove(p, pkt->raw, pkt->rawlen);
+        return ll+pkt->rawlen;
     }
-    else {
-        return encode_packet_1_8(pkt,buf);
+    else if (SUPPORT[pkt->cl][pkt->type].encode_method)
+        return ll+SUPPORT[pkt->cl][pkt->type].encode_method(pkt, p);
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 char limhexbuf[4100];
 static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
@@ -223,47 +226,28 @@ static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
 void dump_packet(MCPacket *pkt) {
     char *states="ISLP";
 
-    if (pkt->protocol == PROTO_NONE) {
-#if 0
-        printf("%c %c %2x ",PCLIENT(pkt->type)?'C':'S',states[PSTATE(pkt->type)],PID(pkt->type));
-        printf("%-24s len=%6zd, data=%s\n","[UnknownPacket]",pkt->p_UnknownPacket.length,
-               limhex(pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length,64));
-#endif
-        return;
+    printf("%c %c %2x ",pkt->cl?'C':'S',states[pkt->mode],pkt->type);
+    if (SUPPORT[pkt->cl][pkt->type].dump_method) {
+        SUPPORT[pkt->cl][pkt->type].dump_method(pkt);
+    }
+    else if (pkt->raw) {
+        printf("%s",limhexbuf(pkt->raw,pkt->rawlen,64));
+    }
+    else {
+        printf("(unknown)");
     }
 
-    printf("%c %c %2x ",PCLIENT(pkt->type)?'C':'S',states[PSTATE(pkt->type)],PID(pkt->type));
-    switch (pkt->type) {
-
-        case SP_SetCompression: {
-            printf("%-24s threshold=%d\n","SetCompression",pkt->p_SetCompression.threshold);
-            break;
-        }
-
-        case SP_PlayerPositionLook: {
-            PlayerPositionLook *tpkt = &pkt->p_PlayerPositionLook;
-            printf("%-24s coords=%.1f,%.1f,%.1f rot=%.1f,%.1f flags=%02x\n","PlayerPositionLook",
-                   tpkt->x,tpkt->y,tpkt->z,tpkt->yaw,tpkt->pitch,tpkt->flags);
-            break;
-        }
-
-        default:
-            printf("%-24s\n","[UnsupportedType]");
-    }
+    printf("\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
  
 void free_packet(MCPacket *pkt) {
-    if (pkt->protocol == PROTO_NONE) {
-        if (pkt->p_UnknownPacket.data)
-            free(pkt->p_UnknownPacket.data);
-        pkt->p_UnknownPacket.data = NULL;
-    }
-    else {
-        if (SUPPORT[PCLIENT(pkt->type)][PID(pkt->type)]=='*')
-            free_packet_1_8(pkt);
-    }
+    lh_free(pkt->raw);
+
+    if (SUPPORT[pkt->cl][pkt->type].free_method)
+        SUPPORT[pkt->cl][pkt->type].free_method(pkt);
+
     free(pkt);
 }
 
