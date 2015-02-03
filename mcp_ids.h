@@ -153,8 +153,8 @@
 #define CP_Spectate             CP(18)
 #define CP_ResourcePackStatus   CP(19)
 
-#define PACKET_TYPES_SERVER     50
-#define PACKET_TYPES_CLIENT     20
+#define MAXPACKETTYPES          0x100
+
 ////////////////////////////////////////////////////////////////////////////////
 // Block IDs
 

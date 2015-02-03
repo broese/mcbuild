@@ -69,99 +69,52 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 //#define Pslot(n)    p=read_slot(p,tpkt->n)
 #define Pdata(n,l)  memmove(tpkt->n,p,l); p+=l
 
+////////////////////////////////////////////////////////////////////////////////
+
+typedef struct {
+    void    (*decode_method)(MCPacket *);
+    ssize_t (*encode_method)(MCPacket *, uint8_t *buf);
+    void    (*free_method)(MCPacket *);
+    void    (*dump_method)(MCPacket *);
+} packet_methods;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void decode_SetCompression_1_8_1(MCPacket *pkt) {
+    SetCompression * tpkt = &pkt->p_SetCompression;
+    assert(pkt->raw);
+    uint8_t *p = pkt->raw;
 
-const static char *SUPPORT_1_8[2] = {
-    "........+......."
-    "................"
-    "................"
-    "................"
-    "......+..."
-    ,
-    "................"
-    ".........."
+    Pvarint(threshold);
+
+    pkt->ver = PROTO_1_8_1;
+}
+
+ssize_t encode_SetCompression_1_8_1(MCPacket *pkt, uint8_t *buf) {
+    SetCompression * tpkt = &pkt->p_SetCompression;
+    uint8_t *w = buf;
+
+    lh_write_varint(w, tpkt->threshold);
+
+    return w-buf;
+}
+
+const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
+    {
+        [PID(SP_SetCompression)] = {
+            decode_SetCompression_1_8_1,
+            encode_SetCompression_1_8_1,
+            NULL,
+            NULL,
+        },
+    },
+    {
+    },
 };
 
-MCPacket * decode_packet_1_8(MCPacket *pkt, uint8_t *data, ssize_t len) {
-    uint8_t *p = data;
-
-    // decode packet
-    pkt->protocol=PROTO_1_8_1;
-    switch(pkt->type) {
-
-        case SP_SetCompression: {
-            SetCompression *tpkt = &pkt->p_SetCompression;
-            Pvarint(threshold);
-            break;
-        }
-
-        case SP_PlayerPositionLook: {
-            PlayerPositionLook *tpkt = &pkt->p_PlayerPositionLook;
-            Pdouble(x);
-            Pdouble(y);
-            Pdouble(z);
-            Pfloat(yaw);
-            Pfloat(pitch);
-            Pchar(flags);
-            break;
-        }
-
-        default:
-            //TODO: pass the packet to the next lower version decoder
-            assert(0); // lowest version decoder should bail out with assert
-                       // either declare the packet unsupported or write a decoding routine
-    }
-
-    return pkt;
-}
-
-ssize_t encode_packet_1_8(MCPacket *pkt, uint8_t *buf) {
-    uint8_t *p = buf;
-
-    lh_write_varint(p, PID(pkt->type));
-
-    // encode packet
-    switch (pkt->type) {
-
-        case SP_SetCompression: {
-            SetCompression *tpkt = &pkt->p_SetCompression;
-            write_varint(p,tpkt->threshold);
-            break;
-        }        
-
-        case SP_PlayerPositionLook: {
-            PlayerPositionLook *tpkt = &pkt->p_PlayerPositionLook;
-            write_double(p,tpkt->x);
-            write_double(p,tpkt->y);
-            write_double(p,tpkt->z);
-            write_float(p,tpkt->yaw);
-            write_float(p,tpkt->pitch);
-            write_char(p,tpkt->flags);
-            break;
-        }
-
-        default:
-            //TODO: pass the packet to the next lower version encoder
-            assert(0);
-    }
-
-    return 0;
-}
-
-void free_packet_1_8(MCPacket *pkt) {
-    switch (pkt->type) {
-
-        default:
-            //TODO: pass the packet to the next lower version encoder
-            assert(0);
-    }
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 
-#define SUPPORT SUPPORT_1_8
+#define SUPPORT SUPPORT_1_8_1
 
 MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
 
@@ -174,7 +127,7 @@ MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
     pkt->type = type;
     pkt->cl   = is_client;
     pkt->mode = STATE_PLAY;
-    pkt->protocol = PROTO_NONE;
+    pkt->ver  = PROTO_NONE;
 
     // make a raw data copy
     pkt->rawlen = data+len-p;
@@ -198,13 +151,15 @@ ssize_t encode_packet(MCPacket *pkt, uint8_t *buf) {
     lh_write_varint(p, pkt->type);
     ssize_t ll = p-buf;
 
-    if (!SUPPORT[pkt->cl][pkt->type].encode_method || pkt->protocol == PROTO_NONE) {
-        assert(pkt->raw);
+    if (!pkt->modified && pkt->raw) {
         memmove(p, pkt->raw, pkt->rawlen);
         return ll+pkt->rawlen;
     }
-    else if (SUPPORT[pkt->cl][pkt->type].encode_method)
+    else if ( SUPPORT[pkt->cl][pkt->type].encode_method ) {
         return ll+SUPPORT[pkt->cl][pkt->type].encode_method(pkt, p);
+    }
+    else {
+        assert(0);
     }
 }
 
@@ -231,7 +186,7 @@ void dump_packet(MCPacket *pkt) {
         SUPPORT[pkt->cl][pkt->type].dump_method(pkt);
     }
     else if (pkt->raw) {
-        printf("%s",limhexbuf(pkt->raw,pkt->rawlen,64));
+        printf("%s",limhex(pkt->raw,pkt->rawlen,64));
     }
     else {
         printf("(unknown)");

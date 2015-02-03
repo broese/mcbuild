@@ -39,6 +39,7 @@ typedef struct {
     int32_t   ver;      // decoder will mark this with its version, so in
                         // difficult cases you can differentiate between
                         // changed interpretation
+    int modified;
 
     uint8_t * raw;      // raw packet data
     ssize_t   rawlen;
