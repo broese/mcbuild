@@ -20,6 +20,16 @@ typedef struct {
     uint8_t     *data;
 } UnknownPacket;
 
+typedef struct {
+    int32_t     threshold;
+} SetCompression;
+
+typedef struct {
+    double x,y,z;
+    float  yaw,pitch;
+    char   flags;
+} PlayerPositionLook;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
@@ -29,7 +39,9 @@ typedef struct {
                             // difficult cases you can differentiate between 
                             // changed interpretation
     union {
-        UnknownPacket p_UnknownPacket;
+        UnknownPacket      p_UnknownPacket;
+        SetCompression     p_SetCompression;
+        PlayerPositionLook p_PlayerPositionLook;
     };
 } MCPacket;
 

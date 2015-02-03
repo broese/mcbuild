@@ -30,7 +30,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
     int max=20;
     while(hdr-data < (size-16) && max>0) {
-        max--;
+        //max--;
         uint8_t *p = hdr;
 
         Rint(is_client);
@@ -73,6 +73,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
             hexdump(pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length);
             printf("--------------------------------------------------------------------------------\n");
 #endif
+            free_packet(pkt);
         }
 
         uint8_t *ptr = p;

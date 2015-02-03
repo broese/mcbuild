@@ -56,37 +56,57 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 
 
 
-#define Px(n,fun)   pkt->n = lh_read_ ## fun ## _be(p)
+#define Px(n,fun)   tpkt->n = lh_read_ ## fun ## _be(p)
 
 #define Pchar(n)    Px(n,char)
 #define Pshort(n)   Px(n,short)
 #define Pint(n)     Px(n,int)
 #define Plong(n)    Px(n,long)
 #define Pfloat(n)   Px(n,float)
-#define Pdouble(n)  Px(n,double,double)
-#define Pstr(n)     p=read_string(p,pkt->n)
-#define Pvarint(n)  pkt->n = lh_read_varint(p)
-//#define Pslot(n)    p=read_slot(p,pkt->n)
-#define Pdata(n,l)  memmove(pkt->n,p,l); p+=l
+#define Pdouble(n)  Px(n,double)
+#define Pstr(n)     p=read_string(p,tpkt->n)
+#define Pvarint(n)  tpkt->n = lh_read_varint(p)
+//#define Pslot(n)    p=read_slot(p,tpkt->n)
+#define Pdata(n,l)  memmove(tpkt->n,p,l); p+=l
 
 
 
 ////////////////////////////////////////////////////////////////////////////////
 
 const static char *SUPPORT_1_8[2] = {
+    "........+......."
     "................"
     "................"
     "................"
-    "................"
-    ".........."
+    "......+..."
     ,
     "................"
     ".........."
 };
 
 MCPacket * decode_packet_1_8(MCPacket *pkt, uint8_t *data, ssize_t len) {
+    uint8_t *p = data;
+
     // decode packet
+    pkt->protocol=PROTO_1_8_1;
     switch(pkt->type) {
+
+        case SP_SetCompression: {
+            SetCompression *tpkt = &pkt->p_SetCompression;
+            Pvarint(threshold);
+            break;
+        }
+
+        case SP_PlayerPositionLook: {
+            PlayerPositionLook *tpkt = &pkt->p_PlayerPositionLook;
+            Pdouble(x);
+            Pdouble(y);
+            Pdouble(z);
+            Pfloat(yaw);
+            Pfloat(pitch);
+            Pchar(flags);
+            break;
+        }
 
         default:
             //TODO: pass the packet to the next lower version decoder
@@ -104,6 +124,23 @@ ssize_t encode_packet_1_8(MCPacket *pkt, uint8_t *buf) {
 
     // encode packet
     switch (pkt->type) {
+
+        case SP_SetCompression: {
+            SetCompression *tpkt = &pkt->p_SetCompression;
+            write_varint(p,tpkt->threshold);
+            break;
+        }        
+
+        case SP_PlayerPositionLook: {
+            PlayerPositionLook *tpkt = &pkt->p_PlayerPositionLook;
+            write_double(p,tpkt->x);
+            write_double(p,tpkt->y);
+            write_double(p,tpkt->z);
+            write_float(p,tpkt->yaw);
+            write_float(p,tpkt->pitch);
+            write_char(p,tpkt->flags);
+            break;
+        }
 
         default:
             //TODO: pass the packet to the next lower version encoder
@@ -140,7 +177,7 @@ MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
 
     ssize_t psize = data+len-p; // length of the data that follows the type field
 
-    if (SUPPORT[is_client][type]=='*') {
+    if (SUPPORT[is_client][type]=='*' || SUPPORT[is_client][type]=='+') {
         // we support decode (directly or differred), pass the rest of the data
         // to the decoder routine
         return decode_packet_1_8(pkt, p, psize);
@@ -172,7 +209,7 @@ ssize_t encode_packet(MCPacket *pkt, uint8_t *buf) {
 
 char limhexbuf[4100];
 static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
-    assert(len<(sizeof(limhexbuf)-4)/2);
+    //assert(len<(sizeof(limhexbuf)-4)/2);
     assert(maxbyte >= 4);
 
     int i;
@@ -185,15 +222,30 @@ static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
 
 void dump_packet(MCPacket *pkt) {
     char *states="ISLP";
-    printf("%c %c %2x ",PCLIENT(pkt->type)?'C':'S',states[PSTATE(pkt->type)],PID(pkt->type));
 
     if (pkt->protocol == PROTO_NONE) {
-        printf("%-24s len=%6d, data=%s\n","[UnknownPacket]",pkt->p_UnknownPacket.length,
+#if 0
+        printf("%c %c %2x ",PCLIENT(pkt->type)?'C':'S',states[PSTATE(pkt->type)],PID(pkt->type));
+        printf("%-24s len=%6zd, data=%s\n","[UnknownPacket]",pkt->p_UnknownPacket.length,
                limhex(pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length,64));
+#endif
         return;
     }
 
+    printf("%c %c %2x ",PCLIENT(pkt->type)?'C':'S',states[PSTATE(pkt->type)],PID(pkt->type));
     switch (pkt->type) {
+
+        case SP_SetCompression: {
+            printf("%-24s threshold=%d\n","SetCompression",pkt->p_SetCompression.threshold);
+            break;
+        }
+
+        case SP_PlayerPositionLook: {
+            PlayerPositionLook *tpkt = &pkt->p_PlayerPositionLook;
+            printf("%-24s coords=%.1f,%.1f,%.1f rot=%.1f,%.1f flags=%02x\n","PlayerPositionLook",
+                   tpkt->x,tpkt->y,tpkt->z,tpkt->yaw,tpkt->pitch,tpkt->flags);
+            break;
+        }
 
         default:
             printf("%-24s\n","[UnsupportedType]");
@@ -209,7 +261,8 @@ void free_packet(MCPacket *pkt) {
         pkt->p_UnknownPacket.data = NULL;
     }
     else {
-        free_packet_1_8(pkt);
+        if (SUPPORT[PCLIENT(pkt->type)][PID(pkt->type)]=='*')
+            free_packet_1_8(pkt);
     }
     free(pkt);
 }
