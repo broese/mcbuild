@@ -23,6 +23,11 @@ typedef struct {
 } SP_JoinGame_pkt;
 
 typedef struct {
+    uint64_t worldage;
+    uint64_t time;
+} SP_TimeUpdate_pkt;
+
+typedef struct {
     double x,y,z;
     float  yaw,pitch;
     char   flags;
@@ -59,6 +64,7 @@ typedef struct {
     // various packet types depending on pid
     union {
         PKT(SP_JoinGame);
+        PKT(SP_TimeUpdate);
         PKT(SP_PlayerPositionLook);
         PKT(SP_SetCompression);
     };

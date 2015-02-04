@@ -230,6 +230,21 @@ DUMP_BEGIN(SP_JoinGame) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x02 SP_TimeUpdate
+
+DECODE_BEGIN(SP_TimeUpdate,_1_8_1) {
+    Plong(worldage);
+    Plong(time);
+} DECODE_END;
+
+DUMP_BEGIN(SP_TimeUpdate) {
+    printf("worldage=%jd ticks (%jdd %02jdh%02jdm), "
+           "time=%jd ticks (%jdd %02jd:%02jd)",
+           tpkt->worldage,tpkt->worldage/24000,(tpkt->worldage%24000)/1000,(tpkt->worldage%1000)/60,
+           tpkt->time, tpkt->time/24000, (tpkt->time%24000)/1000, (tpkt->time%1000)/60);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x08 SP_PlayerPositionLook
 
 DECODE_BEGIN(SP_PlayerPositionLook,_1_8_1) {
@@ -275,6 +290,7 @@ DUMP_BEGIN(SP_SetCompression) {
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_DD  (SP_JoinGame,_1_8_1),
+        SUPPORT_D   (SP_TimeUpdate,_1_8_1),
         SUPPORT_DED (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
