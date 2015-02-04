@@ -13,14 +13,24 @@ typedef int32_t fixp;
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
-    int32_t     threshold;
-} SP_SetCompression_pkt;
+    uint32_t eid;
+    uint8_t  gamemode;
+    int8_t   dimension;
+    uint8_t  difficulty;
+    uint8_t  maxplayers;
+    char     leveltype[32];
+    uint8_t  reduced_debug_info;
+} SP_JoinGame_pkt;
 
 typedef struct {
     double x,y,z;
     float  yaw,pitch;
     char   flags;
 } SP_PlayerPositionLook_pkt;
+
+typedef struct {
+    int32_t     threshold;
+} SP_SetCompression_pkt;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -46,8 +56,9 @@ typedef struct {
 
     // various packet types depending on pid
     union {
-        SP_SetCompression_pkt       _SP_SetCompression;
+        SP_JoinGame_pkt             _SP_JoinGame;
         SP_PlayerPositionLook_pkt   _SP_PlayerPositionLook;
+        SP_SetCompression_pkt       _SP_SetCompression;
     };
 } MCPacket;
 

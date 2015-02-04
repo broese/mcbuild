@@ -204,6 +204,30 @@ typedef struct {
         #name                                   \
     }
 
+////////////////////////////////////////////////////////////////////////////////
+// 0x01 SP_JoinGame
+
+DECODE_BEGIN(SP_JoinGame,_1_8_1) {
+    Pint(eid);
+    Pchar(gamemode);
+    Pchar(dimension);
+    Pchar(difficulty);
+    Pchar(maxplayers);
+    Pstr(leveltype);
+    Pchar(reduced_debug_info);
+} DECODE_END;
+
+DUMP_BEGIN(SP_JoinGame) {
+    const char *GM[]   = { "Survival", "Creative", "Adventure", "Spectator" };
+    const char *DIM[]  = { "Overworld", "End", "Unknown", "Nether" };
+    const char *DIFF[] = { "Peaceful", "Easy", "Normal", "Hard" };
+
+    printf("eid=%08x, gamemode=%s%s, dimension=%s, difficulty=%s, "
+           "maxplayers=%d, leveltype=%s, reduced_debug_info=%c",
+           tpkt->eid, GM[tpkt->gamemode&3], (tpkt->gamemode&8)?"(hardcore)":"",
+           DIM[tpkt->dimension&3], DIFF[tpkt->difficulty&3],
+           tpkt->maxplayers, tpkt->leveltype, tpkt->reduced_debug_info?'T':'F');
+} DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x08 SP_PlayerPositionLook
@@ -250,8 +274,9 @@ DUMP_BEGIN(SP_SetCompression) {
 
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
-        SUPPORT_DED(SP_PlayerPositionLook,_1_8_1),
-        SUPPORT_DED(SP_SetCompression,_1_8_1),
+        SUPPORT_DD  (SP_JoinGame,_1_8_1),
+        SUPPORT_DED (SP_PlayerPositionLook,_1_8_1),
+        SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
     },
