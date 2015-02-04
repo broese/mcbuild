@@ -14,13 +14,13 @@ typedef int32_t fixp;
 
 typedef struct {
     int32_t     threshold;
-} SetCompression;
+} SP_SetCompression_pkt;
 
 typedef struct {
     double x,y,z;
     float  yaw,pitch;
     char   flags;
-} PlayerPositionLook;
+} SP_PlayerPositionLook_pkt;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -46,8 +46,8 @@ typedef struct {
 
     // various packet types depending on pid
     union {
-        SetCompression     p_SetCompression;
-        PlayerPositionLook p_PlayerPositionLook;
+        SP_SetCompression_pkt       _SP_SetCompression;
+        SP_PlayerPositionLook_pkt   _SP_PlayerPositionLook;
     };
 } MCPacket;
 

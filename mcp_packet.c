@@ -91,12 +91,13 @@ typedef struct {
     ssize_t (*encode_method)(MCPacket *, uint8_t *buf);
     void    (*free_method)(MCPacket *);
     void    (*dump_method)(MCPacket *);
+    const char * dump_name;
 } packet_methods;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void decode_SetCompression_1_8_1(MCPacket *pkt) {
-    SetCompression * tpkt = &pkt->p_SetCompression;
+void decode_SP_SetCompression_1_8_1(MCPacket *pkt) {
+    SP_SetCompression_pkt * tpkt = &pkt->_SP_SetCompression;
     assert(pkt->raw);
     uint8_t *p = pkt->raw;
 
@@ -105,8 +106,8 @@ void decode_SetCompression_1_8_1(MCPacket *pkt) {
     pkt->ver = PROTO_1_8_1;
 }
 
-ssize_t encode_SetCompression_1_8_1(MCPacket *pkt, uint8_t *buf) {
-    SetCompression * tpkt = &pkt->p_SetCompression;
+ssize_t encode_SP_SetCompression_1_8_1(MCPacket *pkt, uint8_t *buf) {
+    SP_SetCompression_pkt * tpkt = &pkt->_SP_SetCompression;
     uint8_t *w = buf;
 
     Wvarint(threshold);
@@ -117,10 +118,11 @@ ssize_t encode_SetCompression_1_8_1(MCPacket *pkt, uint8_t *buf) {
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         [PID(SP_SetCompression)] = {
-            decode_SetCompression_1_8_1,
-            encode_SetCompression_1_8_1,
+            decode_SP_SetCompression_1_8_1,
+            encode_SP_SetCompression_1_8_1,
             NULL,
             NULL,
+            "SP_SetCompression"
         },
     },
     {
@@ -196,12 +198,13 @@ static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
 void dump_packet(MCPacket *pkt) {
     char *states="ISLP";
 
-    printf("%c %c %2x    ",pkt->cl?'C':'S',states[pkt->mode],pkt->type);
+    printf("%c %c %2x ",pkt->cl?'C':'S',states[pkt->mode],pkt->type);
     if (SUPPORT[pkt->cl][pkt->type].dump_method) {
+        printf("%-24s    ",SUPPORT[pkt->cl][pkt->type].dump_name);
         SUPPORT[pkt->cl][pkt->type].dump_method(pkt);
     }
     else if (pkt->raw) {
-        printf("len=%6zd, raw=%s",pkt->rawlen,limhex(pkt->raw,pkt->rawlen,64));
+        printf("%-24s    len=%6zd, raw=%s","Raw",pkt->rawlen,limhex(pkt->raw,pkt->rawlen,64));
     }
     else {
         printf("(unknown)");
