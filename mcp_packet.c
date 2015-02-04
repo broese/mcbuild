@@ -351,19 +351,23 @@ static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
 void dump_packet(MCPacket *pkt) {
     char *states="ISLP";
 
-    printf("%c %c %2x ",pkt->cl?'C':'S',states[pkt->mode],pkt->type);
     if (SUPPORT[pkt->cl][pkt->type].dump_method) {
+        printf("%c %c %2x ",pkt->cl?'C':'S',states[pkt->mode],pkt->type);
         printf("%-24s    ",SUPPORT[pkt->cl][pkt->type].dump_name);
         SUPPORT[pkt->cl][pkt->type].dump_method(pkt);
+        printf("\n");
     }
     else if (pkt->raw) {
+#if 0
+        printf("%c %c %2x ",pkt->cl?'C':'S',states[pkt->mode],pkt->type);
         printf("%-24s    len=%6zd, raw=%s","Raw",pkt->rawlen,limhex(pkt->raw,pkt->rawlen,64));
+        printf("\n");
+#endif
     }
     else {
-        printf("(unknown)");
+        //printf("(unknown)");
     }
 
-    printf("\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
