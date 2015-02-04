@@ -90,8 +90,8 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 typedef struct {
     void    (*decode_method)(MCPacket *);
     ssize_t (*encode_method)(MCPacket *, uint8_t *buf);
-    void    (*free_method)(MCPacket *);
     void    (*dump_method)(MCPacket *);
+    void    (*free_method)(MCPacket *);
     const char * dump_name;
 } packet_methods;
 
@@ -122,16 +122,69 @@ typedef struct {
 
 
 ////////////////////////////////////////////////////////////////////////////////
+// macros to fill the SUPPORT table
 
-#define SUPPORT_DED(name,version)               \
+// decode, encode, dump and free
+#define SUPPORT_DEDF(name,version)              \
+    [PID(name)] = {                             \
+        decode_##name##version,                 \
+        encode_##name##version,                 \
+        dump_##name,                            \
+        free_##name,                            \
+        #name                                   \
+    }
+
+// decode, dump and free
+#define SUPPORT_DDF(name,version)               \
+    [PID(name)] = {                             \
+        decode_##name##version,                 \
+        NULL,                                   \
+        dump_##name,                            \
+        free_##name,                            \
+        #name                                   \
+    }
+
+// decode, encode and free
+#define SUPPORT_DEF(name,version)               \
     [PID(name)] = {                             \
         decode_##name##version,                 \
         encode_##name##version,                 \
         NULL,                                   \
-        dump_##name,                            \
+        free_##name,                            \
         #name                                   \
     }
 
+// decode and free
+#define SUPPORT_DF(name,version)                \
+    [PID(name)] = {                             \
+        decode_##name##version,                 \
+        NULL,                                   \
+        NULL,                                   \
+        free_##name,                            \
+        #name                                   \
+    }
+
+// decode, encode and dump
+#define SUPPORT_DED(name,version)               \
+    [PID(name)] = {                             \
+        decode_##name##version,                 \
+        encode_##name##version,                 \
+        dump_##name,                            \
+        NULL,                                   \
+        #name                                   \
+    }
+
+// decode and dump
+#define SUPPORT_DD(name,version)                \
+    [PID(name)] = {                             \
+        decode_##name##version,                 \
+        NULL,                                   \
+        dump_##name,                            \
+        NULL,                                   \
+        #name                                   \
+    }
+
+// decode and encode
 #define SUPPORT_DE(name,version)                \
     [PID(name)] = {                             \
         decode_##name##version,                 \
@@ -141,6 +194,7 @@ typedef struct {
         #name                                   \
     }
 
+// decode only
 #define SUPPORT_D(name,version)                 \
     [PID(name)] = {                             \
         decode_##name##version,                 \
