@@ -94,36 +94,48 @@ typedef struct {
     const char * dump_name;
 } packet_methods;
 
+#define DECODE_BEGIN(name,version)                                  \
+    void decode_##name##version(MCPacket *pkt) {                    \
+        name##_pkt * tpkt = &pkt->_##name;                          \
+        assert(pkt->raw);                                           \
+        uint8_t *p = pkt->raw;                                      \
+        pkt->ver = PROTO##version;
+
+#define DECODE_END                              \
+    }
+
+#define ENCODE_BEGIN(name,version)                                  \
+    ssize_t encode_##name##version(MCPacket *pkt, uint8_t *buf) {   \
+        name##_pkt * tpkt = &pkt->_##name;                          \
+        uint8_t *w = buf;
+
+#define ENCODE_END                              \
+        return w-buf;                           \
+    }
+
+#define SUPPORT_DE(name,version)                \
+    [PID(name)] = {                             \
+        decode_##name##version,                 \
+        encode_##name##version,                 \
+        NULL,                                   \
+        NULL,                                   \
+        #name                                   \
+    }
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
-void decode_SP_SetCompression_1_8_1(MCPacket *pkt) {
-    SP_SetCompression_pkt * tpkt = &pkt->_SP_SetCompression;
-    assert(pkt->raw);
-    uint8_t *p = pkt->raw;
-
+DECODE_BEGIN(SP_SetCompression,_1_8_1) {
     Pvarint(threshold);
+} DECODE_END;
 
-    pkt->ver = PROTO_1_8_1;
-}
-
-ssize_t encode_SP_SetCompression_1_8_1(MCPacket *pkt, uint8_t *buf) {
-    SP_SetCompression_pkt * tpkt = &pkt->_SP_SetCompression;
-    uint8_t *w = buf;
-
+ENCODE_BEGIN(SP_SetCompression,_1_8_1) {
     Wvarint(threshold);
-
-    return w-buf;
-}
+} ENCODE_END;
 
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
-        [PID(SP_SetCompression)] = {
-            decode_SP_SetCompression_1_8_1,
-            encode_SP_SetCompression_1_8_1,
-            NULL,
-            NULL,
-            "SP_SetCompression"
-        },
+        SUPPORT_DE(SP_SetCompression,_1_8_1),
     },
     {
     },
