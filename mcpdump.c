@@ -63,16 +63,6 @@ void parse_mcp(uint8_t *data, ssize_t size) {
         if (state == STATE_PLAY) {
             MCPacket *pkt = decode_packet(is_client, p, plen);
             dump_packet(pkt);
-
-#if 0
-            printf("MCPacket @%p:\n",pkt);
-            printf("  type =%08x\n",pkt->type);
-            printf("  proto=%08x\n",pkt->protocol);
-            printf("    data=%p, len=%zd\n",pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length);
-
-            hexdump(pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length);
-            printf("--------------------------------------------------------------------------------\n");
-#endif
             free_packet(pkt);
         }
 
