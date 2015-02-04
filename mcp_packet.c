@@ -152,16 +152,7 @@ typedef struct {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-
-DECODE_BEGIN(SP_SetCompression,_1_8_1) {
-    Pvarint(threshold);
-} DECODE_END;
-
-ENCODE_BEGIN(SP_SetCompression,_1_8_1) {
-    Wvarint(threshold);
-} ENCODE_END;
-
-////////////////////////////////////////////////////////////////////////////////
+// 0x08 SP_PlayerPositionLook
 
 DECODE_BEGIN(SP_PlayerPositionLook,_1_8_1) {
     Pdouble(x);
@@ -187,11 +178,26 @@ DUMP_BEGIN(SP_PlayerPositionLook) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x46 SP_SetCompression
+
+DECODE_BEGIN(SP_SetCompression,_1_8_1) {
+    Pvarint(threshold);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_SetCompression,_1_8_1) {
+    Wvarint(threshold);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_SetCompression) {
+    printf("threshold=%d",tpkt->threshold);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
-        SUPPORT_DE(SP_SetCompression,_1_8_1),
         SUPPORT_DED(SP_PlayerPositionLook,_1_8_1),
+        SUPPORT_DED(SP_SetCompression,_1_8_1),
     },
     {
     },
