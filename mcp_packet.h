@@ -34,6 +34,8 @@ typedef struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define PKT(name) name##_pkt _##name
+
 typedef struct {
     union {
         int32_t pid;                 // for use as Cx_ Sx_ constants defined in mcp_ids.h
@@ -56,9 +58,9 @@ typedef struct {
 
     // various packet types depending on pid
     union {
-        SP_JoinGame_pkt             _SP_JoinGame;
-        SP_PlayerPositionLook_pkt   _SP_PlayerPositionLook;
-        SP_SetCompression_pkt       _SP_SetCompression;
+        PKT(SP_JoinGame);
+        PKT(SP_PlayerPositionLook);
+        PKT(SP_SetCompression);
     };
 } MCPacket;
 
