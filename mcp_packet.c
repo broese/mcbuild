@@ -4,6 +4,7 @@
 #define LH_DECLARE_SHORT_NAMES 1
 #include <lh_buffers.h>
 #include <lh_bytes.h>
+#include <lh_debug.h>
 
 #include "mcp_packet.h"
 #include "mcp_ids.h"
@@ -113,10 +114,37 @@ typedef struct {
         return w-buf;                           \
     }
 
+#define DUMP_BEGIN(name)                        \
+    void dump_##name(MCPacket *pkt) {           \
+        name##_pkt * tpkt = &pkt->_##name;      \
+
+#define DUMP_END }
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+#define SUPPORT_DED(name,version)               \
+    [PID(name)] = {                             \
+        decode_##name##version,                 \
+        encode_##name##version,                 \
+        NULL,                                   \
+        dump_##name,                            \
+        #name                                   \
+    }
+
 #define SUPPORT_DE(name,version)                \
     [PID(name)] = {                             \
         decode_##name##version,                 \
         encode_##name##version,                 \
+        NULL,                                   \
+        NULL,                                   \
+        #name                                   \
+    }
+
+#define SUPPORT_D(name,version)                 \
+    [PID(name)] = {                             \
+        decode_##name##version,                 \
+        NULL,                                   \
         NULL,                                   \
         NULL,                                   \
         #name                                   \
@@ -133,9 +161,37 @@ ENCODE_BEGIN(SP_SetCompression,_1_8_1) {
     Wvarint(threshold);
 } ENCODE_END;
 
+////////////////////////////////////////////////////////////////////////////////
+
+DECODE_BEGIN(SP_PlayerPositionLook,_1_8_1) {
+    Pdouble(x);
+    Pdouble(y);
+    Pdouble(z);
+    Pfloat(yaw);
+    Pfloat(pitch);
+    Pchar(flags);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_PlayerPositionLook,_1_8_1) {
+    Wdouble(x);
+    Wdouble(y);
+    Wdouble(z);
+    Wfloat(yaw);
+    Wfloat(pitch);
+    Wchar(flags);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_PlayerPositionLook) {
+    printf("coord=%.1f,%.1f,%.1f rot=%.1f,%.1f flags=%02x",
+           tpkt->x,tpkt->y,tpkt->z,tpkt->yaw,tpkt->pitch,tpkt->flags);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_DE(SP_SetCompression,_1_8_1),
+        SUPPORT_DED(SP_PlayerPositionLook,_1_8_1),
     },
     {
     },
