@@ -87,6 +87,14 @@ typedef struct {
     uint8_t  onground;
 } SP_EntityRelMove_pkt;
 
+// 0x16
+typedef struct {
+    uint32_t eid;
+    angle_t  yaw;
+    angle_t  pitch;
+    uint8_t  onground;
+} SP_EntityLook_pkt;
+
 // 0x46
 typedef struct {
     int32_t     threshold;
@@ -133,6 +141,7 @@ typedef struct {
         PKT(SP_DestroyEntities);
         PKT(SP_Entity);
         PKT(SP_EntityRelMove);
+        PKT(SP_EntityLook);
         PKT(SP_SetCompression);
 
         PKT(CP_Animation);
