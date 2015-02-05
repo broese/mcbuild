@@ -18,6 +18,14 @@ static uint8_t * read_string(uint8_t *p, char *s) {
     return p+len;
 }
 
+static uint8_t * write_string(uint8_t *w, const char *s) {
+    uint32_t len = (uint32_t)strlen(s);
+    lh_write_varint(w, len);
+    memmove(w, s, len);
+    w+=len;
+    return w;
+}
+
 #if 0
 static uint8_t * read_slot(uint8_t *p, slot_t *s) {
     lh_clear_ptr(s);
@@ -81,7 +89,7 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 #define Wlong(n)    Wx(n,long)
 #define Wfloat(n)   Wx(n,float)
 #define Wdouble(n)  Wx(n,double)
-//#define Wstr(n)     w=write_string(w, tpkt->n)
+#define Wstr(n)     w=write_string(w, tpkt->n)
 #define Wvarint(n)  lh_write_varint(w, tpkt->n)
 //#define Pslot(n)    p=read_slot(p,tpkt->n)
 #define Wdata(n,l)  memmove(w,tpkt->n,l); w+=l
