@@ -310,6 +310,32 @@ DUMP_BEGIN(SP_SpawnPlayer) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x0f SP_SpawnMob
+
+DECODE_BEGIN(SP_SpawnMob,_1_8_1) {
+    Pvarint(eid);
+    Pchar(mobtype);
+    Pint(x);
+    Pint(y);
+    Pint(z);
+    Pchar(yaw);
+    Pchar(pitch);
+    Pchar(headpitch);
+    Pshort(vx);
+    Pshort(vy);
+    Pshort(vz);
+    //TODO: Metadata
+} DECODE_END;
+
+DUMP_BEGIN(SP_SpawnMob) {
+    printf("eid=%08x, mobtype=%d, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f,%.1f, vel=%d,%d,%d",
+           tpkt->eid, tpkt->mobtype,
+           (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
+           (float)tpkt->yaw/256,(float)tpkt->pitch/256,(float)tpkt->headpitch/256,
+           tpkt->vx,tpkt->vy,tpkt->vz);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x46 SP_SetCompression
 
 DECODE_BEGIN(SP_SetCompression,_1_8_1) {
@@ -344,6 +370,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
         SUPPORT_DED (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DD  (SP_SpawnPlayer,_1_8_1),
+        SUPPORT_DD  (SP_SpawnMob,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
