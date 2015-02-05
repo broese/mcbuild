@@ -67,6 +67,12 @@ typedef struct {
     //TODO: metadata;
 } SP_SpawnMob_pkt;
 
+// 0x13
+typedef struct {
+    uint32_t count;
+    uint32_t *eids;
+} SP_DestroyEntities_pkt;
+
 // 0x46
 typedef struct {
     int32_t     threshold;
@@ -110,6 +116,7 @@ typedef struct {
         PKT(SP_PlayerPositionLook);
         PKT(SP_SpawnPlayer);
         PKT(SP_SpawnMob);
+        PKT(SP_DestroyEntities);
         PKT(SP_SetCompression);
 
         PKT(CP_Animation);

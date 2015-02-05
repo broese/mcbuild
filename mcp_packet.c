@@ -342,6 +342,30 @@ DUMP_BEGIN(SP_SpawnMob) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x13 SP_DestroyEntities
+
+DECODE_BEGIN(SP_DestroyEntities,_1_8_1) {
+    Pvarint(count);
+    lh_alloc_num(tpkt->eids,tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        Pvarint(eids[i]);
+    }
+} DECODE_END;
+
+DUMP_BEGIN(SP_DestroyEntities) {
+    printf("count=%d eids=[",tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        printf("%08x%s",tpkt->eids[i],(i==tpkt->count-1)?"]":",");
+    }
+} DUMP_END;
+
+FREE_BEGIN(SP_DestroyEntities) {
+    lh_free(tpkt->eids);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x46 SP_SetCompression
 
 DECODE_BEGIN(SP_SetCompression,_1_8_1) {
@@ -377,6 +401,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DED (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DD  (SP_SpawnPlayer,_1_8_1),
         SUPPORT_DD  (SP_SpawnMob,_1_8_1),
+        SUPPORT_DDF (SP_DestroyEntities,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
