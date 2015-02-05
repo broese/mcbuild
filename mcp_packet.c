@@ -137,6 +137,12 @@ typedef struct {
 
 #define DUMP_END }
 
+#define FREE_BEGIN(name)                        \
+    void free_##name(MCPacket *pkt) {           \
+        name##_pkt * tpkt = &pkt->_##name;      \
+
+#define FREE_END }
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // macros to fill the SUPPORT table
