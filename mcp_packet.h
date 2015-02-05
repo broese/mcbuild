@@ -78,6 +78,15 @@ typedef struct {
     uint32_t eid;
 } SP_Entity_pkt;
 
+// 0x15
+typedef struct {
+    uint32_t eid;
+    int8_t   dx;
+    int8_t   dy;
+    int8_t   dz;
+    uint8_t  onground;
+} SP_EntityRelMove_pkt;
+
 // 0x46
 typedef struct {
     int32_t     threshold;
@@ -123,6 +132,7 @@ typedef struct {
         PKT(SP_SpawnMob);
         PKT(SP_DestroyEntities);
         PKT(SP_Entity);
+        PKT(SP_EntityRelMove);
         PKT(SP_SetCompression);
 
         PKT(CP_Animation);

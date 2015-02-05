@@ -377,6 +377,22 @@ DUMP_BEGIN(SP_Entity) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x15 SP_EntityRelMove
+
+DECODE_BEGIN(SP_EntityRelMove,_1_8_1) {
+    Pvarint(eid);
+    Pchar(dx);
+    Pchar(dy);
+    Pchar(dz);
+    Pchar(onground);
+} DECODE_END;
+
+DUMP_BEGIN(SP_EntityRelMove) {
+    printf("eid=%08x, delta=%.1f,%.1f,%.1f, onground=%d",tpkt->eid,
+           (float)tpkt->dx/32,(float)tpkt->dy/32,(float)tpkt->dz/32,tpkt->onground);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x46 SP_SetCompression
 
 DECODE_BEGIN(SP_SetCompression,_1_8_1) {
@@ -414,6 +430,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (SP_SpawnMob,_1_8_1),
         SUPPORT_DDF (SP_DestroyEntities,_1_8_1),
         SUPPORT_DD  (SP_Entity,_1_8_1),
+        SUPPORT_D   (SP_EntityRelMove,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
