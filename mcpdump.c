@@ -244,6 +244,8 @@ void parse_mcp(uint8_t *data, ssize_t size) {
     
         hdr += 16+len; // advance header pointer to the next packet
     }
+
+    lh_free(P(udata));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
