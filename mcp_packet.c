@@ -261,7 +261,24 @@ DUMP_BEGIN(SP_JoinGame) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x02 SP_TimeUpdate
+// 0x02 SP_ChatMessage
+
+DECODE_BEGIN(SP_ChatMessage,_1_8_1) {
+    Pstr(json);
+    Pchar(pos);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_ChatMessage,_1_8_1) {
+    Wstr(json);
+    Wchar(pos);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_ChatMessage) {
+    printf("json=%s",tpkt->json);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x03 SP_TimeUpdate
 
 DECODE_BEGIN(SP_TimeUpdate,_1_8_1) {
     Plong(worldage);
@@ -485,6 +502,7 @@ DUMP_BEGIN(CP_Animation) {
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_DD  (SP_JoinGame,_1_8_1),
+        SUPPORT_DED (SP_ChatMessage,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
         SUPPORT_DED (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DD  (SP_SpawnPlayer,_1_8_1),

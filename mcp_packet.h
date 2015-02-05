@@ -25,6 +25,12 @@ typedef struct {
     uint8_t  reduced_debug_info;
 } SP_JoinGame_pkt;
 
+// 0x02
+typedef struct {
+    char     json[32768];
+    uint8_t  pos;
+} SP_ChatMessage_pkt;
+
 // 0x03
 typedef struct {
     uint64_t worldage;
@@ -156,6 +162,7 @@ typedef struct {
     // various packet types depending on pid
     union {
         PKT(SP_JoinGame);
+        PKT(SP_ChatMessage);
         PKT(SP_TimeUpdate);
         PKT(SP_PlayerPositionLook);
         PKT(SP_SpawnPlayer);
