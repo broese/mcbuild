@@ -286,6 +286,18 @@ DUMP_BEGIN(SP_SetCompression) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// C 0x0a CP_Animation
+
+DECODE_BEGIN(CP_Animation,_1_8_1) {
+} DECODE_END;
+
+ENCODE_BEGIN(CP_Animation,_1_8_1) {
+} ENCODE_END;
+
+DUMP_BEGIN(CP_Animation) {
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
@@ -295,6 +307,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
+        SUPPORT_DE  (CP_Animation,_1_8_1),
     },
 };
 

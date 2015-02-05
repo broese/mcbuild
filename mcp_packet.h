@@ -11,6 +11,7 @@ typedef uint8_t uuid_t[16];
 typedef int32_t fixp;
 
 ////////////////////////////////////////////////////////////////////////////////
+// Server -> Client
 
 typedef struct {
     uint32_t eid;
@@ -36,6 +37,12 @@ typedef struct {
 typedef struct {
     int32_t     threshold;
 } SP_SetCompression_pkt;
+
+////////////////////////////////////////////////////////////////////////////////
+// Client -> Server
+
+typedef struct {
+} CP_Animation_pkt;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -67,6 +74,8 @@ typedef struct {
         PKT(SP_TimeUpdate);
         PKT(SP_PlayerPositionLook);
         PKT(SP_SetCompression);
+
+        PKT(CP_Animation);
     };
 } MCPacket;
 
