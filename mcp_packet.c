@@ -485,8 +485,30 @@ DUMP_BEGIN(SP_SetCompression) {
     printf("threshold=%d",tpkt->threshold);
 } DUMP_END;
 
+
+
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
-// C 0x0a CP_Animation
+////////////////////////////////////////////////////////////////////////////////
+// Client -> Server
+
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x01 CP_ChatMessage
+
+DECODE_BEGIN(CP_ChatMessage,_1_8_1) {
+    Pstr(str);
+} DECODE_END;
+
+DUMP_BEGIN(CP_ChatMessage) {
+    printf("str=%s",tpkt->str);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x0a CP_Animation
 
 DECODE_BEGIN(CP_Animation,_1_8_1) {
 } DECODE_END;
@@ -516,6 +538,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
+        SUPPORT_DD  (CP_ChatMessage,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
     },
 };

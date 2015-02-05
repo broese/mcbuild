@@ -131,6 +131,11 @@ typedef struct {
 ////////////////////////////////////////////////////////////////////////////////
 // Client -> Server
 
+// 0x01
+typedef struct {
+    char str[256];
+} CP_ChatMessage_pkt;
+
 // 0x0a
 typedef struct {
 } CP_Animation_pkt;
@@ -175,6 +180,7 @@ typedef struct {
         PKT(SP_EntityTeleport);
         PKT(SP_SetCompression);
 
+        PKT(CP_ChatMessage);
         PKT(CP_Animation);
     };
 } MCPacket;
