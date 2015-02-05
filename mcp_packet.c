@@ -69,6 +69,7 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 #define Pvarint(n)  tpkt->n = lh_read_varint(p)
 //#define Pslot(n)    p=read_slot(p,tpkt->n)
 #define Pdata(n,l)  memmove(tpkt->n,p,l); p+=l
+#define Puuid(n)    Pdata(n,sizeof(uuid_t))
 
 
 
@@ -84,6 +85,7 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 #define Wvarint(n)  lh_write_varint(w, tpkt->n)
 //#define Pslot(n)    p=read_slot(p,tpkt->n)
 #define Wdata(n,l)  memmove(w,tpkt->n,l); w+=l
+#define Wuuid(n)    Wdata(n,sizeof(uuid_t))
 
 ////////////////////////////////////////////////////////////////////////////////
 
