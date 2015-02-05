@@ -291,7 +291,7 @@ DUMP_BEGIN(SP_PlayerPositionLook) {
 // 0x0c SP_SpawnPlayer
 
 DECODE_BEGIN(SP_SpawnPlayer,_1_8_1) {
-    Pint(eid);
+    Pvarint(eid);
     Puuid(uuid);
     Pint(x);
     Pint(y);
