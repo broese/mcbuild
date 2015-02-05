@@ -36,6 +36,18 @@ typedef struct {
 } SP_PlayerPositionLook_pkt;
 
 typedef struct {
+    uint32_t eid;
+    uuid_t   uuid;
+    fixp     x;
+    fixp     y;
+    fixp     z;
+    angle_t  yaw;
+    angle_t  pitch;
+    int16_t  item;
+    //TODO:  metadata;
+} SP_SpawnPlayer_pkt;
+
+typedef struct {
     int32_t     threshold;
 } SP_SetCompression_pkt;
 
@@ -74,6 +86,7 @@ typedef struct {
         PKT(SP_JoinGame);
         PKT(SP_TimeUpdate);
         PKT(SP_PlayerPositionLook);
+        PKT(SP_SpawnPlayer);
         PKT(SP_SetCompression);
 
         PKT(CP_Animation);

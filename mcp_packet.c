@@ -288,6 +288,28 @@ DUMP_BEGIN(SP_PlayerPositionLook) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x0c SP_SpawnPlayer
+
+DECODE_BEGIN(SP_SpawnPlayer,_1_8_1) {
+    Pint(eid);
+    Puuid(uuid);
+    Pint(x);
+    Pint(y);
+    Pint(z);
+    Pchar(yaw);
+    Pchar(pitch);
+    Pshort(item);
+    //TODO: Metadata
+} DECODE_END;
+
+DUMP_BEGIN(SP_SpawnPlayer) {
+    printf("eid=%08x, uuid=%s, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, item=%d",
+           tpkt->eid, limhex(tpkt->uuid,16,16),
+           (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
+           (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->item);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x46 SP_SetCompression
 
 DECODE_BEGIN(SP_SetCompression,_1_8_1) {
@@ -321,6 +343,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (SP_JoinGame,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
         SUPPORT_DED (SP_PlayerPositionLook,_1_8_1),
+        SUPPORT_DD  (SP_SpawnPlayer,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
