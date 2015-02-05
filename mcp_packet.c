@@ -89,6 +89,21 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+char limhexbuf[4100];
+static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
+    //assert(len<(sizeof(limhexbuf)-4)/2);
+    assert(maxbyte >= 4);
+
+    int i;
+    //TODO: implement aaaaaa....bbbbbb - type of printing
+    if (len > maxbyte) len = maxbyte;
+    for(i=0;i<len;i++)
+        sprintf(limhexbuf+i*2,"%02x ",data[i]);
+    return limhexbuf;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 typedef struct {
     void    (*decode_method)(MCPacket *);
     ssize_t (*encode_method)(MCPacket *, uint8_t *buf);
@@ -365,19 +380,6 @@ ssize_t encode_packet(MCPacket *pkt, uint8_t *buf) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-char limhexbuf[4100];
-static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
-    //assert(len<(sizeof(limhexbuf)-4)/2);
-    assert(maxbyte >= 4);
-
-    int i;
-    //TODO: implement aaaaaa....bbbbbb - type of printing
-    if (len > maxbyte) len = maxbyte;
-    for(i=0;i<len;i++)
-        sprintf(limhexbuf+i*2,"%02x ",data[i]);
-    return limhexbuf;
-}
 
 void dump_packet(MCPacket *pkt) {
     char *states="ISLP";
