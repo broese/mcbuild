@@ -14,6 +14,7 @@ typedef uint8_t angle_t;
 ////////////////////////////////////////////////////////////////////////////////
 // Server -> Client
 
+// 0x01
 typedef struct {
     uint32_t eid;
     uint8_t  gamemode;
@@ -24,17 +25,20 @@ typedef struct {
     uint8_t  reduced_debug_info;
 } SP_JoinGame_pkt;
 
+// 0x03
 typedef struct {
     uint64_t worldage;
     uint64_t time;
 } SP_TimeUpdate_pkt;
 
+// 0x08
 typedef struct {
     double x,y,z;
     float  yaw,pitch;
     char   flags;
 } SP_PlayerPositionLook_pkt;
 
+// 0x0c
 typedef struct {
     uint32_t eid;
     uuid_t   uuid;
@@ -47,6 +51,7 @@ typedef struct {
     //TODO:  metadata;
 } SP_SpawnPlayer_pkt;
 
+// 0x46
 typedef struct {
     int32_t     threshold;
 } SP_SetCompression_pkt;
@@ -54,6 +59,7 @@ typedef struct {
 ////////////////////////////////////////////////////////////////////////////////
 // Client -> Server
 
+// 0x0a
 typedef struct {
 } CP_Animation_pkt;
 
