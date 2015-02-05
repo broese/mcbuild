@@ -366,6 +366,17 @@ FREE_BEGIN(SP_DestroyEntities) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x14 SP_Entity
+
+DECODE_BEGIN(SP_Entity,_1_8_1) {
+    Rvarint(eid);
+} DECODE_END;
+
+DUMP_BEGIN(SP_Entity) {
+    printf("eid=%08x",tpkt->eid);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x46 SP_SetCompression
 
 DECODE_BEGIN(SP_SetCompression,_1_8_1) {
@@ -402,6 +413,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (SP_SpawnPlayer,_1_8_1),
         SUPPORT_DD  (SP_SpawnMob,_1_8_1),
         SUPPORT_DDF (SP_DestroyEntities,_1_8_1),
+        SUPPORT_DD  (SP_Entity,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
