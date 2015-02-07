@@ -5,6 +5,7 @@
 #include <lh_buffers.h>
 #include <lh_bytes.h>
 #include <lh_debug.h>
+#include <lh_arr.h>
 
 #include "mcp_packet.h"
 #include "mcp_ids.h"
@@ -24,6 +25,63 @@ static uint8_t * write_string(uint8_t *w, const char *s) {
     memmove(w, s, len);
     w+=len;
     return w;
+}
+
+static uint8_t * read_metadata(uint8_t *p, metadata **meta) {
+    assert(meta);
+    assert(!*meta);
+    ssize_t mc = 0;
+
+    while(1) {
+        // allocate next key-value pair, it can become a terminator if we parse 0x7f
+        metadata *mm = lh_arr_new_c(*meta, mc, 4);
+        mm->h = lh_read_char(p);
+        if (mm->h == 0x7f) break; // terminator
+
+        switch (mm->type) {
+            case META_BYTE:   mm->b = read_char(p);    break;
+            case META_SHORT:  mm->s = read_short(p);   break;
+            case META_INT:    mm->i = read_int(p);     break;
+            case META_FLOAT:  mm->f = read_float(p);   break;
+            case META_STRING: p = read_string(p,mm->str); break;
+            case META_SLOT:   assert(0); break;
+            case META_COORD:
+                mm->x = read_int(p);
+                mm->y = read_int(p);
+                mm->z = read_int(p);
+                break;
+            case META_ROT:
+                mm->pitch = read_float(p);
+                mm->yaw   = read_float(p);
+                mm->roll  = read_float(p);
+                break;
+        }
+    }
+
+    return p;
+}
+
+static void dump_metadata(metadata *meta) {
+    if (!meta) return;
+
+    int i;
+    for (i=0; meta[i].h !=0x7f; i++) {
+        metadata *mm = meta+i;
+        printf("\n    key=%2d type=%d : ",mm->key,mm->type);
+        switch (mm->type) {
+            case META_BYTE:   printf("byte=%d",   mm->b);   break;
+            case META_SHORT:  printf("short=%d",  mm->s);   break;
+            case META_INT:    printf("int=%d",    mm->i);   break;
+            case META_FLOAT:  printf("float=%.1f",mm->f);   break;
+            case META_STRING: printf("string=\"%s\"", mm->str); break;
+            case META_SLOT:   assert(0); break;
+            case META_COORD:
+                printf("coords=(%d,%d,%d)",mm->x,mm->y,mm->z); break;
+            case META_ROT:
+                printf("pitch=%.1f,yaw=%.1f,roll=%.1f",
+                       mm->pitch,mm->yaw,mm->roll); break;
+        }
+    }
 }
 
 #if 0
@@ -78,6 +136,7 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 //#define Pslot(n)    p=read_slot(p,tpkt->n)
 #define Pdata(n,l)  memmove(tpkt->n,p,l); p+=l
 #define Puuid(n)    Pdata(n,sizeof(uuid_t))
+#define Pmeta(n)    p=read_metadata(p, &tpkt->n)
 
 
 

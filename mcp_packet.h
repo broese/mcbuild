@@ -11,6 +11,44 @@ typedef uint8_t uuid_t[16];
 typedef int32_t fixp;
 typedef uint8_t angle_t;
 
+// single metadata key-value pair
+typedef struct {
+    union {
+        struct {
+            unsigned char key  : 5;
+            unsigned char type : 3;
+        };
+        uint8_t h;
+    };
+    union {
+        int8_t  b;
+        int16_t s;
+        int32_t i;
+        float   f;
+        char    str[256];
+        //TODO: slot;
+        struct {
+            int32_t x;
+            int32_t y;
+            int32_t z;
+        };
+        struct {
+            float   pitch;
+            float   yaw;
+            float   roll;
+        };
+    };
+} metadata;
+
+#define META_BYTE    0
+#define META_SHORT   1
+#define META_INT     2
+#define META_FLOAT   3
+#define META_STRING  4
+#define META_SLOT    5
+#define META_COORD   6
+#define META_ROT     7
+
 ////////////////////////////////////////////////////////////////////////////////
 // Server -> Client
 
