@@ -618,6 +618,260 @@ static const item_id ITEMS[] = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+// Entity Metadata
+
+typedef enum {
+    IllegalEntityType = -1,
+    Entity = 0,
+    LivingEntity,
+    Ageable,
+    ArmorStand,
+    Human,
+    Horse,
+    Bat,
+    Tameable,
+    Ocelot,
+    Wolf,
+    Pig,
+    Rabbit,
+    Sheep,
+    Villager,
+    Enderman,
+    Zombie,
+    ZombiePigman,
+    Blaze,
+    Spider,
+    CaveSpider,
+    Creeper,
+    Ghast,
+    Slime,
+    MagmaCube,
+    Skeleton,
+    Witch,
+    IronGolem,
+    Wither,
+    Boat,
+    Minecart,
+    FurnaceMinecart,
+    Item,
+    Arrow,
+    Firework,
+    ItemFrame,
+    EnderCrystal,
+} EntityType;
+
+static const char * METANAME[][32] = {
+    [Entity] = {
+        [0]  = "Flags",
+        [1]  = "Air",
+    },
+    [LivingEntity] = {
+        [0]  = "Flags",
+        [1]  = "Air",
+        [2]  = "Name tag",
+        [3]  = "Always show name tag",
+        [6]  = "Health",
+        [7]  = "Potion effect color",
+        [8]  = "Potion effect ambient",
+        [9]  = "Number of arrows",
+        [15] = "No AI",
+    },
+    [Ageable] = {
+        [12] = "Age",
+    },
+    [ArmorStand] = {
+        [10] = "Armor stand flags",
+        [11] = "Head position",
+        [12] = "Body position",
+        [13] = "L arm position",
+        [14] = "R arm position",
+        [15] = "L leg position",
+        [16] = "R leg position",
+    },
+    [Human] = {
+        [10] = "Skin flags",
+        [16] = "Hide cape",
+        [17] = "Absorption hearts",
+        [18] = "Score",
+    },
+    [Horse] = {
+        [16] = "Horse flags",
+        [19] = "Horse type",
+        [20] = "Horse color",
+        [21] = "Owner name",
+        [22] = "Horse armor",
+    },
+    [Bat] = {
+        [16] = "Is hanging",
+    },
+    [Tameable] = {
+        [16] = "Tameable flags",
+        [17] = "Owner name",
+    },
+    [Ocelot] = {
+        [18] = "Ocelot type",
+    },
+    [Wolf] = {
+        [18] = "Health",
+        [19] = "Begging",
+        [20] = "Collar color",
+    },
+    [Pig] = {
+        [16] = "Has saddle",
+    },
+    [Rabbit] = {
+        [18] = "Rabbit type",
+    },
+    [Sheep] = {
+        [16] = "Sheep color",
+    },
+    [Villager] = {
+        [16] = "Villager type",
+    },
+    [Enderman] = {
+        [16] = "Carried block",
+        [17] = "Carried block data",
+        [18] = "Is screaming",
+    },
+    [Zombie] = {
+        [12] = "child zombie",
+        [13] = "villager zombie",
+        [14] = "converting zombie",
+    },
+    [ZombiePigman] = {
+    },
+    [Blaze] = {
+        [16] = "Blaze it motherfucker",
+    },
+    [Spider] = {
+        [16] = "Climbing",
+    },
+    [CaveSpider] = {
+    },
+    [Creeper] = {
+        [16] = "Creeper state",
+        [17] = "is powered",
+    },
+    [Ghast] = {
+        [16] = "is attacking",
+    },
+    [Slime] = {
+        [16] = "Size",
+    },
+    [MagmaCube] = {
+    },
+    [Skeleton] = {
+        [13] = "Skeleton type",
+    },
+    [Witch] = {
+        [21] = "is aggressive",
+    },
+    [IronGolem] = {
+        [16] = "created by player",
+    },
+    [Wither] = {
+        [17] = "Target 1",
+        [18] = "Target 2",
+        [19] = "Target 3",
+        [20] = "Invulnerable time",
+    },
+    [Boat] = {
+        [17] = "Time since hit",
+        [18] = "Forward direction",
+        [19] = "Damage taken",
+    },
+    [Minecart] = {
+        [17] = "Shaking power",
+        [18] = "Shaking direction",
+        [19] = "Damage taken/shaking multiplier",
+        [20] = "Block id/data",
+        [21] = "Block y",
+        [22] = "Show block",
+    },
+    [FurnaceMinecart] = {
+        [16] = "Is powered",
+    },
+    [Item] = {
+        [10] = "Item",
+    },
+    [Arrow] = {
+        [16] = "Is critical",
+    },
+    [Firework] = {
+        [8] = "Firework data",
+    },
+    [ItemFrame] = {
+        [8] = "Framed item",
+        [9] = "Rotation",
+    },
+    [EnderCrystal] = {
+        [8] = "Health",
+    },
+};
+
+static const EntityType ENTITY_HIERARCHY[] = {
+    [Entity]          = IllegalEntityType,
+    [LivingEntity]    = Entity,
+    [Ageable]         = LivingEntity,
+    [ArmorStand]      = LivingEntity,
+    [Human]           = LivingEntity,
+    [Horse]           = Ageable,
+    [Bat]             = LivingEntity,
+    [Tameable]        = Tameable,
+    [Ocelot]          = Tameable,
+    [Wolf]            = Tameable,
+    [Pig]             = Ageable,
+    [Rabbit]          = Ageable,
+    [Sheep]           = Ageable,
+    [Villager]        = Ageable,
+    [Enderman]        = LivingEntity,
+    [Zombie]          = LivingEntity,
+    [ZombiePigman]    = Zombie,
+    [Blaze]           = LivingEntity,
+    [Spider]          = LivingEntity,
+    [CaveSpider]      = Spider,
+    [Creeper]         = LivingEntity,
+    [Ghast]           = LivingEntity,
+    [Slime]           = LivingEntity,
+    [MagmaCube]       = Slime,
+    [Skeleton]        = LivingEntity,
+    [Witch]           = LivingEntity,
+    [IronGolem]       = LivingEntity,
+    [Wither]          = LivingEntity,
+    [Boat]            = Entity,
+    [Minecart]        = Entity,
+    [FurnaceMinecart] = Minecart,
+    [Item]            = Entity,
+    [Arrow]           = Entity,
+    [Firework]        = Entity,
+    [ItemFrame]       = Entity,
+    [EnderCrystal]    = Entity,
+};
+
+////////////////////////////////////////////////////////////////////////////////
+// Entity Metadata
+
+#define META_BYTE    0
+#define META_SHORT   1
+#define META_INT     2
+#define META_FLOAT   3
+#define META_STRING  4
+#define META_SLOT    5
+#define META_COORD   6
+#define META_ROT     7
+
+static const char * METATYPES[] = {
+    [META_BYTE]       = "byte",
+    [META_SHORT]      = "short",
+    [META_INT]        = "int",
+    [META_FLOAT]      = "float",
+    [META_STRING]     = "string",
+    [META_SLOT]       = "slot",
+    [META_COORD]      = "coord",
+    [META_ROT]        = "rot",
+};
+
+////////////////////////////////////////////////////////////////////////////////
 // ANSI representation of blocks
 
 #define ANSI_CLEAR     "\x1b[0m"
