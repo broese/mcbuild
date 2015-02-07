@@ -92,7 +92,7 @@ typedef struct {
     angle_t  yaw;
     angle_t  pitch;
     int16_t  item;
-    //TODO:  metadata;
+    metadata *meta;
 } SP_SpawnPlayer_pkt;
 
 // 0x0f
@@ -108,7 +108,7 @@ typedef struct {
     int16_t  vx;
     int16_t  vy;
     int16_t  vz;
-    //TODO: metadata;
+    metadata *meta;
 } SP_SpawnMob_pkt;
 
 // 0x13

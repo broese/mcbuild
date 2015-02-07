@@ -389,7 +389,7 @@ DECODE_BEGIN(SP_SpawnPlayer,_1_8_1) {
     Pchar(yaw);
     Pchar(pitch);
     Pshort(item);
-    //TODO: Metadata
+    Pmeta(meta);
 } DECODE_END;
 
 DUMP_BEGIN(SP_SpawnPlayer) {
@@ -397,6 +397,7 @@ DUMP_BEGIN(SP_SpawnPlayer) {
            tpkt->eid, limhex(tpkt->uuid,16,16),
            (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
            (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->item);
+    dump_metadata(tpkt->meta);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -414,7 +415,7 @@ DECODE_BEGIN(SP_SpawnMob,_1_8_1) {
     Pshort(vx);
     Pshort(vy);
     Pshort(vz);
-    //TODO: Metadata
+    Pmeta(meta);
 } DECODE_END;
 
 DUMP_BEGIN(SP_SpawnMob) {
@@ -423,6 +424,7 @@ DUMP_BEGIN(SP_SpawnMob) {
            (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
            (float)tpkt->yaw/256,(float)tpkt->pitch/256,(float)tpkt->headpitch/256,
            tpkt->vx,tpkt->vy,tpkt->vz);
+    dump_metadata(tpkt->meta);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
