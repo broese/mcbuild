@@ -27,6 +27,8 @@ static uint8_t * write_string(uint8_t *w, const char *s) {
     return w;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 static uint8_t * read_metadata(uint8_t *p, metadata **meta) {
     assert(meta);
     assert(!*meta);
@@ -61,28 +63,45 @@ static uint8_t * read_metadata(uint8_t *p, metadata **meta) {
     return p;
 }
 
-static void dump_metadata(metadata *meta) {
+static void dump_metadata(metadata *meta, EntityType et) {
     if (!meta) return;
 
     int i;
     for (i=0; meta[i].h !=0x7f; i++) {
         metadata *mm = meta+i;
-        printf("\n    key=%2d type=%d : ",mm->key,mm->type);
+        printf("\n    ");
+
+        const char * name = NULL;
+        EntityType ett = et;
+        //printf("key:%d\n",mm->key);
+        while ((!name) && (ett!=IllegalEntityType)) {
+            //printf("      et=%d\n",et);
+            name = METANAME[ett][mm->key];
+            ett = ENTITY_HIERARCHY[ett];
+        }
+
+        if (name)
+            printf("%-24s ",name);
+        else
+            printf("Unknown(%2d)              ", mm->key);
+
+        printf("[%-6s] = ",METATYPES[mm->type]);
         switch (mm->type) {
-            case META_BYTE:   printf("byte=%d",   mm->b);   break;
-            case META_SHORT:  printf("short=%d",  mm->s);   break;
-            case META_INT:    printf("int=%d",    mm->i);   break;
-            case META_FLOAT:  printf("float=%.1f",mm->f);   break;
-            case META_STRING: printf("string=\"%s\"", mm->str); break;
+            case META_BYTE:   printf("%d",  mm->b);   break;
+            case META_SHORT:  printf("%d",  mm->s);   break;
+            case META_INT:    printf("%d",  mm->i);   break;
+            case META_FLOAT:  printf("%.1f",mm->f);   break;
+            case META_STRING: printf("\"%s\"", mm->str); break;
             case META_SLOT:   assert(0); break;
             case META_COORD:
-                printf("coords=(%d,%d,%d)",mm->x,mm->y,mm->z); break;
+                printf("(%d,%d,%d)",mm->x,mm->y,mm->z); break;
             case META_ROT:
-                printf("pitch=%.1f,yaw=%.1f,roll=%.1f",
-                       mm->pitch,mm->yaw,mm->roll); break;
+                printf("%.1f,%.1f,%.1f",mm->pitch,mm->yaw,mm->roll); break;
         }
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 #if 0
 static uint8_t * read_slot(uint8_t *p, slot_t *s) {
@@ -397,7 +416,7 @@ DUMP_BEGIN(SP_SpawnPlayer) {
            tpkt->eid, limhex(tpkt->uuid,16,16),
            (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
            (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->item);
-    dump_metadata(tpkt->meta);
+    dump_metadata(tpkt->meta, Human);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -424,7 +443,7 @@ DUMP_BEGIN(SP_SpawnMob) {
            (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
            (float)tpkt->yaw/256,(float)tpkt->pitch/256,(float)tpkt->headpitch/256,
            tpkt->vx,tpkt->vy,tpkt->vz);
-    dump_metadata(tpkt->meta);
+    dump_metadata(tpkt->meta, LivingEntity);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////

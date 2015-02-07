@@ -40,15 +40,6 @@ typedef struct {
     };
 } metadata;
 
-#define META_BYTE    0
-#define META_SHORT   1
-#define META_INT     2
-#define META_FLOAT   3
-#define META_STRING  4
-#define META_SLOT    5
-#define META_COORD   6
-#define META_ROT     7
-
 ////////////////////////////////////////////////////////////////////////////////
 // Server -> Client
 
