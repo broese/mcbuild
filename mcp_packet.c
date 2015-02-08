@@ -468,6 +468,23 @@ DUMP_BEGIN(SP_SpawnMob) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x10 SP_SpawnPainting
+
+DECODE_BEGIN(SP_SpawnPainting,_1_8_1) {
+    Pvarint(eid);
+    Pstr(title);
+    Plong(pos.p);
+    Pchar(dir);
+} DECODE_END;
+
+DUMP_BEGIN(SP_SpawnPainting) {
+    printf("eid=%08x, title=%s, location=%d,%d,%d direction=%d",
+           tpkt->eid, tpkt->title,
+           tpkt->pos.x,  tpkt->pos.y,  tpkt->pos.z,
+           tpkt->dir);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x13 SP_DestroyEntities
 
 DECODE_BEGIN(SP_DestroyEntities,_1_8_1) {
@@ -644,6 +661,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (SP_SpawnPlayer,_1_8_1),
         SUPPORT_D   (SP_SpawnObject,_1_8_1),
         SUPPORT_D   (SP_SpawnMob,_1_8_1),
+        SUPPORT_DD  (SP_SpawnPainting,_1_8_1),
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
         SUPPORT_D   (SP_EntityRelMove,_1_8_1),

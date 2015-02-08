@@ -124,6 +124,14 @@ typedef struct {
     metadata *meta;
 } SP_SpawnMob_pkt;
 
+// 0x10
+typedef struct {
+    uint32_t eid;
+    char     title[32];
+    pos_t    pos;
+    uint8_t  dir;
+} SP_SpawnPainting_pkt;
+
 // 0x13
 typedef struct {
     uint32_t count;
@@ -263,6 +271,7 @@ typedef struct {
         PKT(SP_SpawnPlayer);
         PKT(SP_SpawnObject);
         PKT(SP_SpawnMob);
+        PKT(SP_SpawnPainting);
         PKT(SP_DestroyEntities);
         PKT(SP_Entity);
         PKT(SP_EntityRelMove);
