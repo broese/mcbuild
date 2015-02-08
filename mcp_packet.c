@@ -419,6 +419,10 @@ DUMP_BEGIN(SP_SpawnPlayer) {
     dump_metadata(tpkt->meta, Human);
 } DUMP_END;
 
+FREE_BEGIN(SP_SpawnPlayer) {
+    free(tpkt->meta);
+} FREE_END;
+
 ////////////////////////////////////////////////////////////////////////////////
 // 0x0e SP_SpawnObject
 
@@ -466,6 +470,10 @@ DUMP_BEGIN(SP_SpawnMob) {
            tpkt->vx,tpkt->vy,tpkt->vz);
     dump_metadata(tpkt->meta, LivingEntity);
 } DUMP_END;
+
+FREE_BEGIN(SP_SpawnMob) {
+    free(tpkt->meta);
+} FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x10 SP_SpawnPainting
@@ -676,9 +684,9 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DED (SP_ChatMessage,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
         SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
-        SUPPORT_DD  (SP_SpawnPlayer,_1_8_1),
+        SUPPORT_DDF (SP_SpawnPlayer,_1_8_1),
         SUPPORT_D   (SP_SpawnObject,_1_8_1),
-        SUPPORT_D   (SP_SpawnMob,_1_8_1),
+        SUPPORT_DF  (SP_SpawnMob,_1_8_1),
         SUPPORT_DD  (SP_SpawnPainting,_1_8_1),
         SUPPORT_D   (SP_SpawnExperienceOrb,_1_8_1),
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),
