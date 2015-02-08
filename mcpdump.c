@@ -33,10 +33,10 @@ void parse_mcp(uint8_t *data, ssize_t size) {
         //max--;
         uint8_t *p = hdr;
 
-        Rint(is_client);
-        Rint(sec);
-        Rint(usec);
-        Rint(len);
+        int is_client = read_int(p);
+        int sec       = read_int(p);
+        int usec      = read_int(p);
+        int len       = read_int(p);
 
         //printf("%d.%06d: len=%d\n",sec,usec,len);
         uint8_t *lim = p+len;
@@ -44,7 +44,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
         if (compression) {
             // compression was enabled previously - we need to handle packets differently now
-            Rvarint(usize); // size of the uncompressed data
+            int usize = read_int(p); // size of the uncompressed data
             if (usize > 0) {
                 // this packet is compressed, unpack and move the decoding pointer to the decoded buffer
                 arr_resize(GAR(udata), usize);
@@ -70,7 +70,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
         // pkt will point at the start of packet (specifically at the type field)
         // while p will move to the next field to be parsed.
 
-        Rvarint(type);
+        int type = read_int(p);
         //printf("%d.%06d: %c type=%x len=%zd\n",sec,usec,is_client?'C':'S',type,len);
 
         uint32_t stype = ((state<<24)|(is_client<<28)|(type&0xffffff));
@@ -81,11 +81,9 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
         switch (stype) {
             case CI_Handshake: {
-                Rvarint(protocolVer);
-                Rstr(serverAddr);
-                Rshort(serverPort);
-                Rvarint(nextState);
-                state = nextState;
+                CI_Handshake_pkt pkt;
+                decode_handshake(&pkt, p);
+                state = pkt.nextState;
                 break;
             }
             case SL_LoginSuccess: {

@@ -145,24 +145,20 @@ void write_packet_raw(uint8_t *ptr, ssize_t len, lh_buf_t *buf) {
 }
 
 void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
-    Rstr(serverID);
+    SL_EncryptionRequest_pkt pkt;
+    decode_encryption_request(&pkt, p);
 
-    Rvarint(klen);
-    memmove(mitm.s_pkey,p,klen);
-    Rskip(klen);
-
-    Rvarint(tlen);
-    memmove(mitm.s_token,p,tlen);
-    Rskip(tlen);
+    memmove(mitm.s_pkey,pkt.pkey,pkt.klen);
+    memmove(mitm.s_token,pkt.token,pkt.tlen);
 
     printf("Encryption Request\n");
                 
-    sprintf(mitm.s_id,"%s",serverID);
-    mitm.s_pklen = klen;
+    sprintf(mitm.s_id,"%s",pkt.serverID);
+    mitm.s_pklen = pkt.klen;
                 
     // decode server PUBKEY to an RSA struct
     unsigned char *pp = mitm.s_pkey;
-    d2i_RSA_PUBKEY(&mitm.s_rsa, (const unsigned char **)&pp, klen);
+    d2i_RSA_PUBKEY(&mitm.s_rsa, (const unsigned char **)&pp, pkt.klen);
     if (mitm.s_rsa == NULL) {
         printf("Failed to decode the server's public key\n");
         exit(1);
@@ -199,9 +195,9 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
     }
 
     write_varint(w, PID(SL_EncryptionRequest));
-    write_varint(w, strlen(serverID));
-    memmove(w, serverID, strlen(serverID));
-    w+=strlen(serverID);
+    write_varint(w, strlen(pkt.serverID));
+    memmove(w, pkt.serverID, strlen(pkt.serverID));
+    w+=strlen(pkt.serverID);
     write_varint(w, mitm.c_pklen);
     memmove(w, mitm.c_pkey, mitm.c_pklen);
     w+=mitm.c_pklen;
@@ -215,16 +211,11 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
 }
 
 void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
-    Rvarint(sklen);
-    uint8_t *skey = p;
-    Rskip(sklen);
-
-    Rvarint(tklen);
-    uint8_t *token = p;
-    Rskip(tklen);
+    CL_EncryptionResponse_pkt pkt;
+    decode_encryption_response(&pkt, p);
 
     char buf[4096];
-    int dklen = RSA_private_decrypt(sklen, skey, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
+    int dklen = RSA_private_decrypt(pkt.sklen, pkt.skey, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
     if (dklen < 0) {
         printf("Failed to decrypt the shared key received from the client\n");
         exit(1);
@@ -233,7 +224,7 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
     //hexprint(buf, dklen);
     memcpy(mitm.c_skey, buf, 16);
     
-    int dtlen = RSA_private_decrypt(tklen, token, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
+    int dtlen = RSA_private_decrypt(pkt.tklen, pkt.token, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
     if (dtlen < 0) {
         printf("Failed to decrypt the verification token received from the client\n");
         exit(1);
@@ -313,13 +304,11 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
         // Idle state
 
         case CI_Handshake: {
-            Rvarint(protocolVer);
-            Rstr(serverAddr);
-            Rshort(serverPort);
-            Rvarint(nextState);
-            mitm.state = nextState;
-            printf("C %-30s protocol=%d server=%s:%d nextState=%d\n",
-                   "Handshake",protocolVer,serverAddr,serverPort,nextState);
+            CI_Handshake_pkt pkt;
+            decode_handshake(&pkt, p);
+            mitm.state = pkt.nextState;
+            printf("C %-30s protocol=%d server=%s:%d nextState=%d\n","Handshake",
+                   pkt.protocolVer,pkt.serverAddr,pkt.serverPort,pkt.nextState);
             write_packet_raw(ptr, len, tx);
             break;
         }
@@ -337,9 +326,8 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
 
         case SL_SetCompression: {
             printf("SetCompression during login phase!\n");
-            Rvarint(threshold);
+            mitm.comptr = lh_read_varint(p);
             write_packet_raw(ptr, len, tx);
-            mitm.comptr = threshold;
             break;
         }
 
@@ -430,7 +418,7 @@ void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
     if (mitm.comptr>=0) {
         // compression is enabled
         comp = '.';
-        Rvarint(usize); // supposed size of uncompressed data
+        int32_t usize = lh_read_varint(p); // supposed size of uncompressed data
 
         if (usize>0) {
             // packet is compressed - uncompress into temp buffer
