@@ -1481,26 +1481,9 @@ typedef struct _spawner {
     float nearest;
 } spawner;
 
-#define ENTITY_UNKNOWN  0
-#define ENTITY_SELF     1
-#define ENTITY_PLAYER   2
-#define ENTITY_MOB      3
-#define ENTITY_OBJECT   4
-#define ENTITY_OTHER    5
-
 #define DIM_OVERWORLD   0x00
 #define DIM_NETHER      0xff
 #define DIM_END         0x01
-
-typedef struct _entity {
-    int32_t id;
-    int32_t x,y,z;      // note: fixed-point coords, shift by ???
-    int  type;          // one of the ENTITY_ variables
-    int  mtype;         // mob/object type as used natively
-    int  hostile;       // whether marked hostile
-    uint64_t lasthit;   // timestamp when this entity was last attacked - for limiting the attack rate
-    char name[256];     // only valid for players
-} entity;
 
 typedef struct _slot_t {
     uint16_t id;

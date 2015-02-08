@@ -63,6 +63,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
         if (state == STATE_PLAY) {
             MCPacket *pkt = decode_packet(is_client, p, plen);
             dump_packet(pkt);
+            gs_packet(pkt);
             free_packet(pkt);
         }
 
@@ -145,6 +146,7 @@ int main(int ac, char **av) {
             gs_setopt(GSOP_SEARCH_SPAWNERS, 1);
 
             parse_mcp(data, size);
+            dump_entities();
 
             free(data);
             gs_destroy();

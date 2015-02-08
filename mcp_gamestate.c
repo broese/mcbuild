@@ -84,8 +84,101 @@ int gs_getopt(int optid) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// entity tracking
+
+static inline int find_entity(int eid) {
+    int i;
+    for(i=0; i<C(gs.entity); i++)
+        if (P(gs.entity)[i].id == eid)
+            return i;
+    return -1;
+}
+
+void dump_entities() {
+    printf("Tracking %zd entities:\n",C(gs.entity));
+    int i;
+    for(i=0; i<C(gs.entity); i++) {
+        entity *e = P(gs.entity)+i;
+        printf("  %4d eid=%08x type=%-7s coord=%.1f,%.1f,%.1f\n",
+               i,e->id, ENTITY_TYPES[e->type],
+               (float)e->x/32,(float)e->y/32,(float)e->z/32);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 int gs_packet(MCPacket *pkt) {
-    switch (pkt->type) {
+    switch (pkt->pid) {
+        case SP_SpawnPlayer: {
+            SP_SpawnPlayer_pkt *tpkt = &pkt->_SP_SpawnPlayer;
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = tpkt->eid;
+            e->x  = tpkt->x;
+            e->y  = tpkt->y;
+            e->z  = tpkt->z;
+            e->type = ENTITY_PLAYER;
+            //TODO: name
+            //TODO: mark players hostile/neutral/friendly depending on the faglist
+            break;
+        }
+        case SP_SpawnObject: {
+            SP_SpawnObject_pkt *tpkt = &pkt->_SP_SpawnObject;
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = tpkt->eid;
+            e->x  = tpkt->x;
+            e->y  = tpkt->y;
+            e->z  = tpkt->z;
+            e->type = ENTITY_OBJECT;
+            break;
+        }
+        case SP_SpawnMob: {
+            SP_SpawnMob_pkt *tpkt = &pkt->_SP_SpawnMob;
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = tpkt->eid;
+            e->x  = tpkt->x;
+            e->y  = tpkt->y;
+            e->z  = tpkt->z;
+            e->type = ENTITY_MOB;
+
+            e->mtype = tpkt->mobtype;
+            // mark all monster mobs hostile except pigmen (too dangerous)
+            // and bats (too cute)
+            if (e->mtype >= 50 && e->mtype <90 && e->mtype!=57 && e->mtype!=65)
+                e->hostile = 1;
+            // mark creepers extra hostile to make them priority targets
+            if (e->mtype == 50)
+                e->hostile = 2;
+            break;
+        }
+        case SP_SpawnPainting: {
+            SP_SpawnPainting_pkt *tpkt = &pkt->_SP_SpawnPainting;
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = tpkt->eid;
+            e->x  = tpkt->pos.x*32;
+            e->y  = tpkt->pos.y*32;
+            e->z  = tpkt->pos.z*32;
+            e->type = ENTITY_OTHER;
+            break;
+        }
+        case SP_SpawnExperienceOrb: {
+            SP_SpawnExperienceOrb_pkt *tpkt = &pkt->_SP_SpawnExperienceOrb;
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = tpkt->eid;
+            e->x  = tpkt->x;
+            e->y  = tpkt->y;
+            e->z  = tpkt->z;
+            e->type = ENTITY_OTHER;
+            break;
+        }
+        case SP_DestroyEntities: {
+            SP_DestroyEntities_pkt *tpkt = &pkt->_SP_DestroyEntities;
+            int i;
+            for(i=0; i<tpkt->count; i++) {
+                int idx = find_entity(tpkt->eids[i]);
+                if (idx<0) continue;
+                lh_arr_delete(GAR(gs.entity),idx);
+            }
+            break;
+        }
     }
 }
