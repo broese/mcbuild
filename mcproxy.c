@@ -924,13 +924,10 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     CLEAR(mitm);
     //DISABLED clear_autobuild();
 
-#if 0
-    //DISABLED
-    reset_gamestate();
-    set_option(GSOP_PRUNE_CHUNKS, 1);
-    set_option(GSOP_SEARCH_SPAWNERS, 1);
-    set_option(GSOP_TRACK_ENTITIES, 1);
-#endif
+    gs_reset();
+    gs_setopt(GSOP_PRUNE_CHUNKS, 1);
+    gs_setopt(GSOP_SEARCH_SPAWNERS, 1);
+    gs_setopt(GSOP_TRACK_ENTITIES, 1);
 
     // open a new .mcp file to capture MC protocol data
     char fname[4096];

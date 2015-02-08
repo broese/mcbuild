@@ -130,9 +130,9 @@ void search_blocks(uint8_t id) {
 #endif
 
 int main(int ac, char **av) {
-    //reset_gamestate();
-    //set_option(GSOP_PRUNE_CHUNKS, 0);
-    //set_option(GSOP_SEARCH_SPAWNERS, 1);
+    gs_reset();
+    gs_setopt(GSOP_PRUNE_CHUNKS, 0);
+    gs_setopt(GSOP_SEARCH_SPAWNERS, 1);
 
     if (!av[1]) LH_ERROR(-1, "Usage: %s <file.mcs>", av[0]);
 

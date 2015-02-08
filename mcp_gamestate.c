@@ -12,5 +12,68 @@
 #include <lh_compress.h>
 
 #include "mcp_gamestate.h"
-#include "mcp_ids.h"
+
+////////////////////////////////////////////////////////////////////////////////
+
+gamestate gs;
+static int gs_used = 0;
+
+void gs_reset() {
+    int i;
+
+#if 0
+    if (gs_used) {
+        // delete cached chunks
+        for(i=0; i<gs.C(chunk); i++)
+            if (gs.P(chunk)[i].c)
+                free(gs.P(chunk)[i].c);
+        free(gs.P(chunk));
+    }
+#endif
+
+    CLEAR(gs);
+
+#if 0
+    // set all items in the inventory to -1 to define them as empty
+    for(i=0; i<64; i++) {
+        gs.inventory.slots[i].id = 0xffff;
+    }
+    gs.drag.id = 0xffff;
+#endif
+
+    gs_used = 1;
+}
+
+int gs_setopt(int optid, int value) {
+    switch (optid) {
+        case GSOP_PRUNE_CHUNKS:
+            gs.opt.prune_chunks = value;
+            break;
+        case GSOP_SEARCH_SPAWNERS:
+            gs.opt.search_spawners = value;
+            break;
+        case GSOP_TRACK_ENTITIES:
+            gs.opt.track_entities = value;
+            break;
+
+        default:
+            LH_ERROR(-1,"Unknown option ID %d\n", optid);
+    }
+
+    return 0;
+}
+
+int gs_getopt(int optid) {
+    switch (optid) {
+        case GSOP_PRUNE_CHUNKS:
+            return gs.opt.prune_chunks;
+        case GSOP_SEARCH_SPAWNERS:
+            return gs.opt.search_spawners;
+        case GSOP_TRACK_ENTITIES:
+            return gs.opt.track_entities;
+
+        default:
+            LH_ERROR(-1,"Unknown option ID %d\n", optid);
+    }
+}
 
