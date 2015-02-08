@@ -77,3 +77,9 @@ int gs_getopt(int optid) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+int gs_packet(MCPacket *pkt) {
+    switch (pkt->type) {
+    }
+}

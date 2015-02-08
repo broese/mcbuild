@@ -30,5 +30,5 @@ void gs_reset();
 int  gs_setopt(int optid, int value);
 int  gs_getopt(int optid);
 
-int gs_packet(MCPacket *pkt);
+int  gs_packet(MCPacket *pkt);
 

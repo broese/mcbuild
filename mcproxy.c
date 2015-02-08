@@ -468,6 +468,8 @@ void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
 
     MCPacketQueue tq = {NULL,0}, bq = {NULL,0};
 
+    // provide the packet to gamestate for import
+    gs_packet(pkt);
     handle_packet(pkt, &tq, &bq);
 
     ////////////////////////////////////////////////////////////////////////////
