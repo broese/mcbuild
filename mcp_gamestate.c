@@ -21,15 +21,8 @@ static int gs_used = 0;
 void gs_reset() {
     int i;
 
-#if 0
-    if (gs_used) {
-        // delete cached chunks
-        for(i=0; i<gs.C(chunk); i++)
-            if (gs.P(chunk)[i].c)
-                free(gs.P(chunk)[i].c);
-        free(gs.P(chunk));
-    }
-#endif
+    if (gs_used)
+        gs_destroy();
 
     CLEAR(gs);
 
@@ -42,6 +35,19 @@ void gs_reset() {
 #endif
 
     gs_used = 1;
+}
+
+void gs_destroy() {
+    // delete tracked entities
+    lh_free(P(gs.entity));
+
+#if 0
+        // delete cached chunks
+        for(i=0; i<gs.C(chunk); i++)
+            if (gs.P(chunk)[i].c)
+                free(gs.P(chunk)[i].c);
+        free(gs.P(chunk));
+#endif
 }
 
 int gs_setopt(int optid, int value) {

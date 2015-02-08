@@ -27,6 +27,7 @@ extern gamestate gs;
 ////////////////////////////////////////////////////////////////////////////////
 
 void gs_reset();
+void gs_destroy();
 int  gs_setopt(int optid, int value);
 int  gs_getopt(int optid);
 

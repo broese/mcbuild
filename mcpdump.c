@@ -130,10 +130,6 @@ void search_blocks(uint8_t id) {
 #endif
 
 int main(int ac, char **av) {
-    gs_reset();
-    gs_setopt(GSOP_PRUNE_CHUNKS, 0);
-    gs_setopt(GSOP_SEARCH_SPAWNERS, 1);
-
     if (!av[1]) LH_ERROR(-1, "Usage: %s <file.mcs>", av[0]);
 
     int i;
@@ -144,8 +140,14 @@ int main(int ac, char **av) {
             fprintf(stderr,"Failed to open %s : %s",av[i],strerror(errno));
         }
         else {
+            gs_reset();
+            gs_setopt(GSOP_PRUNE_CHUNKS, 0);
+            gs_setopt(GSOP_SEARCH_SPAWNERS, 1);
+
             parse_mcp(data, size);
+
             free(data);
+            gs_destroy();
         }
     }
     //search_spawners();
