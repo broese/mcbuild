@@ -551,6 +551,19 @@ DUMP_BEGIN(SP_EntityTeleport) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x1f SP_SetExperience
+
+DECODE_BEGIN(SP_SetExperience,_1_8_1) {
+    Pfloat(bar);
+    Pvarint(level);
+    Pvarint(exp);
+} DECODE_END;
+
+DUMP_BEGIN(SP_SetExperience) {
+    printf("bar=%.2f level=%d exp=%d",tpkt->bar, tpkt->level, tpkt->exp);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x46 SP_SetCompression
 
 DECODE_BEGIN(SP_SetCompression,_1_8_1) {
@@ -615,6 +628,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityLook,_1_8_1),
         SUPPORT_D   (SP_EntityLookRelMove,_1_8_1),
         SUPPORT_D   (SP_EntityTeleport,_1_8_1),
+        SUPPORT_D   (SP_SetExperience,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {

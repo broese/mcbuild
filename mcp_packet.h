@@ -152,6 +152,13 @@ typedef struct {
     uint8_t  onground;
 } SP_EntityTeleport_pkt;
 
+// 0x1f
+typedef struct {
+    float    bar;   // state of the experience bar
+    int32_t  level; // player's level
+    int32_t  exp;   // total experience
+} SP_SetExperience_pkt;
+
 // 0x46
 typedef struct {
     int32_t     threshold;
@@ -207,6 +214,7 @@ typedef struct {
         PKT(SP_EntityLook);
         PKT(SP_EntityLookRelMove);
         PKT(SP_EntityTeleport);
+        PKT(SP_SetExperience);
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);
