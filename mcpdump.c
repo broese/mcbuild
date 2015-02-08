@@ -44,7 +44,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
         if (compression) {
             // compression was enabled previously - we need to handle packets differently now
-            int usize = read_int(p); // size of the uncompressed data
+            int usize = lh_read_varint(p); // size of the uncompressed data
             if (usize > 0) {
                 // this packet is compressed, unpack and move the decoding pointer to the decoded buffer
                 arr_resize(GAR(udata), usize);
@@ -70,7 +70,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
         // pkt will point at the start of packet (specifically at the type field)
         // while p will move to the next field to be parsed.
 
-        int type = read_int(p);
+        int type = lh_read_varint(p);
         //printf("%d.%06d: %c type=%x len=%zd\n",sec,usec,is_client?'C':'S',type,len);
 
         uint32_t stype = ((state<<24)|(is_client<<28)|(type&0xffffff));
@@ -81,9 +81,9 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
         switch (stype) {
             case CI_Handshake: {
-                CI_Handshake_pkt pkt;
-                decode_handshake(&pkt, p);
-                state = pkt.nextState;
+                CI_Handshake_pkt tpkt;
+                decode_handshake(&tpkt, p);
+                state = tpkt.nextState;
                 break;
             }
             case SL_LoginSuccess: {
