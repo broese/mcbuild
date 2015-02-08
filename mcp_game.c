@@ -29,3 +29,17 @@ static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define GMP(name)                               \
+    case name: {                                \
+        name##_pkt *tpkt = &pkt->_##name;
+
+#define _GMP }
+
+void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
+    switch (pkt->pid) {
+
+        default:
+            // by default - just forward the packet
+            queue_packet(pkt, tq);
+    }
+}

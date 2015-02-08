@@ -15,7 +15,7 @@ endif
 
 all: mcproxy mcpdump
 
-mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o # mcp_game.o
+mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o
 	$(CC) -o $@ $^ $(LIBS)
 
 mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o

@@ -347,14 +347,6 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
 }
 
 
-//TODO: this will move to mcp_game
-void handle_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
-    switch (pkt->type) {
-        default:
-            queue_packet(pkt, tq);
-    }
-}
-
 #define MAXPLEN (4*1024*1024)
 
 uint8_t ubuf[MAXPLEN];
@@ -468,9 +460,9 @@ void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
 
     MCPacketQueue tq = {NULL,0}, bq = {NULL,0};
 
-    // provide the packet to gamestate for import
+    // pass the packet to both gamestate and game
     gs_packet(pkt);
-    handle_packet(pkt, &tq, &bq);
+    gm_packet(pkt, &tq, &bq);
 
     ////////////////////////////////////////////////////////////////////////////
 
