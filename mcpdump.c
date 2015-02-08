@@ -106,6 +106,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#if 0
 void search_blocks(uint8_t id) {
     int i,j;
     switch_dimension(DIM_END);
@@ -126,11 +127,12 @@ void search_blocks(uint8_t id) {
         }
     }
 }
+#endif
 
 int main(int ac, char **av) {
-    reset_gamestate();
-    set_option(GSOP_PRUNE_CHUNKS, 0);
-    set_option(GSOP_SEARCH_SPAWNERS, 1);
+    //reset_gamestate();
+    //set_option(GSOP_PRUNE_CHUNKS, 0);
+    //set_option(GSOP_SEARCH_SPAWNERS, 1);
 
     if (!av[1]) LH_ERROR(-1, "Usage: %s <file.mcs>", av[0]);
 

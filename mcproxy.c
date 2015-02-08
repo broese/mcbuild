@@ -384,7 +384,7 @@ void write_packet(MCPacket *pkt, lh_buf_t *tx) {
         clen += (w-cbuf);
         write_packet_raw(cbuf, clen, tx);
 
-#if 1
+#if 0
         printf("%c P clen=%6zd    ",pkt->cl?'C':'S',clen);
         hexprint(cbuf, LIM64(clen));
 #endif
@@ -393,7 +393,7 @@ void write_packet(MCPacket *pkt, lh_buf_t *tx) {
     else {
         // no compression - simply append the packet to the transmission buffer
         write_packet_raw(ubuf, ulen, tx);
-#if 1
+#if 0
         printf("%c P ulen=%6zd    ",pkt->cl?'C':'S',ulen);
         hexprint(ubuf, LIM64(ulen));
 #endif
@@ -436,7 +436,7 @@ void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
         plen = plim-p;
     }
 
-#if 1
+#if 0
     printf("%c P  len=%6zd %c  ",is_client?'C':'S',raw_len,comp);
     hexprint(raw_ptr, LIM64(raw_len));
 #endif
