@@ -637,6 +637,40 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     },
 };
 
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+void decode_handshake(CI_Handshake_pkt *tpkt, uint8_t *p) {
+    Pvarint(protocolVer);
+    Pstr(serverAddr);
+    Pshort(serverPort);
+    Pvarint(nextState);
+}
+
+void decode_encryption_request(SL_EncryptionRequest_pkt *tpkt, uint8_t *p) {
+    Pstr(serverID);
+    Pvarint(klen);
+    Pdata(pkey,tpkt->klen);
+    Pvarint(tlen);
+    Pdata(token,tpkt->tlen);
+}
+
+void decode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *p) {
+    Pvarint(sklen);
+    Pdata(skey,tpkt->sklen);
+    Pvarint(tklen);
+    Pdata(token,tpkt->tklen);
+}
+
+
+
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #define SUPPORT SUPPORT_1_8_1

@@ -177,6 +177,38 @@ typedef struct {
 } CP_Animation_pkt;
 
 ////////////////////////////////////////////////////////////////////////////////
+// Packet parsing for the login routines in mcproxy
+
+// CI_Handshake
+typedef struct {
+    int32_t  protocolVer;
+    char     serverAddr[1024];
+    uint16_t serverPort;
+    int32_t  nextState;
+} CI_Handshake_pkt;
+
+// SL_EncryptionRequest
+typedef struct {
+    char     serverID[4096];
+    uint32_t klen;
+    char     pkey[1024];
+    uint32_t tlen;
+    char     token[1024];
+} SL_EncryptionRequest_pkt;
+
+// CL_EncryptionResponse
+typedef struct {
+    uint32_t sklen;
+    char     skey[1024];
+    uint32_t tklen;
+    char     token[1024];
+} CL_EncryptionResponse_pkt;
+
+void decode_handshake(CI_Handshake_pkt *tpkt, uint8_t *p);
+void decode_encryption_request(SL_EncryptionRequest_pkt *tpkt, uint8_t *p);
+void decode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *p);
+
+////////////////////////////////////////////////////////////////////////////////
 
 #define PKT(name) name##_pkt _##name
 
