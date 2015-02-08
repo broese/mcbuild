@@ -107,10 +107,15 @@ void dump_entities() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define GSP(name)                               \
+    case name: {                                \
+        name##_pkt *tpkt = &pkt->_##name;
+
+#define _GSP }
+
 int gs_packet(MCPacket *pkt) {
     switch (pkt->pid) {
-        case SP_SpawnPlayer: {
-            SP_SpawnPlayer_pkt *tpkt = &pkt->_SP_SpawnPlayer;
+        GSP(SP_SpawnPlayer) {
             entity *e = lh_arr_new_c(GAR(gs.entity));
             e->id = tpkt->eid;
             e->x  = tpkt->x;
@@ -120,9 +125,9 @@ int gs_packet(MCPacket *pkt) {
             //TODO: name
             //TODO: mark players hostile/neutral/friendly depending on the faglist
             break;
-        }
-        case SP_SpawnObject: {
-            SP_SpawnObject_pkt *tpkt = &pkt->_SP_SpawnObject;
+        } _GSP;
+
+        GSP(SP_SpawnObject) {
             entity *e = lh_arr_new_c(GAR(gs.entity));
             e->id = tpkt->eid;
             e->x  = tpkt->x;
@@ -130,9 +135,9 @@ int gs_packet(MCPacket *pkt) {
             e->z  = tpkt->z;
             e->type = ENTITY_OBJECT;
             break;
-        }
-        case SP_SpawnMob: {
-            SP_SpawnMob_pkt *tpkt = &pkt->_SP_SpawnMob;
+        } _GSP;
+
+        GSP(SP_SpawnMob) {
             entity *e = lh_arr_new_c(GAR(gs.entity));
             e->id = tpkt->eid;
             e->x  = tpkt->x;
@@ -149,9 +154,9 @@ int gs_packet(MCPacket *pkt) {
             if (e->mtype == 50)
                 e->hostile = 2;
             break;
-        }
-        case SP_SpawnPainting: {
-            SP_SpawnPainting_pkt *tpkt = &pkt->_SP_SpawnPainting;
+        } _GSP;
+
+        GSP(SP_SpawnPainting) {
             entity *e = lh_arr_new_c(GAR(gs.entity));
             e->id = tpkt->eid;
             e->x  = tpkt->pos.x*32;
@@ -159,9 +164,9 @@ int gs_packet(MCPacket *pkt) {
             e->z  = tpkt->pos.z*32;
             e->type = ENTITY_OTHER;
             break;
-        }
-        case SP_SpawnExperienceOrb: {
-            SP_SpawnExperienceOrb_pkt *tpkt = &pkt->_SP_SpawnExperienceOrb;
+        } _GSP;
+
+        GSP(SP_SpawnExperienceOrb) {
             entity *e = lh_arr_new_c(GAR(gs.entity));
             e->id = tpkt->eid;
             e->x  = tpkt->x;
@@ -169,9 +174,9 @@ int gs_packet(MCPacket *pkt) {
             e->z  = tpkt->z;
             e->type = ENTITY_OTHER;
             break;
-        }
-        case SP_DestroyEntities: {
-            SP_DestroyEntities_pkt *tpkt = &pkt->_SP_DestroyEntities;
+        } _GSP;
+
+        GSP(SP_DestroyEntities) {
             int i;
             for(i=0; i<tpkt->count; i++) {
                 int idx = find_entity(tpkt->eids[i]);
@@ -179,9 +184,9 @@ int gs_packet(MCPacket *pkt) {
                 lh_arr_delete(GAR(gs.entity),idx);
             }
             break;
-        }
-        case SP_EntityRelMove: {
-            SP_EntityRelMove_pkt *tpkt = &pkt->_SP_EntityRelMove;
+        } _GSP;
+
+        GSP(SP_EntityRelMove) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
             entity *e = P(gs.entity)+idx;
@@ -189,9 +194,9 @@ int gs_packet(MCPacket *pkt) {
             e->y += tpkt->dy;
             e->z += tpkt->dz;
             break;
-        }
-        case SP_EntityLookRelMove: {
-            SP_EntityLookRelMove_pkt *tpkt = &pkt->_SP_EntityLookRelMove;
+        } _GSP;
+
+        GSP(SP_EntityLookRelMove) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
             entity *e = P(gs.entity)+idx;
@@ -199,9 +204,9 @@ int gs_packet(MCPacket *pkt) {
             e->y += tpkt->dy;
             e->z += tpkt->dz;
             break;
-        }
-        case SP_EntityTeleport: {
-            SP_EntityTeleport_pkt *tpkt = &pkt->_SP_EntityTeleport;
+        } _GSP;
+
+        GSP(SP_EntityTeleport) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
             entity *e = P(gs.entity)+idx;
@@ -209,6 +214,7 @@ int gs_packet(MCPacket *pkt) {
             e->y += tpkt->y;
             e->z += tpkt->z;
             break;
-        }
+        } _GSP;
+
     }
 }
