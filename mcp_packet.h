@@ -10,6 +10,16 @@
 typedef uint8_t uuid_t[16];
 typedef int32_t fixp;
 typedef uint8_t angle_t;
+typedef struct {
+    union {
+        uint64_t p;
+        struct {
+            int64_t z : 26;
+            int64_t y : 12;
+            int64_t x : 26;
+        };
+    };
+} pos_t;
 
 // single metadata key-value pair
 typedef struct {
