@@ -86,6 +86,18 @@ typedef struct {
     metadata *meta;
 } SP_SpawnPlayer_pkt;
 
+// 0x0e
+typedef struct {
+    uint32_t eid;
+    uint8_t  objtype;
+    fixp     x;
+    fixp     y;
+    fixp     z;
+    angle_t  pitch;
+    angle_t  yaw;
+    //TODO: object data
+} SP_SpawnObject_pkt;
+
 // 0x0f
 typedef struct {
     uint32_t eid;
@@ -239,6 +251,7 @@ typedef struct {
         PKT(SP_TimeUpdate);
         PKT(SP_PlayerPositionLook);
         PKT(SP_SpawnPlayer);
+        PKT(SP_SpawnObject);
         PKT(SP_SpawnMob);
         PKT(SP_DestroyEntities);
         PKT(SP_Entity);
