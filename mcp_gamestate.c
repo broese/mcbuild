@@ -180,5 +180,35 @@ int gs_packet(MCPacket *pkt) {
             }
             break;
         }
+        case SP_EntityRelMove: {
+            SP_EntityRelMove_pkt *tpkt = &pkt->_SP_EntityRelMove;
+            int idx = find_entity(tpkt->eid);
+            if (idx<0) break;
+            entity *e = P(gs.entity)+idx;
+            e->x += tpkt->dx;
+            e->y += tpkt->dy;
+            e->z += tpkt->dz;
+            break;
+        }
+        case SP_EntityLookRelMove: {
+            SP_EntityLookRelMove_pkt *tpkt = &pkt->_SP_EntityLookRelMove;
+            int idx = find_entity(tpkt->eid);
+            if (idx<0) break;
+            entity *e = P(gs.entity)+idx;
+            e->x += tpkt->dx;
+            e->y += tpkt->dy;
+            e->z += tpkt->dz;
+            break;
+        }
+        case SP_EntityTeleport: {
+            SP_EntityTeleport_pkt *tpkt = &pkt->_SP_EntityTeleport;
+            int idx = find_entity(tpkt->eid);
+            if (idx<0) break;
+            entity *e = P(gs.entity)+idx;
+            e->x += tpkt->x;
+            e->y += tpkt->y;
+            e->z += tpkt->z;
+            break;
+        }
     }
 }
