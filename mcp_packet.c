@@ -665,6 +665,33 @@ DUMP_BEGIN(CP_ChatMessage) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x02 CP_UseEntity
+
+DECODE_BEGIN(CP_UseEntity,_1_8_1) {
+    Pvarint(target);
+    Pvarint(action);
+    if (tpkt->action==2) {
+        Pfloat(x);
+        Pfloat(y);
+        Pfloat(z);
+    }
+} DECODE_END;
+
+ENCODE_BEGIN(CP_UseEntity,_1_8_1) {
+    Wvarint(target);
+    Wvarint(action);
+    Wfloat(x);
+    Wfloat(y);
+    Wfloat(z);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_UseEntity) {
+    printf("target=%08x action=%d", tpkt->target,tpkt->action);
+    if (tpkt->action == 2)
+        printf(" coord=%.1f,%.1f,%.1f", tpkt->x,tpkt->y,tpkt->z);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x03 CP_Player
 
 DECODE_BEGIN(CP_Player,_1_8_1) {
@@ -757,6 +784,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     },
     {
         SUPPORT_DD  (CP_ChatMessage,_1_8_1),
+        SUPPORT_DE  (CP_UseEntity,_1_8_1),
         SUPPORT_D   (CP_Player,_1_8_1),
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),
         SUPPORT_D   (CP_PlayerLook,_1_8_1),

@@ -211,6 +211,13 @@ typedef struct {
     char str[256];
 } CP_ChatMessage_pkt;
 
+// 0x02
+typedef struct {
+    uint32_t target;
+    uint32_t action;
+    float    x,y,z;
+} CP_UseEntity_pkt;
+
 // 0x03
 typedef struct {
     uint8_t onground;
@@ -322,6 +329,7 @@ typedef struct {
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);
+        PKT(CP_UseEntity);
         PKT(CP_Player);
         PKT(CP_PlayerPosition);
         PKT(CP_PlayerLook);
