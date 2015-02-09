@@ -34,6 +34,67 @@ static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {
+    uint8_t jreply[32768];
+
+    NEWPACKET(SP_ChatMessage,pkt);
+
+    ssize_t jlen;
+    if (color)
+        jlen = sprintf(tpkt->json,
+                       "{\"extra\":[{\"color\":\"%s\",\"text\":\"\\u003cMCP\\u003e %s\"}],"
+                       "\"text\":\"\"}",
+                       color,str);
+    else
+        jlen = sprintf(tpkt->json,
+                       "{\"extra\":[\"\\u003cMCP\\u003e %s\"],"
+                       "\"text\":\"\"}",
+                       str);
+
+    tpkt->pos = pos;
+
+    queue_packet(pkt,q);
+}
+
+void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
+    // tokenize
+    char *words[256];
+    CLEAR(words);
+    int w=0;
+
+    char wbuf[4096];
+    strncpy(wbuf, str, sizeof(wbuf));
+    char *wsave;
+
+    char *wstr = wbuf;
+    do {
+        words[w++] = strtok_r(wstr, " ", &wsave);
+        wstr = NULL;
+    } while(words[w-1]);
+    w--;
+    if (w==0) return;
+
+    ////////////////////////////////////////////////////////////////////////
+
+    uint8_t reply[32768];
+    reply[0] = 0;
+
+    if (!strcmp(words[0],"test")) {
+        sprintf(reply,"Chat test response");
+    }
+    else if (!strcmp(words[0],"entities")) {
+        sprintf(reply,"Tracking %zd entities",gs.C(entity));
+    }
+
+
+    // send an immediate reply if any was given
+    if (reply[0]) chat_message(reply, bq, "gold",0);
+
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 #define GMP(name)                               \
     case name: {                                \
         name##_pkt *tpkt = &pkt->_##name;
@@ -42,6 +103,18 @@ static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
 
 void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
     switch (pkt->pid) {
+
+        GMP(CP_ChatMessage) {
+            if (tpkt->str[0] == '#' && tpkt->str[1] != '#') {
+                handle_command(tpkt->str+1,tq,bq);
+                free_packet(pkt);
+            }
+            else {
+                // forward other chat messages
+                queue_packet(pkt, tq);
+            }
+            break;
+        } _GMP;
 
         default:
             // by default - just forward the packet
