@@ -10,6 +10,15 @@
 #include "mcp_gamestate.h"
 #include "mcp_game.h"
 
+// Various options
+struct {
+    int autokill;
+    int grinding;
+    int maxlevel;
+    int holeradar;
+    int build;
+} opt;
+
 ////////////////////////////////////////////////////////////////////////////////
 // helpers
 
@@ -120,4 +129,8 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             // by default - just forward the packet
             queue_packet(pkt, tq);
     }
+}
+
+void gm_reset() {
+    CLEAR(opt);
 }
