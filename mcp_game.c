@@ -176,7 +176,7 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
     case name: {                                \
         name##_pkt *tpkt = &pkt->_##name;
 
-#define _GMP }
+#define _GMP break; }
 
 void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
     switch (pkt->pid) {
@@ -193,7 +193,24 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 // forward other chat messages
                 queue_packet(pkt, tq);
             }
-            break;
+        } _GMP;
+
+        ////////////////////////////////////////////////////////////////
+        // Misc effects
+
+        GMP(SP_SoundEffect) {
+            if (!strcmp(tpkt->name,"ambient.weather.thunder")) {
+                printf("**** THUNDER ****\n"
+                       "coords=%d,%d,%d vol=%.4f pitch=%d\n",
+                       tpkt->x/8,tpkt->y/8,tpkt->z/8,
+                       tpkt->vol,tpkt->pitch);
+                drop_connection();
+            }
+
+            if (strcmp(tpkt->name,"mob.sheep.say") &&
+                strcmp(tpkt->name,"mob.sheep.step")) {
+                queue_packet(pkt, tq);
+            }
         } _GMP;
 
         default:
