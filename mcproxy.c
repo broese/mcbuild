@@ -346,6 +346,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
 
 #define MAXPLEN (4*1024*1024)
 
@@ -392,6 +393,18 @@ void write_packet(MCPacket *pkt, lh_buf_t *tx) {
 
     }
 }
+
+void flush_queue(MCPacketQueue *q, lh_buf_t *qx) {
+    int i;
+    for(i=0; i<C(q->queue); i++) {
+        MCPacket * pkt = P(q->queue)[i];
+        write_packet(pkt, qx);
+        free_packet(pkt);
+    }
+    lh_free(P(q->queue));
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
                          lh_buf_t *tx, lh_buf_t *bx) {
@@ -464,22 +477,9 @@ void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
     gs_packet(pkt);
     gm_packet(pkt, &tq, &bq);
 
-    ////////////////////////////////////////////////////////////////////////////
-
-    int i;
-    for(i=0; i<C(tq.queue); i++) {
-        MCPacket * tpkt = P(tq.queue)[i];
-        write_packet(tpkt, tx);
-        free_packet(tpkt);
-    }
-    for(i=0; i<C(bq.queue); i++) {
-        MCPacket * bpkt = P(bq.queue)[i];
-        write_packet(bpkt, bx);
-        free_packet(bpkt);
-    }
-
-    lh_free(P(tq.queue));
-    lh_free(P(bq.queue));
+    // transmit packets in the queues, if any
+    flush_queue(&tq, tx);
+    flush_queue(&bq, bx);
 }
 
 
