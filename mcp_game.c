@@ -32,8 +32,10 @@ uint64_t gettimestamp() {
 #define MAX(a,b) ((a>b)?(a):(b))
 #define SGN(x) (((x)>=0)?1:-1)
 #define SQ(x) ((x)*(x))
-static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
-    return SQ(x-x2)+SQ(y-y2)+SQ(z-z2);
+#define HEADPOSY(y) ((y)+32*162/100)
+
+static inline int mydist(fixp x, fixp y, fixp z) {
+    return SQ(gs.own.x-x)+SQ(HEADPOSY(gs.own.y)-y)+SQ(gs.own.z-z);
 }
 
 #define NEWPACKET(type,name)                    \
@@ -42,6 +44,61 @@ static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
     type##_pkt *t##name = &name->_##type;
 
 ////////////////////////////////////////////////////////////////////////////////
+// Autokill
+
+#define MAX_ENTITIES     256
+#define MIN_ENTITY_DELAY 250000  // minimum interval between hitting the same entity (us)
+#define MIN_ATTACK_DELAY 50000   // minimum interval between attacking any entity
+#define MAX_ATTACK       1       // how many entities to attack at once
+#define REACH_RANGE      4
+
+uint64_t ak_last_attack = 0;
+
+static void autokill(MCPacketQueue *sq) {
+    // skip if we used autokill less than MIN_ATTACK_DELAY us ago
+    uint64_t ts = gettimestamp();
+    if ((ts-ak_last_attack)<MIN_ATTACK_DELAY) return;
+
+    // calculate list of hostile entities in range
+    uint32_t hent[MAX_ENTITIES];
+
+    int i,hi=0;
+    for(i=0; i<C(gs.entity) && hi<MAX_ENTITIES; i++) {
+        entity *e = P(gs.entity)+i;
+
+        // skip non-hostile entities
+        if (!e->hostile) continue;
+
+        // skip entities we hit only recently
+        if ((ts-e->lasthit) < MIN_ENTITY_DELAY) continue;
+
+        // only take entities that are within our reach
+        int sd = mydist(e->x, e->y, e->z) >> 10;
+        if (sd<=SQ(REACH_RANGE))
+            hent[hi++] = i;
+    }
+    //TODO: sort entities by how dangerous and how close they are
+    //TODO: check for obstruction
+
+    for(i=0; i<hi && i<MAX_ATTACK; i++) {
+        entity *e = P(gs.entity)+hent[i];
+        printf("Attacking entity %08x\n",e->id);
+
+        e->lasthit = ts;
+        ak_last_attack = ts;
+
+        // Attack entity
+        NEWPACKET(CP_UseEntity, atk);
+        tatk->target = e->id;
+        tatk->action = 1; // attack
+        queue_packet(atk, sq);
+
+        // Wave arm
+        NEWPACKET(CP_Animation, anim);
+        queue_packet(anim, sq);
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
 
@@ -149,5 +206,5 @@ void gm_reset() {
 }
 
 void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
-    
+    if (opt.autokill) autokill(sq);
 }
