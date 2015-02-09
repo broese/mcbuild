@@ -73,9 +73,9 @@ struct {
 
     // decoded buffers
     lh_buf_t  cs_rx;   // client -> proxy
-    lh_buf_t  cs_tx;   // proxy -> client
+    lh_buf_t  cs_tx;   // proxy -> server
     lh_buf_t  ms_rx;   // server -> proxy
-    lh_buf_t  ms_tx;   // proxy -> server
+    lh_buf_t  ms_tx;   // proxy -> client
 
     // RSA structures/keys for server-side and client-side
     RSA *s_rsa; // public key only - must be freed by RSA_free
@@ -1016,8 +1016,8 @@ int proxy_pump(uint32_t ip, uint16_t port) {
             MCPacketQueue sq = {NULL,0}, cq = {NULL,0};
             gm_async(&sq, &cq);
 
-            flush_queue(&sq, &mitm.ms_tx);
-            flush_queue(&cq, &mitm.cs_tx);
+            flush_queue(&sq, &mitm.cs_tx);
+            flush_queue(&cq, &mitm.ms_tx);
         }
     }
 
