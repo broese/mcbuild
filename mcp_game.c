@@ -100,6 +100,11 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"Autokill is %s",opt.autokill?"ON":"OFF");
         rpos = 2;
     }
+    else if (!strcmp(words[0],"coords")) {
+        sprintf(reply,"coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",
+                gs.own.x,gs.own.y,gs.own.z,
+                gs.own.yaw,gs.own.pitch,gs.own.onground);
+    }
 
 
     // send an immediate reply if any was given

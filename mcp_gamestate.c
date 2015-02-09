@@ -115,6 +115,10 @@ void dump_entities() {
 
 int gs_packet(MCPacket *pkt) {
     switch (pkt->pid) {
+
+        ////////////////////////////////////////////////////////////////
+        // Entities tracking
+
         GSP(SP_SpawnPlayer) {
             entity *e = lh_arr_new_c(GAR(gs.entity));
             e->id = tpkt->eid;
@@ -213,6 +217,53 @@ int gs_packet(MCPacket *pkt) {
             e->x += tpkt->x;
             e->y += tpkt->y;
             e->z += tpkt->z;
+            break;
+        } _GSP;
+
+        ////////////////////////////////////////////////////////////////
+        // Player coordinates
+
+        GSP(SP_PlayerPositionLook) {
+            if (tpkt->flags != 0) {
+                // more Mojang retardedness
+                printf("SP_PlayerPositionLook with relative values, ignoring packet\n");
+                break;
+            }
+            gs.own.x     = tpkt->x;
+            gs.own.y     = tpkt->y;
+            gs.own.z     = tpkt->z;
+            gs.own.yaw   = tpkt->yaw;
+            gs.own.pitch = tpkt->pitch;
+            break;
+        } _GSP;
+
+        GSP(CP_Player) {
+            gs.own.onground = tpkt->onground;
+            break;
+        } _GSP;
+
+        GSP(CP_PlayerPosition) {
+            gs.own.x     = tpkt->x;
+            gs.own.y     = tpkt->y;
+            gs.own.z     = tpkt->z;
+            gs.own.onground = tpkt->onground;
+            break;
+        } _GSP;
+
+        GSP(CP_PlayerLook) {
+            gs.own.yaw   = tpkt->yaw;
+            gs.own.pitch = tpkt->pitch;
+            gs.own.onground = tpkt->onground;
+            break;
+        } _GSP;
+
+        GSP(CP_PlayerPositionLook) {
+            gs.own.x     = tpkt->x;
+            gs.own.y     = tpkt->y;
+            gs.own.z     = tpkt->z;
+            gs.own.yaw   = tpkt->yaw;
+            gs.own.pitch = tpkt->pitch;
+            gs.own.onground = tpkt->onground;
             break;
         } _GSP;
 

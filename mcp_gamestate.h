@@ -48,6 +48,13 @@ typedef struct _gamestate {
         int track_entities;
     } opt;
 
+    struct {
+        uint32_t    eid;
+        double      x,y,z;
+        uint8_t     onground;
+        float       yaw,pitch;
+    } own;
+
     // tracked entities
     lh_arr_declare(entity, entity);
 } gamestate;
