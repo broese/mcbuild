@@ -680,9 +680,11 @@ DECODE_BEGIN(CP_UseEntity,_1_8_1) {
 ENCODE_BEGIN(CP_UseEntity,_1_8_1) {
     Wvarint(target);
     Wvarint(action);
-    Wfloat(x);
-    Wfloat(y);
-    Wfloat(z);
+    if (tpkt->action==2) {
+        Wfloat(x);
+        Wfloat(y);
+        Wfloat(z);
+    }
 } ENCODE_END;
 
 DUMP_BEGIN(CP_UseEntity) {
