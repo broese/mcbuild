@@ -224,6 +224,16 @@ typedef struct {
     uint8_t onground;
 } CP_PlayerPosition_pkt;
 
+// 0x06
+typedef struct {
+    double x;
+    double y;
+    double z;
+    float  yaw;
+    float  pitch;
+    uint8_t onground;
+} CP_PlayerPositionLook_pkt;
+
 // 0x0a
 typedef struct {
 } CP_Animation_pkt;
@@ -307,6 +317,7 @@ typedef struct {
         PKT(CP_ChatMessage);
         PKT(CP_Player);
         PKT(CP_PlayerPosition);
+        PKT(CP_PlayerPositionLook);
         PKT(CP_Animation);
     };
 } MCPacket;

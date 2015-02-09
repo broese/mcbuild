@@ -691,6 +691,23 @@ DUMP_BEGIN(CP_PlayerPosition) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x06 CP_PlayerPositionLook
+
+DECODE_BEGIN(CP_PlayerPositionLook,_1_8_1) {
+    Pdouble(x);
+    Pdouble(y);
+    Pdouble(z);
+    Pfloat(yaw);
+    Pfloat(pitch);
+    Pchar(onground);
+} DECODE_END;
+
+DUMP_BEGIN(CP_PlayerPositionLook) {
+    printf("coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",
+           tpkt->x,tpkt->y,tpkt->z,tpkt->yaw,tpkt->pitch,tpkt->onground);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x0a CP_Animation
 
 DECODE_BEGIN(CP_Animation,_1_8_1) {
@@ -728,6 +745,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (CP_ChatMessage,_1_8_1),
         SUPPORT_D   (CP_Player,_1_8_1),
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),
+        SUPPORT_D   (CP_PlayerPositionLook,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
     },
 };
