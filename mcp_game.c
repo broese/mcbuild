@@ -38,7 +38,7 @@ static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
 
 #define NEWPACKET(type,name)                    \
     lh_create_obj(MCPacket,name);               \
-    pkt->pid = type;                            \
+    name->pid = type;                            \
     type##_pkt *t##name = &name->_##type;
 
 ////////////////////////////////////////////////////////////////////////////////
