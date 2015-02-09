@@ -145,3 +145,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
 void gm_reset() {
     CLEAR(opt);
 }
+
+void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
+    
+}

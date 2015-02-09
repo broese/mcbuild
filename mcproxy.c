@@ -1011,12 +1011,14 @@ int proxy_pump(uint32_t ip, uint16_t port) {
         // handle client- and server-side connection
         lh_conn_process(&pa, G_PROXY, handle_proxy);
 
-#if 0
-        //DISABLED
         // handle asynchronous events (timers etc.)
-        if (mitm.state == STATE_PLAY)
-            handle_async(&mitm.ms_tx, &mitm.cs_tx);
-#endif
+        if (mitm.state == STATE_PLAY) {
+            MCPacketQueue sq = {NULL,0}, cq = {NULL,0};
+            gm_async(&sq, &cq);
+
+            flush_queue(&sq, &mitm.ms_tx);
+            flush_queue(&cq, &mitm.cs_tx);
+        }
     }
 
     printf("Terminating...\n");
