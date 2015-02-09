@@ -38,8 +38,8 @@ static inline int mydist(fixp x, fixp y, fixp z) {
     return SQ(gs.own.x-x)+SQ(HEADPOSY(gs.own.y)-y)+SQ(gs.own.z-z);
 }
 
-#define NEWPACKET(type,name)                    \
-    lh_create_obj(MCPacket,name);               \
+#define NEWPACKET(type,name)                     \
+    lh_create_obj(MCPacket,name);                \
     name->pid = type;                            \
     type##_pkt *t##name = &name->_##type;
 
@@ -168,8 +168,6 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
 
     // send an immediate reply if any was given
     if (reply[0]) chat_message(reply, bq, "gold", rpos);
-
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -182,6 +180,9 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
 
 void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
     switch (pkt->pid) {
+
+        ////////////////////////////////////////////////////////////////
+        // Chat
 
         GMP(CP_ChatMessage) {
             if (tpkt->str[0] == '#' && tpkt->str[1] != '#') {
