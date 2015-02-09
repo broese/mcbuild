@@ -42,8 +42,10 @@ static inline int sqdist(int x, int y, int z, int x2, int y2, int z2) {
     type##_pkt *t##name = &name->_##type;
 
 ////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+// Chat/Commandline
 
-void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {
+static void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {
     uint8_t jreply[32768];
 
     NEWPACKET(SP_ChatMessage,pkt);
@@ -65,7 +67,7 @@ void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos)
     queue_packet(pkt,q);
 }
 
-void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
+static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
     // tokenize
     char *words[256];
     CLEAR(words);
