@@ -87,6 +87,7 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
 
     uint8_t reply[32768];
     reply[0] = 0;
+    int rpos = 0;
 
     if (!strcmp(words[0],"test")) {
         sprintf(reply,"Chat test response");
@@ -94,10 +95,15 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
     else if (!strcmp(words[0],"entities")) {
         sprintf(reply,"Tracking %zd entities",gs.C(entity));
     }
+    else if (!strcmp(words[0],"autokill")) {
+        opt.autokill = !opt.autokill;
+        sprintf(reply,"Autokill is %s",opt.autokill?"ON":"OFF");
+        rpos = 2;
+    }
 
 
     // send an immediate reply if any was given
-    if (reply[0]) chat_message(reply, bq, "gold",0);
+    if (reply[0]) chat_message(reply, bq, "gold", rpos);
 
 
 }
