@@ -665,6 +665,17 @@ DUMP_BEGIN(CP_ChatMessage) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x03 CP_Player
+
+DECODE_BEGIN(CP_Player,_1_8_1) {
+    Pchar(onground);
+} DECODE_END;
+
+DUMP_BEGIN(CP_Player) {
+    printf("onground=%d",tpkt->onground);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x0a CP_Animation
 
 DECODE_BEGIN(CP_Animation,_1_8_1) {
@@ -700,6 +711,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     },
     {
         SUPPORT_DD  (CP_ChatMessage,_1_8_1),
+        SUPPORT_D   (CP_Player,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
     },
 };

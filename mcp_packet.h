@@ -211,6 +211,11 @@ typedef struct {
     char str[256];
 } CP_ChatMessage_pkt;
 
+// 0x03
+typedef struct {
+    uint8_t onground;
+} CP_Player_pkt;
+
 // 0x0a
 typedef struct {
 } CP_Animation_pkt;
@@ -292,6 +297,7 @@ typedef struct {
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);
+        PKT(CP_Player);
         PKT(CP_Animation);
     };
 } MCPacket;
