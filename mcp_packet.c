@@ -765,13 +765,13 @@ DUMP_BEGIN(CP_Animation) {
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_DD  (SP_JoinGame,_1_8_1),
-        SUPPORT_DED (SP_ChatMessage,_1_8_1),
+        SUPPORT_DE  (SP_ChatMessage,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
         SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DDF (SP_SpawnPlayer,_1_8_1),
         SUPPORT_D   (SP_SpawnObject,_1_8_1),
         SUPPORT_DF  (SP_SpawnMob,_1_8_1),
-        SUPPORT_DD  (SP_SpawnPainting,_1_8_1),
+        SUPPORT_D   (SP_SpawnPainting,_1_8_1),
         SUPPORT_D   (SP_SpawnExperienceOrb,_1_8_1),
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
@@ -783,7 +783,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
-        SUPPORT_DD  (CP_ChatMessage,_1_8_1),
+        SUPPORT_D   (CP_ChatMessage,_1_8_1),
         SUPPORT_DE  (CP_UseEntity,_1_8_1),
         SUPPORT_D   (CP_Player,_1_8_1),
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),
