@@ -229,9 +229,9 @@ int gs_packet(MCPacket *pkt) {
                 printf("SP_PlayerPositionLook with relative values, ignoring packet\n");
                 break;
             }
-            gs.own.x     = tpkt->x;
-            gs.own.y     = tpkt->y;
-            gs.own.z     = tpkt->z;
+            gs.own.x     = (int)(tpkt->x*32);
+            gs.own.y     = (int)(tpkt->y*32);
+            gs.own.z     = (int)(tpkt->z*32);
             gs.own.yaw   = tpkt->yaw;
             gs.own.pitch = tpkt->pitch;
             break;
@@ -243,9 +243,9 @@ int gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(CP_PlayerPosition) {
-            gs.own.x     = tpkt->x;
-            gs.own.y     = tpkt->y;
-            gs.own.z     = tpkt->z;
+            gs.own.x     = (int)(tpkt->x*32);
+            gs.own.y     = (int)(tpkt->y*32);
+            gs.own.z     = (int)(tpkt->z*32);
             gs.own.onground = tpkt->onground;
             break;
         } _GSP;
@@ -258,9 +258,9 @@ int gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(CP_PlayerPositionLook) {
-            gs.own.x     = tpkt->x;
-            gs.own.y     = tpkt->y;
-            gs.own.z     = tpkt->z;
+            gs.own.x     = (int)(tpkt->x*32);
+            gs.own.y     = (int)(tpkt->y*32);
+            gs.own.z     = (int)(tpkt->z*32);
             gs.own.yaw   = tpkt->yaw;
             gs.own.pitch = tpkt->pitch;
             gs.own.onground = tpkt->onground;
