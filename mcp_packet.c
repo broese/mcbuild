@@ -676,6 +676,21 @@ DUMP_BEGIN(CP_Player) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x04 CP_PlayerPosition
+
+DECODE_BEGIN(CP_PlayerPosition,_1_8_1) {
+    Pdouble(x);
+    Pdouble(y);
+    Pdouble(z);
+    Pchar(onground);
+} DECODE_END;
+
+DUMP_BEGIN(CP_PlayerPosition) {
+    printf("coord=%.1f,%.1f,%.1f, onground=%d",
+           tpkt->x,tpkt->y,tpkt->z,tpkt->onground);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x0a CP_Animation
 
 DECODE_BEGIN(CP_Animation,_1_8_1) {
@@ -712,6 +727,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_DD  (CP_ChatMessage,_1_8_1),
         SUPPORT_D   (CP_Player,_1_8_1),
+        SUPPORT_D   (CP_PlayerPosition,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
     },
 };
