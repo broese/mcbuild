@@ -198,6 +198,16 @@ typedef struct {
     int32_t  exp;   // total experience
 } SP_SetExperience_pkt;
 
+// 0x29
+typedef struct {
+    char     name[256];
+    int32_t  x;     // multiplied by 8
+    int32_t  y;     // multiplied by 8
+    int32_t  z;     // multiplied by 8
+    float    vol;
+    uint8_t  pitch;
+} SP_SoundEffect_pkt;
+
 // 0x46
 typedef struct {
     int32_t     threshold;
@@ -326,6 +336,7 @@ typedef struct {
         PKT(SP_EntityLookRelMove);
         PKT(SP_EntityTeleport);
         PKT(SP_SetExperience);
+        PKT(SP_SoundEffect);
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);

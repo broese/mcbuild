@@ -628,6 +628,25 @@ DUMP_BEGIN(SP_SetExperience) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x29 SP_SoundEffect
+
+DECODE_BEGIN(SP_SoundEffect,_1_8_1) {
+    Pstr(name);
+    Pint(x);
+    Pint(y);
+    Pint(z);
+    Pfloat(vol);
+    Pchar(pitch);
+} DECODE_END;
+
+DUMP_BEGIN(SP_SoundEffect) {
+    printf("name=%s, coord=%.1f,%.1f,%.1f, vol=%.2f, pitch=%d",
+           tpkt->name,
+           (float)tpkt->x/8,(float)tpkt->y/8,(float)tpkt->z/8,
+           tpkt->vol, tpkt->pitch);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x46 SP_SetCompression
 
 DECODE_BEGIN(SP_SetCompression,_1_8_1) {
@@ -782,6 +801,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityLookRelMove,_1_8_1),
         SUPPORT_D   (SP_EntityTeleport,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
+        SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
