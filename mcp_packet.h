@@ -191,9 +191,9 @@ typedef struct {
 // 0x18
 typedef struct {
     uint32_t eid;
-    int8_t   x;
-    int8_t   y;
-    int8_t   z;
+    fixp      x;
+    fixp      y;
+    fixp      z;
     angle_t  yaw;
     angle_t  pitch;
     uint8_t  onground;

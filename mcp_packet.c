@@ -614,9 +614,9 @@ DUMP_BEGIN(SP_EntityLookRelMove) {
 
 DECODE_BEGIN(SP_EntityTeleport,_1_8_1) {
     Pvarint(eid);
-    Pchar(x);
-    Pchar(y);
-    Pchar(z);
+    Pint(x);
+    Pint(y);
+    Pint(z);
     Pchar(yaw);
     Pchar(pitch);
     Pchar(onground);
