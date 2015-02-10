@@ -146,7 +146,7 @@ int main(int ac, char **av) {
             gs_setopt(GSOP_SEARCH_SPAWNERS, 1);
 
             parse_mcp(data, size);
-            dump_entities();
+            //dump_entities();
 
             free(data);
             gs_destroy();
