@@ -493,7 +493,7 @@ DUMP_BEGIN(SP_SpawnPainting) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x10 SP_SpawnExperienceOrb
+// 0x11 SP_SpawnExperienceOrb
 
 DECODE_BEGIN(SP_SpawnExperienceOrb,_1_8_1) {
     Pvarint(eid);
@@ -508,6 +508,20 @@ DUMP_BEGIN(SP_SpawnExperienceOrb) {
            tpkt->eid,
            (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
            tpkt->count);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x12 SP_EntityVelocity
+
+DECODE_BEGIN(SP_EntityVelocity,_1_8_1) {
+    Pvarint(eid);
+    Pshort(vx);
+    Pshort(vy);
+    Pshort(vz);
+} DECODE_END;
+
+DUMP_BEGIN(SP_EntityVelocity) {
+    printf("eid=%08x, vel=%d,%d,%d", tpkt->eid, tpkt->vx,tpkt->vy,tpkt->vz);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -810,6 +824,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_SpawnMob,_1_8_1),
         SUPPORT_D   (SP_SpawnPainting,_1_8_1),
         SUPPORT_D   (SP_SpawnExperienceOrb,_1_8_1),
+        SUPPORT_D   (SP_EntityVelocity,_1_8_1),
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
         SUPPORT_D   (SP_EntityRelMove,_1_8_1),
