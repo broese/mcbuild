@@ -198,6 +198,14 @@ typedef struct {
     int32_t  exp;   // total experience
 } SP_SetExperience_pkt;
 
+// 0x28
+typedef struct {
+    uint32_t id;
+    pos_t    loc;
+    uint32_t data;
+    uint8_t  disvol;
+} SP_Effect_pkt;
+
 // 0x29
 typedef struct {
     char     name[256];
@@ -336,6 +344,7 @@ typedef struct {
         PKT(SP_EntityLookRelMove);
         PKT(SP_EntityTeleport);
         PKT(SP_SetExperience);
+        PKT(SP_Effect);
         PKT(SP_SoundEffect);
         PKT(SP_SetCompression);
 

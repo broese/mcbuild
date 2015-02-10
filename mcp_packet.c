@@ -628,6 +628,22 @@ DUMP_BEGIN(SP_SetExperience) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x28 SP_Effect
+
+DECODE_BEGIN(SP_Effect,_1_8_1) {
+    Pint(id);
+    Plong(loc.p);
+    Pint(data);
+    Pchar(disvol);
+} DECODE_END;
+
+DUMP_BEGIN(SP_Effect) {
+    printf("id=%d loc=%d,%d,%d data=%d disvol=%d",
+           tpkt->id, tpkt->loc.x, tpkt->loc.y, tpkt->loc.z,
+           tpkt->data, tpkt->disvol);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x29 SP_SoundEffect
 
 DECODE_BEGIN(SP_SoundEffect,_1_8_1) {
@@ -801,6 +817,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityLookRelMove,_1_8_1),
         SUPPORT_D   (SP_EntityTeleport,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
+        SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
