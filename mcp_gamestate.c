@@ -214,9 +214,9 @@ int gs_packet(MCPacket *pkt) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
             entity *e = P(gs.entity)+idx;
-            e->x += tpkt->x;
-            e->y += tpkt->y;
-            e->z += tpkt->z;
+            e->x = tpkt->x;
+            e->y = tpkt->y;
+            e->z = tpkt->z;
             break;
         } _GSP;
 
