@@ -198,6 +198,20 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         ////////////////////////////////////////////////////////////////
         // Misc effects
 
+        GMP(SP_Effect) {
+            if (tpkt->id == 1013) {
+                char buf[4096];
+                sprintf(buf, "WITHER SPAWN at %d,%d,%d",
+                        tpkt->loc.x,tpkt->loc.y,tpkt->loc.z);
+
+                printf("**** %s ****\n",buf);
+
+                queue_packet(pkt, tq);
+                chat_message(buf, tq, "gold", 0);
+                chat_message(buf, tq, "gold", 2);
+            }
+        } _GMP;
+
         GMP(SP_SoundEffect) {
             if (!strcmp(tpkt->name,"ambient.weather.thunder")) {
                 printf("**** THUNDER ****\n"
