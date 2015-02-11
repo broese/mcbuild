@@ -166,7 +166,29 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
                 gs.own.x,gs.own.y,gs.own.z,
                 gs.own.yaw,gs.own.pitch,gs.own.onground);
     }
+    else if (!strcmp(words[0],"grind")) {
+        int maxlevel=30;
+        int start = 1;
 
+        if (words[1]) {
+            if (!strcmp(words[1],"stop")) {
+                opt.grinding = 0;
+                opt.autokill = 0;
+                sprintf(reply,"Grinding is stopped");
+                start = 0;
+            }
+            else if (sscanf(words[1],"%d",&maxlevel)!=1) {
+                maxlevel = 30;
+            }
+        }
+
+        if (start) {
+            opt.grinding = 1;
+            opt.autokill = 1;
+            opt.maxlevel = maxlevel;
+            sprintf(reply,"Grinding to level %d",opt.maxlevel);
+        }
+    }
 
     // send an immediate reply if any was given
     if (reply[0]) chat_message(reply, bq, "gold", rpos);
@@ -227,6 +249,21 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 strcmp(tpkt->name,"mob.sheep.step")) {
                 queue_packet(pkt, tq);
             }
+        } _GMP;
+
+        ////////////////////////////////////////////////////////////////
+        // Player
+
+        GMP(SP_SetExperience) {
+            if (opt.grinding && tpkt->level >= opt.maxlevel) {
+                opt.grinding = 0;
+                opt.autokill = 0;
+
+                char buf[4096];
+                sprintf(buf, "Grinding finished at level %d",tpkt->level);
+                chat_message(buf, tq, "green", 0);
+            }
+            queue_packet(pkt, tq);
         } _GMP;
 
         default:
