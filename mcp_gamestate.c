@@ -111,7 +111,7 @@ void dump_entities() {
     case name: {                                \
         name##_pkt *tpkt = &pkt->_##name;
 
-#define _GSP }
+#define _GSP break; }
 
 int gs_packet(MCPacket *pkt) {
     switch (pkt->pid) {
@@ -128,7 +128,6 @@ int gs_packet(MCPacket *pkt) {
             e->type = ENTITY_PLAYER;
             //TODO: name
             //TODO: mark players hostile/neutral/friendly depending on the faglist
-            break;
         } _GSP;
 
         GSP(SP_SpawnObject) {
@@ -138,7 +137,6 @@ int gs_packet(MCPacket *pkt) {
             e->y  = tpkt->y;
             e->z  = tpkt->z;
             e->type = ENTITY_OBJECT;
-            break;
         } _GSP;
 
         GSP(SP_SpawnMob) {
@@ -157,7 +155,6 @@ int gs_packet(MCPacket *pkt) {
             // mark creepers extra hostile to make them priority targets
             if (e->mtype == 50)
                 e->hostile = 2;
-            break;
         } _GSP;
 
         GSP(SP_SpawnPainting) {
@@ -167,7 +164,6 @@ int gs_packet(MCPacket *pkt) {
             e->y  = tpkt->pos.y*32;
             e->z  = tpkt->pos.z*32;
             e->type = ENTITY_OTHER;
-            break;
         } _GSP;
 
         GSP(SP_SpawnExperienceOrb) {
@@ -177,7 +173,6 @@ int gs_packet(MCPacket *pkt) {
             e->y  = tpkt->y;
             e->z  = tpkt->z;
             e->type = ENTITY_OTHER;
-            break;
         } _GSP;
 
         GSP(SP_DestroyEntities) {
@@ -187,7 +182,6 @@ int gs_packet(MCPacket *pkt) {
                 if (idx<0) continue;
                 lh_arr_delete(GAR(gs.entity),idx);
             }
-            break;
         } _GSP;
 
         GSP(SP_EntityRelMove) {
@@ -197,7 +191,6 @@ int gs_packet(MCPacket *pkt) {
             e->x += tpkt->dx;
             e->y += tpkt->dy;
             e->z += tpkt->dz;
-            break;
         } _GSP;
 
         GSP(SP_EntityLookRelMove) {
@@ -207,7 +200,6 @@ int gs_packet(MCPacket *pkt) {
             e->x += tpkt->dx;
             e->y += tpkt->dy;
             e->z += tpkt->dz;
-            break;
         } _GSP;
 
         GSP(SP_EntityTeleport) {
@@ -217,7 +209,6 @@ int gs_packet(MCPacket *pkt) {
             e->x = tpkt->x;
             e->y = tpkt->y;
             e->z = tpkt->z;
-            break;
         } _GSP;
 
         ////////////////////////////////////////////////////////////////
@@ -234,12 +225,10 @@ int gs_packet(MCPacket *pkt) {
             gs.own.z     = (int)(tpkt->z*32);
             gs.own.yaw   = tpkt->yaw;
             gs.own.pitch = tpkt->pitch;
-            break;
         } _GSP;
 
         GSP(CP_Player) {
             gs.own.onground = tpkt->onground;
-            break;
         } _GSP;
 
         GSP(CP_PlayerPosition) {
@@ -247,14 +236,12 @@ int gs_packet(MCPacket *pkt) {
             gs.own.y     = (int)(tpkt->y*32);
             gs.own.z     = (int)(tpkt->z*32);
             gs.own.onground = tpkt->onground;
-            break;
         } _GSP;
 
         GSP(CP_PlayerLook) {
             gs.own.yaw   = tpkt->yaw;
             gs.own.pitch = tpkt->pitch;
             gs.own.onground = tpkt->onground;
-            break;
         } _GSP;
 
         GSP(CP_PlayerPositionLook) {
@@ -264,7 +251,6 @@ int gs_packet(MCPacket *pkt) {
             gs.own.yaw   = tpkt->yaw;
             gs.own.pitch = tpkt->pitch;
             gs.own.onground = tpkt->onground;
-            break;
         } _GSP;
 
     }
