@@ -689,6 +689,13 @@ DUMP_BEGIN(SP_ChunkData) {
            tpkt->X, tpkt->Z, tpkt->cont, tpkt->mask, tpkt->skylight);
 } DUMP_END;
 
+FREE_BEGIN(SP_ChunkData) {
+    int i;
+    for(i=0; i<16; i++) {
+        lh_free(tpkt->cubes[i]);
+    }
+} FREE_END;
+
 ////////////////////////////////////////////////////////////////////////////////
 // 0x28 SP_Effect
 
@@ -880,7 +887,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityLookRelMove,_1_8_1),
         SUPPORT_D   (SP_EntityTeleport,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
-        SUPPORT_D   (SP_ChunkData,_1_8_1),
+        SUPPORT_DDF (SP_ChunkData,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
