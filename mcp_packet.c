@@ -188,6 +188,13 @@ static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
     return limhexbuf;
 }
 
+static inline int count_bits(uint16_t bitmask) {
+    int i,c=0;
+    for(c=0; bitmask; bitmask>>=1)
+        c += (bitmask&1);
+    return c;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef struct {
@@ -642,6 +649,42 @@ DUMP_BEGIN(SP_SetExperience) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x21 SP_ChunkData
+
+DECODE_BEGIN(SP_ChunkData,_1_8_1) {
+    Pint(X);
+    Pint(Z);
+    Pchar(cont);
+    Pshort(mask);
+    Rvarint(dsize);
+
+    if (tpkt->mask) {
+        int nblk = count_bits(tpkt->mask);
+        int bpc  = (dsize-256)/nblk;
+        //printf("ChunkData: dsize=%d bpc=%d\n",dsize,bpc);
+        tpkt->skylight = ((dsize-256)/nblk == 3*4096);
+    }
+
+    uint16_t mask = tpkt->mask;
+    int i;
+    for (i=0; mask; mask>>=1, i++) {
+        if (mask&1) {
+            lh_alloc_obj(tpkt->cubes[i]);
+            Pdata(cubes[i]->blocks, 8192);
+            Pdata(cubes[i]->light, 2048);
+            if (tpkt->skylight)
+                Pdata(cubes[i]->skylight, 2048);
+        }
+    }
+    Pdata(biome, 256);
+} DECODE_END;
+
+DUMP_BEGIN(SP_ChunkData) {
+    printf("coord=%4d:%4d, cont=%d, mask=%04x, skylight=%d",
+           tpkt->X, tpkt->Z, tpkt->cont, tpkt->mask, tpkt->skylight);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x28 SP_Effect
 
 DECODE_BEGIN(SP_Effect,_1_8_1) {
@@ -832,6 +875,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityLookRelMove,_1_8_1),
         SUPPORT_D   (SP_EntityTeleport,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
+        SUPPORT_D   (SP_ChunkData,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),

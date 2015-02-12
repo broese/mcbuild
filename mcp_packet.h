@@ -50,6 +50,34 @@ typedef struct {
     };
 } metadata;
 
+typedef struct {
+    union {
+        struct {
+            uint16_t meta : 4;
+            uint16_t bid  : 12;
+        };
+        uint16_t raw;
+    };
+} bid_t;
+
+// used for skylight and blocklight
+typedef struct {
+    union {
+        struct {
+            uint16_t l : 4;
+            uint16_t h : 4;
+        };
+        uint16_t b;
+    };
+} light_t;
+
+// represents a single 16x16x16 cube of blocks within a chunk
+typedef struct {
+    bid_t   blocks[4096];
+    light_t skylight[2048];
+    light_t light[2048];
+} cube_t;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Server -> Client
 
@@ -206,6 +234,17 @@ typedef struct {
     int32_t  exp;   // total experience
 } SP_SetExperience_pkt;
 
+// 0x21
+typedef struct {
+    int32_t  X;
+    int32_t  Z;
+    int8_t   cont;          // ground-up continuous
+    int8_t   skylight;      // not sent in the packet, but we derive it from data size
+    uint16_t mask;
+    cube_t   *cubes[16];    // pointers to cubes. The pointers may be NULL meaning air
+    int8_t   biome[256];
+} SP_ChunkData_pkt;
+
 // 0x28
 typedef struct {
     uint32_t id;
@@ -353,6 +392,7 @@ typedef struct {
         PKT(SP_EntityLookRelMove);
         PKT(SP_EntityTeleport);
         PKT(SP_SetExperience);
+        PKT(SP_ChunkData);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
         PKT(SP_SetCompression);
