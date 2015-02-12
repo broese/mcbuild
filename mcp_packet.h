@@ -78,6 +78,14 @@ typedef struct {
     light_t light[2048];
 } cube_t;
 
+typedef struct {
+    int32_t  X;
+    int32_t  Z;
+    int8_t   skylight;      // not sent in the packet, but we derive it from data size
+    cube_t   *cubes[16];    // pointers to cubes. The pointers may be NULL meaning air
+    int8_t   biome[256];
+} chunk_t;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Server -> Client
 
@@ -236,13 +244,8 @@ typedef struct {
 
 // 0x21
 typedef struct {
-    int32_t  X;
-    int32_t  Z;
     int8_t   cont;          // ground-up continuous
-    int8_t   skylight;      // not sent in the packet, but we derive it from data size
-    uint16_t mask;
-    cube_t   *cubes[16];    // pointers to cubes. The pointers may be NULL meaning air
-    int8_t   biome[256];
+    chunk_t  chunk;
 } SP_ChunkData_pkt;
 
 // 0x28

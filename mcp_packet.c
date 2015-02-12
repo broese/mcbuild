@@ -129,27 +129,27 @@ static void dump_metadata(metadata *meta, EntityType et) {
 ////////////////////////////////////////////////////////////////////////////////
 // Map Chunk
 
-int8_t read_chunk(uint8_t *p, ssize_t size, uint16_t mask, cube_t **cubes, int8_t *biome) {
-    int8_t skylight=0;
+uint8_t * read_chunk(uint8_t *p, ssize_t size, uint16_t mask, chunk_t *chunk) {
+    chunk->skylight=0;
 
     if (mask) {
         int nblk = count_bits(mask);
         int bpc  = (size-256)/nblk;
-        skylight = ((size-256)/nblk == 3*4096);
+        chunk->skylight = ((size-256)/nblk == 3*4096);
     }
 
     int i;
     for (i=0; mask; mask>>=1, i++) {
         if (mask&1) {
-            lh_alloc_obj(cubes[i]);
-            memmove(cubes[i]->blocks, p, 8192); p+=8192;
-            memmove(cubes[i]->light, p, 2048); p+=2048;
-            if (skylight)
-                memmove(cubes[i]->skylight, p, 2048); p+=2048;
+            lh_alloc_obj(chunk->cubes[i]);
+            memmove(chunk->cubes[i]->blocks, p, 8192); p+=8192;
+            memmove(chunk->cubes[i]->light, p, 2048); p+=2048;
+            if (chunk->skylight)
+                memmove(chunk->cubes[i]->skylight, p, 2048); p+=2048;
         }
     }
-    memmove(biome, p, 256);
-    return skylight;
+    memmove(chunk->biome, p, 256); p+=256;
+    return p;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -683,23 +683,23 @@ DUMP_BEGIN(SP_SetExperience) {
 // 0x21 SP_ChunkData
 
 DECODE_BEGIN(SP_ChunkData,_1_8_1) {
-    Pint(X);
-    Pint(Z);
+    Pint(chunk.X);
+    Pint(chunk.Z);
     Pchar(cont);
     Rshort(mask);
     Rvarint(size);
-    tpkt->skylight = read_chunk(p, size, mask, tpkt->cubes, tpkt->biome);
+    p=read_chunk(p, size, mask, &tpkt->chunk);
 } DECODE_END;
 
 DUMP_BEGIN(SP_ChunkData) {
-    printf("coord=%4d:%4d, cont=%d, mask=%04x, skylight=%d",
-           tpkt->X, tpkt->Z, tpkt->cont, tpkt->mask, tpkt->skylight);
+    printf("coord=%4d:%4d, cont=%d, skylight=%d",
+           tpkt->chunk.X, tpkt->chunk.Z, tpkt->cont, tpkt->chunk.skylight);
 } DUMP_END;
 
 FREE_BEGIN(SP_ChunkData) {
     int i;
     for(i=0; i<16; i++) {
-        lh_free(tpkt->cubes[i]);
+        lh_free(tpkt->chunk.cubes[i]);
     }
 } FREE_END;
 
