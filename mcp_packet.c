@@ -129,22 +129,14 @@ static void dump_metadata(metadata *meta, EntityType et) {
 ////////////////////////////////////////////////////////////////////////////////
 // Map Chunk
 
-uint8_t * read_chunk(uint8_t *p, ssize_t size, uint16_t mask, chunk_t *chunk, int8_t *skylight) {
-    *skylight=0;
-
-    if (mask) {
-        int nblk = count_bits(mask);
-        int bpc  = (size-256)/nblk;
-        *skylight = ((size-256)/nblk == 3*4096);
-    }
-
+uint8_t * read_chunk(uint8_t *p, int8_t skylight, uint16_t mask, chunk_t *chunk) {
     int i;
     for (i=0; mask; mask>>=1, i++) {
         if (mask&1) {
             lh_alloc_obj(chunk->cubes[i]);
             memmove(chunk->cubes[i]->blocks, p, 8192); p+=8192;
             memmove(chunk->cubes[i]->light, p, 2048); p+=2048;
-            if (*skylight)
+            if (skylight)
                 memmove(chunk->cubes[i]->skylight, p, 2048); p+=2048;
         }
     }
@@ -688,12 +680,21 @@ DECODE_BEGIN(SP_ChunkData,_1_8_1) {
     Pchar(cont);
     Rshort(mask);
     Rvarint(size);
-    p=read_chunk(p, size, mask, &tpkt->chunk, &tpkt->skylight);
+
+    tpkt->skylight=0;
+
+    if (mask) {
+        int nblk = count_bits(mask);
+        int bpc  = (size-256)/nblk;
+        tpkt->skylight = ((size-256)/nblk == 3*4096);
+    }
+
+    p=read_chunk(p, mask, tpkt->skylight, &tpkt->chunk);
 } DECODE_END;
 
 DUMP_BEGIN(SP_ChunkData) {
     printf("coord=%4d:%4d, cont=%d, skylight=%d",
-           tpkt->chunk.X, tpkt->chunk.Z, tpkt->cont, tpkt->chunk.skylight);
+           tpkt->chunk.X, tpkt->chunk.Z, tpkt->cont, tpkt->skylight);
 } DUMP_END;
 
 FREE_BEGIN(SP_ChunkData) {
