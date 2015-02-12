@@ -127,6 +127,32 @@ static void dump_metadata(metadata *meta, EntityType et) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Map Chunk
+
+int8_t read_chunk(uint8_t *p, ssize_t size, uint16_t mask, cube_t **cubes, int8_t *biome) {
+    int8_t skylight=0;
+
+    if (mask) {
+        int nblk = count_bits(mask);
+        int bpc  = (size-256)/nblk;
+        skylight = ((size-256)/nblk == 3*4096);
+    }
+
+    int i;
+    for (i=0; mask; mask>>=1, i++) {
+        if (mask&1) {
+            lh_alloc_obj(cubes[i]);
+            memmove(cubes[i]->blocks, p, 8192); p+=8192;
+            memmove(cubes[i]->light, p, 2048); p+=2048;
+            if (skylight)
+                memmove(cubes[i]->skylight, p, 2048); p+=2048;
+        }
+    }
+    memmove(biome, p, 256);
+    return skylight;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Inventory Slot
 
 #if 0
@@ -660,28 +686,9 @@ DECODE_BEGIN(SP_ChunkData,_1_8_1) {
     Pint(X);
     Pint(Z);
     Pchar(cont);
-    Pshort(mask);
-    Rvarint(dsize);
-
-    if (tpkt->mask) {
-        int nblk = count_bits(tpkt->mask);
-        int bpc  = (dsize-256)/nblk;
-        //printf("ChunkData: dsize=%d bpc=%d\n",dsize,bpc);
-        tpkt->skylight = ((dsize-256)/nblk == 3*4096);
-    }
-
-    uint16_t mask = tpkt->mask;
-    int i;
-    for (i=0; mask; mask>>=1, i++) {
-        if (mask&1) {
-            lh_alloc_obj(tpkt->cubes[i]);
-            Pdata(cubes[i]->blocks, 8192);
-            Pdata(cubes[i]->light, 2048);
-            if (tpkt->skylight)
-                Pdata(cubes[i]->skylight, 2048);
-        }
-    }
-    Pdata(biome, 256);
+    Rshort(mask);
+    Rvarint(size);
+    tpkt->skylight = read_chunk(p, size, mask, tpkt->cubes, tpkt->biome);
 } DECODE_END;
 
 DUMP_BEGIN(SP_ChunkData) {
