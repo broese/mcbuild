@@ -11,6 +11,30 @@
 #include "mcp_ids.h"
 
 ////////////////////////////////////////////////////////////////////////////////
+// Helpers
+
+char limhexbuf[4100];
+static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
+    //assert(len<(sizeof(limhexbuf)-4)/2);
+    assert(maxbyte >= 4);
+
+    int i;
+    //TODO: implement aaaaaa....bbbbbb - type of printing
+    if (len > maxbyte) len = maxbyte;
+    for(i=0;i<len;i++)
+        sprintf(limhexbuf+i*2,"%02x ",data[i]);
+    return limhexbuf;
+}
+
+static inline int count_bits(uint16_t bitmask) {
+    int i,c=0;
+    for(c=0; bitmask; bitmask>>=1)
+        c += (bitmask&1);
+    return c;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// String
 
 static uint8_t * read_string(uint8_t *p, char *s) {
     uint32_t len = lh_read_varint(p);
@@ -28,6 +52,7 @@ static uint8_t * write_string(uint8_t *w, const char *s) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Entity Metadata
 
 static uint8_t * read_metadata(uint8_t *p, metadata **meta) {
     assert(meta);
@@ -102,6 +127,7 @@ static void dump_metadata(metadata *meta, EntityType et) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Inventory Slot
 
 #if 0
 static uint8_t * read_slot(uint8_t *p, slot_t *s) {
@@ -125,7 +151,8 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
     return p;
 }
 #endif
-    
+
+////////////////////////////////////////////////////////////////////////////////
 
 #define Rx(n,type,fun) type n = lh_read_ ## fun ## _be(p)
 
@@ -172,28 +199,6 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 //#define Pslot(n)    p=read_slot(p,tpkt->n)
 #define Wdata(n,l)  memmove(w,tpkt->n,l); w+=l
 #define Wuuid(n)    Wdata(n,sizeof(uuid_t))
-
-////////////////////////////////////////////////////////////////////////////////
-
-char limhexbuf[4100];
-static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
-    //assert(len<(sizeof(limhexbuf)-4)/2);
-    assert(maxbyte >= 4);
-
-    int i;
-    //TODO: implement aaaaaa....bbbbbb - type of printing
-    if (len > maxbyte) len = maxbyte;
-    for(i=0;i<len;i++)
-        sprintf(limhexbuf+i*2,"%02x ",data[i]);
-    return limhexbuf;
-}
-
-static inline int count_bits(uint16_t bitmask) {
-    int i,c=0;
-    for(c=0; bitmask; bitmask>>=1)
-        c += (bitmask&1);
-    return c;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 
