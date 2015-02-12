@@ -81,7 +81,6 @@ typedef struct {
 typedef struct {
     int32_t  X;
     int32_t  Z;
-    int8_t   skylight;      // not sent in the packet, but we derive it from data size
     cube_t   *cubes[16];    // pointers to cubes. The pointers may be NULL meaning air
     int8_t   biome[256];
 } chunk_t;
@@ -245,6 +244,7 @@ typedef struct {
 // 0x21
 typedef struct {
     int8_t   cont;          // ground-up continuous
+    int8_t   skylight;      // whether skylight was sent;
     chunk_t  chunk;
 } SP_ChunkData_pkt;
 
