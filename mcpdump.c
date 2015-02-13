@@ -29,7 +29,9 @@ void parse_mcp(uint8_t *data, ssize_t size) {
     BUFI(udata);         // buffer for decompressed data
 
     int max=20;
+    int numpackets = 0;
     while(hdr-data < (size-16) && max>0) {
+        numpackets++;
         //max--;
         uint8_t *p = hdr;
 
@@ -103,6 +105,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
     }
 
     lh_free(P(udata));
+    printf("Total packets: %d\n",numpackets);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
