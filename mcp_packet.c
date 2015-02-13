@@ -134,14 +134,16 @@ uint8_t * read_chunk(uint8_t *p, int8_t skylight, uint16_t mask, chunk_t *chunk)
     for (i=0; mask; mask>>=1, i++) {
         if (mask&1) {
             lh_alloc_obj(chunk->cubes[i]);
+            cube_t *c = chunk->cubes[i];
 
-            memmove(chunk->cubes[i]->blocks, p, 8192);
+            memmove(c->blocks, p, 8192);
             p+=8192;
-            memmove(chunk->cubes[i]->light, p, 2048);
+
+            memmove(c->light, p, 2048);
             p+=2048;
 
             if (skylight) {
-                memmove(chunk->cubes[i]->skylight, p, 2048);
+	        memmove(c->skylight, p, 2048);
                 p+=2048;
             }
         }
@@ -698,7 +700,7 @@ DECODE_BEGIN(SP_ChunkData,_1_8_1) {
         tpkt->skylight = ((size-256)/nblk == 3*4096);
     }
 
-    p=read_chunk(p, mask, tpkt->skylight, &tpkt->chunk);
+    p=read_chunk(p, tpkt->skylight, mask, &tpkt->chunk);
 } DECODE_END;
 
 DUMP_BEGIN(SP_ChunkData) {
@@ -730,7 +732,7 @@ DECODE_BEGIN(SP_MapChunkBulk,_1_8_1) {
     }
     // read chunk data
     for(i=0; i<tpkt->nchunks; i++) {
-        p=read_chunk(p, tpkt->chunk[i].mask, tpkt->skylight, &tpkt->chunk[i]);
+        p=read_chunk(p, tpkt->skylight, tpkt->chunk[i].mask, &tpkt->chunk[i]);
     }
 
 } DECODE_END;

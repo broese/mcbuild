@@ -64,10 +64,10 @@ typedef struct {
 typedef struct {
     union {
         struct {
-            uint16_t l : 4;
-            uint16_t h : 4;
+            uint8_t l : 4;
+            uint8_t h : 4;
         };
-        uint16_t b;
+        uint8_t b;
     };
 } light_t;
 
@@ -83,7 +83,7 @@ typedef struct {
     int32_t  Z;
     uint16_t mask;
     cube_t   *cubes[16];    // pointers to cubes. The pointers may be NULL meaning air
-    int8_t   biome[256];
+    uint8_t  biome[256];
 } chunk_t;
 
 ////////////////////////////////////////////////////////////////////////////////
