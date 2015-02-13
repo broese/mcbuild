@@ -102,7 +102,7 @@ typedef struct {
 
 // 0x02
 typedef struct {
-    char     json[32768];
+    char    *json;
     uint8_t  pos;
 } SP_ChatMessage_pkt;
 

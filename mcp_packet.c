@@ -191,7 +191,7 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 #define Rlong(n)    Rx(n,uint64_t,long)
 #define Rfloat(n)   Rx(n,float,float)
 #define Rdouble(n)  Rx(n,double,double)
-#define Rstr(n)     char n[4096]; p=read_string(p,n)
+#define Rstr(n)     char n[65536]; p=read_string(p,n)
 #define Rskip(n)    p+=n;
 #define Rvarint(n)  uint32_t n = lh_read_varint(p)
 //#define Rslot(n)    slot_t n; p=read_slot(p,&n)
@@ -383,7 +383,8 @@ DUMP_BEGIN(SP_JoinGame) {
 // 0x02 SP_ChatMessage
 
 DECODE_BEGIN(SP_ChatMessage,_1_8_1) {
-    Pstr(json);
+    Rstr(json);
+    tpkt->json = strdup(json);
     Pchar(pos);
 } DECODE_END;
 
@@ -395,6 +396,10 @@ ENCODE_BEGIN(SP_ChatMessage,_1_8_1) {
 DUMP_BEGIN(SP_ChatMessage) {
     printf("json=%s",tpkt->json);
 } DUMP_END;
+
+FREE_BEGIN(SP_ChatMessage) {
+    lh_free(tpkt->json);
+} FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x03 SP_TimeUpdate
@@ -930,7 +935,7 @@ DUMP_BEGIN(CP_Animation) {
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_DD  (SP_JoinGame,_1_8_1),
-        SUPPORT_DE  (SP_ChatMessage,_1_8_1),
+        SUPPORT_DEF (SP_ChatMessage,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
         SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DDF (SP_SpawnPlayer,_1_8_1),
