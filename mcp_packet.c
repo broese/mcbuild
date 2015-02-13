@@ -143,7 +143,7 @@ uint8_t * read_chunk(uint8_t *p, int8_t skylight, uint16_t mask, chunk_t *chunk)
             p+=2048;
 
             if (skylight) {
-	        memmove(c->skylight, p, 2048);
+                memmove(c->skylight, p, 2048);
                 p+=2048;
             }
         }
@@ -734,7 +734,6 @@ DECODE_BEGIN(SP_MapChunkBulk,_1_8_1) {
     for(i=0; i<tpkt->nchunks; i++) {
         p=read_chunk(p, tpkt->skylight, tpkt->chunk[i].mask, &tpkt->chunk[i]);
     }
-
 } DECODE_END;
 
 DUMP_BEGIN(SP_MapChunkBulk) {
@@ -947,8 +946,8 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityLookRelMove,_1_8_1),
         SUPPORT_D   (SP_EntityTeleport,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
-        SUPPORT_DDF (SP_ChunkData,_1_8_1),
-        SUPPORT_DDF (SP_MapChunkBulk,_1_8_1),
+        SUPPORT_DF  (SP_ChunkData,_1_8_1),
+        SUPPORT_DF  (SP_MapChunkBulk,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
