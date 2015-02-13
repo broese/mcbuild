@@ -81,6 +81,7 @@ typedef struct {
 typedef struct {
     int32_t  X;
     int32_t  Z;
+    uint16_t mask;
     cube_t   *cubes[16];    // pointers to cubes. The pointers may be NULL meaning air
     int8_t   biome[256];
 } chunk_t;
@@ -248,6 +249,13 @@ typedef struct {
     chunk_t  chunk;
 } SP_ChunkData_pkt;
 
+// 0x26
+typedef struct {
+    int8_t   skylight;
+    int32_t  nchunks;
+    chunk_t *chunk;
+} SP_MapChunkBulk_pkt;
+
 // 0x28
 typedef struct {
     uint32_t id;
@@ -396,6 +404,7 @@ typedef struct {
         PKT(SP_EntityTeleport);
         PKT(SP_SetExperience);
         PKT(SP_ChunkData);
+        PKT(SP_MapChunkBulk);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
         PKT(SP_SetCompression);

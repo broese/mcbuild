@@ -134,13 +134,22 @@ uint8_t * read_chunk(uint8_t *p, int8_t skylight, uint16_t mask, chunk_t *chunk)
     for (i=0; mask; mask>>=1, i++) {
         if (mask&1) {
             lh_alloc_obj(chunk->cubes[i]);
-            memmove(chunk->cubes[i]->blocks, p, 8192); p+=8192;
-            memmove(chunk->cubes[i]->light, p, 2048); p+=2048;
-            if (skylight)
-                memmove(chunk->cubes[i]->skylight, p, 2048); p+=2048;
+
+            memmove(chunk->cubes[i]->blocks, p, 8192);
+            p+=8192;
+            memmove(chunk->cubes[i]->light, p, 2048);
+            p+=2048;
+
+            if (skylight) {
+                memmove(chunk->cubes[i]->skylight, p, 2048);
+                p+=2048;
+            }
         }
     }
-    memmove(chunk->biome, p, 256); p+=256;
+
+    memmove(chunk->biome, p, 256);
+    p+=256;
+
     return p;
 }
 
@@ -705,6 +714,47 @@ FREE_BEGIN(SP_ChunkData) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x26 SP_MapChunkBulk
+
+DECODE_BEGIN(SP_MapChunkBulk,_1_8_1) {
+    Pchar(skylight);
+    Pvarint(nchunks);
+    lh_alloc_num(tpkt->chunk, tpkt->nchunks);
+
+    int i;
+    // read chunk headers
+    for(i=0; i<tpkt->nchunks; i++) {
+        Pint(chunk[i].X);
+        Pint(chunk[i].Z);
+        Pshort(chunk[i].mask);
+    }
+    // read chunk data
+    for(i=0; i<tpkt->nchunks; i++) {
+        p=read_chunk(p, tpkt->chunk[i].mask, tpkt->skylight, &tpkt->chunk[i]);
+    }
+
+} DECODE_END;
+
+DUMP_BEGIN(SP_MapChunkBulk) {
+    int i;
+    printf("nchunks=%d, skylight=%d",tpkt->nchunks,tpkt->skylight);
+    for(i=0; i<tpkt->nchunks; i++) {
+        printf("\n  coord=%4d:%4d", tpkt->chunk[i].X, tpkt->chunk[i].Z);
+    }
+} DUMP_END;
+
+FREE_BEGIN(SP_MapChunkBulk) {
+    int i,j;
+
+    for(j=0; j<tpkt->nchunks; j++) {
+        for(i=0; i<16; i++) {
+            lh_free(tpkt->chunk[j].cubes[i]);
+        }
+    }
+    lh_free(tpkt->chunk);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x28 SP_Effect
 
 DECODE_BEGIN(SP_Effect,_1_8_1) {
@@ -896,6 +946,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityTeleport,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
         SUPPORT_DDF (SP_ChunkData,_1_8_1),
+        SUPPORT_DDF (SP_MapChunkBulk,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
