@@ -808,6 +808,46 @@ FREE_BEGIN(SP_MapChunkBulk) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x27 SP_Explosion
+
+DECODE_BEGIN(SP_Explosion,_1_8_1) {
+    Pfloat(x);
+    Pfloat(y);
+    Pfloat(z);
+    Pfloat(radius);
+    Pint(count);
+    lh_alloc_num(tpkt->blocks, tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        boff_t *b = tpkt->blocks+i;
+        Rchar(dx);
+        Rchar(dy);
+        Rchar(dz);
+        b->dx = dx;
+        b->dy = dy;
+        b->dz = dz;
+    }
+    Pfloat(vx);
+    Pfloat(vy);
+    Pfloat(vz);
+} DECODE_END;
+
+DUMP_BEGIN(SP_Explosion) {
+    printf("coord=%.1f,%.1f,%.1f, radius=%.1f, velocity=%.1f,%.1f,%.1f, count=%d",
+           tpkt->x, tpkt->y, tpkt->z, tpkt->radius,
+           tpkt->vx, tpkt->vy, tpkt->vz, tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        boff_t *b = tpkt->blocks+i;
+        printf("\n  offset=%d,%d,%d",b->dx,b->dy,b->dz);
+    }
+} DUMP_END;
+
+FREE_BEGIN(SP_Explosion) {
+    lh_free(tpkt->blocks);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x28 SP_Effect
 
 DECODE_BEGIN(SP_Effect,_1_8_1) {
@@ -1000,8 +1040,9 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_SetExperience,_1_8_1),
         SUPPORT_DF  (SP_ChunkData,_1_8_1),
         SUPPORT_DF  (SP_MultiBlockChange,_1_8_1),
-        SUPPORT_DD  (SP_BlockChange,_1_8_1),
+        SUPPORT_D   (SP_BlockChange,_1_8_1),
         SUPPORT_DF  (SP_MapChunkBulk,_1_8_1),
+        SUPPORT_DF  (SP_Explosion,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),

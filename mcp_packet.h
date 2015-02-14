@@ -98,6 +98,10 @@ typedef struct {
     bid_t bid;
 } blkrec;
 
+typedef struct {
+    int8_t dx,dy,dz;
+} boff_t;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Server -> Client
 
@@ -281,6 +285,15 @@ typedef struct {
     chunk_t *chunk;
 } SP_MapChunkBulk_pkt;
 
+// 0x27
+typedef struct {
+    float    x,y,z;
+    float    radius;
+    int32_t  count;
+    boff_t  *blocks;
+    float    vx,vy,vz;
+} SP_Explosion_pkt;
+
 // 0x28
 typedef struct {
     uint32_t id;
@@ -432,6 +445,7 @@ typedef struct {
         PKT(SP_MultiBlockChange);
         PKT(SP_BlockChange);
         PKT(SP_MapChunkBulk);
+        PKT(SP_Explosion);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
         PKT(SP_SetCompression);
