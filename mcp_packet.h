@@ -268,6 +268,12 @@ typedef struct {
     blkrec  *blocks;
 } SP_MultiBlockChange_pkt;
 
+// 0x23
+typedef struct {
+    pos_t    pos;
+    bid_t    block;
+} SP_BlockChange_pkt;
+
 // 0x26
 typedef struct {
     int8_t   skylight;
@@ -424,6 +430,7 @@ typedef struct {
         PKT(SP_SetExperience);
         PKT(SP_ChunkData);
         PKT(SP_MultiBlockChange);
+        PKT(SP_BlockChange);
         PKT(SP_MapChunkBulk);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);

@@ -753,6 +753,21 @@ FREE_BEGIN(SP_MultiBlockChange) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x23 SP_BlockChange
+
+DECODE_BEGIN(SP_BlockChange,_1_8_1) {
+    Plong(pos.p);
+    Rvarint(bid);
+    tpkt->block.raw = (uint16_t)bid;
+} DECODE_END;
+
+DUMP_BEGIN(SP_BlockChange) {
+    printf("coord=%d,%d,%d bid=%3x meta=%d",
+           tpkt->pos.x, tpkt->pos.y, tpkt->pos.z,
+           tpkt->block.bid,tpkt->block.meta);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x26 SP_MapChunkBulk
 
 DECODE_BEGIN(SP_MapChunkBulk,_1_8_1) {
@@ -985,6 +1000,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_SetExperience,_1_8_1),
         SUPPORT_DF  (SP_ChunkData,_1_8_1),
         SUPPORT_DF  (SP_MultiBlockChange,_1_8_1),
+        SUPPORT_DD  (SP_BlockChange,_1_8_1),
         SUPPORT_DF  (SP_MapChunkBulk,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
