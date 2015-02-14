@@ -738,13 +738,13 @@ DECODE_BEGIN(SP_MultiBlockChange,_1_8_1) {
 } DECODE_END;
 
 DUMP_BEGIN(SP_MultiBlockChange) {
-    printf("chunk=%d:%d count=%d",
+    printf("chunk=%d:%d, count=%d",
            tpkt->X, tpkt->Z, tpkt->count);
     int i;
     for(i=0; i<tpkt->count; i++) {
         blkrec *b = tpkt->blocks+i;
-        printf("\n    coord=%2d,%2d bid=%3x meta=%d",
-               b->x,b->z,b->bid.bid,b->bid.meta);
+        printf("\n    coord=%2d,%3d,%2d bid=%3x meta=%d",
+               b->x,b->z,b->y,b->bid.bid,b->bid.meta);
     }
 } DUMP_END;
 
