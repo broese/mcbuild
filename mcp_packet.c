@@ -721,6 +721,38 @@ FREE_BEGIN(SP_ChunkData) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x22 SP_MultiBlockChange
+
+DECODE_BEGIN(SP_MultiBlockChange,_1_8_1) {
+    Pint(X);
+    Pint(Z);
+    Pvarint(count);
+    lh_alloc_num(tpkt->blocks, tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        Pchar(blocks[i].pos);
+        Pchar(blocks[i].y);
+        Rvarint(bid);
+        tpkt->blocks[i].bid.raw = (uint16_t)bid;
+    }
+} DECODE_END;
+
+DUMP_BEGIN(SP_MultiBlockChange) {
+    printf("chunk=%d:%d count=%d",
+           tpkt->X, tpkt->Z, tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        blkrec *b = tpkt->blocks+i;
+        printf("\n    coord=%2d,%2d bid=%3x meta=%d",
+               b->x,b->z,b->bid.bid,b->bid.meta);
+    }
+} DUMP_END;
+
+FREE_BEGIN(SP_MultiBlockChange) {
+    lh_free(tpkt->blocks);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x26 SP_MapChunkBulk
 
 DECODE_BEGIN(SP_MapChunkBulk,_1_8_1) {
@@ -952,6 +984,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityTeleport,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
         SUPPORT_DF  (SP_ChunkData,_1_8_1),
+        SUPPORT_DF  (SP_MultiBlockChange,_1_8_1),
         SUPPORT_DF  (SP_MapChunkBulk,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),

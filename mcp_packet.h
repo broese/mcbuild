@@ -86,6 +86,18 @@ typedef struct {
     uint8_t  biome[256];
 } chunk_t;
 
+typedef struct {
+    union {
+        uint8_t pos;
+        struct {
+            uint8_t z : 4;
+            uint8_t x : 4;
+        };
+    };
+    uint8_t y;
+    bid_t bid;
+} blkrec;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Server -> Client
 
@@ -249,6 +261,13 @@ typedef struct {
     chunk_t  chunk;
 } SP_ChunkData_pkt;
 
+// 0x22
+typedef struct {
+    int32_t  X,Z;
+    int32_t  count;
+    blkrec  *blocks;
+} SP_MultiBlockChange_pkt;
+
 // 0x26
 typedef struct {
     int8_t   skylight;
@@ -404,6 +423,7 @@ typedef struct {
         PKT(SP_EntityTeleport);
         PKT(SP_SetExperience);
         PKT(SP_ChunkData);
+        PKT(SP_MultiBlockChange);
         PKT(SP_MapChunkBulk);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
