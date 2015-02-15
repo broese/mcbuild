@@ -417,6 +417,27 @@ DUMP_BEGIN(SP_TimeUpdate) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x07 SP_Respawn
+
+DECODE_BEGIN(SP_Respawn,_1_8_1) {
+    Pint(dimension);
+    Pchar(difficulty);
+    Pchar(gamemode);
+    Pstr(leveltype);
+} DECODE_END;
+
+DUMP_BEGIN(SP_Respawn) {
+    const char *GM[]   = { "Survival", "Creative", "Adventure", "Spectator" };
+    const char *DIM[]  = { "Overworld", "End", "Unknown", "Nether" };
+    const char *DIFF[] = { "Peaceful", "Easy", "Normal", "Hard" };
+
+    printf("gamemode=%s%s, dimension=%s, difficulty=%s, leveltype=%s",
+           GM[tpkt->gamemode&3], (tpkt->gamemode&8)?"(hardcore)":"",
+           DIM[tpkt->dimension&3], DIFF[tpkt->difficulty&3],
+           tpkt->leveltype);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x08 SP_PlayerPositionLook
 
 DECODE_BEGIN(SP_PlayerPositionLook,_1_8_1) {
@@ -1024,6 +1045,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (SP_JoinGame,_1_8_1),
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
+        SUPPORT_DD  (SP_Respawn,_1_8_1),
         SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DDF (SP_SpawnPlayer,_1_8_1),
         SUPPORT_D   (SP_SpawnObject,_1_8_1),

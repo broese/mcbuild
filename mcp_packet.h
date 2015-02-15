@@ -128,6 +128,14 @@ typedef struct {
     uint64_t time;
 } SP_TimeUpdate_pkt;
 
+// 0x07
+typedef struct {
+    int32_t dimension;
+    uint8_t difficulty;
+    uint8_t gamemode;
+    char    leveltype[32];
+} SP_Respawn_pkt;
+
 // 0x08
 typedef struct {
     double x,y,z;
@@ -427,6 +435,7 @@ typedef struct {
         PKT(SP_JoinGame);
         PKT(SP_ChatMessage);
         PKT(SP_TimeUpdate);
+        PKT(SP_Respawn);
         PKT(SP_PlayerPositionLook);
         PKT(SP_SpawnPlayer);
         PKT(SP_SpawnObject);
