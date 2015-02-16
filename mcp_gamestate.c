@@ -15,6 +15,10 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void free_chunks(gsworld *w);
+
+////////////////////////////////////////////////////////////////////////////////
+
 gamestate gs;
 static int gs_used = 0;
 
@@ -40,6 +44,10 @@ void gs_reset() {
 void gs_destroy() {
     // delete tracked entities
     lh_free(P(gs.entity));
+
+    free_chunks(&gs.overworld);
+    free_chunks(&gs.nether);
+    free_chunks(&gs.end);
 
 #if 0
         // delete cached chunks
@@ -102,6 +110,40 @@ void dump_entities() {
         printf("  %4d eid=%08x type=%-7s coord=%.1f,%.1f,%.1f\n",
                i,e->id, ENTITY_TYPES[e->type],
                (float)e->x/32,(float)e->y/32,(float)e->z/32);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// chunk storage
+
+void free_chunks(gsworld *w) {
+    if (!w) return;
+
+    if (w->chunks) {
+        int x,z;
+        for(z=0; z<w->Zs; z++) {
+            gschunk **row = w->chunks[z];
+            if (!row) continue;
+            for(x=0; x<w->Xs; x++) {
+                lh_free(row[x]);
+            }
+            lh_free(w->chunks[z]);
+        }
+        lh_free(w->chunks);
+    }
+}
+
+void change_dimension(int dimension) {
+    printf("Switching to dimension %d\n",dimension);
+
+    // prune all chunks of the current dimension
+    if (gs.opt.prune_chunks)
+        free_chunks(gs.world);
+
+    switch(dimension) {
+        case 0:  gs.world = &gs.overworld; break;
+        case -1: gs.world = &gs.nether; break;
+        case 1:  gs.world = &gs.end; break;
     }
 }
 
@@ -251,6 +293,14 @@ int gs_packet(MCPacket *pkt) {
             gs.own.yaw   = tpkt->yaw;
             gs.own.pitch = tpkt->pitch;
             gs.own.onground = tpkt->onground;
+        } _GSP;
+
+        GSP(SP_JoinGame) {
+            change_dimension(tpkt->dimension);
+        } _GSP;
+
+        GSP(SP_Respawn) {
+            change_dimension(tpkt->dimension);
         } _GSP;
 
     }
