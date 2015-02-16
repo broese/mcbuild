@@ -40,6 +40,27 @@ typedef struct _entity {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+typedef struct {
+    bid_t blocks[65536];
+    light_t light[32768];
+    light_t skylight[32768];
+} gschunk;
+
+typedef struct {
+    int32_t Xo, Zo;     // chunk coordinate offset
+    int32_t Xs, Zs;     // size of the chunk storage
+    gschunk ***chunks;  // chunk storage
+/*
+    Assuming X,Z are world coordinates of a chunk
+    Xo,Xz would be the world chunk coordinates in the NW corned
+    X-Xo, Z-Zo are the offsets of this chunk within database
+
+    If (X-Xo)<0 || (X-Xo)>=Xs , the chunk is not in the database, e.g. it needs to be resized.
+*/
+} gsworld;
+
+////////////////////////////////////////////////////////////////////////////////
+
 typedef struct _gamestate {
     // options
     struct {
@@ -57,6 +78,11 @@ typedef struct _gamestate {
 
     // tracked entities
     lh_arr_declare(entity, entity);
+
+    gsworld         overworld;
+    gsworld         end;
+    gsworld         nether;
+    gsworld        *world;
 } gamestate;
 
 extern gamestate gs;
