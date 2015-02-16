@@ -15,7 +15,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void free_chunks(gsworld *w);
+static void free_chunks(gsworld *w);
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -116,24 +116,52 @@ void dump_entities() {
 ////////////////////////////////////////////////////////////////////////////////
 // chunk storage
 
-void free_chunks(gsworld *w) {
+int32_t find_chunk(gsworld *w, int32_t X, int32_t Z) {
+    int32_t idx = CHUNKIDX(w,X,Z);
+
+    if ((X-w->Xo) < 0) {
+        // chunk is to the west of the region, add columns on the left
+        
+    }
+}
+
+static void insert_chunk(chunk_t *c) {
+    gsworld *w = gs.world;
+    int32_t idx = find_chunk(w, c->X, c->Z);
+}
+
+static void remove_chunk(int32_t X, int32_t Z) {
+}
+
+static void free_chunks(gsworld *w) {
+    if (!w) return;
+
+    if (w->chunks) {
+        int32_t sz = w->Xs*w->Zs;
+        int i;
+        for(i=0; i<sz; i++)
+            lh_free(w->chunks[i]);
+
+        lh_free(w->chunks);
+    }
+}
+
+static void dump_chunks(gsworld *w) {
     if (!w) return;
 
     if (w->chunks) {
         int x,z;
         for(z=0; z<w->Zs; z++) {
-            gschunk **row = w->chunks[z];
-            if (!row) continue;
-            for(x=0; x<w->Xs; x++) {
-                lh_free(row[x]);
-            }
-            lh_free(w->chunks[z]);
+            int32_t off = w->Xs*z;
+            printf("%4d ",z+w->Zo);
+            for(x=0; x<w->Xs; x++)
+                printf("%c", w->chunks[off+x]?'#':' ');
+            printf("\n");
         }
-        lh_free(w->chunks);
     }
 }
 
-void change_dimension(int dimension) {
+static void change_dimension(int dimension) {
     printf("Switching to dimension %d\n",dimension);
 
     // prune all chunks of the current dimension
@@ -301,6 +329,26 @@ int gs_packet(MCPacket *pkt) {
 
         GSP(SP_Respawn) {
             change_dimension(tpkt->dimension);
+        } _GSP;
+
+        ////////////////////////////////////////////////////////////////
+        // Chunks
+
+        GSP(SP_ChunkData) {
+            if (!tpkt->chunk.mask) {
+                if (gs.opt.prune_chunks) {
+                    remove_chunk(tpkt->chunk.X,tpkt->chunk.Z);
+                }
+            }
+            else {
+                insert_chunk(&tpkt->chunk);
+            }
+        } _GSP;
+
+        GSP(SP_MapChunkBulk) {
+            int i;
+            for(i=0; i<tpkt->nchunks; i++)
+                insert_chunk(&tpkt->chunk[i]);
         } _GSP;
 
     }
