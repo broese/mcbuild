@@ -133,6 +133,9 @@ static void insert_chunk(chunk_t *c) {
 }
 
 static void remove_chunk(int32_t X, int32_t Z) {
+    int32_t idx = find_chunk(gs.world, X, Z);
+    lh_free(gs.world->chunks[idx]);
+    //TODO: resize the chunk array
 }
 
 static void free_chunks(gsworld *w) {
