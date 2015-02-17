@@ -157,7 +157,7 @@ static void dump_chunks(gsworld *w) {
             int32_t off = w->Xs*z;
             printf("%4d ",z+w->Zo);
             for(x=0; x<w->Xs; x++)
-                printf("%c", w->chunks[off+x]?'#':' ');
+                printf("%c", w->chunks[off+x]?'#':'.');
             printf("\n");
         }
     }
@@ -381,7 +381,7 @@ void gs_destroy() {
     // delete tracked entities
     lh_free(P(gs.entity));
 
-    dump_chunks(&gs.overworld);
+    //dump_chunks(&gs.overworld);
 
     free_chunks(&gs.overworld);
     free_chunks(&gs.nether);
