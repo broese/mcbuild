@@ -46,12 +46,13 @@ void dump_entities() {
 
 int32_t find_chunk(gsworld *w, int32_t X, int32_t Z) {
     if (w->Xs==0 || w->Zs==0) {
+        //printf("%d,%d\n",X,Z);
         // this is the very first allocation, just set our offset coords
         w->Xo = X&~(WORLDALLOC-1);
         w->Zo = Z&~(WORLDALLOC-1);
         w->Xs = WORLDALLOC;
         w->Zs = WORLDALLOC;
-        //TODO: alloc the chunks buffer
+        lh_alloc_num(w->chunks,w->Xs*w->Zs);
         return CHUNKIDX(w, X, Z);
     }
 
@@ -84,8 +85,31 @@ int32_t find_chunk(gsworld *w, int32_t X, int32_t Z) {
         printf("extending SOUTH: Z=%d: %d->%d , %d->%d\n",Z,w->Zo,nZo,w->Zs,nZs);
     }
 
-    w->Xo = nXo; w->Xs = nXs;
-    w->Zo = nZo; w->Zs = nZs;
+    // if the size has changed, we need to resize the chunks array
+    if (w->Xs != nXs || w->Zs != nZs) {
+        //printf("%d,%d\n",X,Z);
+        // allocate a new array for the chunk pointers
+        lh_create_num(gschunk *, chunks, nXs*nZs);
+
+        // this is the offset in the _new_ array, from
+        // where we will start copying the chunks from the old one
+        int32_t offset = (w->Xo-nXo) + (w->Zo-nZo)*nXs;
+
+        int i;
+        for(i=0; i<w->Zs; i++) {
+            //printf("row %d, offset=%d\n",i,offset);
+            gschunk ** oldrow = w->chunks+i*w->Xs;
+            //printf("moving %d*%zd bytes from %p (w->chunks[%d]) to %p (chunks[%d])\n",
+            //       w->Xs,sizeof(gschunk *),oldrow,i*w->Xs,chunks+offset,offset);
+            memmove(chunks+offset, oldrow, w->Xs*sizeof(gschunk *));
+            offset += nXs;
+        }
+        lh_free(w->chunks);
+        w->chunks = chunks;
+
+        w->Xo = nXo; w->Xs = nXs;
+        w->Zo = nZo; w->Zs = nZs;
+    }
 
     return CHUNKIDX(w, X, Z);
 }
