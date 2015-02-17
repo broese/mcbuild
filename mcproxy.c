@@ -34,7 +34,7 @@
 #include "mcp_ids.h"
 #include "mcp_packet.h"
 #include "mcp_gamestate.h"
-//#include "mcp_game.h"
+#include "mcp_game.h"
 
 #define SERVER_ADDR "2b2t.org"
 
