@@ -116,13 +116,40 @@ void dump_entities() {
 ////////////////////////////////////////////////////////////////////////////////
 // chunk storage
 
-int32_t find_chunk(gsworld *w, int32_t X, int32_t Z) {
-    int32_t idx = CHUNKIDX(w,X,Z);
+// extend world in blocks of this many chunks 
+#define WORLDALLOC (1<<4)
 
-    if ((X-w->Xo) < 0) {
-        // chunk is to the west of the region, add columns on the left
-        
+int32_t find_chunk(gsworld *w, int32_t X, int32_t Z) {
+    if (w->Xs==0 || w->Zs==0) {
+        // this is the very first allocation, just set our offset coords
+        w->Xo = X&~(WORLDALLOC-1);
+        w->Zo = Z&~(WORLDALLOC-1);
+        w->Xs = WORLDALLOC;
+        w->Zs = WORLDALLOC;
+        //TODO: alloc the chunks buffer
+        return CHUNKIDX(w, X, Z);
     }
+
+    int nXo=w->Xo,nZo=w->Zo;
+    int nXs=w->Xs,nZs=w->Zs;
+
+    // check if we need to extend our world westward
+    if (X < w->Xo) {
+        nXo = X&~(WORLDALLOC-1);
+        nXs+=(w->Xo-nXo);
+        printf("extending WEST: X=%d: %d->%d , %d->%d\n",X,w->Xo,nXo,w->Xs,nXs);
+    }
+
+    // extending eastwards
+    else if (X >= w->Xo+w->Xs) {
+        nXs = (X|(WORLDALLOC-1))+1 - w->Xo;
+        printf("extending EAST: X=%d: %d->%d , %d->%d\n",X,w->Xo,nXo,w->Xs,nXs);
+    }
+
+    w->Xo = nXo; w->Xs = nXs;
+    w->Zo = nZo; w->Zs = nZs;
+
+    return CHUNKIDX(w, X, Z);
 }
 
 static void insert_chunk(chunk_t *c) {
