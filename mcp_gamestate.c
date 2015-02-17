@@ -146,6 +146,19 @@ int32_t find_chunk(gsworld *w, int32_t X, int32_t Z) {
         printf("extending EAST: X=%d: %d->%d , %d->%d\n",X,w->Xo,nXo,w->Xs,nXs);
     }
 
+    // extending to the north
+    if (Z < w->Zo) {
+        nZo = Z&~(WORLDALLOC-1);
+        nZs+=(w->Zo-nZo);
+        printf("extending NORTH: Z=%d: %d->%d , %d->%d\n",Z,w->Zo,nZo,w->Zs,nZs);
+    }
+
+    // extending to the south
+    else if (Z >= w->Zo+w->Zs) {
+        nZs = (Z|(WORLDALLOC-1))+1 - w->Zo;
+        printf("extending SOUTH: Z=%d: %d->%d , %d->%d\n",Z,w->Zo,nZo,w->Zs,nZs);
+    }
+
     w->Xo = nXo; w->Xs = nXs;
     w->Zo = nZo; w->Zs = nZs;
 
