@@ -44,9 +44,10 @@ typedef struct {
     bid_t blocks[65536];
     light_t light[32768];
     light_t skylight[32768];
+    uint8_t  biome[256];
 } gschunk;
 
-#define CHUNKIDX(w,X,Z) ((X)-(w)->Xo)+((Z)-(w)->Zo)*((w)->Zs)
+#define CHUNKIDX(w,X,Z) ((X)-(w)->Xo)+((Z)-(w)->Zo)*((w)->Xs)
 
 typedef struct {
     int32_t Xo, Zo;     // chunk coordinate offset
