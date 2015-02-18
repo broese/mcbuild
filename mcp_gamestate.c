@@ -186,6 +186,23 @@ static void change_dimension(int dimension) {
     }
 }
 
+static void modify_blocks(int32_t X, int32_t Z, blkrec *blocks, int32_t count) {
+    int32_t idx = find_chunk(gs.world, X, Z);
+
+    // get the chunk and allocate if it's not allocated yet
+    gschunk * gc = gs.world->chunks[idx];
+    if (!gc) {
+        lh_alloc_obj(gs.world->chunks[idx]);
+        gc = gs.world->chunks[idx];
+    }
+
+    int i;
+    for(i=0; i<count; i++) {
+        blkrec *b = blocks+i;
+        gc->blocks[(int32_t)b->y*16+b->pos] = b->bid;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #define GSP(name)                               \
@@ -360,6 +377,20 @@ int gs_packet(MCPacket *pkt) {
             int i;
             for(i=0; i<tpkt->nchunks; i++)
                 insert_chunk(&tpkt->chunk[i]);
+        } _GSP;
+
+        GSP(SP_BlockChange) {
+            blkrec block = {
+                .x = tpkt->pos.x&0xf,
+                .z = tpkt->pos.z&0xf,
+                .y = (uint8_t)tpkt->pos.y,
+                .bid = tpkt->block,
+            };
+            modify_blocks(tpkt->pos.x>>4,tpkt->pos.z>>4,&block,1);
+        } _GSP;
+
+        GSP(SP_MultiBlockChange) {
+            modify_blocks(tpkt->X,tpkt->Z,tpkt->blocks,tpkt->count);
         } _GSP;
 
     }
