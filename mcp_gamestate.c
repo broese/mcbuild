@@ -118,8 +118,9 @@ static void insert_chunk(chunk_t *c) {
     gsworld *w = gs.world;
     int32_t idx = find_chunk(w, c->X, c->Z);
 
-    lh_create_obj(gschunk,gc);
-    w->chunks[idx] = gc;
+    if (!w->chunks[idx])
+        lh_alloc_obj(w->chunks[idx]);
+    gschunk *gc = w->chunks[idx];
 
     int i;
     for(i=0; i<16; i++) {
@@ -127,6 +128,11 @@ static void insert_chunk(chunk_t *c) {
             memmove(gc->blocks+i*4096,   c->cubes[i]->blocks,   4096);
             memmove(gc->light+i*2048,    c->cubes[i]->light,    2048);
             memmove(gc->skylight+i*2048, c->cubes[i]->skylight, 2048);
+        }
+        else {
+            memset(gc->blocks+i*4096, 0, 4096);
+            memset(gc->light+i*2048, 0, 2048);
+            memset(gc->skylight+i*2048, 0, 2048);
         }
         memmove(gc->biome, c->biome, 256);
     }
