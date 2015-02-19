@@ -393,6 +393,26 @@ int gs_packet(MCPacket *pkt) {
             modify_blocks(tpkt->X,tpkt->Z,tpkt->blocks,tpkt->count);
         } _GSP;
 
+        GSP(SP_Explosion) {
+            int xc = (int)(tpkt->x);
+            int yc = (int)(tpkt->y);
+            int zc = (int)(tpkt->z);
+
+            int i;
+            for(i=0; i<tpkt->count; i++) {
+                int x = xc +tpkt->blocks[i].dx;
+                int y = yc +tpkt->blocks[i].dy;
+                int z = zc +tpkt->blocks[i].dz;
+                blkrec block = {
+                    .x = x&0xf,
+                    .z = z&0xf,
+                    .y = (uint8_t)y,
+                    .bid = 0,
+                };
+                modify_blocks(x>>4,z>>4,&block,1);
+            }
+        } _GSP;
+
     }
 }
 
