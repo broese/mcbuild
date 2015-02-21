@@ -158,7 +158,7 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         printf("Tracking %zd entities",gs.C(entity));
         dump_entities();
     }
-    else if (!strcmp(words[0],"autokill")) {
+    else if (!strcmp(words[0],"ak") || !strcmp(words[0],"autokill")) {
         opt.autokill = !opt.autokill;
         sprintf(reply,"Autokill is %s",opt.autokill?"ON":"OFF");
         rpos = 2;
