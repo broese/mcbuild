@@ -103,3 +103,5 @@ int  gs_getopt(int optid);
 int  gs_packet(MCPacket *pkt);
 
 void dump_entities();
+bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
+                      int32_t yl, int32_t ys, bid_t *data);
