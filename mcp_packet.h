@@ -143,6 +143,11 @@ typedef struct {
     char   flags;
 } SP_PlayerPositionLook_pkt;
 
+// 0x09
+typedef struct {
+    uint8_t sid;
+} SP_HeldItemChange_pkt;
+
 // 0x0c
 typedef struct {
     uint32_t eid;
@@ -437,6 +442,7 @@ typedef struct {
         PKT(SP_TimeUpdate);
         PKT(SP_Respawn);
         PKT(SP_PlayerPositionLook);
+        PKT(SP_HeldItemChange);
         PKT(SP_SpawnPlayer);
         PKT(SP_SpawnObject);
         PKT(SP_SpawnMob);

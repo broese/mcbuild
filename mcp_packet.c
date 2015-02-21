@@ -496,6 +496,21 @@ DUMP_BEGIN(SP_PlayerPositionLook) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x09 SP_HeldItemChange
+
+DECODE_BEGIN(SP_HeldItemChange,_1_8_1) {
+    Pchar(sid);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_HeldItemChange,_1_8_1) {
+    Wchar(sid);
+} DECODE_END;
+
+DUMP_BEGIN(SP_HeldItemChange) {
+    printf("sid=%d", tpkt->sid);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x0c SP_SpawnPlayer
 
 DECODE_BEGIN(SP_SpawnPlayer,_1_8_1) {
@@ -1080,6 +1095,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
         SUPPORT_DD  (SP_Respawn,_1_8_1),
         SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
+        SUPPORT_DE  (SP_HeldItemChange,_1_8_1),
         SUPPORT_DDF (SP_SpawnPlayer,_1_8_1),
         SUPPORT_D   (SP_SpawnObject,_1_8_1),
         SUPPORT_DF  (SP_SpawnMob,_1_8_1),
