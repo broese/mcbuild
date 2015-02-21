@@ -845,7 +845,8 @@ DUMP_BEGIN(SP_MapChunkBulk) {
     int i;
     printf("nchunks=%d, skylight=%d",tpkt->nchunks,tpkt->skylight);
     for(i=0; i<tpkt->nchunks; i++) {
-        printf("\n  coord=%4d:%4d", tpkt->chunk[i].X, tpkt->chunk[i].Z);
+        printf("\n  coord=%4d:%4d mask=%04x",
+               tpkt->chunk[i].X, tpkt->chunk[i].Z, tpkt->chunk[i].mask);
     }
 } DUMP_END;
 
