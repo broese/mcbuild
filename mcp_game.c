@@ -100,6 +100,76 @@ static void autokill(MCPacketQueue *sq) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Holeradar
+
+#define HR_DISTC 2
+#define HR_DISTB (HR_DISTC<<4)
+
+static void hole_radar(MCPacketQueue *sq) {
+    int x = gs.own.lx;
+    int y = gs.own.ly-1;
+    int z = gs.own.lz;
+
+    int lx=-(int)(65536*sin(gs.own.yaw/180*M_PI));
+    int lz=(int)(65536*cos(gs.own.yaw/180*M_PI));
+
+    int X=x>>4;
+    int Z=z>>4;
+
+    bid_t data[(HR_DISTC+1)*256];
+    int off,sh;
+
+    //TODO: make a separate function to get direction
+    if (abs(lx) > abs(lz)) {
+        lz=0;
+        // looking into east or west direction
+        if (lx<0) {
+            //to west
+            lx=-1;
+            export_cuboid(X-HR_DISTC,HR_DISTC+1,Z,1,y,1,data);
+            off = (x&0x0f)+HR_DISTB+(z&0x0f)*(HR_DISTB+16);
+        }
+        else {
+            // east
+            lx=1;
+            export_cuboid(X,HR_DISTC+1,Z,1,y,1,data);
+            off = (x&0x0f)+(z&0x0f)*(HR_DISTB+16);
+        }
+        sh=lx;
+    }
+    else {
+        lx=0;
+        // looking into north or south direction
+        if (lz<0) {
+            //to north
+            lz=-1;
+            export_cuboid(X,1,Z-HR_DISTC,HR_DISTC+1,y,1,data);
+            off = (x&0x0f)+((z&0x0f)+HR_DISTB)*16;
+        }
+        else {
+            // south
+            lz=1;
+            export_cuboid(X,1,Z,HR_DISTC+1,y,1,data);
+            off = (x&0x0f)+(z&0x0f)*16;
+        }
+        sh = 16*lz;
+    }
+
+    int i;
+    for(i=1; i<=HR_DISTB; i++) {
+        off+=sh;
+        //TODO: check for other block types
+        if (data[off].bid==0) {
+            char reply[32768];
+            sprintf(reply, "*** HOLE *** : %d,%d y=%d d=%d",
+                    x+lx*i,z+lz*i,y,i);
+            chat_message(reply, sq, "gold", 2);
+            break;
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
 
 static void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {
@@ -297,6 +367,9 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 gs.own.lo = yaw;
                 gs.own.pos_change = 1;
             }
+
+            if (opt.holeradar && gs.own.pos_change)
+                hole_radar(pkt->cl?bq:tq);
 
             gs.own.pos_change = 0;
 
