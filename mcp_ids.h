@@ -886,7 +886,7 @@ static const char * ANSI_BLOCK[256] = {
     "\x1b[42;33m\xe2\x96\x91",          // Grass
     "\x1b[43;30m\xe2\x96\x93",          // Dirt
     "\x1b[47;30m\xe2\x96\x99",          // Cobblestone
-    "\x1b[43;32;22m\xe2\x96\xa4",       // Planks
+    "\x1b[43;30;22m\xe2\x96\xa4",       // Planks
     "\x1b[40;32m\xf0\x9f\x8c\xb1",      // Sapling
     "\x1b[47;30m\xe2\x96\x93",          // Bedrock
     "\x1b[44;37m-",                     // Flowing Water
@@ -904,7 +904,7 @@ static const char * ANSI_BLOCK[256] = {
     "\x1b[40;32m\xe2\x96\x92",          // Leaves
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
+    "\x1b[47;34m\xe2\x97\x86",          // Iron Ore
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
@@ -943,11 +943,11 @@ static const char * ANSI_BLOCK[256] = {
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
+    "\x1b[47;36m\xe2\x97\x86",          // Iron Ore
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
+    "\x1b[40;33m\xe1\xba\x9b",          // Wheat
+    "\x1b[43;30m\xe2\x90\xa5",          // Farmland
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
@@ -974,7 +974,7 @@ static const char * ANSI_BLOCK[256] = {
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
+    "\x1b[40;32m\xe1\xba\x9b",          // Sugar Cane
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
@@ -1033,13 +1033,15 @@ static const char * ANSI_BLOCK[256] = {
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
+
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
+
     ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
+    "\x1b[40;32m\xe1\xba\x9b",          // Carrots
+    "\x1b[40;32m\xe1\xba\x9b",          // Potatoes
     ANSI_UNKNOWN,
 
     // 90
