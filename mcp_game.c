@@ -273,6 +273,39 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             queue_packet(pkt, tq);
         } _GMP;
 
+        // use case statements since we don't really need these packets,
+        // but just as a trigger that position or world has updated
+        case SP_PlayerPositionLook:
+        case CP_PlayerPositionLook:
+        case CP_PlayerPosition:
+        case CP_PlayerLook:
+        case SP_MultiBlockChange:
+        case SP_BlockChange:
+        case SP_Explosion: {
+
+            // check if our position or orientation have changed
+            int32_t x = (int32_t)gs.own.x>>5;
+            int32_t y = (int32_t)gs.own.y>>5;
+            int32_t z = (int32_t)gs.own.z>>5;
+            int yaw = (int)(round(gs.own.yaw/90));
+
+            if (x!= gs.own.lx || y!= gs.own.ly ||
+                z!= gs.own.lz || yaw!= gs.own.lo ) {
+                gs.own.lx = x;
+                gs.own.ly = y;
+                gs.own.lz = z;
+                gs.own.lo = yaw;
+                gs.own.pos_change = 1;
+            }
+
+            gs.own.pos_change = 0;
+
+            queue_packet(pkt, tq);
+            break;
+        }
+
+        ////////////////////////////////////////////////////////////////
+
         default:
             // by default - just forward the packet
             queue_packet(pkt, tq);
