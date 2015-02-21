@@ -125,14 +125,14 @@ static void insert_chunk(chunk_t *c) {
     int i;
     for(i=0; i<16; i++) {
         if (c->cubes[i]) {
-            memmove(gc->blocks+i*4096,   c->cubes[i]->blocks,   4096);
-            memmove(gc->light+i*2048,    c->cubes[i]->light,    2048);
-            memmove(gc->skylight+i*2048, c->cubes[i]->skylight, 2048);
+            memmove(gc->blocks+i*4096,   c->cubes[i]->blocks,   4096*sizeof(bid_t));
+            memmove(gc->light+i*2048,    c->cubes[i]->light,    2048*sizeof(light_t));
+            memmove(gc->skylight+i*2048, c->cubes[i]->skylight, 2048*sizeof(light_t));
         }
         else {
-            memset(gc->blocks+i*4096, 0, 4096);
-            memset(gc->light+i*2048, 0, 2048);
-            memset(gc->skylight+i*2048, 0, 2048);
+            memset(gc->blocks+i*4096,   0, 4096*sizeof(bid_t));
+            memset(gc->light+i*2048,    0, 2048*sizeof(light_t));
+            memset(gc->skylight+i*2048, 0, 2048*sizeof(light_t));
         }
         memmove(gc->biome, c->biome, 256);
     }
