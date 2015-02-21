@@ -191,6 +191,11 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
             sprintf(reply,"Grinding to level %d",opt.maxlevel);
         }
     }
+    else if (!strcmp(words[0],"hr") || !strcmp(words[0],"holeradar")) {
+        opt.holeradar = !opt.holeradar;
+        sprintf(reply,"Hole radar is %s",opt.holeradar?"ON":"OFF");
+        rpos = 2;
+    }
 
     // send an immediate reply if any was given
     if (reply[0]) chat_message(reply, bq, "gold", rpos);
