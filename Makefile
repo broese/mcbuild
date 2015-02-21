@@ -45,7 +45,7 @@ varint: varint.c
 .c.o:
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -o $@ -c $<
 
-mcproxy.o: mcp_gamestate.h mcp_game.h mcp_ids.h
+mcproxy.o mcpdump.o: mcp_gamestate.h mcp_game.h mcp_ids.h
 
 mcp_gamestate.o: mcp_gamestate.h mcp_ids.h
 
