@@ -149,24 +149,38 @@ void blkdump(const bid_t * data, int count) {
 
 uint8_t * read_chunk(uint8_t *p, int8_t skylight, uint16_t mask, chunk_t *chunk) {
     int i;
-    for (i=0; mask; mask>>=1, i++) {
-        if (mask&1) {
+
+    // block data
+    uint16_t tmask = mask;
+    for (i=0; tmask; tmask>>=1, i++) {
+        if (tmask&1) {
             lh_alloc_obj(chunk->cubes[i]);
-            cube_t *c = chunk->cubes[i];
-
-            memmove(c->blocks, p, 8192);
+            memmove(chunk->cubes[i]->blocks, p, 8192);
             p+=8192;
+        }
+    }
 
-            memmove(c->light, p, 2048);
+    // light data
+    tmask = mask;
+    for (i=0; tmask; tmask>>=1, i++) {
+        if (tmask&1) {
+            memmove(chunk->cubes[i]->light, p, 2048);
             p+=2048;
+        }
+    }
 
-            if (skylight) {
-                memmove(c->skylight, p, 2048);
+    // skylight data (if available)
+    if (skylight) {
+        tmask = mask;
+        for (i=0; tmask; tmask>>=1, i++) {
+            if (tmask&1) {
+                memmove(chunk->cubes[i]->skylight, p, 2048);
                 p+=2048;
             }
         }
     }
 
+    // biome data (only once per chunk)
     memmove(chunk->biome, p, 256);
     p+=256;
 
