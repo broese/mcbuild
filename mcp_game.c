@@ -108,18 +108,20 @@ static void chat_message(const char *str, MCPacketQueue *q, const char *color, i
     NEWPACKET(SP_ChatMessage,pkt);
 
     ssize_t jlen;
+    char msg[65536];
     if (color)
-        jlen = sprintf(tpkt->json,
+        jlen = sprintf(msg,
                        "{\"extra\":[{\"color\":\"%s\",\"text\":\"\\u003cMCP\\u003e %s\"}],"
                        "\"text\":\"\"}",
                        color,str);
     else
-        jlen = sprintf(tpkt->json,
+        jlen = sprintf(msg,
                        "{\"extra\":[\"\\u003cMCP\\u003e %s\"],"
                        "\"text\":\"\"}",
                        str);
 
     tpkt->pos = pos;
+    tpkt->json = strdup(msg);
 
     queue_packet(pkt,q);
 }
