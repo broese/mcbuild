@@ -877,27 +877,31 @@ static const char * METATYPES[] = {
 #define ANSI_CLEAR     "\x1b[0m"
 #define ANSI_PLAYER    "\x1b[5;32;44m$\x1b[0m"
 #define ANSI_UNKNOWN   "\x1b[45;36m#"
+#define ANSI_ILLBLOCK  "\x1b[5;32;44m#\x1b[0m"
 
 static const char * ANSI_BLOCK[256] = {
     // 00
-    "\x1b[0m ",
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
+    "\x1b[0m ",                         // Air
+    "\x1b[47m ",                        // Stone
+    "\x1b[42;33m\xe2\x96\x91",          // Grass
+    "\x1b[43;30m\xe2\x96\x93",          // Dirt
+    "\x1b[47;30m\xe2\x96\x99",          // Cobblestone
+    "\x1b[43;32;22m\xe2\x96\xa4",       // Planks
+    "\x1b[40;32m\xf0\x9f\x8c\xb1",      // Sapling
+    "\x1b[47;30m\xe2\x96\x93",          // Bedrock
+    "\x1b[44;37m-",                     // Flowing Water
+    "\x1b[44;37m ",                     // Water
+    "\x1b[41;33;22m\xe2\x96\xa4",       // Flowing Lava
+    "\x1b[41;33;22m\xe2\x96\x91",       // Lava
+    "\x1b[43;37m\xe2\x96\x91",          // Sand
+    "\x1b[47;30m\xe2\x96\x92",          // Gravel
+    "\x1b[47;33m\xe2\x97\x86",          // Gold Ore
+    "\x1b[47;37m\xe2\x97\x86",          // Iron Ore
 
     // 10
+    "\x1b[47;30m\xe2\x97\x86",          // Iron Ore
+    "\x1b[43;30m\xe2\x96\xa2",          // Wood
+    "\x1b[40;32m\xe2\x96\x92",          // Leaves
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
@@ -910,10 +914,7 @@ static const char * ANSI_BLOCK[256] = {
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
+    "\x1b[40;32m\xe2\x96\x92",          // Leaves
 
     // 20
     ANSI_UNKNOWN,
@@ -961,7 +962,7 @@ static const char * ANSI_BLOCK[256] = {
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
+    "\x1b[47;31m\xe2\x97\x86",          // Redstone Ore
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
@@ -977,9 +978,9 @@ static const char * ANSI_BLOCK[256] = {
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
-    "\x1b[31;40m#", // Netherrack
+    "\x1b[31;40m#",                     // Netherrack
     ANSI_UNKNOWN,
-    "\x1b[33;47m#", // Glowstone
+    "\x1b[33;47m#",                     // Glowstone
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
     ANSI_UNKNOWN,
