@@ -164,8 +164,8 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         rpos = 2;
     }
     else if (!strcmp(words[0],"coords")) {
-        sprintf(reply,"coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",
-                gs.own.x,gs.own.y,gs.own.z,
+        sprintf(reply,"coord=%d,%d,%d, rot=%.1f,%.1f, onground=%d",
+                gs.own.x>>5,gs.own.y>>5,gs.own.z>>5,
                 gs.own.yaw,gs.own.pitch,gs.own.onground);
     }
     else if (!strcmp(words[0],"grind")) {
