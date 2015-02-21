@@ -199,7 +199,14 @@ static void modify_blocks(int32_t X, int32_t Z, blkrec *blocks, int32_t count) {
     int i;
     for(i=0; i<count; i++) {
         blkrec *b = blocks+i;
-        gc->blocks[(int32_t)b->y*16+b->pos] = b->bid;
+        int32_t boff = ((int32_t)b->y<<8)+(b->z<<4)+b->x;
+#if 0
+        printf("Modify Block @ %d,%d,%d   %d(%d) => %d(%d)\n",
+               (X<<4)+b->x,(Z<<4)+b->z,b->y,
+               gc->blocks[boff].bid, gc->blocks[boff].meta,
+               b->bid.bid, b->bid.meta);
+#endif
+        gc->blocks[boff] = b->bid;
     }
 }
 
