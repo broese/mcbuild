@@ -133,6 +133,27 @@ void search_blocks(uint8_t id) {
 }
 #endif
 
+// print a single chunk slice (16x16x1 blocks) on the screen using ANSI_COLORS
+static print_slice(bid_t * data,int Xs, int Zs) {
+    int x,z;
+    for(z=0; z<16*Zs; z++) {
+        printf("%s%3d ",ANSI_CLEAR,z);
+        bid_t * row = data+z*(Xs*16);
+        for(x=0; x<Xs*16; x++)
+            printf("%s",(row[x].bid<256) ? ANSI_BLOCK[row[x].bid] : ANSI_ILLBLOCK );
+        printf("%s\n",ANSI_CLEAR);
+    }
+}
+
+extract_cuboid(int X, int Z, int y) {
+    int Xs=5,Zs=5;
+    bid_t * map = export_cuboid(X,Xs,Z,Zs,y,1,NULL);
+    //hexdump((char *)map,512);
+    printf("Slice y=%d\n",y);
+    print_slice(map,Xs,Zs);
+    free(map);
+}
+
 int main(int ac, char **av) {
     if (!av[1]) LH_ERROR(-1, "Usage: %s <file.mcs>", av[0]);
 
@@ -142,6 +163,7 @@ int main(int ac, char **av) {
         ssize_t size = lh_load_alloc(av[i], &data);
         if (size < 0) {
             fprintf(stderr,"Failed to open %s : %s",av[i],strerror(errno));
+            //break;
         }
         else {
             gs_reset();
@@ -150,6 +172,7 @@ int main(int ac, char **av) {
 
             parse_mcp(data, size);
             //dump_entities();
+            //extract_cuboid(918,3048,64);
 
             free(data);
             gs_destroy();
