@@ -375,6 +375,11 @@ typedef struct {
     uint8_t onground;
 } CP_PlayerPositionLook_pkt;
 
+// 0x09
+typedef struct {
+    int16_t sid;
+} CP_HeldItemChange_pkt;
+
 // 0x0a
 typedef struct {
 } CP_Animation_pkt;
@@ -471,6 +476,7 @@ typedef struct {
         PKT(CP_PlayerPosition);
         PKT(CP_PlayerLook);
         PKT(CP_PlayerPositionLook);
+        PKT(CP_HeldItemChange);
         PKT(CP_Animation);
     };
 } MCPacket;

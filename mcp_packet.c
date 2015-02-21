@@ -1075,6 +1075,21 @@ DUMP_BEGIN(CP_PlayerPositionLook) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x09 CP_HeldItemChange
+
+DECODE_BEGIN(CP_HeldItemChange,_1_8_1) {
+    Pshort(sid);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_HeldItemChange,_1_8_1) {
+    Wshort(sid);
+} DECODE_END;
+
+DUMP_BEGIN(CP_HeldItemChange) {
+    printf("sid=%d", tpkt->sid);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x0a CP_Animation
 
 DECODE_BEGIN(CP_Animation,_1_8_1) {
@@ -1125,6 +1140,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),
         SUPPORT_D   (CP_PlayerLook,_1_8_1),
         SUPPORT_D   (CP_PlayerPositionLook,_1_8_1),
+        SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
     },
 };
