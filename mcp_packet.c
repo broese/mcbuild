@@ -1148,7 +1148,7 @@ DUMP_BEGIN(CP_EntityAction) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x0e CP_CloseWindow
+// 0x0d CP_CloseWindow
 
 DECODE_BEGIN(CP_CloseWindow,_1_8_1) {
     Pchar(wid);
@@ -1160,6 +1160,24 @@ ENCODE_BEGIN(CP_CloseWindow,_1_8_1) {
 
 DUMP_BEGIN(CP_CloseWindow) {
     printf("wid=%d", tpkt->wid);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x0e CP_ClickWindow
+
+DECODE_BEGIN(CP_ClickWindow,_1_8_1) {
+    Pchar(wid);
+    Pshort(sid);
+    Pchar(button);
+    Pshort(aid);
+    Pchar(mode);
+    p = read_slot(p, &tpkt->slot);
+} DECODE_END;
+
+DUMP_BEGIN(CP_ClickWindow) {
+    printf("wid=%d, sid=%d, aid=%d, button=%d, mode=%d, slot:",
+           tpkt->wid, tpkt->sid, tpkt->aid, tpkt->button, tpkt->mode);
+    dump_slot(&tpkt->slot);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1207,6 +1225,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (CP_Animation,_1_8_1),
         SUPPORT_DE  (CP_EntityAction,_1_8_1),
         SUPPORT_DE  (CP_CloseWindow,_1_8_1),
+        SUPPORT_DD  (CP_ClickWindow,_1_8_1),
     },
 };
 
