@@ -965,6 +965,19 @@ DUMP_BEGIN(SP_SetSlot) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x32 SP_ConfirmTransaction
+
+DECODE_BEGIN(SP_ConfirmTransaction,_1_8_1) {
+    Pchar(wid);
+    Pshort(aid);
+    Pchar(accepted);
+} DECODE_END;
+
+DUMP_BEGIN(SP_ConfirmTransaction) {
+    printf("wid=%d action=%d accepted=%d", tpkt->wid, tpkt->aid, tpkt->accepted);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x46 SP_SetCompression
 
 DECODE_BEGIN(SP_SetCompression,_1_8_1) {
@@ -1145,6 +1158,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_D   (SP_SetSlot,_1_8_1),
+        SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {

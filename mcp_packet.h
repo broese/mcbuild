@@ -363,6 +363,13 @@ typedef struct {
     slot_t   slot;
 } SP_SetSlot_pkt;
 
+// 0x32
+typedef struct {
+    uint8_t  wid;
+    uint16_t aid;
+    uint8_t  accepted;
+} SP_ConfirmTransaction_pkt;
+
 // 0x46
 typedef struct {
     int32_t     threshold;
@@ -507,6 +514,7 @@ typedef struct {
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
         PKT(SP_SetSlot);
+        PKT(SP_ConfirmTransaction);
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);
