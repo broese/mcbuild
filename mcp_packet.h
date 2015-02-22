@@ -436,6 +436,11 @@ typedef struct {
     uint32_t jumpboost;
 } CP_EntityAction_pkt;
 
+// 0x0e
+typedef struct {
+    uint8_t wid;
+} CP_CloseWindow_pkt;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Packet parsing for the login routines in mcproxy
 
@@ -533,6 +538,7 @@ typedef struct {
         PKT(CP_HeldItemChange);
         PKT(CP_Animation);
         PKT(CP_EntityAction);
+        PKT(CP_CloseWindow);
     };
 } MCPacket;
 

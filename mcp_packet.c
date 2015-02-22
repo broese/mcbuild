@@ -1148,6 +1148,21 @@ DUMP_BEGIN(CP_EntityAction) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x0e CP_CloseWindow
+
+DECODE_BEGIN(CP_CloseWindow,_1_8_1) {
+    Pchar(wid);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_CloseWindow,_1_8_1) {
+    Wchar(wid);
+} DECODE_END;
+
+DUMP_BEGIN(CP_CloseWindow) {
+    printf("wid=%d", tpkt->wid);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
@@ -1191,6 +1206,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
         SUPPORT_DE  (CP_EntityAction,_1_8_1),
+        SUPPORT_DE  (CP_CloseWindow,_1_8_1),
     },
 };
 
