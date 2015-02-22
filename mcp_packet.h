@@ -21,6 +21,9 @@ typedef struct {
     };
 } pos_t;
 
+////////////////////////////////////////////////////////////////////////////////
+// Metadata
+
 // single metadata key-value pair
 typedef struct {
     union {
@@ -49,6 +52,9 @@ typedef struct {
         };
     };
 } metadata;
+
+////////////////////////////////////////////////////////////////////////////////
+// Map data
 
 typedef struct {
     union {
@@ -101,6 +107,31 @@ typedef struct {
 typedef struct {
     int8_t dx,dy,dz;
 } boff_t;
+
+////////////////////////////////////////////////////////////////////////////////
+// Slots and inventory
+
+typedef struct {
+    int16_t item;
+    int8_t  count;
+    int16_t damage;
+    //nbt_t nbt;
+} slot_t;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Server -> Client
@@ -325,6 +356,13 @@ typedef struct {
     uint8_t  pitch;
 } SP_SoundEffect_pkt;
 
+// 0x2f
+typedef struct {
+    uint8_t  wid;
+    int16_t  sid;
+    slot_t   slot;
+} SP_SetSlot_pkt;
+
 // 0x46
 typedef struct {
     int32_t     threshold;
@@ -468,6 +506,7 @@ typedef struct {
         PKT(SP_Explosion);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
+        PKT(SP_SetSlot);
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);

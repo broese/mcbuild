@@ -190,28 +190,27 @@ uint8_t * read_chunk(uint8_t *p, int8_t skylight, uint16_t mask, chunk_t *chunk)
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory Slot
 
-#if 0
 static uint8_t * read_slot(uint8_t *p, slot_t *s) {
-    lh_clear_ptr(s);
+    s->item = lh_read_short_be(p);
 
-    s->id     = lh_read_short_be(p);
-    if (s->id != 0xffff) {
+    if (s->item != -1) {
         s->count  = lh_read_char(p);
         s->damage = lh_read_short_be(p);
-        s->dlen   = lh_read_short_be(p);
-        if (s->dlen!=0 && s->dlen!=0xffff) {
-            memcpy(s->data, p, s->dlen);
-            p += s->dlen;
-        }
+        //TODO: parse NBT
     }
     else {
         s->count = 0;
         s->damage= 0;
-        s->dlen  = 0;
     }
     return p;
 }
-#endif
+
+static void dump_slot(slot_t *s) {
+    printf("item=%d", s->item);
+    if (s->item != -1) {
+        printf(", count=%d, damage=%d", s->count, s->damage);
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -240,7 +239,7 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 #define Pdouble(n)  Px(n,double)
 #define Pstr(n)     p=read_string(p,tpkt->n)
 #define Pvarint(n)  tpkt->n = lh_read_varint(p)
-//#define Pslot(n)    p=read_slot(p,tpkt->n)
+//#define Pslot(n)    p=read_slot(p,&tpkt->n)
 #define Pdata(n,l)  memmove(tpkt->n,p,l); p+=l
 #define Puuid(n)    Pdata(n,sizeof(uuid_t))
 #define Pmeta(n)    p=read_metadata(p, &tpkt->n)
@@ -257,7 +256,7 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
 #define Wdouble(n)  Wx(n,double)
 #define Wstr(n)     w=write_string(w, tpkt->n)
 #define Wvarint(n)  lh_write_varint(w, tpkt->n)
-//#define Pslot(n)    p=read_slot(p,tpkt->n)
+//#define Wslot(n)    p=read_slot(p,&tpkt->n)
 #define Wdata(n,l)  memmove(w,tpkt->n,l); w+=l
 #define Wuuid(n)    Wdata(n,sizeof(uuid_t))
 
@@ -952,6 +951,20 @@ DUMP_BEGIN(SP_SoundEffect) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x2f SP_SetSlot
+
+DECODE_BEGIN(SP_SetSlot,_1_8_1) {
+    Pchar(wid);
+    Pshort(sid);
+    p = read_slot(p, &tpkt->slot);
+} DECODE_END;
+
+DUMP_BEGIN(SP_SetSlot) {
+    printf("wid=%d sid=%d slot:",tpkt->wid,tpkt->sid);
+    dump_slot(&tpkt->slot);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x46 SP_SetCompression
 
 DECODE_BEGIN(SP_SetCompression,_1_8_1) {
@@ -1131,6 +1144,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_Explosion,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
+        SUPPORT_D   (SP_SetSlot,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
