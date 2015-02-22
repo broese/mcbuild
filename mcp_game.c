@@ -170,6 +170,40 @@ static void hole_radar(MCPacketQueue *sq) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Inventory
+
+char * get_item_name(char *buf, int16_t item, int16_t dmg) {
+    if (item == -1) {
+        sprintf(buf, "-");
+        return buf;
+    }
+
+    if (ITEMS[item].name) {
+        int pos = sprintf(buf, "%s", ITEMS[item].name);
+        if ((ITEMS[item].flags&I_MTYPE) && ITEMS[item].mname[dmg])
+            sprintf(buf+pos, " (%s)",ITEMS[item].mname[dmg]);
+    }
+    else {
+        printf(buf, "???");
+    }
+    return buf;
+}
+
+static void dump_inventory() {
+    int i;
+    printf("Dumping inventory:\n");
+    for(i=0; i<45; i++) {
+        slot_t *s = &gs.inv.slots[i];
+        char buf[4096];
+        if (get_item_name(buf, s->item, s->damage))
+            printf(" %2d : %-20s x%-2d\n", i, buf, s->count);
+        else
+            printf(" %2d : %4x x%-2d dmg=%d\n",
+                   i,s->item,s->count,s->damage);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
 
 static void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {
@@ -237,6 +271,9 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"coord=%d,%d,%d, rot=%.1f,%.1f, onground=%d",
                 gs.own.x>>5,gs.own.y>>5,gs.own.z>>5,
                 gs.own.yaw,gs.own.pitch,gs.own.onground);
+    }
+    else if (!strcmp(words[0],"inv")) {
+        dump_inventory();
     }
     else if (!strcmp(words[0],"grind")) {
         int maxlevel=30;
