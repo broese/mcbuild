@@ -478,6 +478,16 @@ int gs_packet(MCPacket *pkt) {
             gs.inv.held = (uint8_t)tpkt->sid;
         } _GSP;
 
+        GSP(SP_SetSlot) {
+            // we only deal with the main inventory window (wid=0)
+            if (tpkt->wid != 0) break;
+
+            assert(tpkt->sid>=0 && tpkt->sid<45);
+
+            // copy the slot to our inventory slot
+            gs.inv.slots[tpkt->sid] = tpkt->slot;
+        } _GSP;
+
     }
 }
 
@@ -491,13 +501,12 @@ void gs_reset() {
 
     CLEAR(gs);
 
-#if 0
     // set all items in the inventory to -1 to define them as empty
     for(i=0; i<64; i++) {
-        gs.inventory.slots[i].id = 0xffff;
+        gs.inv.slots[i].item = -1;
     }
-    gs.drag.id = 0xffff;
-#endif
+    // reset the currently dragged item to none
+    gs.inv.drag.item = -1;
 
     gs_used = 1;
 }

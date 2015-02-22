@@ -78,6 +78,8 @@ typedef struct _gamestate {
 
     struct {
         uint8_t     held;
+        slot_t      slots[64];
+        slot_t      drag;
     } inv;
 
     // tracked entities
