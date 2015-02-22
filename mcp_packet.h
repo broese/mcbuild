@@ -429,6 +429,13 @@ typedef struct {
 typedef struct {
 } CP_Animation_pkt;
 
+// 0x0b
+typedef struct {
+    uint32_t eid;
+    uint32_t action;
+    uint32_t jumpboost;
+} CP_EntityAction_pkt;
+
 ////////////////////////////////////////////////////////////////////////////////
 // Packet parsing for the login routines in mcproxy
 
@@ -525,6 +532,7 @@ typedef struct {
         PKT(CP_PlayerPositionLook);
         PKT(CP_HeldItemChange);
         PKT(CP_Animation);
+        PKT(CP_EntityAction);
     };
 } MCPacket;
 

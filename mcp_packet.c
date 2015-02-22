@@ -1128,6 +1128,26 @@ DUMP_BEGIN(CP_Animation) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x0b CP_EntityAction
+
+DECODE_BEGIN(CP_EntityAction,_1_8_1) {
+    Pvarint(eid);
+    Pvarint(action);
+    Pvarint(jumpboost);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_EntityAction,_1_8_1) {
+    Wvarint(eid);
+    Wvarint(action);
+    Wvarint(jumpboost);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_EntityAction) {
+    printf("eid=%08x, action=%d, jumpboost=%d",
+           tpkt->eid, tpkt->action, tpkt->jumpboost);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
@@ -1170,6 +1190,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (CP_PlayerPositionLook,_1_8_1),
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
+        SUPPORT_DE  (CP_EntityAction,_1_8_1),
     },
 };
 
