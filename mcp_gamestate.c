@@ -467,6 +467,17 @@ int gs_packet(MCPacket *pkt) {
             }
         } _GSP;
 
+        ////////////////////////////////////////////////////////////////
+        // Inventory
+
+        GSP(SP_HeldItemChange) {
+            gs.inv.held = (uint8_t)tpkt->sid;
+        } _GSP;
+
+        GSP(CP_HeldItemChange) {
+            gs.inv.held = (uint8_t)tpkt->sid;
+        } _GSP;
+
     }
 }
 

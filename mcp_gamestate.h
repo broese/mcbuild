@@ -76,6 +76,10 @@ typedef struct _gamestate {
         int         pos_change;
     } own;
 
+    struct {
+        uint8_t     held;
+    } inv;
+
     // tracked entities
     lh_arr_declare(entity, entity);
 
