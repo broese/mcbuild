@@ -253,8 +253,11 @@ bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
     return data;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Inventory tracking
 
 ////////////////////////////////////////////////////////////////////////////////
+// Packet processing
 
 #define GSP(name)                               \
     case name: {                                \

@@ -110,29 +110,6 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#if 0
-void search_blocks(uint8_t id) {
-    int i,j;
-    switch_dimension(DIM_END);
-    printf("Current: %zd, Overworld: %zd, Nether: %zd, End: %zd\n",
-           gs.C(chunk),gs.C(chunko),gs.C(chunkn),gs.C(chunke));
-
-    printf("searching through %zd chunks\n",gs.C(chunko));
-
-    for(i=0; i<gs.C(chunko); i++) {
-        int X = P(gs.chunko)[i].X;
-        int Z = P(gs.chunko)[i].Z;
-        chunk *c = P(gs.chunko)[i].c;
-        for(j=0; j<65536; j++) {
-            if (c->blocks[j] == id) {
-                printf("%d,%d\n",X,Z);
-                break;
-            }
-        }
-    }
-}
-#endif
-
 // print a single chunk slice (16x16x1 blocks) on the screen using ANSI_COLORS
 static print_slice(bid_t * data,int Xs, int Zs) {
     int x,z;
@@ -140,7 +117,8 @@ static print_slice(bid_t * data,int Xs, int Zs) {
         printf("%s%3d ",ANSI_CLEAR,z);
         bid_t * row = data+z*(Xs*16);
         for(x=0; x<Xs*16; x++)
-            printf("%s",(row[x].bid<256) ? ANSI_BLOCK[row[x].bid] : ANSI_ILLBLOCK );
+            printf("%s",(row[x].bid<256) ?
+                   ANSI_BLOCK[row[x].bid] : ANSI_ILLBLOCK );
         printf("%s\n",ANSI_CLEAR);
     }
 }
@@ -153,6 +131,8 @@ extract_cuboid(int X, int Z, int y) {
     print_slice(map,Xs,Zs);
     free(map);
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 int main(int ac, char **av) {
     if (!av[1]) LH_ERROR(-1, "Usage: %s <file.mcs>", av[0]);
@@ -178,6 +158,4 @@ int main(int ac, char **av) {
             gs_destroy();
         }
     }
-    //search_spawners();
-    //search_blocks(0xa2);
 }

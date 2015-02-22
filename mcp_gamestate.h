@@ -53,16 +53,6 @@ typedef struct {
     int32_t Xo, Zo;     // chunk coordinate offset
     int32_t Xs, Zs;     // size of the chunk storage
     gschunk **chunks;   // chunk storage
-
-/*
-    Assuming X,Z are world coordinates of a chunk
-    Xo,Xz would be the world chunk coordinates in the NW corned
-    X-Xo, Z-Zo are the offsets of this chunk within database
-
-    If (X-Xo)<0 || (X-Xo)>=Xs , the chunk is not in the database,
-    e.g. it needs to be resized if chunk is to be inserted
-    The index of the chunk is (X-Xo)+(Z-Zo)*Zs
-*/
 } gsworld;
 
 ////////////////////////////////////////////////////////////////////////////////

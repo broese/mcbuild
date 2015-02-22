@@ -21,6 +21,9 @@ typedef struct {
     };
 } pos_t;
 
+////////////////////////////////////////////////////////////////////////////////
+// Metadata
+
 // single metadata key-value pair
 typedef struct {
     union {
@@ -49,6 +52,9 @@ typedef struct {
         };
     };
 } metadata;
+
+////////////////////////////////////////////////////////////////////////////////
+// Map data
 
 typedef struct {
     union {
