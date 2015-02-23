@@ -488,6 +488,24 @@ int gs_packet(MCPacket *pkt) {
             gs.inv.slots[tpkt->sid] = tpkt->slot;
         } _GSP;
 
+        GSP(CP_ClickWindow) {
+            // ignore non-inventory windows - we will receive an explicit update
+            // for those via SP_SetSlot messages after the window closes,
+            // but the main inventory window (wid=0) needs to be tracked
+            if (tpkt->wid != 0) break;
+
+            // in this function we do not actually modify the the inventory
+            // but just record the action for later - actual change occurs
+            // when we receive the SP_ConfirmTransaction packet
+
+            invact * a = lh_arr_new(GAR1(gs.inv.iaq));
+            a->mode   = tpkt->mode;
+            a->button = tpkt->button;
+            a->sid    = tpkt->sid;
+
+            printf("Window Action mode=%d, button=%d, sid=%d\n",
+                   a->mode, a->button, a->sid);
+        } _GSP;
     }
 }
 
