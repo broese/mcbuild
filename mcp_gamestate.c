@@ -268,6 +268,76 @@ static int find_invaction(int aid) {
     return -1;
 }
 
+// ensure that an emptied slot is in a consistent state
+static inline void prune_slot(slot_t *s) {
+    if (s->count <= 0 || s->item == -1) {
+        s->count  = 0;
+        s->item   = -1;
+        s->damage = 0;
+        //TODO: nbt data
+    }
+}
+
+static int slot_transfer(slot_t *f, slot_t *t, int count) {
+    assert(f->count >= count);
+    assert(f->item > 0);
+
+    if (t->item == -1) {
+        // destination slot is empty
+        t->item = f->item;
+        t->count = count;
+        f->count-=count;
+
+        prune_slot(f);
+        return 1;
+    }
+
+    if (f->item == t->item) {
+        // item type is the same
+        //TODO: fix for stackability
+        t->count+=count;
+        f->count-=count;
+
+        prune_slot(f);
+        return 1;
+    }
+
+    return 0;
+}
+
+#define GREATERHALF(x) (((x)>>1)+((x)&1))
+
+static void inv_click(int button, int16_t sid) {
+    if (gs.inv.drag.item < 0) {
+        // not dragging anything
+
+        //TODO: test this by clicking with an empty hand outside of window
+        assert(sid>0);
+
+        slot_t *s = &gs.inv.slots[sid];
+
+        // empty slot - no action
+        if (s->item < 0) return;
+
+        if (button == 0) {
+            // left-click
+            printf("Transfer %d items from slot %d to drag-slot\n",
+                   s->count, sid);
+            slot_transfer(s, &gs.inv.drag, s->count);
+        }
+        else {
+            // right-click
+            printf("Transfer %d items from slot %d to drag-slot\n",
+                   GREATERHALF(s->count), sid);
+            slot_transfer(s, &gs.inv.drag, GREATERHALF(s->count));
+        }
+
+        return;
+    }
+
+    printf("click with a dragged item not supported\n");
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Packet processing
 
@@ -536,6 +606,12 @@ int gs_packet(MCPacket *pkt) {
                 break;
             }
 
+            switch (a.mode) {
+                case 0:
+                    inv_click(a.button, a.sid); break;
+                default:
+                    printf("Unsupported inventory action mode %d\n",a.mode);
+            }
         } _GSP;
     }
 }
