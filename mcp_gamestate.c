@@ -256,8 +256,17 @@ bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory tracking
 
-#define IAQ GAR1(gs.inv.iaq)
+#define IAQ  GAR1(gs.inv.iaq)
+#define pIAQ P(gs.inv.iaq)
+#define cIAQ C(gs.inv.iaq)
 
+static int find_invaction(int aid) {
+    int i;
+    for (i=0; i<cIAQ; i++)
+        if (pIAQ[i].aid == aid)
+            return i;
+    return -1;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Packet processing
@@ -502,12 +511,31 @@ int gs_packet(MCPacket *pkt) {
             // when we receive the SP_ConfirmTransaction packet
 
             invact * a = lh_arr_new(IAQ);
+            a->aid    = tpkt->aid;
             a->mode   = tpkt->mode;
             a->button = tpkt->button;
             a->sid    = tpkt->sid;
 
-            printf("Window Action mode=%d, button=%d, sid=%d\n",
-                   a->mode, a->button, a->sid);
+            printf("Window Action aid=%d, mode=%d, button=%d, sid=%d\n",
+                   a->aid, a->mode, a->button, a->sid);
+        } _GSP;
+
+        GSP(SP_ConfirmTransaction) {
+            if (tpkt->wid != 0) break;
+
+            int idx = find_invaction(tpkt->aid);
+            if (idx < 0) {
+                printf("Warning: action %d not found!\n",tpkt->aid);
+                break;
+            }
+            invact a = pIAQ[idx];
+            lh_arr_delete(IAQ, idx);
+
+            if (!tpkt->accepted) {
+                printf("Warning: action %d was not accepted!\n",tpkt->aid);
+                break;
+            }
+
         } _GSP;
     }
 }

@@ -59,6 +59,7 @@ typedef struct {
     int8_t   mode;
     int8_t   button;
     int16_t  sid;
+    int16_t  aid;
 } invact;
 
 ////////////////////////////////////////////////////////////////////////////////
