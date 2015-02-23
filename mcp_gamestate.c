@@ -316,8 +316,8 @@ static void inv_click(int button, int16_t sid) {
     if (gs.inv.drag.item < 0) {
         // not dragging anything
 
-        //TODO: test this by clicking with an empty hand outside of window
-        assert(sid>0);
+        // click with nothing dragged outside of window - no action
+        if (sid<0) return;
 
         slot_t *s = &gs.inv.slots[sid];
 
@@ -327,13 +327,13 @@ static void inv_click(int button, int16_t sid) {
         switch (button) {
             case 0:
                 // left-click
-                printf("*** Transfer %d items from slot %d to drag-slot\n",
+                printf("*** Pick %d items from slot %d to drag-slot\n",
                        s->count, sid);
                 slot_transfer(s, &gs.inv.drag, s->count);
                 break;
             case 1:
                 // right-click
-                printf("*** Transfer %d items from slot %d to drag-slot\n",
+                printf("*** Pick %d items from slot %d to drag-slot\n",
                        GREATERHALF(s->count), sid);
                 slot_transfer(s, &gs.inv.drag, GREATERHALF(s->count));
                 break;
@@ -349,12 +349,12 @@ static void inv_click(int button, int16_t sid) {
         switch (button) {
             case 0:
                 // left-click - throw all
-                printf("*** Throwing out %d items from drag slot\n", gs.inv.drag.count);
+                printf("*** Throw out %d items from drag slot\n", gs.inv.drag.count);
                 gs.inv.drag.count = 0;
                 break;
             case 1:
-                // left-click - throw one
-                printf("*** Throwing out 1 item from drag slot\n");
+                // right-click - throw one
+                printf("*** Throw out 1 item from drag slot\n");
                 gs.inv.drag.count--;
                 break;
         }
@@ -362,7 +362,28 @@ static void inv_click(int button, int16_t sid) {
         return;
     }
 
-    printf("click with a dragged item in a slot not supported\n");
+    // clicking with a full hand on a slot
+
+    slot_t *s = &gs.inv.slots[sid];
+    if (s->item == -1) {
+        // the target slot is empty
+        switch (button) {
+            case 0:
+                // left-click - drop all
+                printf("*** Drop %d items from drag slot to slot %d\n",
+                       gs.inv.drag.count, sid);
+                slot_transfer(&gs.inv.drag, s, gs.inv.drag.count);
+                break;
+            case 1:
+                // right-click - throw one
+                printf("*** Drop 1 item from drag slot to slot %d\n", sid);
+                slot_transfer(&gs.inv.drag, s, 1);
+                break;
+        }
+        return;
+    }
+
+    printf("*** click with a dragged item in a full slot not supported\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
