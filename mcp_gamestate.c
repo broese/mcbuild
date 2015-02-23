@@ -256,6 +256,9 @@ bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory tracking
 
+#define IAQ GAR1(gs.inv.iaq)
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Packet processing
 
@@ -498,7 +501,7 @@ int gs_packet(MCPacket *pkt) {
             // but just record the action for later - actual change occurs
             // when we receive the SP_ConfirmTransaction packet
 
-            invact * a = lh_arr_new(GAR1(gs.inv.iaq));
+            invact * a = lh_arr_new(IAQ);
             a->mode   = tpkt->mode;
             a->button = tpkt->button;
             a->sid    = tpkt->sid;
@@ -538,6 +541,8 @@ void gs_destroy() {
     free_chunks(&gs.overworld);
     free_chunks(&gs.nether);
     free_chunks(&gs.end);
+
+    lh_arr_free(IAQ);
 }
 
 int gs_setopt(int optid, int value) {
