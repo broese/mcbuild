@@ -308,6 +308,11 @@ static int slot_transfer(slot_t *f, slot_t *t, int count) {
 #define GREATERHALF(x) (((x)>>1)+((x)&1))
 
 static void inv_click(int button, int16_t sid) {
+    if (button!=0 && button!=1) {
+        printf("button=%d not supported\n",button);
+        return;
+    }
+
     if (gs.inv.drag.item < 0) {
         // not dragging anything
 
@@ -319,23 +324,45 @@ static void inv_click(int button, int16_t sid) {
         // empty slot - no action
         if (s->item < 0) return;
 
-        if (button == 0) {
-            // left-click
-            printf("Transfer %d items from slot %d to drag-slot\n",
-                   s->count, sid);
-            slot_transfer(s, &gs.inv.drag, s->count);
-        }
-        else {
-            // right-click
-            printf("Transfer %d items from slot %d to drag-slot\n",
-                   GREATERHALF(s->count), sid);
-            slot_transfer(s, &gs.inv.drag, GREATERHALF(s->count));
+        switch (button) {
+            case 0:
+                // left-click
+                printf("*** Transfer %d items from slot %d to drag-slot\n",
+                       s->count, sid);
+                slot_transfer(s, &gs.inv.drag, s->count);
+                break;
+            case 1:
+                // right-click
+                printf("*** Transfer %d items from slot %d to drag-slot\n",
+                       GREATERHALF(s->count), sid);
+                slot_transfer(s, &gs.inv.drag, GREATERHALF(s->count));
+                break;
         }
 
         return;
     }
 
-    printf("click with a dragged item not supported\n");
+    // clicking with a dragging hand
+
+    if (sid<0) {
+        // clicking outside of window - throwing items
+        switch (button) {
+            case 0:
+                // left-click - throw all
+                printf("*** Throwing out %d items from drag slot\n", gs.inv.drag.count);
+                gs.inv.drag.count = 0;
+                break;
+            case 1:
+                // left-click - throw one
+                printf("*** Throwing out 1 item from drag slot\n");
+                gs.inv.drag.count--;
+                break;
+        }
+        prune_slot(&gs.inv.drag);
+        return;
+    }
+
+    printf("click with a dragged item in a slot not supported\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
