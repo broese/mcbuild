@@ -176,7 +176,7 @@ typedef struct {
 
 // 0x09
 typedef struct {
-    uint8_t sid;
+    int8_t sid;
 } SP_HeldItemChange_pkt;
 
 // 0x0c
@@ -287,9 +287,9 @@ typedef struct {
 // 0x18
 typedef struct {
     uint32_t eid;
-    fixp      x;
-    fixp      y;
-    fixp      z;
+    fixp     x;
+    fixp     y;
+    fixp     z;
     angle_t  yaw;
     angle_t  pitch;
     uint8_t  onground;
@@ -444,7 +444,7 @@ typedef struct {
 // 0x0e
 typedef struct {
     uint8_t  wid;
-    uint16_t sid;
+    int16_t sid;
     uint8_t  button;
     uint16_t aid;
     uint8_t  mode;
