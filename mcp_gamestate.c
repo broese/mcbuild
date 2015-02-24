@@ -327,14 +327,14 @@ static void inv_click(int button, int16_t sid) {
         switch (button) {
             case 0:
                 // left-click
-                printf("*** Pick %d items from slot %d to drag-slot\n",
-                       s->count, sid);
+                printf("*** Pick %dx %s from slot %d to drag-slot\n",
+                       s->count, ITEMS[s->item].name, sid);
                 slot_transfer(s, &gs.inv.drag, s->count);
                 break;
             case 1:
                 // right-click
-                printf("*** Pick %d items from slot %d to drag-slot\n",
-                       GREATERHALF(s->count), sid);
+                printf("*** Pick %dx %s from slot %d to drag-slot\n",
+                       GREATERHALF(s->count), ITEMS[s->item].name, sid);
                 slot_transfer(s, &gs.inv.drag, GREATERHALF(s->count));
                 break;
         }
@@ -349,12 +349,14 @@ static void inv_click(int button, int16_t sid) {
         switch (button) {
             case 0:
                 // left-click - throw all
-                printf("*** Throw out %d items from drag slot\n", gs.inv.drag.count);
+                printf("*** Throw out %dx %s from drag slot\n",
+                       gs.inv.drag.count, ITEMS[gs.inv.drag.item].name );
                 gs.inv.drag.count = 0;
                 break;
             case 1:
                 // right-click - throw one
-                printf("*** Throw out 1 item from drag slot\n");
+                printf("*** Throw out 1x %s from drag slot\n",
+                       ITEMS[gs.inv.drag.item].name);
                 gs.inv.drag.count--;
                 break;
         }
@@ -370,13 +372,14 @@ static void inv_click(int button, int16_t sid) {
         switch (button) {
             case 0:
                 // left-click - drop all
-                printf("*** Drop %d items from drag slot to slot %d\n",
-                       gs.inv.drag.count, sid);
+                printf("*** Put %dx %s from drag slot to slot %d\n",
+                       gs.inv.drag.count, ITEMS[gs.inv.drag.item].name, sid);
                 slot_transfer(&gs.inv.drag, s, gs.inv.drag.count);
                 break;
             case 1:
                 // right-click - throw one
-                printf("*** Drop 1 item from drag slot to slot %d\n", sid);
+                printf("*** Put 1x %s from drag slot to slot %d\n",
+                       ITEMS[gs.inv.drag.item].name, sid);
                 slot_transfer(&gs.inv.drag, s, 1);
                 break;
         }
@@ -387,8 +390,9 @@ static void inv_click(int button, int16_t sid) {
 
     if (s->item != gs.inv.drag.item) {
         // the slot conains a different type of item - swap items
-        printf("*** Swap %d items in the drag slot with %d items in slot %d\n",
-               gs.inv.drag.count, s->count, sid);
+        printf("*** Swap %dx %s in the drag slot with %dx %s in slot %d\n",
+               gs.inv.drag.count, ITEMS[gs.inv.drag.item].name,
+               s->count, ITEMS[s->item].name, sid);
         slot_t temp = gs.inv.drag;
         gs.inv.drag = *s;
         *s = temp;
