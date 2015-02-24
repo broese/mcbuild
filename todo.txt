@@ -1,0 +1,58 @@
+This is an ad-hoc document to collect the next components to implement
+
+legend:
+= Section
++ already implemented
+* already implemented but needs improvements or testing
+- not implemented
+! not implemented, has high priority
+~ not implemented, has low priority
+@ dependence on another component
+
+= Inventory
+  = Inventory Tracking - track changes in player's inventory based on SP_SetSlot, CP_WindowClick and SP_ConfirmTransaction
+    + SP_SetSlot handling
+    ! Mode 0 (simple click)
+    - Mode 1 (shift-click)
+    ~ Mode 2 (numeric selection)
+    ~ Mode 3
+    - Mode 4 (throwing)
+    - Mode 5 (painting)
+    ~ Mode 6 (?)
+    - Explicit update request 
+  = Inventory Switching
+    ! held item switching
+    - quickbar item switching
+    - inventory slots swapping
+    ~ interaction with slotted blocks (e.g. chests, furnaces)
+
+= Misc
+  - Autoeat
+  - Autotool
+  - Autoenchant/anvil
+  - Autoshear
+  - Autodig
+
+= Autobuilding
+  = In-world preview
+    - selection masks
+    - building preview masks
+    - building placement
+  = Generic Building
+    - placement of blocks
+    - checking of acessibility
+    - building strategy
+    - checking of visibility
+    - placement of meta-dependent blocks (e.g. stairs)
+    - diff-checking and rebuild
+    - 
+  = Parametric building
+    - floors
+    - walls
+    - stairs
+    - scaffolding
+    - bridges
+  = Build Recording
+  = Build scanning
+  = Pixel art
+
