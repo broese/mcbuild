@@ -383,7 +383,20 @@ static void inv_click(int button, int16_t sid) {
         return;
     }
 
-    printf("*** click with a dragged item in a full slot not supported\n");
+    // clicking with a full hand on a non-empty slot
+
+    if (s->item != gs.inv.drag.item) {
+        // the slot conains a different type of item - swap items
+        printf("*** Swap %d items in the drag slot with %d items in slot %d\n",
+               gs.inv.drag.count, s->count, sid);
+        slot_t temp = gs.inv.drag;
+        gs.inv.drag = *s;
+        *s = temp;
+        return;
+    }
+
+    printf("*** click with a dragged item in a full slot with the same type of "
+           "item not supported\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////
