@@ -371,13 +371,13 @@ static void inv_click(int button, int16_t sid) {
         // the target slot is empty
         switch (button) {
             case 0:
-                // left-click - drop all
+                // left-click - put all
                 printf("*** Put %dx %s from drag slot to slot %d\n",
                        gs.inv.drag.count, ITEMS[gs.inv.drag.item].name, sid);
                 slot_transfer(&gs.inv.drag, s, gs.inv.drag.count);
                 break;
             case 1:
-                // right-click - throw one
+                // right-click - put one
                 printf("*** Put 1x %s from drag slot to slot %d\n",
                        ITEMS[gs.inv.drag.item].name, sid);
                 slot_transfer(&gs.inv.drag, s, 1);
@@ -626,6 +626,7 @@ int gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(SP_SetSlot) {
+            //dump_packet(pkt);
             // we only deal with the main inventory window (wid=0)
             if (tpkt->wid != 0) break;
 
@@ -636,6 +637,7 @@ int gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(CP_ClickWindow) {
+            //dump_packet(pkt);
             // ignore non-inventory windows - we will receive an explicit update
             // for those via SP_SetSlot messages after the window closes,
             // but the main inventory window (wid=0) needs to be tracked
@@ -656,6 +658,7 @@ int gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(SP_ConfirmTransaction) {
+            //dump_packet(pkt);
             if (tpkt->wid != 0) break;
 
             int idx = find_invaction(tpkt->aid);
