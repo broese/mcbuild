@@ -410,8 +410,26 @@ static void inv_click(int button, int16_t sid) {
         return;
     }
 
-    printf("*** click with a dragged item in a full slot with the same type of "
-           "item not supported\n");
+    // clicking with a full hand on a non-empty slot - items are same and stackable
+
+    // how many more items can we put into slot?
+    int count = ( (ITEMS[s->item].flags&I_S16) ? 16 : 64 ) - s->count;
+    if (count > gs.inv.drag.count) count=gs.inv.drag.count;
+    if (button==1 && count>0) count=1;
+
+    if (count > 0) {
+        printf("*** Add %dx %s from drag slot to slot %d\n",
+               count, ITEMS[gs.inv.drag.item].name, sid);
+        s->count += count;
+        gs.inv.drag.count -= count;
+    }
+    else {
+        printf("*** Can't put more %s from drag slot to slot %d - slot full\n",
+               ITEMS[gs.inv.drag.item].name, sid);
+    }
+
+    prune_slot(s);
+    prune_slot(&gs.inv.drag);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
