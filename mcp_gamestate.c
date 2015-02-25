@@ -656,13 +656,28 @@ int gs_packet(MCPacket *pkt) {
 
         GSP(SP_SetSlot) {
             //dump_packet(pkt);
-            // we only deal with the main inventory window (wid=0)
-            if (tpkt->wid != 0) break;
+            switch(tpkt->wid) {
+                case 0:
+                    // main inventory window (wid=0)
+                    assert(tpkt->sid>=0 && tpkt->sid<45);
 
-            assert(tpkt->sid>=0 && tpkt->sid<45);
-
-            // copy the slot to our inventory slot
-            gs.inv.slots[tpkt->sid] = tpkt->slot;
+                    // copy the slot to our inventory slot
+                    gs.inv.slots[tpkt->sid] = tpkt->slot;
+                    break;
+                case 255:
+                    // drag-slot
+                    if (gs.inv.drag.item != tpkt->slot.item ||
+                        gs.inv.drag.count != tpkt->slot.count ) {
+                        printf("*** drag slot corrected by the server\n");
+                        gs.inv.drag = tpkt->slot;
+                    }
+#if 0
+                    else {
+                        printf("drag slot consistent\n");
+                    }
+#endif
+                    break;
+            }
         } _GSP;
 
         GSP(CP_ClickWindow) {
