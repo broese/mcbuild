@@ -89,6 +89,9 @@ typedef struct _gamestate {
         slot_t      drag;
 
         lh_arr_declare(invact, iaq);    // window action queue
+
+        // set when the inventory tracking fails to keep the inventory consistent
+        int         inconsistent;
     } inv;
 
     // tracked entities

@@ -653,8 +653,16 @@ int gs_packet(MCPacket *pkt) {
             a->button = tpkt->button;
             a->sid    = tpkt->sid;
 
-            printf("Window Action aid=%d, mode=%d, button=%d, sid=%d\n",
-                   a->aid, a->mode, a->button, a->sid);
+            switch (a->mode) {
+                case 0:
+                    printf("Window Action aid=%d, mode=%d, button=%d, sid=%d\n",
+                           a->aid, a->mode, a->button, a->sid);
+                    inv_click(a->button, a->sid);
+                    break;
+                default:
+                    printf("Unsupported inventory action mode %d\n",a->mode);
+                    gs.inv.inconsistent = 1;
+            }
         } _GSP;
 
         GSP(SP_ConfirmTransaction) {
@@ -671,14 +679,8 @@ int gs_packet(MCPacket *pkt) {
 
             if (!tpkt->accepted) {
                 printf("Warning: action %d was not accepted!\n",tpkt->aid);
+                gs.inv.inconsistent = 1;
                 break;
-            }
-
-            switch (a.mode) {
-                case 0:
-                    inv_click(a.button, a.sid); break;
-                default:
-                    printf("Unsupported inventory action mode %d\n",a.mode);
             }
         } _GSP;
     }
