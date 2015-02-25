@@ -442,22 +442,53 @@ static void inv_paint(int button, int16_t sid) {
 
     switch(button) {
         case 0:
+        case 4:
             printf("Paint start\n");
             assert(gs.inv.pcount==0);
             assert(sid<0);
+            if (gs.inv.ptype!=0) {
+                printf("Incorrect paint sequence, resetting\n");
+                gs.inv.ptype = 0;
+                gs.inv.pcount = 0;
+                break;
+            }
+            gs.inv.ptype = button+1;
             break;
 
         case 1:
+        case 5:
+            if (gs.inv.ptype!=button) {
+                printf("Incorrect paint sequence, resetting\n");
+                gs.inv.ptype = 0;
+                gs.inv.pcount = 0;
+                break;
+            }
             printf("Paint add slot %d\n",sid);
             gs.inv.pslots[gs.inv.pcount++] = sid;
             break;
 
         case 2:
+        case 6:
             assert(sid<0);
+            if (gs.inv.ptype!=button-1) {
+                printf("Incorrect paint sequence, resetting\n");
+                gs.inv.ptype = 0;
+                gs.inv.pcount = 0;
+                break;
+            }
             printf("Paint end, %d slots\n", gs.inv.pcount);
 
-            for(i=0; i<gs.inv.pcount; i++)
-                printf("  painted slot %2d\n",gs.inv.pslots[i]);
+            if (gs.inv.pcount>0) {
+                int amount = 1;
+                if (button==2)
+                    amount = gs.inv.drag.count / gs.inv.pcount;
+
+                for(i=0; i<gs.inv.pcount; i++) {
+                    printf("*** Paint %dx %s from drag slot to slot %d\n",
+                           amount, ITEMS[gs.inv.drag.item].name, gs.inv.pslots[i]);                
+                    slot_transfer(&gs.inv.drag, &gs.inv.slots[gs.inv.pslots[i]], amount);
+                }
+            }
 
             gs.inv.pcount = 0;
             break;

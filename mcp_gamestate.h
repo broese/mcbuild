@@ -95,6 +95,7 @@ typedef struct _gamestate {
 
         int16_t     pslots[256];
         int         pcount;
+        int         ptype;
     } inv;
 
     // tracked entities
