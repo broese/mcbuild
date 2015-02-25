@@ -432,6 +432,37 @@ static void inv_click(int button, int16_t sid) {
     prune_slot(&gs.inv.drag);
 }
 
+static void inv_paint(int button, int16_t sid) {
+    if (button!=0 && button!=1 && button!=2) {
+        printf("button=%d not supported\n",button);
+        return;
+    }
+
+    int i;
+
+    switch(button) {
+        case 0:
+            printf("Paint start\n");
+            assert(gs.inv.pcount==0);
+            assert(sid<0);
+            break;
+
+        case 1:
+            printf("Paint add slot %d\n",sid);
+            gs.inv.pslots[gs.inv.pcount++] = sid;
+            break;
+
+        case 2:
+            assert(sid<0);
+            printf("Paint end, %d slots\n", gs.inv.pcount);
+
+            for(i=0; i<gs.inv.pcount; i++)
+                printf("  painted slot %2d\n",gs.inv.pslots[i]);
+
+            gs.inv.pcount = 0;
+            break;
+    }
+}
 ////////////////////////////////////////////////////////////////////////////////
 // Packet processing
 
@@ -699,10 +730,17 @@ int gs_packet(MCPacket *pkt) {
 
             switch (a->mode) {
                 case 0:
-                    printf("Window Action aid=%d, mode=%d, button=%d, sid=%d\n",
+                    printf("Inventory Click aid=%d, mode=%d, button=%d, sid=%d\n",
                            a->aid, a->mode, a->button, a->sid);
                     inv_click(a->button, a->sid);
                     break;
+
+                case 5:
+                    printf("Inventory Paint aid=%d, mode=%d, button=%d, sid=%d\n",
+                           a->aid, a->mode, a->button, a->sid);
+                    inv_paint(a->button, a->sid);
+                    break;
+
                 default:
                     printf("Unsupported inventory action mode %d\n",a->mode);
                     gs.inv.inconsistent = 1;

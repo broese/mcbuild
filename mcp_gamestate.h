@@ -92,6 +92,9 @@ typedef struct _gamestate {
 
         // set when the inventory tracking fails to keep the inventory consistent
         int         inconsistent;
+
+        int16_t     pslots[256];
+        int         pcount;
     } inv;
 
     // tracked entities
