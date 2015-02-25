@@ -12,12 +12,12 @@ legend:
 = Inventory
   = Inventory Tracking - track changes in player's inventory based on SP_SetSlot, CP_WindowClick and SP_ConfirmTransaction
     + SP_SetSlot handling
-    ! Mode 0 (simple click)
+    + Mode 0 (simple click)
     - Mode 1 (shift-click)
     ~ Mode 2 (numeric selection)
     ~ Mode 3
     - Mode 4 (throwing)
-    - Mode 5 (painting)
+    ! Mode 5 (painting)
     ~ Mode 6 (?)
     - Explicit update request 
   = Inventory Switching
