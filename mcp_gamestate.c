@@ -398,8 +398,10 @@ static void inv_click(int button, int16_t sid) {
 
     // clicking with a full hand on a non-empty slot
 
-    if (s->item != gs.inv.drag.item) {
-        // the slot conains a different type of item - swap items
+    if (s->item != gs.inv.drag.item ||
+        ITEMS[s->item].flags&I_NSTACK ) {
+        // the slot conains a different type of item, or the items
+        // are non-stackable (e.g. weapons) - swap items
         printf("*** Swap %dx %s in the drag slot with %dx %s in slot %d\n",
                gs.inv.drag.count, ITEMS[gs.inv.drag.item].name,
                s->count, ITEMS[s->item].name, sid);
