@@ -305,6 +305,16 @@ static int slot_transfer(slot_t *f, slot_t *t, int count) {
     return 0;
 }
 
+static void slot_swap(slot_t *f, slot_t *t) {
+    assert(f->count > 0 && f->item >= 0);
+    assert(t->count > 0 && t->item >= 0);
+
+    slot_t temp;
+    temp = *t;
+    *t = *f;
+    *f = temp;
+}
+
 #define GREATERHALF(x) (((x)>>1)+((x)&1))
 
 static void inv_click(int button, int16_t sid) {
@@ -393,9 +403,8 @@ static void inv_click(int button, int16_t sid) {
         printf("*** Swap %dx %s in the drag slot with %dx %s in slot %d\n",
                gs.inv.drag.count, ITEMS[gs.inv.drag.item].name,
                s->count, ITEMS[s->item].name, sid);
-        slot_t temp = gs.inv.drag;
-        gs.inv.drag = *s;
-        *s = temp;
+
+        slot_swap(s, &gs.inv.drag);
         return;
     }
 
