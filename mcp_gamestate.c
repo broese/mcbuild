@@ -438,6 +438,12 @@ static void inv_paint(int button, int16_t sid) {
         return;
     }
 
+    if (gs.inv.drag.item < 0) {
+        printf("Painting mode with nothing in drag slot - ignoring\n");
+        gs.inv.inconsistent = 1;
+        return;
+    }
+
     int i;
 
     switch(button) {
