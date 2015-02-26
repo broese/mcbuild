@@ -495,6 +495,27 @@ static void inv_paint(int button, int16_t sid) {
             break;
     }
 }
+
+static void inv_throw(int button, int16_t sid) {
+    if (button!=0 && button!=1) {
+        printf("button=%d not supported\n",button);
+        return;
+    }
+
+    if (sid<0) return; // outside of the window - no operation
+
+    slot_t *s = &gs.inv.slots[sid];
+    if (s->item == -1) return; // empty slot - no operation
+
+    int amount = button ? s->count : 1;
+
+    printf("*** Throw out %dx %s from slot %d\n",
+           amount, ITEMS[s->item].name, sid);
+
+    s->count -= amount;
+    prune_slot(s);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Packet processing
 
@@ -765,6 +786,12 @@ int gs_packet(MCPacket *pkt) {
                     printf("Inventory Click aid=%d, mode=%d, button=%d, sid=%d\n",
                            a->aid, a->mode, a->button, a->sid);
                     inv_click(a->button, a->sid);
+                    break;
+
+                case 4:
+                    printf("Inventory Throw aid=%d, mode=%d, button=%d, sid=%d\n",
+                           a->aid, a->mode, a->button, a->sid);
+                    inv_throw(a->button, a->sid);
                     break;
 
                 case 5:

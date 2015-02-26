@@ -16,8 +16,8 @@ legend:
     - Mode 1 (shift-click)
     ~ Mode 2 (numeric selection)
     ~ Mode 3
-    - Mode 4 (throwing)
-    * Mode 5 (painting)
+    + Mode 4 (throwing)
+    + Mode 5 (painting)
     ~ Mode 6 (?)
     - Explicit update request 
   = Inventory Switching
