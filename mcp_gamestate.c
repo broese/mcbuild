@@ -433,7 +433,7 @@ static void inv_click(int button, int16_t sid) {
 }
 
 static void inv_paint(int button, int16_t sid) {
-    if (button!=0 && button!=1 && button!=2) {
+    if (!((button>=0 && button<=2) || (button>=4 && button<=6))) {
         printf("button=%d not supported\n",button);
         return;
     }
@@ -491,6 +491,7 @@ static void inv_paint(int button, int16_t sid) {
             }
 
             gs.inv.pcount = 0;
+            gs.inv.ptype  = 0;
             break;
     }
 }
