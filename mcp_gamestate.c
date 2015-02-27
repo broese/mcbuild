@@ -429,6 +429,68 @@ static void inv_click(int button, int16_t sid) {
     prune_slot(&gs.inv.drag);
 }
 
+static void inv_shiftclick(int button, int16_t sid) {
+    if (button!=0 && button!=1) {
+        printf("button=%d not supported\n",button);
+        return;
+    }
+
+    slot_t *f = &gs.inv.slots[sid];
+    if (f->item == -1) return; // shift-click on an empty slot - no-op
+
+    //TODO: handle armor items
+
+    while (f->count > 0) {
+        // we might need several attempts to distribute all items
+
+        // slots we can consider, as a bitmask
+        int64_t smask = 0;
+
+        // try to find a slot in the opposite inventory section
+        smask = (sid>=9 && sid<=36) ? (0x1ffLL<<36) : (0x3ffffffffLL<<9);
+
+        int i;
+        // try to find a stackable slot first
+        if (!(ITEMS[f->item].flags&I_NSTACK)) {
+            for(i=9; i<45; i++) {
+                int stacksize = (ITEMS[f->item].flags&I_S16)?16:64;
+                if (smask & (1LL<<i)) {
+                    slot_t *t = &gs.inv.slots[i];
+                    if (t->item == f->item) {
+                        int capacity = stacksize - t->count;
+                        if (capacity > 0) {
+                            // we found a suitable slot with the same type of
+                            // stackable item we want to distribute and some capacity
+                            int amount = (f->count < capacity) ? f->count : capacity;
+                            printf("*** Distribute %dx %s from slot %d to slot %d\n",
+                                   amount, ITEMS[f->item].name, sid, i);
+                            slot_transfer(f,t,amount);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // this action was sufficient to distribute everything, we're done
+            if (f->item < 0) break;
+        }
+
+        // next try to find an empty slot
+        for(i=9; i<45; i++) {
+            if (smask & (1LL<<i)) {
+                slot_t *t = &gs.inv.slots[i];
+                if (t->item == -1) {
+                    printf("*** Distribute %dx %s from slot %d to slot %d\n",
+                           f->count, ITEMS[f->item].name, sid, i);
+                    slot_swap(f,t);
+                    break;
+                }
+            }
+        }
+        if (f->item < 0) break;
+    }
+}
+
 static void inv_paint(int button, int16_t sid) {
     if (!((button>=0 && button<=2) || (button>=4 && button<=6))) {
         printf("button=%d not supported\n",button);
@@ -789,6 +851,12 @@ int gs_packet(MCPacket *pkt) {
                     printf("Inventory Click aid=%d, mode=%d, button=%d, sid=%d\n",
                            a->aid, a->mode, a->button, a->sid);
                     inv_click(a->button, a->sid);
+                    break;
+
+                case 1:
+                    printf("Inventory Shift-Click aid=%d, mode=%d, button=%d, sid=%d\n",
+                           a->aid, a->mode, a->button, a->sid);
+                    inv_shiftclick(a->button, a->sid);
                     break;
 
                 case 4:
