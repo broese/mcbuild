@@ -429,6 +429,27 @@ static void inv_click(int button, int16_t sid) {
     prune_slot(&gs.inv.drag);
 }
 
+int64_t find_stackable_slots(int64_t mask, int item) {
+    // return empty mask if the item itself is non-stackable
+    if (ITEMS[item].flags&I_NSTACK) return 0LL;
+
+    int stacksize = (ITEMS[item].flags&I_S16)?16:64;
+
+    int i;
+    for(i=9; i<45; i++) {
+        if (!(mask & (1LL<<i))) continue; // skip slots not in the mask
+        slot_t *t = &gs.inv.slots[i];
+        int capacity = stacksize - t->count;
+        if (t->item != item || capacity <=0 ) {
+            // skip slots of different type or w/o capacity and mask them out
+            mask &= ~(1<<i);
+            continue;
+        }
+    }
+
+    return mask;
+}
+
 static void inv_shiftclick(int button, int16_t sid) {
     if (button!=0 && button!=1) {
         printf("button=%d not supported\n",button);
@@ -438,57 +459,46 @@ static void inv_shiftclick(int button, int16_t sid) {
     slot_t *f = &gs.inv.slots[sid];
     if (f->item == -1) return; // shift-click on an empty slot - no-op
 
+    int i;
+
     //TODO: handle armor items
 
-    while (f->count > 0) {
-        // we might need several attempts to distribute all items
+    // this bitmask represents all slots in the inventory area opposite of
+    // where the click occured (i.e. quickbar <-> main inventory)
+    int64_t mask = (sid>=9 && sid<=36) ? (0x1ffLL<<36) : (0x3ffffffffLL<<9);
 
-        // slots we can consider, as a bitmask
-        int64_t smask = 0;
+    // bitmask of the stackable slots with available capacity
+    int64_t smask = find_stackable_slots(mask, f->item);
 
-        // try to find a slot in the opposite inventory section
-        smask = (sid>=9 && sid<=36) ? (0x1ffLL<<36) : (0x3ffffffffLL<<9);
-
-        int i;
-        // try to find a stackable slot first
-        if (!(ITEMS[f->item].flags&I_NSTACK)) {
-            for(i=9; i<45; i++) {
-                int stacksize = (ITEMS[f->item].flags&I_S16)?16:64;
-                if (smask & (1LL<<i)) {
-                    slot_t *t = &gs.inv.slots[i];
-                    if (t->item == f->item) {
-                        int capacity = stacksize - t->count;
-                        if (capacity > 0) {
-                            // we found a suitable slot with the same type of
-                            // stackable item we want to distribute and some capacity
-                            int amount = (f->count < capacity) ? f->count : capacity;
-                            printf("*** Distribute %dx %s from slot %d to slot %d\n",
-                                   amount, ITEMS[f->item].name, sid, i);
-                            slot_transfer(f,t,amount);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            // this action was sufficient to distribute everything, we're done
-            if (f->item < 0) break;
+    if (smask) {
+        int stacksize = (ITEMS[f->item].flags&I_S16)?16:64;
+        for(i=9; i<45 && f->count>0; i++) {
+            if (!(smask & (1LL<<i))) continue; // skip slots not in the mask
+            slot_t *t = &gs.inv.slots[i];
+            int capacity = stacksize-t->count;
+            int amount = (f->count < capacity) ? f->count : capacity;
+            printf("*** Distribute %dx %s from slot %d to slot %d\n",
+                   amount, ITEMS[f->item].name, sid, i);
+            slot_transfer(f,t,amount);
         }
-
-        // next try to find an empty slot
-        for(i=9; i<45; i++) {
-            if (smask & (1LL<<i)) {
-                slot_t *t = &gs.inv.slots[i];
-                if (t->item == -1) {
-                    printf("*** Distribute %dx %s from slot %d to slot %d\n",
-                           f->count, ITEMS[f->item].name, sid, i);
-                    slot_swap(f,t);
-                    break;
-                }
-            }
-        }
-        if (f->item < 0) break;
+        prune_slot(f);
+        return; // do not seek other slots to distribute items even if some remain
     }
+
+    // next try to find an empty slot
+    for(i=9; i<45; i++) {
+        if (mask & (1LL<<i)) {
+            slot_t *t = &gs.inv.slots[i];
+            if (t->item == -1) {
+                printf("*** Distribute %dx %s from slot %d to slot %d\n",
+                       f->count, ITEMS[f->item].name, sid, i);
+                slot_transfer(f,t,f->count);
+                return;
+            }
+        }
+    }
+
+    //TODO: distribute into slots in the same area
 }
 
 static void inv_paint(int button, int16_t sid) {
