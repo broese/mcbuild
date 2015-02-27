@@ -306,9 +306,6 @@ static int slot_transfer(slot_t *f, slot_t *t, int count) {
 }
 
 static void slot_swap(slot_t *f, slot_t *t) {
-    assert(f->count > 0 && f->item >= 0);
-    assert(t->count > 0 && t->item >= 0);
-
     slot_t temp;
     temp = *t;
     *t = *f;
