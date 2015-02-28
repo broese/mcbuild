@@ -456,7 +456,7 @@ int64_t find_stackable_slots(int64_t mask, int item) {
         int capacity = stacksize - t->count;
         if (t->item != item || capacity <=0 ) {
             // skip slots of different type or w/o capacity and mask them out
-            mask &= ~(1<<i);
+            mask &= ~(1LL<<i);
             continue;
         }
     }
