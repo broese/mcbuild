@@ -938,13 +938,14 @@ int gs_packet(MCPacket *pkt) {
             }
         } _GSP;
 
-        GSP(CP_CloseWindow) {
+        case CP_CloseWindow:
+        case SP_CloseWindow:
             dump_packet(pkt);
             // discard anything in dragslot - if you happen to drag
             // some items when the window is closed, they will be thrown
             gs.inv.drag.item = -1;
             prune_slot(&gs.inv.drag);
-        } _GSP;
+            break;
     }
 }
 
