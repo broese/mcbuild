@@ -894,7 +894,7 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
            inet_ntoa(cadr.sin_addr),ntohs(cadr.sin_port));
     
     // open connection to the remote server (the real MC server)
-    int ms = lh_connect_tcp4(ip, port);
+    int ms = lh_connect_tcp4(ip, port-1);
     if (ms < 0) {
         close(mitm.cs);
         LH_ERROR(0, "Failed to open the client-side connection");
@@ -1066,7 +1066,7 @@ int main(int ac, char **av) {
         LH_ERROR(-1, "Failed to obtain IP address for the server %s",SERVER_ADDR);
 
     // start monitoring connection events
-    proxy_pump(server_ip, SERVER_PORT);
+    proxy_pump(server_ip, SERVER_PORT+1);
 
     // cleanup openssl and curl
     ERR_remove_state();
