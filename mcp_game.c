@@ -192,14 +192,22 @@ char * get_item_name(char *buf, int16_t item, int16_t dmg) {
 static void dump_inventory() {
     int i;
     printf("Dumping inventory:\n");
-    for(i=0; i<45; i++) {
-        slot_t *s = &gs.inv.slots[i];
+    for(i=-1; i<45; i++) {
+        slot_t *s;
+        if (i<0) {
+            s=&gs.inv.drag;
+            printf(" DS : ");
+        }
+        else {
+            s=&gs.inv.slots[i];
+            printf(" %2d : ", i);
+        }
+
         char buf[4096];
         if (get_item_name(buf, s->item, s->damage))
-            printf(" %2d : %-20s x%-2d\n", i, buf, s->count);
+            printf("%-20s x%-2d\n", buf, s->count);
         else
-            printf(" %2d : %4x x%-2d dmg=%d\n",
-                   i,s->item,s->count,s->damage);
+            printf("%4x x%-2d dmg=%d\n",s->item,s->count,s->damage);
     }
 }
 
