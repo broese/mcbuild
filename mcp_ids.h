@@ -896,7 +896,7 @@ static const char * ANSI_BLOCK[256] = {
     "\x1b[43;37m\xe2\x96\x91",          // Sand
     "\x1b[47;30m\xe2\x96\x92",          // Gravel
     "\x1b[47;33m\xe2\x97\x86",          // Gold Ore
-    "\x1b[47;37m\xe2\x97\x86",          // Iron Ore
+    "\x1b[47;35m\xe2\x97\x86",          // Iron Ore
 
     // 10
     "\x1b[47;30m\xe2\x97\x86",          // Iron Ore
