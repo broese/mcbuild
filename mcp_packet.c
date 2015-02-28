@@ -1224,7 +1224,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
         SUPPORT_DE  (CP_EntityAction,_1_8_1),
-        SUPPORT_DE  (CP_CloseWindow,_1_8_1),
+        SUPPORT_DED (CP_CloseWindow,_1_8_1),
         SUPPORT_DD  (CP_ClickWindow,_1_8_1),
     },
 };
