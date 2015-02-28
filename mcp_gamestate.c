@@ -260,6 +260,13 @@ bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
 #define pIAQ P(gs.inv.iaq)
 #define cIAQ C(gs.inv.iaq)
 
+static void dump_slot(slot_t *s) {
+    printf("item=%d", s->item);
+    if (s->item != -1) {
+        printf(", count=%d, damage=%d", s->count, s->damage);
+    }
+}
+
 static int find_invaction(int aid) {
     int i;
     for (i=0; i<cIAQ; i++)
@@ -282,11 +289,16 @@ static int slot_transfer(slot_t *f, slot_t *t, int count) {
     assert(f->count >= count);
     assert(f->item > 0);
 
+    printf("  From: "); dump_slot(f); printf("\n");
+    printf("  To  : "); dump_slot(t); printf("\n");
+
     if (t->item == -1) {
         // destination slot is empty
         t->item = f->item;
         t->count = count;
         f->count-=count;
+
+        printf("  put into empty slot, now: f:%d, t:%d\n",f->count,t->count);
 
         prune_slot(f);
         return 1;
@@ -294,15 +306,17 @@ static int slot_transfer(slot_t *f, slot_t *t, int count) {
 
     if (f->item == t->item) {
         // item type is the same
-        //TODO: fix for stackability
+
         t->count+=count;
         f->count-=count;
+
+        printf("  put into non-empty slot, now: f:%d, t:%d\n",f->count,t->count);
 
         prune_slot(f);
         return 1;
     }
 
-    return 0;
+    assert(0);
 }
 
 static void slot_swap(slot_t *f, slot_t *t) {
@@ -553,6 +567,8 @@ static void inv_paint(int button, int16_t sid) {
             }
             printf("Paint end, %d slots\n", gs.inv.pcount);
 
+            //TODO: correct for the slots exceeding their stack limit
+
             if (gs.inv.pcount>0) {
                 int amount = 1;
                 if (button==2)
@@ -562,6 +578,7 @@ static void inv_paint(int button, int16_t sid) {
                     printf("*** Paint %dx %s from drag slot to slot %d\n",
                            amount, ITEMS[gs.inv.drag.item].name, gs.inv.pslots[i]);                
                     slot_transfer(&gs.inv.drag, &gs.inv.slots[gs.inv.pslots[i]], amount);
+                    printf("%d remain in the dragslot\n",gs.inv.drag.count);
                 }
             }
 
@@ -570,6 +587,22 @@ static void inv_paint(int button, int16_t sid) {
             break;
     }
 }
+
+/*
+Things in inventory tracking that still need implementation:
+
+Shift-Click:
+- Armor items
+- Distribution to blocks in the local field
+
+Paint mode:
+- limit to the stack size
+- distribution of blocks to unevenly filled slots
+- (research) Assume 4 slots with 30,10,10 and 10 blocks. If we use 1x paint on these 4 blocks,
+  what will we get - 31,11,11,11 or 30,11,11,11, or something else? What about left-mouse paint?
+
+- Items with same block IDs but different metas
+*/
 
 static void inv_throw(int button, int16_t sid) {
     if (button!=0 && button!=1) {
