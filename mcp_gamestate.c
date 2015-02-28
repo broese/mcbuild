@@ -489,7 +489,7 @@ static void inv_shiftclick(int button, int16_t sid) {
             slot_t *t = &gs.inv.slots[i];
             int capacity = stacksize-t->count;
             int amount = (f->count < capacity) ? f->count : capacity;
-            printf("*** Distribute %dx %s from slot %d to slot %d\n",
+            printf("*** Distribute %dx %s from slot %d to slot %d (move to stack)\n",
                    amount, ITEMS[f->item].name, sid, i);
             slot_transfer(f,t,amount);
         }
@@ -502,7 +502,7 @@ static void inv_shiftclick(int button, int16_t sid) {
         if (mask & (1LL<<i)) {
             slot_t *t = &gs.inv.slots[i];
             if (t->item == -1) {
-                printf("*** Distribute %dx %s from slot %d to slot %d\n",
+                printf("*** Distribute %dx %s from slot %d to slot %d (move to empty)\n",
                        f->count, ITEMS[f->item].name, sid, i);
                 slot_transfer(f,t,f->count);
                 return;
@@ -845,9 +845,9 @@ int gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(SP_SetSlot) {
-            //dump_packet(pkt);
             switch(tpkt->wid) {
                 case 0:
+                    dump_packet(pkt);
                     // main inventory window (wid=0)
                     assert(tpkt->sid>=0 && tpkt->sid<45);
 
@@ -856,6 +856,7 @@ int gs_packet(MCPacket *pkt) {
                     break;
                 case 255:
                     // drag-slot
+                    dump_packet(pkt);
                     if (gs.inv.drag.item != tpkt->slot.item ||
                         gs.inv.drag.count != tpkt->slot.count ) {
                         printf("*** drag slot corrected by the server\n");
@@ -871,11 +872,11 @@ int gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(CP_ClickWindow) {
-            //dump_packet(pkt);
             // ignore non-inventory windows - we will receive an explicit update
             // for those via SP_SetSlot messages after the window closes,
             // but the main inventory window (wid=0) needs to be tracked
             if (tpkt->wid != 0) break;
+            dump_packet(pkt);
 
             // in this function we do not actually modify the the inventory
             // but just record the action for later - actual change occurs
@@ -919,7 +920,7 @@ int gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(SP_ConfirmTransaction) {
-            //dump_packet(pkt);
+            dump_packet(pkt);
             if (tpkt->wid != 0) break;
 
             int idx = find_invaction(tpkt->aid);

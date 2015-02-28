@@ -1211,7 +1211,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DD  (SP_SetSlot,_1_8_1),
-        SUPPORT_DD  (SP_ConfirmTransaction,_1_8_1),
+        SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
