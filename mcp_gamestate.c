@@ -454,11 +454,9 @@ int64_t find_stackable_slots(int64_t mask, int item) {
         if (!(mask & (1LL<<i))) continue; // skip slots not in the mask
         slot_t *t = &gs.inv.slots[i];
         int capacity = stacksize - t->count;
-        if (t->item != item || capacity <=0 ) {
-            // skip slots of different type or w/o capacity and mask them out
+        if (t->item != item || capacity <=0 )
+            // mask slots that have different type or no capacity
             mask &= ~(1LL<<i);
-            continue;
-        }
     }
 
     return mask;
@@ -479,7 +477,7 @@ static void inv_shiftclick(int button, int16_t sid) {
 
     // this bitmask represents all slots in the inventory area opposite of
     // where the click occured (i.e. quickbar <-> main inventory)
-    int64_t mask = (sid>=9 && sid<=36) ? (0x1ffLL<<36) : (0x3ffffffffLL<<9);
+    int64_t mask = (sid>=9 && sid<=36) ? (0x1ffLL<<36) : (0x7ffffffLL<<9);
 
     // bitmask of the stackable slots with available capacity
     int64_t smask = find_stackable_slots(mask, f->item);
