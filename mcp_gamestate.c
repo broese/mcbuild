@@ -486,6 +486,10 @@ int64_t find_stackable_slots(int64_t mask, int item) {
     return mask;
 }
 
+#define SLOTS_QUICKBAR (0x1ffLL<<36)
+#define SLOTS_MAINAREA (0x7ffffffLL<<9)
+#define SLOTS_ALLINV   (SLOTS_QUICKBAR|SLOTS_MAINAREA)
+
 static void inv_shiftclick(int button, int16_t sid) {
     if (button!=0 && button!=1) {
         printf("button=%d not supported\n",button);
@@ -517,15 +521,15 @@ static void inv_shiftclick(int button, int16_t sid) {
     int64_t mask;
     if (sid>=9 && sid<=36) {
         // main area - try to move to the quickbar
-        mask = (0x1ffLL<<36);
+        mask = SLOTS_QUICKBAR;
     }
     else if (sid>36) {
         // quickbar - try to move to the main area
-        mask = (0x7ffffffLL<<9);
+        mask = SLOTS_MAINAREA;
     }
     else {
         // armor/crafting/product slots - try to make to main or quickbar area
-        mask = (0xfffffffffLL<<9);
+        mask = SLOTS_ALLINV;
     }
 
     // bitmask of the stackable slots with available capacity
