@@ -334,6 +334,30 @@ static void inv_click(int button, int16_t sid) {
         return;
     }
 
+    if (sid==0) {
+        slot_t *s = &gs.inv.slots[0];
+        slot_t *d = &gs.inv.drag;
+
+        // nothing in the product slot, no-op
+        if (s->item<0) {
+            printf("*** No-op: nothing in the product slot\n");
+            return;
+        }
+
+        if (d->item<0 || s->item == d->item) {
+            // we can pick up items from the product slot
+            int stacksize = ITEMS[s->item].flags&I_NSTACK ? 1 :
+                ( ITEMS[s->item].flags&I_S16 ? 16 : 64 );
+
+            if ( d->count + s->count > stacksize)
+                printf("*** No-op: can't pick up another %dx %s into dragslot from product slot\n",
+                       s->count, ITEMS[s->item].name);
+            else
+                slot_transfer(s, d, s->count);
+        }
+        return;
+    }
+
     if (gs.inv.drag.item < 0) {
         // not dragging anything
 
@@ -609,6 +633,10 @@ Paint mode:
   what will we get - 31,11,11,11 or 30,11,11,11, or something else? What about left-mouse paint?
 
 - Items with same block IDs but different metas
+
+- Clear crafting slots on window close
+- Reduce number of items in the crafting slots when crafting
+- when placin to stack, choose a stack with the highest item count first
 */
 
 static void inv_throw(int button, int16_t sid) {
