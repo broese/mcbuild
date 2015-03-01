@@ -475,9 +475,20 @@ static void inv_shiftclick(int button, int16_t sid) {
 
     //TODO: handle armor items
 
-    // this bitmask represents all slots in the inventory area opposite of
-    // where the click occured (i.e. quickbar <-> main inventory)
-    int64_t mask = (sid>=9 && sid<=36) ? (0x1ffLL<<36) : (0x7ffffffLL<<9);
+    // set the bitmask suitable to the inventory area where the item can be moved
+    int64_t mask;
+    if (sid>=9 && sid<=36) {
+        // main area - try to move to the quickbar
+        mask = (0x1ffLL<<36);
+    }
+    else if (sid>36) {
+        // quickbar - try to move to the main area
+        mask = (0x7ffffffLL<<9);
+    }
+    else {
+        // armor/crafting/product slots - try to make to main or quickbar area
+        mask = (0xfffffffffLL<<9);
+    }
 
     // bitmask of the stackable slots with available capacity
     int64_t smask = find_stackable_slots(mask, f->item);
@@ -509,8 +520,6 @@ static void inv_shiftclick(int button, int16_t sid) {
             }
         }
     }
-
-    //TODO: distribute into slots in the same area
 }
 
 static void inv_paint(int button, int16_t sid) {
@@ -574,7 +583,7 @@ static void inv_paint(int button, int16_t sid) {
 
                 for(i=0; i<gs.inv.pcount; i++) {
                     printf("*** Paint %dx %s from drag slot to slot %d\n",
-                           amount, ITEMS[gs.inv.drag.item].name, gs.inv.pslots[i]);                
+                           amount, ITEMS[gs.inv.drag.item].name, gs.inv.pslots[i]);
                     slot_transfer(&gs.inv.drag, &gs.inv.slots[gs.inv.pslots[i]], amount);
                     printf("%d remain in the dragslot\n",gs.inv.drag.count);
                 }
