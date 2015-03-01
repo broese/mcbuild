@@ -976,13 +976,22 @@ int gs_packet(MCPacket *pkt) {
         } _GSP;
 
         case CP_CloseWindow:
-        case SP_CloseWindow:
+        case SP_CloseWindow: {
             dump_packet(pkt);
             // discard anything in dragslot - if you happen to drag
             // some items when the window is closed, they will be thrown
             gs.inv.drag.item = -1;
             prune_slot(&gs.inv.drag);
+
+            // discard the crafting and the product slot
+            int i;
+            for(i=0; i<5; i++) {
+                gs.inv.slots[i].item = -1;
+                prune_slot(&gs.inv.slots[i]);
+            }
+
             break;
+        }
     }
 }
 
