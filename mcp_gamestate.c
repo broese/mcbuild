@@ -598,17 +598,23 @@ static void inv_paint(int button, int16_t sid) {
             }
             printf("Paint end, %d slots\n", gs.inv.pcount);
 
-            //TODO: correct for the slots exceeding their stack limit
-
             if (gs.inv.pcount>0) {
                 int amount = 1;
                 if (button==2)
                     amount = gs.inv.drag.count / gs.inv.pcount;
 
+                int stacksize = ITEMS[gs.inv.drag.item].flags&I_NSTACK ? 1 :
+                    ( ITEMS[gs.inv.drag.item].flags&I_S16 ? 16 : 64 );
+
                 for(i=0; i<gs.inv.pcount; i++) {
+                    int idx = gs.inv.pslots[i];
+                    int slot_amount = amount;
+                    if (gs.inv.slots[idx].count + slot_amount > stacksize)
+                        slot_amount = stacksize - gs.inv.slots[idx].count;
+
                     printf("*** Paint %dx %s from drag slot to slot %d\n",
-                           amount, ITEMS[gs.inv.drag.item].name, gs.inv.pslots[i]);
-                    slot_transfer(&gs.inv.drag, &gs.inv.slots[gs.inv.pslots[i]], amount);
+                           slot_amount, ITEMS[gs.inv.drag.item].name, gs.inv.pslots[i]);
+                    slot_transfer(&gs.inv.drag, &gs.inv.slots[gs.inv.pslots[i]], slot_amount);
                     printf("%d remain in the dragslot\n",gs.inv.drag.count);
                 }
             }
@@ -624,19 +630,12 @@ Things in inventory tracking that still need implementation:
 
 Shift-Click:
 - Armor items
-- Distribution to blocks in the local field
+- when placing to stack, choose a stack with the highest item count first
+- when looking for an empty slot, research and implement the weird choosing method the client uses
 
-Paint mode:
-- limit to the stack size
-- distribution of blocks to unevenly filled slots
-- (research) Assume 4 slots with 30,10,10 and 10 blocks. If we use 1x paint on these 4 blocks,
-  what will we get - 31,11,11,11 or 30,11,11,11, or something else? What about left-mouse paint?
-
+General:
 - Items with same block IDs but different metas
-
-- Clear crafting slots on window close
 - Reduce number of items in the crafting slots when crafting
-- when placin to stack, choose a stack with the highest item count first
 */
 
 static void inv_throw(int button, int16_t sid) {
