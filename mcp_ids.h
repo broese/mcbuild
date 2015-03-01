@@ -166,6 +166,12 @@
 #define I_NSTACK (1<<4)         // Item does not stack (or stack size=1)
 #define I_S16    (1<<5)         // item stacks only by 16
 
+#define I_HELMET(id)     ((id)==0x12a || (id)==0x12e || (id)==0x132 || (id)==0x136 || (id)==0x13a)
+#define I_CHESTPLATE(id) ((id)==0x12b || (id)==0x12f || (id)==0x133 || (id)==0x137 || (id)==0x13b)
+#define I_LEGGINGS(id)   ((id)==0x12c || (id)==0x130 || (id)==0x134 || (id)==0x138 || (id)==0x13c)
+#define I_BOOTS(id)      ((id)==0x12d || (id)==0x131 || (id)==0x135 || (id)==0x139 || (id)==0x13d)
+#define I_ARMOR(id)      (I_HELMET(id) || I_CHESTPLATE(id) || I_LEGGINGS(id) || I_BOOTS(id))
+
 typedef struct _item_id {
     const char * name;
     uint16_t     flags;

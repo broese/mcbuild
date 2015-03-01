@@ -497,7 +497,21 @@ static void inv_shiftclick(int button, int16_t sid) {
 
     int i;
 
-    //TODO: handle armor items
+    // handle armor-type items
+    int armorslot = -1;
+
+    if (I_HELMET(f->item))     armorslot = 5;
+    if (I_CHESTPLATE(f->item)) armorslot = 6;
+    if (I_LEGGINGS(f->item))   armorslot = 7;
+    if (I_BOOTS(f->item))      armorslot = 8;
+
+    slot_t *as = (armorslot>0) ? &gs.inv.slots[armorslot] : NULL;
+
+    if (as && as->item == -1) {
+        slot_transfer(f,as,1);
+        return;
+    }
+
 
     // set the bitmask suitable to the inventory area where the item can be moved
     int64_t mask;
@@ -629,7 +643,6 @@ static void inv_paint(int button, int16_t sid) {
 Things in inventory tracking that still need implementation:
 
 Shift-Click:
-- Armor items
 - when placing to stack, choose a stack with the highest item count first
 - when looking for an empty slot, research and implement the weird choosing method the client uses
 
