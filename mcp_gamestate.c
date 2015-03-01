@@ -535,23 +535,38 @@ static void inv_shiftclick(int button, int16_t sid) {
     // bitmask of the stackable slots with available capacity
     int64_t smask = find_stackable_slots(mask, f->item);
 
+    // if we distribute from the product slot, search in the
+    // opposite direction, so the quickbar gets filled first
+    int start = (sid==0) ? 44 : 8;
+    int end   = (sid==0) ? 9 : 45;
+    int inc   = (sid==0) ? -1 : 1;
+
     if (smask) {
         int stacksize = (ITEMS[f->item].flags&I_S16)?16:64;
-        for(i=9; i<45 && f->count>0; i++) {
-            if (!(smask & (1LL<<i))) continue; // skip slots not in the mask
-            slot_t *t = &gs.inv.slots[i];
-            int capacity = stacksize-t->count;
-            int amount = (f->count < capacity) ? f->count : capacity;
-            printf("*** Distribute %dx %s from slot %d to slot %d (move to stack)\n",
-                   amount, ITEMS[f->item].name, sid, i);
-            slot_transfer(f,t,amount);
+
+        while (f->count>0 && smask) {
+            for(i=start; i!=end; i+=inc) {
+                if (!(smask & (1LL<<i))) continue;
+                int capacity = stacksize-gs.inv.slots[i].count;
+
+                //put as much we can into that slot and update the smask
+                int amount = (f->count > capacity) ? capacity : f->count;
+                printf("*** Distribute %dx %s from slot %d to slot %d (move to stack)\n",
+                       amount, ITEMS[f->item].name, sid, i);
+                slot_transfer(f, &gs.inv.slots[i], amount);
+                smask &= ~(1LL<<i);
+                prune_slot(f);
+
+                break;
+            }
         }
-        prune_slot(f);
+
         return; // do not seek other slots to distribute items even if some remain
+        //TODO: this is probably not the case with the product slot - check this
     }
 
     // next try to find an empty slot
-    for(i=9; i<45; i++) {
+    for(i=start; i!=end; i+=inc) {
         if (mask & (1LL<<i)) {
             slot_t *t = &gs.inv.slots[i];
             if (t->item == -1) {
@@ -647,8 +662,7 @@ static void inv_paint(int button, int16_t sid) {
 Things in inventory tracking that still need implementation:
 
 Shift-Click:
-- when placing to stack, choose a stack with the highest item count first
-- when looking for an empty slot, research and implement the weird choosing method the client uses
+- Continue distributing items to the empty slots from the product slot
 
 General:
 - Items with same block IDs but different metas
