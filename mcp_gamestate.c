@@ -349,11 +349,21 @@ static void inv_click(int button, int16_t sid) {
             int stacksize = ITEMS[s->item].flags&I_NSTACK ? 1 :
                 ( ITEMS[s->item].flags&I_S16 ? 16 : 64 );
 
-            if ( d->count + s->count > stacksize)
+            if ( d->count + s->count > stacksize) {
                 printf("*** No-op: can't pick up another %dx %s into dragslot from product slot\n",
                        s->count, ITEMS[s->item].name);
-            else
+            }
+            else {
                 slot_transfer(s, d, s->count);
+
+                // remove 1x of each source items from the crafting grid
+                int i;
+                for(i=1; i<5; i++) {
+                    if (gs.inv.slots[i].item >= 0)
+                        gs.inv.slots[i].count --;
+                    prune_slot(&gs.inv.slots[i]);
+                }
+            }
         }
         return;
     }
@@ -707,12 +717,8 @@ static void inv_paint(int button, int16_t sid) {
 /*
 Things in inventory tracking that still need implementation:
 
-Shift-Click:
-- Continue distributing items to the empty slots from the product slot
-
 General:
 - Items with same block IDs but different metas
-- Reduce number of items in the crafting slots when crafting
 */
 
 static void inv_throw(int button, int16_t sid) {
