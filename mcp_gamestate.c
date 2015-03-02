@@ -256,6 +256,8 @@ bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory tracking
 
+//TODO: differentiate materials with same block id but different metas, e.g. woodplanks types
+
 #define IAQ  GAR1(gs.inv.iaq)
 #define pIAQ P(gs.inv.iaq)
 #define cIAQ C(gs.inv.iaq)
@@ -547,7 +549,6 @@ static void inv_shiftclick(int button, int16_t sid) {
 
     int stacksize = (ITEMS[gs.inv.slots[sid].item].flags&I_NSTACK) ? 1 :
         ( (ITEMS[gs.inv.slots[sid].item].flags&I_S16) ? 16 : 64 );
-    printf("item=%d (%s), stacksize=%d\n", gs.inv.slots[sid].item, ITEMS[gs.inv.slots[sid].item].name, stacksize);
 
     // if we distribute from the product slot, search in the
     // opposite direction, so the quickbar gets filled first
@@ -565,17 +566,13 @@ static void inv_shiftclick(int button, int16_t sid) {
             if (gs.inv.slots[i].item >= 0 && gs.inv.slots[i].count<craft_times)
                 craft_times=gs.inv.slots[i].count;
 
-        printf("craft_output=%d, craft_times=%d\n", craft_output, craft_times);
-
         // calculate our entire capacity
         int capacity = 0;
         for(i=9; i<45; i++) {
             if (smask & (1LL<<i)) {
-                printf("adding %d capacity from slot %d (stack)\n",(stacksize - gs.inv.slots[i].count),i);
                 capacity += (stacksize - gs.inv.slots[i].count);
             }
             else if (gs.inv.slots[i].item < 0) {
-                printf("adding %d capacity from slot %d (empty)\n",stacksize,i);
                 capacity += stacksize;
             }
         }
@@ -596,9 +593,6 @@ static void inv_shiftclick(int button, int16_t sid) {
         // set our slot 0 to hold that many items
         gs.inv.slots[0].count = craft_output*craft_times;
         if (gs.inv.slots[0].count > capacity) gs.inv.slots[0].count=capacity;
-
-        printf("corrected: craft_output=%d, craft_times=%d (%d total) capacity=%d\n",
-               craft_output, craft_times, gs.inv.slots[0].count, capacity);
     }
 
     if (smask) {
@@ -717,13 +711,6 @@ static void inv_paint(int button, int16_t sid) {
             break;
     }
 }
-
-/*
-Things in inventory tracking that still need implementation:
-
-General:
-- Items with same block IDs but different metas
-*/
 
 static void inv_throw(int button, int16_t sid) {
     if (button!=0 && button!=1) {
