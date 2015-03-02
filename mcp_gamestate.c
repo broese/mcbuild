@@ -535,15 +535,59 @@ static void inv_shiftclick(int button, int16_t sid) {
     // bitmask of the stackable slots with available capacity
     int64_t smask = find_stackable_slots(mask, f->item);
 
+    int stacksize = (ITEMS[gs.inv.slots[sid].item].flags&I_NSTACK) ? 1 :
+        ( (ITEMS[gs.inv.slots[sid].item].flags&I_S16) ? 16 : 64 );
+    printf("item=%d (%s), stacksize=%d\n", gs.inv.slots[sid].item, ITEMS[gs.inv.slots[sid].item].name, stacksize);
+
     // if we distribute from the product slot, search in the
     // opposite direction, so the quickbar gets filled first
     int start = (sid==0) ? 44 : 8;
     int end   = (sid==0) ? 9 : 45;
     int inc   = (sid==0) ? -1 : 1;
 
-    if (smask) {
-        int stacksize = (ITEMS[f->item].flags&I_S16)?16:64;
+    if (sid == 0) {
+        // we are crafting
 
+        // calculate how many times the item can be crafted
+        int craft_output = gs.inv.slots[0].count;
+        int craft_times=64;
+        for(i=1; i<5; i++)
+            if (gs.inv.slots[i].item >= 0 && gs.inv.slots[i].count<craft_times)
+                craft_times=gs.inv.slots[i].count;
+
+        printf("craft_output=%d, craft_times=%d\n", craft_output, craft_times);
+
+        // calculate our entire capacity
+        int capacity = 0;
+        for(i=9; i<45; i++) {
+            if (smask & (1LL<<i)) {
+                printf("adding %d capacity from slot %d (stack)\n",(stacksize - gs.inv.slots[i].count),i);
+                capacity += (stacksize - gs.inv.slots[i].count);
+            }
+            else if (gs.inv.slots[i].item < 0) {
+                printf("adding %d capacity from slot %d (empty)\n",stacksize,i);
+                capacity += stacksize;
+            }
+        }
+
+        // recalculate how many times we can craft w/o exceeding our total capacity
+        while(craft_output*craft_times > capacity) craft_times--;
+
+
+        // remove as many source items
+        for(i=1; i<5; i++) {
+            if (gs.inv.slots[i].item >= 0)
+                gs.inv.slots[i].count -= craft_times;
+            prune_slot(&gs.inv.slots[i]);
+        }
+
+        // set our slot 0 to hold that many items
+        gs.inv.slots[0].count = craft_output*craft_times;
+        printf("corrected: craft_output=%d, craft_times=%d (%d total) capacity=%d\n",
+               craft_output, craft_times, gs.inv.slots[0].count, capacity);
+    }
+
+    if (smask) {
         while (f->count>0 && smask) {
             for(i=start; i!=end; i+=inc) {
                 if (!(smask & (1LL<<i))) continue;
@@ -560,23 +604,25 @@ static void inv_shiftclick(int button, int16_t sid) {
                 break;
             }
         }
-
-        return; // do not seek other slots to distribute items even if some remain
-        //TODO: this is probably not the case with the product slot - check this
+        if (sid > 0)
+            return; // do not seek other slots to distribute items even if some remain
     }
 
     // next try to find an empty slot
-    for(i=start; i!=end; i+=inc) {
+    for(i=start; i!=end && f->count>0; i+=inc) {
         if (mask & (1LL<<i)) {
             slot_t *t = &gs.inv.slots[i];
             if (t->item == -1) {
+                int amount = f->count > stacksize ? stacksize : f->count;
+
                 printf("*** Distribute %dx %s from slot %d to slot %d (move to empty)\n",
-                       f->count, ITEMS[f->item].name, sid, i);
-                slot_transfer(f,t,f->count);
-                return;
+                       amount, ITEMS[f->item].name, sid, i);
+                slot_transfer(f,t,amount);
             }
         }
     }
+
+    // if no trasfer was possible for all items, the remaining items simply stay in the source slot
 }
 
 static void inv_paint(int button, int16_t sid) {

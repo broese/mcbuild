@@ -113,7 +113,7 @@ typedef struct {
 
 typedef struct {
     int16_t item;
-    int8_t  count;
+    int16_t count;  // actually int8_t, but we need to have a larger capacity to deal with crafting
     int16_t damage;
     //nbt_t nbt;
 } slot_t;
