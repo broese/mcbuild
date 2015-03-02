@@ -581,8 +581,10 @@ static void inv_shiftclick(int button, int16_t sid) {
         }
 
         // recalculate how many times we can craft w/o exceeding our total capacity
-        while(craft_output*craft_times > capacity) craft_times--;
-
+        while(craft_output*craft_times > capacity+(craft_output-1)) craft_times--;
+        // (craft_output-1) is necessary to mimic the notchian client behavior -
+        // it will try to fill up all available slots to the full capacity even if
+        // it means losing some remaining items from the last crafted batch
 
         // remove as many source items
         for(i=1; i<5; i++) {
@@ -593,6 +595,8 @@ static void inv_shiftclick(int button, int16_t sid) {
 
         // set our slot 0 to hold that many items
         gs.inv.slots[0].count = craft_output*craft_times;
+        if (gs.inv.slots[0].count > capacity) gs.inv.slots[0].count=capacity;
+
         printf("corrected: craft_output=%d, craft_times=%d (%d total) capacity=%d\n",
                craft_output, craft_times, gs.inv.slots[0].count, capacity);
     }
