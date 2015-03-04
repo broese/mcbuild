@@ -156,16 +156,32 @@
 #define MAXPACKETTYPES          0x100
 
 ////////////////////////////////////////////////////////////////////////////////
-// Block IDs
+// Block type flags
 
-#define I_ITEM   (1<<0)         // the ID is an item, i.e. cannot be placed as a block
-#define I_MTYPE  (1<<1)         // the metadata defines the subtype (i.e. color or material), 
-                                // unlike MPOS, this is stored in the inventory slots
-#define I_MPOS   (1<<2)         // the metadata controls orientation/position - for placed blocks only
-#define I_MSTATE (1<<3)         // the metadata contains state information - something not dependent on placement
-#define I_NSTACK (1<<4)         // Item does not stack (or stack size=1)
-#define I_S16    (1<<5)         // item stacks only by 16
+// the ID is an item, i.e. cannot be placed as a block
+#define I_ITEM   (1<<0)
 
+// Item does not stack (or stack size=1)
+#define I_NSTACK (1<<1)
+
+// item stacks only by 16 (e.g. enderpearls)
+#define I_S16    (1<<2)
+
+// (blocks or inventory) the metadata defines the subtype likr type, color or
+// material. The subtype names are available in mname array
+#define I_MTYPE  (1<<3)
+
+// the metadata defines the block's state - e.g. gate open/close
+#define I_MSTATE (1<<4)
+
+// (placed blocks only) - metadata defines the placement orientation, but we
+// provide no specific support for it, so it can be ignored
+// Once support for certain block positioning is implemented, remove I_MPOS
+// flag and define a separate one (like I_SLAB)
+#define I_MPOS   (1<<8)
+
+
+// macros to determine armor type
 #define I_HELMET(id)     ((id)==0x12a || (id)==0x12e || (id)==0x132 || (id)==0x136 || (id)==0x13a)
 #define I_CHESTPLATE(id) ((id)==0x12b || (id)==0x12f || (id)==0x133 || (id)==0x137 || (id)==0x13b)
 #define I_LEGGINGS(id)   ((id)==0x12c || (id)==0x130 || (id)==0x134 || (id)==0x138 || (id)==0x13c)
@@ -174,7 +190,7 @@
 
 typedef struct _item_id {
     const char * name;
-    uint16_t     flags;
+    uint64_t     flags;
     const char * mname[16];
 } item_id;
 
