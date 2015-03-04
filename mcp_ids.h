@@ -524,7 +524,8 @@ static const item_id ITEMS[] = {
 
     [0x140] = { "Cooked Porkchop", I_ITEM },
     [0x141] = { "Painting", I_ITEM },
-    [0x142] = { "Golden Apple", I_ITEM },
+    [0x142] = { "Golden Apple", I_ITEM,
+                { NULL, "Enchanted" }, },
     [0x143] = { "Sign", I_ITEM|I_S16 },
     [0x144] = { "Wooden Door", I_ITEM|I_NSTACK },
     [0x145] = { "Bucket", I_ITEM },
@@ -552,8 +553,10 @@ static const item_id ITEMS[] = {
     [0x15a] = { "Fishing Rod", I_ITEM|I_NSTACK },
     [0x15b] = { "Clock", I_ITEM|I_NSTACK },
     [0x15c] = { "Glowstone Dust", I_ITEM },
-    [0x15d] = { "Fish", I_ITEM },
-    [0x15e] = { "Cooked Fish", I_ITEM },
+    [0x15d] = { "Raw Fish", I_ITEM,
+                { "Nondescript", "Salmon", "Clownfish", "Pufferfish" }, },
+    [0x15e] = { "Cooked Fish", I_ITEM,
+                { "Nondescript", "Salmon", "Clownfish", "Pufferfish" }, },
     [0x15f] = { "Dye", I_ITEM|I_MTYPE,
                 { "Ink Sac", "Rose Red", "Cactus Green", "Cocoa Beans",
                   "Lapis Lazuli", "Purple", "Cyan", "L.Gray",
@@ -582,7 +585,7 @@ static const item_id ITEMS[] = {
     [0x172] = { "Ghast Tear", I_ITEM },
     [0x173] = { "Gold Nugget", I_ITEM },
     [0x174] = { "Nether Wart", I_ITEM },
-    [0x175] = { "Potions", I_ITEM },
+    [0x175] = { "Potion", I_ITEM, }, //TODO: potion names
     [0x176] = { "Glass Bottle", I_ITEM },
     [0x177] = { "Spider Eye", I_ITEM },
     [0x178] = { "Fermented Eye", I_ITEM },
@@ -612,7 +615,7 @@ static const item_id ITEMS[] = {
     [0x18f] = { "Nether Star", I_ITEM },
 
     [0x190] = { "Pumpkin Pie", I_ITEM },
-    [0x191] = { "Fireworks", I_ITEM },
+    [0x191] = { "Firework Rocket", I_ITEM },
     [0x192] = { "Firework Charge", I_ITEM },
     [0x193] = { "Enchanted Book", I_ITEM },
     [0x194] = { "Comparator", I_ITEM },
@@ -620,13 +623,29 @@ static const item_id ITEMS[] = {
     [0x196] = { "Quartz", I_ITEM },
     [0x197] = { "TNT Minecart", I_ITEM },
     [0x198] = { "Hopper Minecart", I_ITEM },
+    [0x199] = { "Prismarine Shard", I_ITEM },
+    [0x19a] = { "Prismarine Crystal", I_ITEM },
+    [0x19b] = { "Raw Rabbit", I_ITEM },
+    [0x19c] = { "Cooked Rabbit", I_ITEM },
+    [0x19d] = { "Rabbit Stew", I_ITEM },
+    [0x19e] = { "Rabbit Foot", I_ITEM },
+    [0x19f] = { "Rabbit Hide", I_ITEM },
 
+    [0x1a0] = { "Armor Stand", I_ITEM },
     [0x1a1] = { "Iron Horse Armor", I_ITEM },
     [0x1a2] = { "Golden Horse Armor", I_ITEM },
     [0x1a3] = { "Diamond Horse Armor", I_ITEM },
     [0x1a4] = { "Lead", I_ITEM },
     [0x1a5] = { "Name Tag", I_ITEM },
     [0x1a6] = { "Cmd Block Minecart", I_ITEM },
+    [0x1a7] = { "Mutton", I_ITEM },
+    [0x1a8] = { "Cooked Mutton", I_ITEM },
+    [0x1a9] = { "Banner", I_ITEM },
+    [0x1ab] = { "Spruce Door", I_ITEM },
+    [0x1ac] = { "Birch Door", I_ITEM },
+    [0x1ad] = { "Jungle Door", I_ITEM },
+    [0x1ae] = { "Acacia Door", I_ITEM },
+    [0x1af] = { "Dark Oak Door", I_ITEM },
 
     [0x8d0] = { "Record 13", I_ITEM },
     [0x8d1] = { "Record Cat", I_ITEM },
@@ -642,7 +661,7 @@ static const item_id ITEMS[] = {
     [0x8db] = { "Record Wait", I_ITEM },
 
 
-    [0x8ff] = { NULL },
+    [0x8ff] = { NULL }, //Terminator
 };
 
 ////////////////////////////////////////////////////////////////////////////////
