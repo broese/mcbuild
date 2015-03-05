@@ -205,7 +205,7 @@ const item_id ITEMS[] = {
     [0x9d] = { "Activator Rail", I_MPOS|I_STATE },              // P: dir, S: active
     [0x9e] = { "Dropper", I_MPOS|I_STATE },                     // P: dir, S: active
     [0x9f] = { "Stained Clay", I_MTYPE, MNAMES_COLOR },
-    
+
     [0xa0] = { "Stained Glass Pane", I_MTYPE, MNAMES_COLOR },
     [0xa1] = { "Leaves2", I_MTYPE|I_STATE, MNAMES_NEWWOOD },    // S: decay
     [0xa2] = { "Wood2", I_MTYPE|I_MPOS, MNAMES_NEWWOOD },       // P: dir
@@ -223,13 +223,13 @@ const item_id ITEMS[] = {
     [0xad] = { "Coal Block" },
     [0xae] = { "Packed Ice" },
     [0xaf] = { "Large Flower", I_MTYPE|I_STATE,                 // S: top/bottom
-               { "Sunflower", "Lilac", "DblTallgrass", "Large Fern", 
+               { "Sunflower", "Lilac", "DblTallgrass", "Large Fern",
                  "Rose Bush", "Peony", NULL, NULL }, },
 
     [0xb0] = { "Standing Banner", I_MPOS },                     // P: dir
     [0xb1] = { "Wall Banner", I_MPOS },                         // P: dir
     [0xb2] = { "Inv. Daylight Sensor" },
-    [0xb3] = { "Red Sandstone", I_MTYPE, 
+    [0xb3] = { "Red Sandstone", I_MTYPE,
                { NULL, "Chiseled", "Smooth"} },
     [0xb4] = { "Red Sandstone Stairs", I_MPOS },                // P: dir
     [0xb5] = { "Red Sandstone D-Slab", I_MTYPE,
