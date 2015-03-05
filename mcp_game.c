@@ -170,48 +170,6 @@ static void hole_radar(MCPacketQueue *sq) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Inventory
-
-char * get_item_name(char *buf, int16_t item, int16_t dmg) {
-    if (item == -1) {
-        sprintf(buf, "-");
-        return buf;
-    }
-
-    if (ITEMS[item].name) {
-        int pos = sprintf(buf, "%s", ITEMS[item].name);
-        if ((ITEMS[item].flags&I_MTYPE) && ITEMS[item].mname[dmg])
-            sprintf(buf+pos, " (%s)",ITEMS[item].mname[dmg]);
-    }
-    else {
-        printf(buf, "???");
-    }
-    return buf;
-}
-
-static void dump_inventory() {
-    int i;
-    printf("Dumping inventory:\n");
-    for(i=-1; i<45; i++) {
-        slot_t *s;
-        if (i<0) {
-            s=&gs.inv.drag;
-            printf(" DS : ");
-        }
-        else {
-            s=&gs.inv.slots[i];
-            printf(" %2d : ", i);
-        }
-
-        char buf[4096];
-        if (get_item_name(buf, s->item, s->damage))
-            printf("%-20s x%-2d\n", buf, s->count);
-        else
-            printf("%4x x%-2d dmg=%d\n",s->item,s->count,s->damage);
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
 
 static void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {

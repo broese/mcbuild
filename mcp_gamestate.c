@@ -258,6 +258,28 @@ bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
 
 //TODO: differentiate materials with same block id but different metas, e.g. woodplanks types
 
+void dump_inventory() {
+    int i;
+    printf("Dumping inventory:\n");
+    for(i=-1; i<45; i++) {
+        slot_t *s;
+        if (i<0) {
+            s=&gs.inv.drag;
+            printf(" DS : ");
+        }
+        else {
+            s=&gs.inv.slots[i];
+            printf(" %2d : ", i);
+        }
+
+        char buf[4096];
+        if (get_item_name(buf, s->item, s->damage))
+            printf("%-20s x%-2d\n", buf, s->count);
+        else
+            printf("%4x x%-2d dmg=%d\n",s->item,s->count,s->damage);
+    }
+}
+
 #define IAQ  GAR1(gs.inv.iaq)
 #define pIAQ P(gs.inv.iaq)
 #define cIAQ C(gs.inv.iaq)
