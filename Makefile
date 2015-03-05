@@ -15,10 +15,10 @@ endif
 
 all: mcproxy mcpdump
 
-mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o
+mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o mcp_ids.o
 	$(CC) -o $@ $^ $(LIBS)
 
-mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o
+mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o mcp_ids.o
 	$(CC) -o $@ $^ $(LIBS)
 
 varint: varint.c
@@ -51,6 +51,7 @@ mcp_gamestate.o: mcp_gamestate.h mcp_ids.h
 
 mcp_game.o: mcp_gamestate.h mcp_game.h mcp_ids.h mcp_packet.h
 
+mcp_ids.o: mcp_ids.h
 
 
 #main.o: anvil.h nbt.h draw.h
