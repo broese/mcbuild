@@ -256,7 +256,23 @@ bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory tracking
 
-//TODO: differentiate materials with same block id but different metas, e.g. woodplanks types
+static inline int sameitem(slot_t *a, slot_t *b) {
+    //Note: we don't need to consider sameness of items like
+    // 0x4b/0x4c (Redstone Torch on/off), since one type
+    // may only appear as a block in the map, never as item
+
+    if (a->item != b->item) return 0;
+
+    // non-stackable items are never "same"
+    if (ITEMS[a->item].flags&I_NSTACK) return 0;
+
+    // items w/o I_MTYPE do not use meta for type
+    if (!(ITEMS[a->item].flags&I_MTYPE)) return 1;
+
+    // other bits may be active on the map, but in the inventory
+    // they will be same for the same material
+    return a->damage == b->damage;
+}
 
 void dump_inventory() {
     int i;
@@ -319,6 +335,7 @@ static int slot_transfer(slot_t *f, slot_t *t, int count) {
     if (t->item == -1) {
         // destination slot is empty
         t->item = f->item;
+        t->damage = f->damage;
         t->count = count;
         f->count-=count;
 
@@ -328,9 +345,7 @@ static int slot_transfer(slot_t *f, slot_t *t, int count) {
         return 1;
     }
 
-    if (f->item == t->item) {
-        // item type is the same
-
+    if (sameitem(f,t)) {
         t->count+=count;
         f->count-=count;
 
@@ -339,6 +354,8 @@ static int slot_transfer(slot_t *f, slot_t *t, int count) {
         prune_slot(f);
         return 1;
     }
+
+    printf("Attempting slot_transfer with different item types:\n");
 
     assert(0);
 }
@@ -368,7 +385,7 @@ static void inv_click(int button, int16_t sid) {
             return;
         }
 
-        if (d->item<0 || s->item == d->item) {
+        if (d->item<0 || sameitem(s,d)) {
             // we can pick up items from the product slot
             int stacksize = ITEMS[s->item].flags&I_NSTACK ? 1 :
                 ( ITEMS[s->item].flags&I_S16 ? 16 : 64 );
@@ -467,8 +484,7 @@ static void inv_click(int button, int16_t sid) {
 
     // clicking with a full hand on a non-empty slot
 
-    if (s->item != gs.inv.drag.item ||
-        ITEMS[s->item].flags&I_NSTACK ) {
+    if (!sameitem(s,&gs.inv.drag) ) {
         // the slot conains a different type of item, or the items
         // are non-stackable (e.g. weapons) - swap items
         printf("*** Swap %dx %s in the drag slot with %dx %s in slot %d\n",
@@ -501,18 +517,18 @@ static void inv_click(int button, int16_t sid) {
     prune_slot(&gs.inv.drag);
 }
 
-int64_t find_stackable_slots(int64_t mask, int item) {
+int64_t find_stackable_slots(int64_t mask, slot_t *s) {
     // return empty mask if the item itself is non-stackable
-    if (ITEMS[item].flags&I_NSTACK) return 0LL;
+    if (ITEMS[s->item].flags&I_NSTACK) return 0LL;
 
-    int stacksize = (ITEMS[item].flags&I_S16)?16:64;
+    int stacksize = (ITEMS[s->item].flags&I_S16)?16:64;
 
     int i;
     for(i=9; i<45; i++) {
         if (!(mask & (1LL<<i))) continue; // skip slots not in the mask
         slot_t *t = &gs.inv.slots[i];
         int capacity = stacksize - t->count;
-        if (t->item != item || capacity <=0 )
+        if (!sameitem(t,s) || capacity <=0 )
             // mask slots that have different type or no capacity
             mask &= ~(1LL<<i);
     }
@@ -567,7 +583,7 @@ static void inv_shiftclick(int button, int16_t sid) {
     }
 
     // bitmask of the stackable slots with available capacity
-    int64_t smask = find_stackable_slots(mask, f->item);
+    int64_t smask = find_stackable_slots(mask, f);
 
     int stacksize = (ITEMS[gs.inv.slots[sid].item].flags&I_NSTACK) ? 1 :
         ( (ITEMS[gs.inv.slots[sid].item].flags&I_S16) ? 16 : 64 );
