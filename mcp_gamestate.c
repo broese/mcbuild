@@ -463,7 +463,7 @@ static void inv_click(int button, int16_t sid) {
     // clicking with a full hand on a slot
 
     slot_t *s = &gs.inv.slots[sid];
-    if (s->item == -1) {
+    if (s->item<0) {
         // the target slot is empty
         switch (button) {
             case 0:
@@ -547,7 +547,7 @@ static void inv_shiftclick(int button, int16_t sid) {
     }
 
     slot_t *f = &gs.inv.slots[sid];
-    if (f->item == -1) return; // shift-click on an empty slot - no-op
+    if (f->item<0) return; // shift-click on an empty slot - no-op
 
     int i;
 
@@ -561,7 +561,8 @@ static void inv_shiftclick(int button, int16_t sid) {
 
     slot_t *as = (armorslot>0) ? &gs.inv.slots[armorslot] : NULL;
 
-    if (as && as->item == -1) {
+    // armor item and the appropriate slot is empty?
+    if (as && as->item<0) {
         slot_transfer(f,as,1);
         return;
     }
@@ -600,6 +601,8 @@ static void inv_shiftclick(int button, int16_t sid) {
         // calculate how many times the item can be crafted
         int craft_output = gs.inv.slots[0].count;
         int craft_times=64;
+        // we can craft at most as many times as the least source material item
+        // in the crafting slots (1..4)
         for(i=1; i<5; i++)
             if (gs.inv.slots[i].item >= 0 && gs.inv.slots[i].count<craft_times)
                 craft_times=gs.inv.slots[i].count;
@@ -607,10 +610,10 @@ static void inv_shiftclick(int button, int16_t sid) {
         // calculate our entire capacity
         int capacity = 0;
         for(i=9; i<45; i++) {
-            if (smask & (1LL<<i)) {
+            if (smask & (1LL<<i)) { // stackable slots
                 capacity += (stacksize - gs.inv.slots[i].count);
             }
-            else if (gs.inv.slots[i].item < 0) {
+            else if (gs.inv.slots[i].item < 0) { // empty slots
                 capacity += stacksize;
             }
         }
@@ -650,8 +653,9 @@ static void inv_shiftclick(int button, int16_t sid) {
                 break;
             }
         }
-        if (sid > 0)
-            return; // do not seek other slots to distribute items even if some remain
+
+        if (sid > 0) // except when we are crafting -
+            return;  // do not seek other slots to distribute items even if some remain
     }
 
     // next try to find an empty slot
