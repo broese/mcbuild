@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include "mcp_packet.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //// Protocol IDs
@@ -282,4 +283,4 @@ extern const char * ANSI_BLOCK[];
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const char * get_item_name(char *buf, int16_t item, int16_t dmg);
+const char * get_item_name(char *buf, slot_t *s);

@@ -289,7 +289,7 @@ void dump_inventory() {
         }
 
         char buf[4096];
-        if (get_item_name(buf, s->item, s->damage))
+        if (get_item_name(buf, s))
             printf("%-20s x%-2d\n", buf, s->count);
         else
             printf("%4x x%-2d dmg=%d\n",s->item,s->count,s->damage);
@@ -301,7 +301,8 @@ void dump_inventory() {
 #define cIAQ C(gs.inv.iaq)
 
 static void dump_slot(slot_t *s) {
-    printf("item=%d", s->item);
+    char buf[256];
+    printf("item=%d (%s)", s->item, get_item_name(buf, s));
     if (s->item != -1) {
         printf(", count=%d, damage=%d", s->count, s->damage);
     }
@@ -370,6 +371,8 @@ static void slot_swap(slot_t *f, slot_t *t) {
 #define GREATERHALF(x) (((x)>>1)+((x)&1))
 
 static void inv_click(int button, int16_t sid) {
+    char name[256]; // buffer for the item name printing
+
     if (button!=0 && button!=1) {
         printf("button=%d not supported\n",button);
         return;
@@ -392,7 +395,7 @@ static void inv_click(int button, int16_t sid) {
 
             if ( d->count + s->count > stacksize) {
                 printf("*** No-op: can't pick up another %dx %s into dragslot from product slot\n",
-                       s->count, ITEMS[s->item].name);
+                       s->count, get_item_name(name,s));
             }
             else {
                 slot_transfer(s, d, s->count);
@@ -424,13 +427,13 @@ static void inv_click(int button, int16_t sid) {
             case 0:
                 // left-click
                 printf("*** Pick %dx %s from slot %d to drag-slot\n",
-                       s->count, ITEMS[s->item].name, sid);
+                       s->count, get_item_name(name,s), sid);
                 slot_transfer(s, &gs.inv.drag, s->count);
                 break;
             case 1:
                 // right-click
                 printf("*** Pick %dx %s from slot %d to drag-slot\n",
-                       GREATERHALF(s->count), ITEMS[s->item].name, sid);
+                       GREATERHALF(s->count), get_item_name(name,s), sid);
                 slot_transfer(s, &gs.inv.drag, GREATERHALF(s->count));
                 break;
         }
@@ -446,13 +449,13 @@ static void inv_click(int button, int16_t sid) {
             case 0:
                 // left-click - throw all
                 printf("*** Throw out %dx %s from drag slot\n",
-                       gs.inv.drag.count, ITEMS[gs.inv.drag.item].name );
+                       gs.inv.drag.count, get_item_name(name,&gs.inv.drag) );
                 gs.inv.drag.count = 0;
                 break;
             case 1:
                 // right-click - throw one
                 printf("*** Throw out 1x %s from drag slot\n",
-                       ITEMS[gs.inv.drag.item].name);
+                       get_item_name(name,&gs.inv.drag));
                 gs.inv.drag.count--;
                 break;
         }
@@ -469,13 +472,13 @@ static void inv_click(int button, int16_t sid) {
             case 0:
                 // left-click - put all
                 printf("*** Put %dx %s from drag slot to slot %d\n",
-                       gs.inv.drag.count, ITEMS[gs.inv.drag.item].name, sid);
+                       gs.inv.drag.count, get_item_name(name,&gs.inv.drag), sid);
                 slot_transfer(&gs.inv.drag, s, gs.inv.drag.count);
                 break;
             case 1:
                 // right-click - put one
                 printf("*** Put 1x %s from drag slot to slot %d\n",
-                       ITEMS[gs.inv.drag.item].name, sid);
+                       get_item_name(name,&gs.inv.drag), sid);
                 slot_transfer(&gs.inv.drag, s, 1);
                 break;
         }
@@ -485,11 +488,12 @@ static void inv_click(int button, int16_t sid) {
     // clicking with a full hand on a non-empty slot
 
     if (!sameitem(s,&gs.inv.drag) ) {
+        char name2[256];
         // the slot conains a different type of item, or the items
         // are non-stackable (e.g. weapons) - swap items
         printf("*** Swap %dx %s in the drag slot with %dx %s in slot %d\n",
-               gs.inv.drag.count, ITEMS[gs.inv.drag.item].name,
-               s->count, ITEMS[s->item].name, sid);
+               gs.inv.drag.count, get_item_name(name,&gs.inv.drag),
+               s->count, get_item_name(name2,s), sid);
 
         slot_swap(s, &gs.inv.drag);
         return;
@@ -504,13 +508,13 @@ static void inv_click(int button, int16_t sid) {
 
     if (count > 0) {
         printf("*** Add %dx %s from drag slot to slot %d\n",
-               count, ITEMS[gs.inv.drag.item].name, sid);
+               count, get_item_name(name,&gs.inv.drag), sid);
         s->count += count;
         gs.inv.drag.count -= count;
     }
     else {
         printf("*** Can't put more %s from drag slot to slot %d - slot full\n",
-               ITEMS[gs.inv.drag.item].name, sid);
+               get_item_name(name,&gs.inv.drag), sid);
     }
 
     prune_slot(s);
@@ -541,6 +545,8 @@ int64_t find_stackable_slots(int64_t mask, slot_t *s) {
 #define SLOTS_ALLINV   (SLOTS_QUICKBAR|SLOTS_MAINAREA)
 
 static void inv_shiftclick(int button, int16_t sid) {
+    char name[256]; // buffer for the item name printing
+
     if (button!=0 && button!=1) {
         printf("button=%d not supported\n",button);
         return;
@@ -645,7 +651,7 @@ static void inv_shiftclick(int button, int16_t sid) {
                 //put as much we can into that slot and update the smask
                 int amount = (f->count > capacity) ? capacity : f->count;
                 printf("*** Distribute %dx %s from slot %d to slot %d (move to stack)\n",
-                       amount, ITEMS[f->item].name, sid, i);
+                       amount, get_item_name(name,f), sid, i);
                 slot_transfer(f, &gs.inv.slots[i], amount);
                 smask &= ~(1LL<<i);
                 prune_slot(f);
@@ -666,7 +672,7 @@ static void inv_shiftclick(int button, int16_t sid) {
                 int amount = f->count > stacksize ? stacksize : f->count;
 
                 printf("*** Distribute %dx %s from slot %d to slot %d (move to empty)\n",
-                       amount, ITEMS[f->item].name, sid, i);
+                       amount, get_item_name(name,f), sid, i);
                 slot_transfer(f,t,amount);
             }
         }
@@ -676,6 +682,8 @@ static void inv_shiftclick(int button, int16_t sid) {
 }
 
 static void inv_paint(int button, int16_t sid) {
+    char name[256]; // buffer for the item name printing
+
     if (!((button>=0 && button<=2) || (button>=4 && button<=6))) {
         printf("button=%d not supported\n",button);
         return;
@@ -742,7 +750,7 @@ static void inv_paint(int button, int16_t sid) {
                         slot_amount = stacksize - gs.inv.slots[idx].count;
 
                     printf("*** Paint %dx %s from drag slot to slot %d\n",
-                           slot_amount, ITEMS[gs.inv.drag.item].name, gs.inv.pslots[i]);
+                           slot_amount, get_item_name(name,&gs.inv.drag), gs.inv.pslots[i]);
                     slot_transfer(&gs.inv.drag, &gs.inv.slots[gs.inv.pslots[i]], slot_amount);
                     printf("%d remain in the dragslot\n",gs.inv.drag.count);
                 }
@@ -755,6 +763,8 @@ static void inv_paint(int button, int16_t sid) {
 }
 
 static void inv_throw(int button, int16_t sid) {
+    char name[256]; // buffer for the item name printing
+
     if (button!=0 && button!=1) {
         printf("button=%d not supported\n",button);
         return;
@@ -768,7 +778,7 @@ static void inv_throw(int button, int16_t sid) {
     int amount = button ? s->count : 1;
 
     printf("*** Throw out %dx %s from slot %d\n",
-           amount, ITEMS[s->item].name, sid);
+           amount, get_item_name(name,s), sid);
 
     s->count -= amount;
     prune_slot(s);

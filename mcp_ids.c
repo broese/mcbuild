@@ -466,16 +466,16 @@ const item_id ITEMS[] = {
     [0x8ff] = { NULL }, //Terminator
 };
 
-const char * get_item_name(char *buf, int16_t item, int16_t dmg) {
-    if (item == -1) {
+const char * get_item_name(char *buf, slot_t *s) {
+    if (s->item<0) {
         sprintf(buf, "-");
         return buf;
     }
 
-    if (ITEMS[item].name) {
-        int pos = sprintf(buf, "%s", ITEMS[item].name);
-        if ((ITEMS[item].flags&I_MTYPE) && ITEMS[item].mname[dmg])
-            sprintf(buf+pos, " (%s)",ITEMS[item].mname[dmg]);
+    if (ITEMS[s->item].name) {
+        int pos = sprintf(buf, "%s", ITEMS[s->item].name);
+        if ((ITEMS[s->item].flags&I_MTYPE) && ITEMS[s->item].mname[s->damage])
+            sprintf(buf+pos, " (%s)",ITEMS[s->item].mname[s->damage]);
     }
     else {
         printf(buf, "???");
