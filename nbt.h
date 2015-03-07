@@ -86,5 +86,6 @@ typedef struct nbt_t {
 } nbt_t;
 
 nbt_t * nbt_parse(uint8_t **p);
+nbt_t * nbt_clone(nbt_t *nbt);
 void nbt_dump(nbt_t *nbt);
 void nbt_free(nbt_t *nbt);

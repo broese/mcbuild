@@ -200,6 +200,73 @@ void nbt_free(nbt_t *nbt) {
     lh_free(nbt);
 }
 
+nbt_t * nbt_clone(nbt_t *src) {
+    // allocate NBT object
+    lh_create_obj(nbt_t,dst);
+
+    // copy static elements
+    dst->type = src->type;
+    dst->count = src->count;
+    if (src->name) dst->name = strdup(src->name);
+
+    int i;
+
+    // copy data
+    switch (src->type) {
+        case NBT_BYTE:
+            dst->b = src->b;
+            break;
+
+        case NBT_SHORT:
+            dst->s = src->s;
+            break;
+
+        case NBT_INT:
+            dst->i = src->i;
+            break;
+
+        case NBT_LONG:
+            dst->l = src->l;
+            break;
+
+        case NBT_FLOAT:
+            dst->f = src->f;
+            break;
+
+        case NBT_DOUBLE:
+            dst->d = src->d;
+            break;
+
+        case NBT_BYTE_ARRAY:
+            lh_alloc_num(dst->ba, dst->count);
+            memmove(dst->ba, src->ba, dst->count);
+            break;
+
+        case NBT_INT_ARRAY:
+            lh_alloc_num(dst->ia, dst->count);
+            memmove(dst->ia, src->ia, dst->count*sizeof(*dst->ia));
+            break;
+
+        case NBT_STRING:
+            dst->st = strdup(src->st);
+            break;
+
+        case NBT_LIST:
+            lh_alloc_num(dst->li, dst->count);
+            for(i=0; i<dst->count; i++)
+                dst->li[i] = nbt_clone(src->li[i]);
+            break;
+
+        case NBT_COMPOUND:
+            lh_alloc_num(dst->co, dst->count);
+            for(i=0; i<dst->count; i++)
+                dst->co[i] = nbt_clone(src->co[i]);
+            break;
+    }
+
+    return dst;
+}
+
 #if TEST
 
 int main(int ac, char **av) {
@@ -216,7 +283,12 @@ int main(int ac, char **av) {
     nbt_t * nbt = nbt_parse(&p);
     printf("Consumed %zd bytes\n",p-buf);
     nbt_dump(nbt);
+
+    nbt_t * newnbt = nbt_clone(nbt);
+    nbt_dump(newnbt);
+
     nbt_free(nbt);
+    nbt_free(newnbt);
 
     lh_free(buf);
 }
