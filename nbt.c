@@ -201,6 +201,8 @@ void nbt_free(nbt_t *nbt) {
 }
 
 nbt_t * nbt_clone(nbt_t *src) {
+    if (!src) return NULL;
+
     // allocate NBT object
     lh_create_obj(nbt_t,dst);
 
