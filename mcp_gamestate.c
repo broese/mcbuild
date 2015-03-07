@@ -393,10 +393,7 @@ static void inv_click(int button, int16_t sid) {
 
         if (d->item<0 || sameitem(s,d)) {
             // we can pick up items from the product slot
-            int stacksize = ITEMS[s->item].flags&I_NSTACK ? 1 :
-                ( ITEMS[s->item].flags&I_S16 ? 16 : 64 );
-
-            if ( d->count + s->count > stacksize) {
+            if ( d->count + s->count > STACKSIZE(s->item)) {
                 printf("*** No-op: can't pick up another %dx %s into dragslot from product slot\n",
                        s->count, get_item_name(name,s));
             }
@@ -528,13 +525,11 @@ int64_t find_stackable_slots(int64_t mask, slot_t *s) {
     // return empty mask if the item itself is non-stackable
     if (ITEMS[s->item].flags&I_NSTACK) return 0LL;
 
-    int stacksize = (ITEMS[s->item].flags&I_S16)?16:64;
-
     int i;
     for(i=9; i<45; i++) {
         if (!(mask & (1LL<<i))) continue; // skip slots not in the mask
         slot_t *t = &gs.inv.slots[i];
-        int capacity = stacksize - t->count;
+        int capacity = STACKSIZE(s->item) - t->count;
         if (!sameitem(t,s) || capacity <=0 )
             // mask slots that have different type or no capacity
             mask &= ~(1LL<<i);
@@ -595,8 +590,7 @@ static void inv_shiftclick(int button, int16_t sid) {
     // bitmask of the stackable slots with available capacity
     int64_t smask = find_stackable_slots(mask, f);
 
-    int stacksize = (ITEMS[gs.inv.slots[sid].item].flags&I_NSTACK) ? 1 :
-        ( (ITEMS[gs.inv.slots[sid].item].flags&I_S16) ? 16 : 64 );
+    int stacksize = STACKSIZE(gs.inv.slots[sid].item);
 
     // if we distribute from the product slot, search in the
     // opposite direction, so the quickbar gets filled first
@@ -743,8 +737,7 @@ static void inv_paint(int button, int16_t sid) {
                 if (button==2)
                     amount = gs.inv.drag.count / gs.inv.pcount;
 
-                int stacksize = ITEMS[gs.inv.drag.item].flags&I_NSTACK ? 1 :
-                    ( ITEMS[gs.inv.drag.item].flags&I_S16 ? 16 : 64 );
+                int stacksize = STACKSIZE(gs.inv.drag.item);
 
                 for(i=0; i<gs.inv.pcount; i++) {
                     int idx = gs.inv.pslots[i];
