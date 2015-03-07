@@ -196,20 +196,36 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
     if (s->item != -1) {
         s->count  = lh_read_char(p);
         s->damage = lh_read_short_be(p);
-        //TODO: parse NBT
+        s->nbt    = nbt_parse(&p);
     }
     else {
         s->count = 0;
         s->damage= 0;
+        s->nbt = NULL;
     }
     return p;
 }
 
-static void dump_slot(slot_t *s) {
-    printf("item=%d", s->item);
+void dump_slot(slot_t *s) {
+    char buf[256];
+    printf("item=%d (%s)", s->item, get_item_name(buf,s));
     if (s->item != -1) {
         printf(", count=%d, damage=%d", s->count, s->damage);
+        if (s->nbt) {
+            printf(", nbt=available:\n");
+            nbt_dump(s->nbt);
+        }
     }
+}
+
+void clear_slot(slot_t *s) {
+    if (s->nbt) {
+        nbt_free(s->nbt);
+        s->nbt = NULL;
+    }
+    s->item = -1;
+    s->count = 0;
+    s->damage = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -964,6 +980,10 @@ DUMP_BEGIN(SP_SetSlot) {
     dump_slot(&tpkt->slot);
 } DUMP_END;
 
+FREE_BEGIN(SP_SetSlot) {
+    clear_slot(&tpkt->slot);
+} FREE_END;
+
 ////////////////////////////////////////////////////////////////////////////////
 // 0x32 SP_ConfirmTransaction
 
@@ -1180,6 +1200,13 @@ DUMP_BEGIN(CP_ClickWindow) {
     dump_slot(&tpkt->slot);
 } DUMP_END;
 
+FREE_BEGIN(CP_ClickWindow) {
+    clear_slot(&tpkt->slot);
+} FREE_END;
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
@@ -1210,7 +1237,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_Explosion,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
-        SUPPORT_D   (SP_SetSlot,_1_8_1),
+        SUPPORT_DF  (SP_SetSlot,_1_8_1),
         SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
@@ -1225,7 +1252,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (CP_Animation,_1_8_1),
         SUPPORT_DE  (CP_EntityAction,_1_8_1),
         SUPPORT_DE  (CP_CloseWindow,_1_8_1),
-        SUPPORT_D   (CP_ClickWindow,_1_8_1),
+        SUPPORT_DF  (CP_ClickWindow,_1_8_1),
     },
 };
 

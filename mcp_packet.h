@@ -5,6 +5,8 @@
 
 #include <lh_arr.h>
 
+#include "nbt.h"
+
 // special data types used in the MC packets
 
 typedef uint8_t uuid_t[16];
@@ -115,17 +117,11 @@ typedef struct {
     int16_t item;
     int16_t count;  // actually int8_t, but we need to have a larger capacity to deal with crafting
     int16_t damage;
-    //nbt_t nbt;
+    nbt_t   *nbt;   // auxiliary data - enchantments etc.
 } slot_t;
 
-
-
-
-
-
-
-
-
+void dump_slot(slot_t *s);
+void clear_slot(slot_t *s);
 
 
 
