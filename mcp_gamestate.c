@@ -293,20 +293,14 @@ void dump_inventory() {
             printf("%-20s x%-2d\n", buf, s->count);
         else
             printf("%4x x%-2d dmg=%d\n",s->item,s->count,s->damage);
+
+        //if (s->nbt) nbt_dump(s->nbt);
     }
 }
 
 #define IAQ  GAR1(gs.inv.iaq)
 #define pIAQ P(gs.inv.iaq)
 #define cIAQ C(gs.inv.iaq)
-
-static void dump_slot(slot_t *s) {
-    char buf[256];
-    printf("item=%d (%s)", s->item, get_item_name(buf, s));
-    if (s->item != -1) {
-        printf(", count=%d, damage=%d", s->count, s->damage);
-    }
-}
 
 static int find_invaction(int aid) {
     int i;
@@ -318,15 +312,11 @@ static int find_invaction(int aid) {
 
 // ensure that an emptied slot is in a consistent state
 static inline void prune_slot(slot_t *s) {
-    if (s->count <= 0 || s->item == -1) {
-        s->count  = 0;
-        s->item   = -1;
-        s->damage = 0;
-        //TODO: nbt data
-    }
+    if (s->count <= 0 || s->item == -1)
+        clear_slot(s);
 }
 
-static int slot_transfer(slot_t *f, slot_t *t, int count) {
+static void slot_transfer(slot_t *f, slot_t *t, int count) {
     assert(f->count >= count);
     assert(f->item > 0);
 
@@ -339,26 +329,39 @@ static int slot_transfer(slot_t *f, slot_t *t, int count) {
         t->damage = f->damage;
         t->count = count;
         f->count-=count;
+        t->nbt = nbt_clone(f->nbt);
 
         printf("  put into empty slot, now: f:%d, t:%d\n",f->count,t->count);
 
         prune_slot(f);
-        return 1;
+        return;
     }
 
     if (sameitem(f,t)) {
+        assert(!f->nbt);
+        assert(!t->nbt);
+
         t->count+=count;
         f->count-=count;
 
         printf("  put into non-empty slot, now: f:%d, t:%d\n",f->count,t->count);
 
         prune_slot(f);
-        return 1;
+        return;
     }
 
     printf("Attempting slot_transfer with different item types:\n");
 
     assert(0);
+}
+
+static void copy_slot(slot_t *f, slot_t *t) {
+    clear_slot(t);
+
+    t->item = f->item;
+    t->damage = f->damage;
+    t->count = f->count;
+    t->nbt = nbt_clone(f->nbt);
 }
 
 static void slot_swap(slot_t *f, slot_t *t) {
@@ -1014,21 +1017,19 @@ int gs_packet(MCPacket *pkt) {
                     assert(tpkt->sid>=0 && tpkt->sid<45);
 
                     // copy the slot to our inventory slot
-                    gs.inv.slots[tpkt->sid] = tpkt->slot;
+                    copy_slot(&tpkt->slot, &gs.inv.slots[tpkt->sid]);
                     break;
                 case 255:
                     // drag-slot
                     dump_packet(pkt);
-                    if (gs.inv.drag.item != tpkt->slot.item ||
-                        gs.inv.drag.count != tpkt->slot.count ) {
+                    slot_t * ds = &gs.inv.drag;
+                    if (ds->item != tpkt->slot.item ||
+                        ds->count != tpkt->slot.count ||
+                        ds->damage != tpkt->slot.damage ||
+                        (!ds->nbt) != (!tpkt->slot.nbt) ) {
                         printf("*** drag slot corrected by the server\n");
-                        gs.inv.drag = tpkt->slot;
+                        copy_slot(&tpkt->slot, &gs.inv.slots[tpkt->sid]);
                     }
-#if 0
-                    else {
-                        printf("drag slot consistent\n");
-                    }
-#endif
                     break;
             }
         } _GSP;
