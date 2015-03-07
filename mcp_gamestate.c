@@ -1145,6 +1145,10 @@ void gs_destroy() {
     // delete tracked entities
     lh_free(P(gs.entity));
 
+    int i;
+    for(i=0; i<45; i++)
+        clear_slot(&gs.inv.slots[i]);
+
     //dump_chunks(&gs.overworld);
 
     free_chunks(&gs.overworld);
