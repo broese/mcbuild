@@ -1028,7 +1028,7 @@ int gs_packet(MCPacket *pkt) {
                         ds->damage != tpkt->slot.damage ||
                         (!ds->nbt) != (!tpkt->slot.nbt) ) {
                         printf("*** drag slot corrected by the server\n");
-                        copy_slot(&tpkt->slot, &gs.inv.slots[tpkt->sid]);
+                        copy_slot(&tpkt->slot, ds);
                     }
                     break;
             }
