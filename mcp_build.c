@@ -5,6 +5,7 @@
 #include "mcp_gamestate.h"
 
 ////////////////////////////////////////////////////////////////////////////////
+// Helpers
 
 static int scan_opt(char **words, const char *fmt, ...) {
     int i;
@@ -25,6 +26,62 @@ static int scan_opt(char **words, const char *fmt, ...) {
 
     return 0;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Structures
+
+#define DIR_UP      0
+#define DIR_DOWN    1
+#define DIR_SOUTH   2
+#define DIR_NORTH   3
+#define DIR_EAST    4
+#define DIR_WEST    5
+
+// this structure is used to define an absolute block placement
+// in the active building process
+typedef struct {
+    int32_t     x,y,z;          // coordinates of the block to place
+    bid_t       b;              // block type, including the meta
+
+    union {
+        int8_t  state;
+        struct {
+            int8_t placed : 1;  // true if this block is already in place
+            int8_t blocked : 1; // true if this block is obstructed by something else
+            int8_t inreach : 1; // this block is close enough to place
+        };
+    };
+
+    // a bitmask of neighbors (6 bits only),
+    // set bit means there is a neighbor in that direction
+    union {
+        int8_t  neigh;
+        struct {
+            int8_t  n_yp : 1;   // up    (y-pos)
+            int8_t  n_yn : 1;   // down  (y-neg)
+            int8_t  n_zp : 1;   // south (z-pos)
+            int8_t  n_zn : 1;   // north (z-neg)
+            int8_t  n_xp : 1;   // east  (x-pos)
+            int8_t  n_xn : 1;   // west  (x-neg)
+        };
+    };
+} blk;
+
+// this structure defines a relative block placement 
+typedef struct {
+    int32_t     x,y,z;  // coordinates of the block to place (relative to pivot)
+    bid_t       b;      // block type, including the meta
+                        // positional meta is north-oriented
+} blkr;
+
+struct {
+    int active;
+    lh_arr_declare(blk,task);  // current active building task
+    lh_arr_declare(blkr,plan); // currently loaded/created buildplan
+} build;
+
+#define BTASK GAR(build.task)
+#define BPLAN GAR(build.plan)
 
 ////////////////////////////////////////////////////////////////////////////////
 
