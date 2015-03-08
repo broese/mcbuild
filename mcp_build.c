@@ -86,10 +86,20 @@ struct {
 ////////////////////////////////////////////////////////////////////////////////
 
 static void build_floor(char **words, char *reply) {
-    int xsize,zsize;
+    build_clear();
 
     if (scan_opt(words, "size=%d,%d", &xsize, &zsize)!=2)
         sprintf(reply, "Usage: build floor size=<xsize>,<zsize>");
+
+void build_clear() {
+    build.active = 0;
+    lh_arr_free(BTASK);
+    lh_arr_free(BPLAN);
+}
+
+void build_cancel() {
+    build.active = 0;
+    lh_arr_free(BTASK);
 }
 
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
