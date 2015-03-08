@@ -152,7 +152,7 @@ int main(int ac, char **av) {
             gs_setopt(GSOP_SEARCH_SPAWNERS, 1);
 
             parse_mcp(data, size);
-            dump_inventory();
+            //dump_inventory();
             //dump_entities();
             //extract_cuboid(918,3048,64);
 

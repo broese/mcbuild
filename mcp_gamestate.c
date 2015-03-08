@@ -256,6 +256,8 @@ bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory tracking
 
+#define DEBUG_INVENTORY 0
+
 static inline int sameitem(slot_t *a, slot_t *b) {
     //Note: we don't need to consider sameness of items like
     // 0x4b/0x4c (Redstone Torch on/off), since one type
@@ -320,8 +322,10 @@ static void slot_transfer(slot_t *f, slot_t *t, int count) {
     assert(f->count >= count);
     assert(f->item > 0);
 
-    printf("  From: "); dump_slot(f); printf("\n");
-    printf("  To  : "); dump_slot(t); printf("\n");
+    if (DEBUG_INVENTORY) {
+        printf("  From: "); dump_slot(f); printf("\n");
+        printf("  To  : "); dump_slot(t); printf("\n");
+    }
 
     if (t->item == -1) {
         // destination slot is empty
@@ -331,7 +335,8 @@ static void slot_transfer(slot_t *f, slot_t *t, int count) {
         f->count-=count;
         t->nbt = nbt_clone(f->nbt);
 
-        printf("  put into empty slot, now: f:%d, t:%d\n",f->count,t->count);
+        if (DEBUG_INVENTORY)
+            printf("  put into empty slot, now: f:%d, t:%d\n",f->count,t->count);
 
         prune_slot(f);
         return;
@@ -344,7 +349,8 @@ static void slot_transfer(slot_t *f, slot_t *t, int count) {
         t->count+=count;
         f->count-=count;
 
-        printf("  put into non-empty slot, now: f:%d, t:%d\n",f->count,t->count);
+        if (DEBUG_INVENTORY)
+            printf("  put into non-empty slot, now: f:%d, t:%d\n",f->count,t->count);
 
         prune_slot(f);
         return;
@@ -387,15 +393,17 @@ static void inv_click(int button, int16_t sid) {
 
         // nothing in the product slot, no-op
         if (s->item<0) {
-            printf("*** No-op: nothing in the product slot\n");
+            if (DEBUG_INVENTORY)
+                printf("*** No-op: nothing in the product slot\n");
             return;
         }
 
         if (d->item<0 || sameitem(s,d)) {
             // we can pick up items from the product slot
             if ( d->count + s->count > STACKSIZE(s->item)) {
-                printf("*** No-op: can't pick up another %dx %s into dragslot from product slot\n",
-                       s->count, get_item_name(name,s));
+                if (DEBUG_INVENTORY)
+                    printf("*** No-op: can't pick up another %dx %s into dragslot from product slot\n",
+                           s->count, get_item_name(name,s));
             }
             else {
                 slot_transfer(s, d, s->count);
@@ -426,14 +434,16 @@ static void inv_click(int button, int16_t sid) {
         switch (button) {
             case 0:
                 // left-click
-                printf("*** Pick %dx %s from slot %d to drag-slot\n",
-                       s->count, get_item_name(name,s), sid);
+                if (DEBUG_INVENTORY)
+                    printf("*** Pick %dx %s from slot %d to drag-slot\n",
+                           s->count, get_item_name(name,s), sid);
                 slot_transfer(s, &gs.inv.drag, s->count);
                 break;
             case 1:
                 // right-click
-                printf("*** Pick %dx %s from slot %d to drag-slot\n",
-                       GREATERHALF(s->count), get_item_name(name,s), sid);
+                if (DEBUG_INVENTORY)
+                    printf("*** Pick %dx %s from slot %d to drag-slot\n",
+                           GREATERHALF(s->count), get_item_name(name,s), sid);
                 slot_transfer(s, &gs.inv.drag, GREATERHALF(s->count));
                 break;
         }
@@ -448,14 +458,16 @@ static void inv_click(int button, int16_t sid) {
         switch (button) {
             case 0:
                 // left-click - throw all
-                printf("*** Throw out %dx %s from drag slot\n",
-                       gs.inv.drag.count, get_item_name(name,&gs.inv.drag) );
+                if (DEBUG_INVENTORY)
+                    printf("*** Throw out %dx %s from drag slot\n",
+                           gs.inv.drag.count, get_item_name(name,&gs.inv.drag) );
                 gs.inv.drag.count = 0;
                 break;
             case 1:
                 // right-click - throw one
-                printf("*** Throw out 1x %s from drag slot\n",
-                       get_item_name(name,&gs.inv.drag));
+                if (DEBUG_INVENTORY)
+                    printf("*** Throw out 1x %s from drag slot\n",
+                           get_item_name(name,&gs.inv.drag));
                 gs.inv.drag.count--;
                 break;
         }
@@ -471,14 +483,16 @@ static void inv_click(int button, int16_t sid) {
         switch (button) {
             case 0:
                 // left-click - put all
-                printf("*** Put %dx %s from drag slot to slot %d\n",
-                       gs.inv.drag.count, get_item_name(name,&gs.inv.drag), sid);
+                if (DEBUG_INVENTORY)
+                    printf("*** Put %dx %s from drag slot to slot %d\n",
+                           gs.inv.drag.count, get_item_name(name,&gs.inv.drag), sid);
                 slot_transfer(&gs.inv.drag, s, gs.inv.drag.count);
                 break;
             case 1:
                 // right-click - put one
-                printf("*** Put 1x %s from drag slot to slot %d\n",
-                       get_item_name(name,&gs.inv.drag), sid);
+                if (DEBUG_INVENTORY)
+                    printf("*** Put 1x %s from drag slot to slot %d\n",
+                           get_item_name(name,&gs.inv.drag), sid);
                 slot_transfer(&gs.inv.drag, s, 1);
                 break;
         }
@@ -491,9 +505,10 @@ static void inv_click(int button, int16_t sid) {
         char name2[256];
         // the slot conains a different type of item, or the items
         // are non-stackable (e.g. weapons) - swap items
-        printf("*** Swap %dx %s in the drag slot with %dx %s in slot %d\n",
-               gs.inv.drag.count, get_item_name(name,&gs.inv.drag),
-               s->count, get_item_name(name2,s), sid);
+        if (DEBUG_INVENTORY)
+            printf("*** Swap %dx %s in the drag slot with %dx %s in slot %d\n",
+                   gs.inv.drag.count, get_item_name(name,&gs.inv.drag),
+                   s->count, get_item_name(name2,s), sid);
 
         slot_swap(s, &gs.inv.drag);
         return;
@@ -507,14 +522,16 @@ static void inv_click(int button, int16_t sid) {
     if (button==1 && count>0) count=1;
 
     if (count > 0) {
-        printf("*** Add %dx %s from drag slot to slot %d\n",
-               count, get_item_name(name,&gs.inv.drag), sid);
+        if (DEBUG_INVENTORY)
+            printf("*** Add %dx %s from drag slot to slot %d\n",
+                   count, get_item_name(name,&gs.inv.drag), sid);
         s->count += count;
         gs.inv.drag.count -= count;
     }
     else {
-        printf("*** Can't put more %s from drag slot to slot %d - slot full\n",
-               get_item_name(name,&gs.inv.drag), sid);
+        if (DEBUG_INVENTORY)
+            printf("*** Can't put more %s from drag slot to slot %d - slot full\n",
+                   get_item_name(name,&gs.inv.drag), sid);
     }
 
     prune_slot(s);
@@ -647,8 +664,9 @@ static void inv_shiftclick(int button, int16_t sid) {
 
                 //put as much we can into that slot and update the smask
                 int amount = (f->count > capacity) ? capacity : f->count;
-                printf("*** Distribute %dx %s from slot %d to slot %d (move to stack)\n",
-                       amount, get_item_name(name,f), sid, i);
+                if (DEBUG_INVENTORY)
+                    printf("*** Distribute %dx %s from slot %d to slot %d (move to stack)\n",
+                           amount, get_item_name(name,f), sid, i);
                 slot_transfer(f, &gs.inv.slots[i], amount);
                 smask &= ~(1LL<<i);
                 prune_slot(f);
@@ -668,8 +686,9 @@ static void inv_shiftclick(int button, int16_t sid) {
             if (t->item == -1) {
                 int amount = f->count > stacksize ? stacksize : f->count;
 
-                printf("*** Distribute %dx %s from slot %d to slot %d (move to empty)\n",
-                       amount, get_item_name(name,f), sid, i);
+                if (DEBUG_INVENTORY)
+                    printf("*** Distribute %dx %s from slot %d to slot %d (move to empty)\n",
+                           amount, get_item_name(name,f), sid, i);
                 slot_transfer(f,t,amount);
             }
         }
@@ -687,7 +706,8 @@ static void inv_paint(int button, int16_t sid) {
     }
 
     if (gs.inv.drag.item < 0) {
-        printf("Painting mode with nothing in drag slot - ignoring\n");
+        if (DEBUG_INVENTORY)
+            printf("*** Painting mode with nothing in drag slot - ignoring\n");
         gs.inv.inconsistent = 1;
         return;
     }
@@ -697,11 +717,13 @@ static void inv_paint(int button, int16_t sid) {
     switch(button) {
         case 0:
         case 4:
-            printf("Paint start\n");
+            if (DEBUG_INVENTORY)
+                printf("*** Paint start\n");
             assert(gs.inv.pcount==0);
             assert(sid<0);
             if (gs.inv.ptype!=0) {
-                printf("Incorrect paint sequence, resetting\n");
+                if (DEBUG_INVENTORY)
+                    printf("*** Incorrect paint sequence, resetting\n");
                 gs.inv.ptype = 0;
                 gs.inv.pcount = 0;
                 break;
@@ -712,12 +734,14 @@ static void inv_paint(int button, int16_t sid) {
         case 1:
         case 5:
             if (gs.inv.ptype!=button) {
-                printf("Incorrect paint sequence, resetting\n");
+                if (DEBUG_INVENTORY)
+                    printf("*** Incorrect paint sequence, resetting\n");
                 gs.inv.ptype = 0;
                 gs.inv.pcount = 0;
                 break;
             }
-            printf("Paint add slot %d\n",sid);
+            if (DEBUG_INVENTORY)
+                printf("*** Paint add slot %d\n",sid);
             gs.inv.pslots[gs.inv.pcount++] = sid;
             break;
 
@@ -730,7 +754,8 @@ static void inv_paint(int button, int16_t sid) {
                 gs.inv.pcount = 0;
                 break;
             }
-            printf("Paint end, %d slots\n", gs.inv.pcount);
+            if (DEBUG_INVENTORY)
+                printf("*** Paint end, %d slots\n", gs.inv.pcount);
 
             if (gs.inv.pcount>0) {
                 int amount = 1;
@@ -745,10 +770,12 @@ static void inv_paint(int button, int16_t sid) {
                     if (gs.inv.slots[idx].count + slot_amount > stacksize)
                         slot_amount = stacksize - gs.inv.slots[idx].count;
 
-                    printf("*** Paint %dx %s from drag slot to slot %d\n",
-                           slot_amount, get_item_name(name,&gs.inv.drag), gs.inv.pslots[i]);
+                    if (DEBUG_INVENTORY)
+                        printf("*** Paint %dx %s from drag slot to slot %d\n",
+                               slot_amount, get_item_name(name,&gs.inv.drag), gs.inv.pslots[i]);
                     slot_transfer(&gs.inv.drag, &gs.inv.slots[gs.inv.pslots[i]], slot_amount);
-                    printf("%d remain in the dragslot\n",gs.inv.drag.count);
+                    if (DEBUG_INVENTORY)
+                        printf("*** %d remain in the dragslot\n",gs.inv.drag.count);
                 }
             }
 
@@ -773,8 +800,9 @@ static void inv_throw(int button, int16_t sid) {
 
     int amount = button ? s->count : 1;
 
-    printf("*** Throw out %dx %s from slot %d\n",
-           amount, get_item_name(name,s), sid);
+    if (DEBUG_INVENTORY)
+        printf("*** Throw out %dx %s from slot %d\n",
+               amount, get_item_name(name,s), sid);
 
     s->count -= amount;
     prune_slot(s);
@@ -1020,7 +1048,8 @@ int gs_packet(MCPacket *pkt) {
                         ds->count != tpkt->slot.count ||
                         ds->damage != tpkt->slot.damage ||
                         (!ds->nbt) != (!tpkt->slot.nbt) ) {
-                        printf("*** drag slot corrected by the server\n");
+                        if (DEBUG_INVENTORY)
+                            printf("*** drag slot corrected by the server\n");
                         copy_slot(&tpkt->slot, ds);
                     }
                     break;
@@ -1046,26 +1075,30 @@ int gs_packet(MCPacket *pkt) {
 
             switch (a->mode) {
                 case 0:
-                    printf("Inventory Click aid=%d, mode=%d, button=%d, sid=%d\n",
-                           a->aid, a->mode, a->button, a->sid);
+                    if (DEBUG_INVENTORY)
+                        printf("Inventory Click aid=%d, mode=%d, button=%d, sid=%d\n",
+                               a->aid, a->mode, a->button, a->sid);
                     inv_click(a->button, a->sid);
                     break;
 
                 case 1:
-                    printf("Inventory Shift-Click aid=%d, mode=%d, button=%d, sid=%d\n",
-                           a->aid, a->mode, a->button, a->sid);
+                    if (DEBUG_INVENTORY)
+                        printf("Inventory Shift-Click aid=%d, mode=%d, button=%d, sid=%d\n",
+                               a->aid, a->mode, a->button, a->sid);
                     inv_shiftclick(a->button, a->sid);
                     break;
 
                 case 4:
-                    printf("Inventory Throw aid=%d, mode=%d, button=%d, sid=%d\n",
-                           a->aid, a->mode, a->button, a->sid);
+                    if (DEBUG_INVENTORY)
+                        printf("Inventory Throw aid=%d, mode=%d, button=%d, sid=%d\n",
+                               a->aid, a->mode, a->button, a->sid);
                     inv_throw(a->button, a->sid);
                     break;
 
                 case 5:
-                    printf("Inventory Paint aid=%d, mode=%d, button=%d, sid=%d\n",
-                           a->aid, a->mode, a->button, a->sid);
+                    if (DEBUG_INVENTORY)
+                        printf("Inventory Paint aid=%d, mode=%d, button=%d, sid=%d\n",
+                               a->aid, a->mode, a->button, a->sid);
                     inv_paint(a->button, a->sid);
                     break;
 
