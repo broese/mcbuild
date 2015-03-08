@@ -483,6 +483,11 @@ const char * get_item_name(char *buf, slot_t *s) {
     return buf;
 }
 
+const char * get_bid_name(char *buf, bid_t b) {
+    slot_t s = { .count=1, .item = b.bid, .damage = b.meta };
+    return get_item_name(buf, &s);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
 

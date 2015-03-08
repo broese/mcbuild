@@ -88,8 +88,31 @@ struct {
 static void build_floor(char **words, char *reply) {
     build_clear();
 
-    if (scan_opt(words, "size=%d,%d", &xsize, &zsize)!=2)
+    int xsize,zsize;
+    if (scan_opt(words, "size=%d,%d", &xsize, &zsize)!=2) {
         sprintf(reply, "Usage: build floor size=<xsize>,<zsize>");
+        return;
+    }
+    if (xsize<=0 || zsize<=0) return;
+
+    //TODO: material
+    bid_t mat = { .bid=0x04, .meta=0 };
+
+    int x,z;
+    for(x=0; x<xsize; x++) {
+        for(z=0; z<zsize; z++) {
+            blkr *b = lh_arr_new(BPLAN);
+            b->b = mat;
+            b->x = x;
+            b->z = -z;
+            b->y = 0;
+        }
+    }
+
+    char buf[256];
+    sprintf(reply, "Created floor %dx%d material=%s\n",
+            xsize, zsize, get_bid_name(buf, mat));
+}
 
 void build_clear() {
     build.active = 0;
