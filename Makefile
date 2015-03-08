@@ -18,7 +18,7 @@ all: mcproxy mcpdump nbttest
 
 
 
-mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o mcp_ids.o nbt.o
+mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o mcp_ids.o nbt.o mcp_build.o
 	$(CC) -o $@ $^ $(LIBS)
 
 mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o mcp_ids.o nbt.o
@@ -37,11 +37,11 @@ varint: varint.c
 
 
 
-mcproxy.o mcpdump.o: mcp_gamestate.h mcp_game.h mcp_ids.h
+mcproxy.o mcpdump.o: mcp_gamestate.h mcp_game.h mcp_ids.h nbt.h
 
 mcp_gamestate.o: mcp_gamestate.h mcp_ids.h
 
-mcp_game.o: mcp_gamestate.h mcp_game.h mcp_ids.h mcp_packet.h
+mcp_game.o: mcp_gamestate.h mcp_game.h mcp_ids.h mcp_packet.h mcp_build.h
 
 mcp_ids.o: mcp_ids.h
 

@@ -9,6 +9,7 @@
 #include "mcp_ids.h"
 #include "mcp_gamestate.h"
 #include "mcp_game.h"
+#include "mcp_build.h"
 
 // Various options
 struct {
@@ -172,7 +173,7 @@ static void hole_radar(MCPacketQueue *sq) {
 ////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
 
-static void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {
+void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {
     uint8_t jreply[32768];
 
     NEWPACKET(SP_ChatMessage,pkt);
@@ -263,6 +264,9 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
             opt.maxlevel = maxlevel;
             sprintf(reply,"Grinding to level %d",opt.maxlevel);
         }
+    }
+    else if (!strcmp(words[0],"build") || !strcmp(words[0],"bu")) {
+        build_cmd(words, tq, bq);
     }
     else if (!strcmp(words[0],"hr") || !strcmp(words[0],"holeradar")) {
         opt.holeradar = !opt.holeradar;
