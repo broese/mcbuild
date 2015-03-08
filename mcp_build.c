@@ -114,6 +114,29 @@ static void build_floor(char **words, char *reply) {
             xsize, zsize, get_bid_name(buf, mat));
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+//TODO: print needed material amounts
+void build_dump_plan() {
+    int i;
+    char buf[256];
+    for(i=0; i<C(build.plan); i++) {
+        blkr *b = &P(build.plan)[i];
+        printf("%3d %+4d,%+4d,%3d %3x/%02x (%s)\n",
+               i, b->x, b->z, b->y, b->b.bid, b->b.meta, get_bid_name(buf, b->b));
+    }
+}
+
+void build_dump_task() {
+    int i;
+    char buf[256];
+    for(i=0; i<C(build.task); i++) {
+        blk *b = &P(build.task)[i];
+        printf("%3d %+5d,%+5d,%3d %3x/%02x (%s)\n",
+               i, b->x, b->z, b->y, b->b.bid, b->b.meta, get_bid_name(buf, b->b));
+    }
+}
+
 void build_clear() {
     build.active = 0;
     lh_arr_free(BTASK);
@@ -134,6 +157,15 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "floor")) {
         build_floor(words+2, reply);
+    }
+    else if (!strcmp(words[1], "cancel")) {
+        build_cancel();
+    }
+    else if (!strcmp(words[1], "dumpplan")) {
+        build_dump_plan();
+    }
+    else if (!strcmp(words[1], "dumptask")) {
+        build_dump_task();
     }
 
     if (reply[0]) chat_message(reply, cq, "green", 0);
