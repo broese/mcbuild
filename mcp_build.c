@@ -85,6 +85,21 @@ struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void build_update() {
+    // player position or look have changed - update our placeable blocks list
+    if (!build.active) return;
+
+    //TODO: recalculate placeable blocks list
+}
+
+void build_progress() {
+    // time update - try to build any blocks from the placeable blocks list
+
+    //TODO: select one of the blocks from the buildable list and place it
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 static void build_floor(char **words, char *reply) {
     build_clear();
 
