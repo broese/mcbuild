@@ -819,6 +819,12 @@ static void inv_throw(int button, int16_t sid) {
 
 int gs_packet(MCPacket *pkt) {
     switch (pkt->pid) {
+        ////////////////////////////////////////////////////////////////
+        // Gamestate
+
+        GSP(SP_TimeUpdate) {
+            gs.time = tpkt->time;
+        } _GSP;
 
         ////////////////////////////////////////////////////////////////
         // Entities tracking

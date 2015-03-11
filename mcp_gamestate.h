@@ -65,6 +65,9 @@ typedef struct {
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef struct _gamestate {
+    // game
+    int64_t time; // timestamp from the last received server tick
+
     // options
     struct {
         int prune_chunks;
