@@ -391,7 +391,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         // Gamestate
 
         GMP(SP_TimeUpdate) {
-            build_progress();
+            build_progress(bq, tq);
         } _GMP;
 
         ////////////////////////////////////////////////////////////////

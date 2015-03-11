@@ -27,6 +27,8 @@ static int scan_opt(char **words, const char *fmt, ...) {
     return 0;
 }
 
+#define SQ(x) ((x)*(x))
+
 ////////////////////////////////////////////////////////////////////////////////
 // Structures
 
@@ -43,12 +45,14 @@ typedef struct {
     int32_t     x,y,z;          // coordinates of the block to place
     bid_t       b;              // block type, including the meta
 
+    // state flags
     union {
         int8_t  state;
         struct {
-            int8_t placed : 1;  // true if this block is already in place
+            int8_t placed  : 1; // true if this block is already in place
             int8_t blocked : 1; // true if this block is obstructed by something else
             int8_t inreach : 1; // this block is close enough to place
+            int8_t pending : 1; // block was placed but pending confirmation from the server
         };
     };
 
@@ -65,6 +69,8 @@ typedef struct {
             int8_t  n_xn : 1;   // west  (x-neg)
         };
     };
+
+    int32_t dist; // distance to the block center (squared)
 } blk;
 
 // this structure defines a relative block placement 
@@ -74,10 +80,15 @@ typedef struct {
                         // positional meta is north-oriented
 } blkr;
 
+// maximum number of blocks in the buildable list
+#define MAXBUILDABLE 1024
+
 struct {
     int active;
     lh_arr_declare(blk,task);  // current active building task
     lh_arr_declare(blkr,plan); // currently loaded/created buildplan
+
+    int buildable[MAXBUILDABLE];
 } build;
 
 #define BTASK GAR(build.task)
@@ -85,15 +96,61 @@ struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// maximum reach distance for building, squared, in fixp units (1/32 block)
+#define MAXREACH SQ(5)
+
 void build_update() {
     // player position or look have changed - update our placeable blocks list
     if (!build.active) return;
 
     //TODO: recalculate placeable blocks list
+
+    // 1. Update 'inreach' flag for all blocks and set the block distance
+    // inreach=1 does not necessarily mean the block is really reachable -
+    // this will be determined later in more detail, but those with
+    // inreach=0 are definitely too far away to bother.
+
+    /* Further strategy:
+       - determine which neighbors are available for the blocks 'inreach'
+
+       - skip those neighbor faces looking away from you
+
+       - skip those neighbor faces unsuitable for the block orientation
+         you want to achieve - for now we can skip that for the plain
+         blocks - they can be placed on any neighbor. Later we'll need
+         to determine this properly for the stairs, slabs, etc.
+
+       - for each neighbor face, calculate which from 15x15 points can be
+         'clicked' to be able to place the block we want the way we want.
+         For now, we can just say "all of them" - this will work with plain
+         blocks. Later we can introduce support for slabs, stairs etc., e.g.
+         in order to place the upper slab we will have to choose only the
+         upper 15x7 block from the matrix.
+
+       - for each of the remaining points, calculate their direct visibility
+         this is optional for now, because it's obviously very difficult
+         to achieve and possibly not even checked properly.
+
+       - for each of the remaining points, calculate their exact distance,
+         skip those farther away than 4.0 blocks (this is now the proper
+         in-reach calculation)
+
+       - for each of the remaining points, store the one with the largest
+         distance in the blk - this will serve as the selector for the
+         build-the-most-distant-blocks-first strategy to avoid isolating blocks
+
+       - store the suitable dots (as a bit array in a 16xshorts?) in the
+         blk struct
+
+       - when building, select the first suitable block for building,
+         and choose a random dot from the stored set
+
+    */
 }
 
-void build_progress() {
+void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
     // time update - try to build any blocks from the placeable blocks list
+    if (!build.active) return;
 
     //TODO: select one of the blocks from the buildable list and place it
 }
@@ -156,11 +213,13 @@ void build_clear() {
     build.active = 0;
     lh_arr_free(BTASK);
     lh_arr_free(BPLAN);
+    build.buildable[0] = -1;
 }
 
 void build_cancel() {
     build.active = 0;
     lh_arr_free(BTASK);
+    build.buildable[0] = -1;
 }
 
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
