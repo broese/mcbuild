@@ -56,3 +56,20 @@ legend:
   = Build scanning
   = Pixel art
 
+=======================================================
+
+
+The model (brec) is always saved as if it is build to the North direction.
+  - block coordinates are saved as difference to the pivot
+  - the X axis goes to the Right
+  - the Z axis goes to the Back (toward the player)
+    - this way most blocks are likely to have negative Z coords
+
+The block values are simply bid_t
+- If some blocks have an orientation-dependent meta values, the values will be as that block would have if the model was build to the north direction
+- If the model is rotated to a different direction, we need to map the meta vasues from the North to the respective direction.
+  - This means, for each supported I_MPOS block type we need a mapping table: 4 rows, 16 cols
+
+Invent
+
+
