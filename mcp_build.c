@@ -97,7 +97,7 @@ struct {
 ////////////////////////////////////////////////////////////////////////////////
 
 // maximum reach distance for building, squared, in fixp units (1/32 block)
-#define MAXREACH SQ(5)
+#define MAXREACH SQ(5<<5)
 
 void build_update() {
     // player position or look have changed - update our placeable blocks list
@@ -105,10 +105,21 @@ void build_update() {
 
     //TODO: recalculate placeable blocks list
 
+    int i;
+
     // 1. Update 'inreach' flag for all blocks and set the block distance
     // inreach=1 does not necessarily mean the block is really reachable -
     // this will be determined later in more detail, but those with
     // inreach=0 are definitely too far away to bother.
+    for(i=0; i<C(build.task); i++) {
+        blk *b = P(build.task)+i;
+        int32_t dx = gs.own.x-(b->x<<5)+16;
+        int32_t dy = gs.own.y-(b->y<<5)+16;
+        int32_t dz = gs.own.z-(b->z<<5)+16;
+        b->dist = SQ(dx)+SQ(dy)+SQ(dz);
+
+        b->inreach = (b->dist<MAXREACH);
+    }
 
     /* Further strategy:
        - determine which neighbors are available for the blocks 'inreach'
@@ -217,6 +228,7 @@ static void build_place(char **words, char *reply) {
         bt->b = bp->b;
     }
     build.active = 1;
+    build_update();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -237,8 +249,10 @@ void build_dump_task() {
     char buf[256];
     for(i=0; i<C(build.task); i++) {
         blk *b = &P(build.task)[i];
-        printf("%3d %+5d,%+5d,%3d %3x/%02x (%s)\n",
-               i, b->x, b->z, b->y, b->b.bid, b->b.meta, get_bid_name(buf, b->b));
+        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d %c (%s)\n",
+               i, b->x, b->z, b->y, b->b.bid, b->b.meta,
+               b->dist, b->inreach?'*':' ',
+               get_bid_name(buf, b->b));
     }
 }
 
