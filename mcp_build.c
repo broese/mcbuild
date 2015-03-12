@@ -186,6 +186,39 @@ static void build_floor(char **words, char *reply) {
             xsize, zsize, get_bid_name(buf, mat));
 }
 
+//TODO: orientation and rotate brec accordingly
+static void build_place(char **words, char *reply) {
+    // check if we have a plan
+    if (!C(build.plan)) {
+        sprintf(reply, "You have no active buildplan!\n");
+        return;
+    }
+
+    // parse coords
+    int px,py,pz;
+    if (scan_opt(words, "coord=%d,%d,%d", &px, &pz, &py)!=3) {
+        sprintf(reply, "Usage: build place coord=<x>,<z>,<y>");
+        return;
+    }
+    sprintf(reply, "Place pivot at %d,%d (%d)\n",px,pz,py);
+
+    // abort current buildtask
+    build_cancel();
+
+    // create a new buildtask from our buildplan
+    int i;
+    for(i=0; i<C(build.plan); i++) {
+        blkr *bp = P(build.plan)+i;
+        blk  *bt = lh_arr_new_c(BTASK); // new element in the buildtask
+
+        bt->x = bp->x+px;
+        bt->y = bp->y+py;
+        bt->z = bp->z+pz;
+        bt->b = bp->b;
+    }
+    build.active = 1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 //TODO: print needed material amounts
@@ -210,10 +243,8 @@ void build_dump_task() {
 }
 
 void build_clear() {
-    build.active = 0;
-    lh_arr_free(BTASK);
+    build_cancel();
     lh_arr_free(BPLAN);
-    build.buildable[0] = -1;
 }
 
 void build_cancel() {
@@ -231,6 +262,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "floor")) {
         build_floor(words+2, reply);
+    }
+    else if (!strcmp(words[1], "place")) {
+        build_place(words+2, reply);
     }
     else if (!strcmp(words[1], "cancel")) {
         build_cancel();
