@@ -132,6 +132,11 @@ void clear_slot(slot_t *s);
 ////////////////////////////////////////////////////////////////////////////////
 // Server -> Client
 
+// 0x00
+typedef struct {
+    uint32_t id;
+} SP_KeepAlive_pkt;
+
 // 0x01
 typedef struct {
     uint32_t eid;
@@ -514,6 +519,7 @@ typedef struct {
 
     // various packet types depending on pid
     union {
+        PKT(SP_KeepAlive);
         PKT(SP_JoinGame);
         PKT(SP_ChatMessage);
         PKT(SP_TimeUpdate);

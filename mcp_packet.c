@@ -402,6 +402,17 @@ typedef struct {
     }
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x00 SP_KeepAlive
+
+DECODE_BEGIN(SP_KeepAlive,_1_8_1) {
+    Pvarint(id);
+} DECODE_END;
+
+DUMP_BEGIN(SP_KeepAlive) {
+    printf("id=%08x",tpkt->id);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x01 SP_JoinGame
 
 DECODE_BEGIN(SP_JoinGame,_1_8_1) {
@@ -1211,6 +1222,7 @@ FREE_BEGIN(CP_ClickWindow) {
 
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
+        SUPPORT_D   (SP_KeepAlive,_1_8_1),
         SUPPORT_DD  (SP_JoinGame,_1_8_1),
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
