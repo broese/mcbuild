@@ -28,6 +28,8 @@ static int scan_opt(char **words, const char *fmt, ...) {
 }
 
 #define SQ(x) ((x)*(x))
+#define MIN(x,y) (((x)<(y))?(x):(y))
+#define MAX(x,y) (((x)>(y))?(x):(y))
 
 ////////////////////////////////////////////////////////////////////////////////
 // Structures
@@ -89,6 +91,8 @@ struct {
     lh_arr_declare(blkr,plan); // currently loaded/created buildplan
 
     int buildable[MAXBUILDABLE];
+
+    int32_t     xmin,xmax,ymin,ymax,zmin,zmax;
 } build;
 
 #define BTASK GAR(build.task)
@@ -228,6 +232,22 @@ static void build_place(char **words, char *reply) {
         bt->b = bp->b;
     }
     build.active = 1;
+
+    // calculate buildtask boundary
+    build.xmin = build.xmax = P(build.task)[0].x;
+    build.zmin = build.zmax = P(build.task)[0].z;
+    build.ymin = build.ymax = P(build.task)[0].y;
+    for(i=0; i<C(build.task); i++) {
+        build.xmin = MIN(build.xmin, P(build.task)[i].x);
+        build.xmax = MAX(build.xmax, P(build.task)[i].x);
+        build.ymin = MIN(build.ymin, P(build.task)[i].y);
+        build.ymax = MAX(build.ymax, P(build.task)[i].y);
+        build.zmin = MIN(build.zmin, P(build.task)[i].z);
+        build.zmax = MAX(build.zmax, P(build.task)[i].z);
+    }
+    printf("Buildtask boundary: X: %d - %d   Z: %d - %d   Y: %d - %d\n",
+           build.xmin, build.xmax, build.zmin, build.zmax, build.ymin, build.ymax);
+
     build_update();
 }
 
