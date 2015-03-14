@@ -51,6 +51,8 @@ typedef struct {
     union {
         int8_t  state;
         struct {
+            int8_t empty   : 1; // true if the block is free to place blocks into
+                                // (contains air or some non-solid blocks)
             int8_t placed  : 1; // true if this block is already in place
             int8_t blocked : 1; // true if this block is obstructed by something else
             int8_t inreach : 1; // this block is close enough to place
@@ -102,6 +104,15 @@ struct {
 
 // maximum reach distance for building, squared, in fixp units (1/32 block)
 #define MAXREACH SQ(5<<5)
+#define OFF(x,z,y) (((x)-xo)+((z)-zo)*(xsz)+((y)-yo)*(xsz*zsz))
+
+static inline int ISEMPTY(int bid) {
+    return ( bid==0x00 ||               // air
+             bid==0x08 || bid==0x09 ||  // water
+             bid==0x0a || bid==0x0b ||  // lava
+             bid==0x1f ||               // tallgrass
+             bid==0x33 );               // fire
+}
 
 void build_update() {
     // player position or look have changed - update our placeable blocks list
@@ -153,7 +164,18 @@ void build_update() {
 
     bid_t * world = export_cuboid(Xo, Xsz, Zo, Zsz, yo, ysz, NULL);
 
+    // 3. determine which blocks are occupied and which neighbors are available
+    for(i=0; i<C(build.task); i++) {
+        blk *b = P(build.task)+i;
+        bid_t bl = world[OFF(b->x,b->z,b->y)];
 
+        // check if this block is already correctly placed (including meta)
+        //TODO: implement less restricted check for blocks with non-positional meta
+        b->placed = (bl.raw == b->b.raw);
+
+        // check if the block is empty, but ignore those that are already
+        // placed - this way we can support "empty" blocks like water in our buildplan
+        b->empty  = ISEMPTY(bl.bid) && !b->placed;
     }
 
     /* Further strategy:
@@ -302,9 +324,12 @@ void build_dump_task() {
     char buf[256];
     for(i=0; i<C(build.task); i++) {
         blk *b = &P(build.task)[i];
-        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d %c (%s)\n",
+        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d %c%c%c (%s)\n",
                i, b->x, b->z, b->y, b->b.bid, b->b.meta,
-               b->dist, b->inreach?'*':' ',
+               b->dist,
+               b->inreach?'R':'.',
+               b->empty  ?'E':'.',
+               b->placed ?'P':'.',
                get_bid_name(buf, b->b));
     }
 }
