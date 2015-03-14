@@ -421,6 +421,14 @@ typedef struct {
     uint8_t onground;
 } CP_PlayerPositionLook_pkt;
 
+// 0x08
+typedef struct {
+    pos_t   bpos;
+    int8_t  face;
+    slot_t  item;
+    int8_t  cx,cy,cz;
+} CP_PlayerBlockPlacement_pkt;
+
 // 0x09
 typedef struct {
     int16_t sid;
@@ -556,6 +564,7 @@ typedef struct {
         PKT(CP_PlayerPosition);
         PKT(CP_PlayerLook);
         PKT(CP_PlayerPositionLook);
+        PKT(CP_PlayerBlockPlacement);
         PKT(CP_HeldItemChange);
         PKT(CP_Animation);
         PKT(CP_EntityAction);

@@ -1132,6 +1132,29 @@ DUMP_BEGIN(CP_PlayerPositionLook) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x08 CP_PlayerBlockPlacement
+
+DECODE_BEGIN(CP_PlayerBlockPlacement,_1_8_1) {
+    Plong(bpos.p);
+    Pchar(face);
+    p = read_slot(p, &tpkt->item);
+    Pchar(cx);
+    Pchar(cy);
+    Pchar(cz);
+} DECODE_END;
+
+DUMP_BEGIN(CP_PlayerBlockPlacement) {
+    printf("bpos=%d,%d,%d, face=%d, cursor=%d,%d,%d, item=",
+           tpkt->bpos.x,  tpkt->bpos.y,  tpkt->bpos.z,
+           tpkt->face, tpkt->cx, tpkt->cy, tpkt->cz);
+    dump_slot(&tpkt->item);
+} DUMP_END;
+
+FREE_BEGIN(CP_PlayerBlockPlacement) {
+    clear_slot(&tpkt->item);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x09 CP_HeldItemChange
 
 DECODE_BEGIN(CP_HeldItemChange,_1_8_1) {
@@ -1260,6 +1283,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),
         SUPPORT_D   (CP_PlayerLook,_1_8_1),
         SUPPORT_D   (CP_PlayerPositionLook,_1_8_1),
+        SUPPORT_DDF (CP_PlayerBlockPlacement,_1_8_1),
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
         SUPPORT_DE  (CP_EntityAction,_1_8_1),
