@@ -132,6 +132,23 @@ void build_update() {
         return;
     }
 
+    // 2. extract the cuboid with the existing world blocks
+
+    //TODO: try to limit the extracted area to a bare minimum of
+    //      the reachable blocks, to limit the amount of data
+
+    // offset coords of the cuboid
+    int32_t xo = build.xmin-1;
+    int32_t zo = build.zmin-1;
+    int32_t yo = build.ymin-1;
+
+    // cuboid size
+    int32_t xsz = build.xmax-build.xmin+3;
+    int32_t zsz = build.zmax-build.zmin+3;
+    int32_t ysz = build.ymax-build.ymin+3;
+
+    bid_t * world = export_cuboid(xo, xsz, zo, zsz, yo, ysz, NULL);
+
     }
 
     /* Further strategy:
@@ -170,6 +187,8 @@ void build_update() {
          and choose a random dot from the stored set
 
     */
+
+    free(world);
 }
 
 void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
