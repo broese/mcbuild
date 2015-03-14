@@ -176,6 +176,14 @@ void build_update() {
         // check if the block is empty, but ignore those that are already
         // placed - this way we can support "empty" blocks like water in our buildplan
         b->empty  = ISEMPTY(bl.bid) && !b->placed;
+
+        // determine which neighbors do we have
+        b->n_yp = !ISEMPTY(world[OFF(b->x,b->z,b->y+1)].bid);
+        b->n_yn = !ISEMPTY(world[OFF(b->x,b->z,b->y-1)].bid);
+        b->n_xp = !ISEMPTY(world[OFF(b->x+1,b->z,b->y)].bid);
+        b->n_xn = !ISEMPTY(world[OFF(b->x-1,b->z,b->y)].bid);
+        b->n_zp = !ISEMPTY(world[OFF(b->x,b->z+1,b->y)].bid);
+        b->n_zn = !ISEMPTY(world[OFF(b->x,b->z-1,b->y)].bid);
     }
 
     /* Further strategy:
@@ -324,12 +332,19 @@ void build_dump_task() {
     char buf[256];
     for(i=0; i<C(build.task); i++) {
         blk *b = &P(build.task)[i];
-        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d %c%c%c (%s)\n",
+        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d %c%c%c %c%c%c%c%c%c material=%s\n",
                i, b->x, b->z, b->y, b->b.bid, b->b.meta,
                b->dist,
                b->inreach?'R':'.',
                b->empty  ?'E':'.',
                b->placed ?'P':'.',
+
+               b->n_yp ? '*':'.',
+               b->n_yn ? '*':'.',
+               b->n_xp ? '*':'.',
+               b->n_xn ? '*':'.',
+               b->n_zp ? '*':'.',
+               b->n_zn ? '*':'.',
                get_bid_name(buf, b->b));
     }
 }
