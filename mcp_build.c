@@ -138,16 +138,21 @@ void build_update() {
     //      the reachable blocks, to limit the amount of data
 
     // offset coords of the cuboid
-    int32_t xo = build.xmin-1;
-    int32_t zo = build.zmin-1;
+    int32_t Xo = (build.xmin-1)>>4;
+    int32_t Zo = (build.zmin-1)>>4;
+    int32_t xo = Xo<<4;
+    int32_t zo = Zo<<4;
     int32_t yo = build.ymin-1;
 
     // cuboid size
-    int32_t xsz = build.xmax-build.xmin+3;
-    int32_t zsz = build.zmax-build.zmin+3;
+    int32_t Xsz = ((build.xmax+1)>>4)-Xo+1;
+    int32_t Zsz = ((build.zmax+1)>>4)-Zo+1;
+    int32_t xsz = Xsz<<4;
+    int32_t zsz = Zsz<<4;
     int32_t ysz = build.ymax-build.ymin+3;
 
-    bid_t * world = export_cuboid(xo, xsz, zo, zsz, yo, ysz, NULL);
+    bid_t * world = export_cuboid(Xo, Xsz, Zo, Zsz, yo, ysz, NULL);
+
 
     }
 
