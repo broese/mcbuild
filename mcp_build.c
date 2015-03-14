@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <math.h>
 
 #include "mcp_ids.h"
 #include "mcp_build.h"
@@ -41,6 +42,29 @@ static int scan_opt(char **words, const char *fmt, ...) {
 #define DIR_EAST    4
 #define DIR_WEST    5
 
+// offsets to the neighbor blocks
+int32_t NOFF[6][3] = {
+    //               x   z   y
+    [DIR_UP]    = {  0,  0,  1 },
+    [DIR_DOWN]  = {  0,  0, -1 },
+    [DIR_SOUTH] = {  0,  1,  0 },
+    [DIR_NORTH] = {  0, -1,  0 },
+    [DIR_EAST]  = {  1,  0,  0 },
+    [DIR_WEST]  = { -1,  0,  0 },
+};
+
+uint16_t DOTS_ALL[15] = {
+    0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff,
+    0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff };
+
+uint16_t DOTS_UPPER[15] = {
+    0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0,
+    0, 0, 0, 0, 0, 0, 0 };
+
+uint16_t DOTS_LOWER[15] = {
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff };
+
 // this structure is used to define an absolute block placement
 // in the active building process
 typedef struct {
@@ -74,6 +98,8 @@ typedef struct {
         };
     };
 
+    uint16_t dots[6][15];       // usable dots on the 6 neighbor faces to place the block
+
     int32_t dist; // distance to the block center (squared)
 } blk;
 
@@ -103,7 +129,9 @@ struct {
 ////////////////////////////////////////////////////////////////////////////////
 
 // maximum reach distance for building, squared, in fixp units (1/32 block)
-#define MAXREACH SQ(5<<5)
+#define EYEHEIGHT 52
+#define MAXREACH_COARSE SQ(5<<5)
+#define MAXREACH SQ(4<<5)
 #define OFF(x,z,y) (((x)-xo)+((z)-zo)*(xsz)+((y)-yo)*(xsz*zsz))
 
 static inline int ISEMPTY(int bid) {
@@ -112,6 +140,77 @@ static inline int ISEMPTY(int bid) {
              bid==0x0a || bid==0x0b ||  // lava
              bid==0x1f ||               // tallgrass
              bid==0x33 );               // fire
+}
+
+typedef struct {
+    fixp x,z,y;     // position of the dot 0,0
+    fixp rx,rz,ry;  // deltas to the next dot in row
+    fixp cx,cz,cy;  // deltas to the next dot in column
+} dotpos_t;
+
+static dotpos_t DOTPOS[6] = {
+    //               x  z  y   x z y   x z y
+    [DIR_UP]    = {  2, 2, 0,  2,0,0,  0,2,0, }, // X-Z
+    [DIR_DOWN]  = {  2, 2,32,  2,0,0,  0,2,0, }, // X-Z
+    [DIR_SOUTH] = {  2, 0, 2,  2,0,0,  0,0,2, }, // X-Y
+    [DIR_NORTH] = {  2,32, 2,  2,0,0,  0,0,2, }, // X-Y
+    [DIR_EAST]  = {  0, 2, 2,  0,2,0,  0,0,2, }, // Z-Y
+    [DIR_WEST]  = { 32, 2, 2,  0,2,0,  0,0,2, }, // Z-Y
+};
+
+static void remove_distant_dots(blk *b) {
+    // reset distance to the block
+    // this will be now replaced with the max dot distance
+    b->dist = 0;
+
+    fixp px = gs.own.x;
+    fixp pz = gs.own.z;
+    fixp py = gs.own.y+EYEHEIGHT;
+
+    int f;
+    for(f=0; f<6; f++) {
+        if (!((b->neigh>>f)&1)) continue; // no neighbor - skip this face
+        uint16_t *dots = b->dots[f];
+        dotpos_t dotpos = DOTPOS[f];
+
+        // coordinates (fixed point) of the adjacent block
+        fixp nx = (b->x+NOFF[f][0])<<5;
+        fixp nz = (b->z+NOFF[f][1])<<5;
+        fixp ny = (b->y+NOFF[f][2])<<5;
+
+        int dr,dc;
+        for(dr=0; dr<15; dr++) {
+            uint16_t drow = dots[dr];
+            if (!drow) continue; // skip disabled rows
+
+            // dot dr,0 coordinates in 3D space
+            fixp rx = nx + dotpos.x + dotpos.rx*dr;
+            fixp ry = ny + dotpos.y + dotpos.ry*dr;
+            fixp rz = nz + dotpos.z + dotpos.rz*dr;
+
+            for(dc=0; dc<15; dc++) {
+                uint16_t mask = 1<<dc;
+                if (!(drow&mask)) continue; // skip disabled dots
+
+                fixp x = rx + dotpos.cx*dc;
+                fixp y = ry + dotpos.cy*dc;
+                fixp z = rz + dotpos.cz*dc;
+
+                int32_t dist = SQ(x-px)+SQ(z-pz)+SQ(y-py);
+
+                if (dist > MAXREACH) {
+                    dots[dr] &= ~mask; // this dot is too far away - disable it
+                    drow = dots[dr];
+                }
+                else {
+                    if (b->dist < dist)
+                        b->dist = dist;
+                }
+            }
+        }
+    }
+
+    b->inreach = (b->dist > 0);
 }
 
 void build_update() {
@@ -130,11 +229,11 @@ void build_update() {
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
         int32_t dx = gs.own.x-(b->x<<5)+16;
-        int32_t dy = gs.own.y-(b->y<<5)+16;
+        int32_t dy = gs.own.y-(b->y<<5)+16+EYEHEIGHT;
         int32_t dz = gs.own.z-(b->z<<5)+16;
         b->dist = SQ(dx)+SQ(dy)+SQ(dz);
 
-        b->inreach = (b->dist<MAXREACH);
+        b->inreach = (b->dist<MAXREACH_COARSE);
         num_inreach += b->inreach;
     }
     if (num_inreach==0) {
@@ -184,11 +283,25 @@ void build_update() {
         b->n_xn = !ISEMPTY(world[OFF(b->x-1,b->z,b->y)].bid);
         b->n_zp = !ISEMPTY(world[OFF(b->x,b->z+1,b->y)].bid);
         b->n_zn = !ISEMPTY(world[OFF(b->x,b->z-1,b->y)].bid);
+        //TODO: skip faces looking away from us
+
+        // skip the blocks we can't place
+        if (b->placed || !b->empty || !b->neigh) continue;
+
+        // determine usable dots on the neighbr faces
+        lh_clear_obj(b->dots);
+        int n;
+        for (n=0; n<6; n++) {
+            if (!((b->neigh>>n)&1)) continue;
+            //TODO: provide support for position-dependent blocks
+            memcpy(b->dots[n], DOTS_ALL, sizeof(DOTS_ALL));
+        }
+
+        // calculate exact distance to each of the dots and remove those out of reach
+        remove_distant_dots(b);
     }
 
     /* Further strategy:
-       - determine which neighbors are available for the blocks 'inreach'
-
        - skip those neighbor faces looking away from you
 
        - skip those neighbor faces unsuitable for the block orientation
@@ -196,7 +309,7 @@ void build_update() {
          blocks - they can be placed on any neighbor. Later we'll need
          to determine this properly for the stairs, slabs, etc.
 
-       - for each neighbor face, calculate which from 15x15 points can be
+       + for each neighbor face, calculate which from 15x15 points can be
          'clicked' to be able to place the block we want the way we want.
          For now, we can just say "all of them" - this will work with plain
          blocks. Later we can introduce support for slabs, stairs etc., e.g.
@@ -207,15 +320,15 @@ void build_update() {
          this is optional for now, because it's obviously very difficult
          to achieve and possibly not even checked properly.
 
-       - for each of the remaining points, calculate their exact distance,
+       + for each of the remaining points, calculate their exact distance,
          skip those farther away than 4.0 blocks (this is now the proper
          in-reach calculation)
 
-       - for each of the remaining points, store the one with the largest
+       + for each of the remaining points, store the one with the largest
          distance in the blk - this will serve as the selector for the
          build-the-most-distant-blocks-first strategy to avoid isolating blocks
 
-       - store the suitable dots (as a bit array in a 16xshorts?) in the
+       + store the suitable dots (as a bit array in a 16xshorts?) in the
          blk struct
 
        - when building, select the first suitable block for building,
@@ -332,19 +445,19 @@ void build_dump_task() {
     char buf[256];
     for(i=0; i<C(build.task); i++) {
         blk *b = &P(build.task)[i];
-        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d %c%c%c %c%c%c%c%c%c material=%s\n",
+        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d (%.2f) %c%c%c %c%c%c%c%c%c material=%s\n",
                i, b->x, b->z, b->y, b->b.bid, b->b.meta,
-               b->dist,
+               b->dist, sqrt((float)b->dist)/32,
                b->inreach?'R':'.',
                b->empty  ?'E':'.',
                b->placed ?'P':'.',
 
                b->n_yp ? '*':'.',
                b->n_yn ? '*':'.',
-               b->n_xp ? '*':'.',
-               b->n_xn ? '*':'.',
                b->n_zp ? '*':'.',
                b->n_zn ? '*':'.',
+               b->n_xp ? '*':'.',
+               b->n_xn ? '*':'.',
                get_bid_name(buf, b->b));
     }
 }

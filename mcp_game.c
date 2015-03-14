@@ -287,6 +287,7 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
 #define _GMP break; }
 
 void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
+    dump_packet(pkt);
     switch (pkt->pid) {
 
         ////////////////////////////////////////////////////////////////
