@@ -115,6 +115,7 @@ void build_update() {
     // inreach=1 does not necessarily mean the block is really reachable -
     // this will be determined later in more detail, but those with
     // inreach=0 are definitely too far away to bother.
+    int num_inreach = 0;
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
         int32_t dx = gs.own.x-(b->x<<5)+16;
@@ -123,6 +124,14 @@ void build_update() {
         b->dist = SQ(dx)+SQ(dy)+SQ(dz);
 
         b->inreach = (b->dist<MAXREACH);
+        num_inreach += b->inreach;
+    }
+    if (num_inreach==0) {
+        // no potentially buildable blocks nearby - don't bother with the rest
+        build.buildable[0] = -1;
+        return;
+    }
+
     }
 
     /* Further strategy:
