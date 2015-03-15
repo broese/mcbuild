@@ -206,6 +206,18 @@ static uint8_t * read_slot(uint8_t *p, slot_t *s) {
     return p;
 }
 
+static uint8_t * write_slot(uint8_t *w, slot_t *s) {
+    lh_write_short_be(w, s->item);
+    if (s->item == -1) return w;
+
+    lh_write_char(w, s->count);
+    lh_write_short_be(w, s->damage);
+
+    nbt_write(&w, s->nbt);
+
+    return w;
+}
+
 void dump_slot(slot_t *s) {
     char buf[256];
     printf("item=%d (%s)", s->item, get_item_name(buf,s));
@@ -1143,6 +1155,15 @@ DECODE_BEGIN(CP_PlayerBlockPlacement,_1_8_1) {
     Pchar(cz);
 } DECODE_END;
 
+ENCODE_BEGIN(CP_PlayerBlockPlacement,_1_8_1) {
+    Wlong(bpos.p);
+    Wchar(face);
+    w = write_slot(w, &tpkt->item);
+    Wchar(cx);
+    Wchar(cy);
+    Wchar(cz);
+} ENCODE_END;
+
 DUMP_BEGIN(CP_PlayerBlockPlacement) {
     printf("bpos=%d,%d,%d, face=%d, cursor=%d,%d,%d, item=",
            tpkt->bpos.x,  tpkt->bpos.y,  tpkt->bpos.z,
@@ -1283,7 +1304,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),
         SUPPORT_D   (CP_PlayerLook,_1_8_1),
         SUPPORT_D   (CP_PlayerPositionLook,_1_8_1),
-        SUPPORT_DDF (CP_PlayerBlockPlacement,_1_8_1),
+        SUPPORT_DEDF(CP_PlayerBlockPlacement,_1_8_1),
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
         SUPPORT_DE  (CP_EntityAction,_1_8_1),
