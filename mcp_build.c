@@ -383,6 +383,35 @@ void build_update() {
     free(world);
 }
 
+static void choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz) {
+    int f,dr,dc;
+    int i=random()%b->ndots;
+    printf("ndots=%d, i=%d\n", b->ndots, i);
+
+    for(f=0; f<6; f++) {
+        if (!((b->neigh>>f)&1)) continue;
+        for(dr=0; dr<15; dr++) {
+            uint16_t dots = b->dots[f][dr];
+            if (!dots) continue;
+            for(dc=0; dc<15; dc++) {
+                if ((dots>>dc)&1) {
+                    i--;
+                    if (i<0) {
+                        dotpos_t dotpos = DOTPOS[f];
+                        *face = f;
+                        *cx = (dotpos.rx*dr+dotpos.cx*dc)/2;
+                        *cy = (dotpos.ry*dr+dotpos.cy*dc)/2;
+                        *cz = (dotpos.rz*dr+dotpos.cz*dc)/2;
+                        return;
+                    }
+                }
+            }
+        }
+    }
+    printf("Fail: i=%d\n",i);
+    assert(0);
+}
+
 #define BUILD_BLKINT 50000
 
 void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
@@ -402,8 +431,26 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         if (hslot->item != b->b.bid) continue;
 
         char buf[4096];
-        printf("Placing block %d,%d,%d (%s)\n",b->x,b->y,b->z,
-               get_item_name(buf, hslot));
+
+        int8_t face, cx, cy, cz;
+        choose_dot(b, &face, &cx, &cy, &cz);
+        //printf("Placing block %d,%d,%d (%s)\n",b->x,b->y,b->z, get_item_name(buf, hslot));
+
+        // place block
+        NEWPACKET(CP_PlayerBlockPlacement, pbp);
+        tpbp->bpos.x = b->x+NOFF[face][0];
+        tpbp->bpos.z = b->z+NOFF[face][1];
+        tpbp->bpos.y = b->y+NOFF[face][2];
+        tpbp->face = face;
+        tpbp->cx = cx;
+        tpbp->cy = cy;
+        tpbp->cz = cz;
+        queue_packet(pbp,sq);
+        //dump_packet(pbp);
+
+        // Wave arm
+        NEWPACKET(CP_Animation, anim);
+        queue_packet(anim, sq);
 
         b->last = ts;
     }
