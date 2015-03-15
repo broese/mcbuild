@@ -99,6 +99,7 @@ typedef struct {
     };
 
     uint16_t dots[6][15];       // usable dots on the 6 neighbor faces to place the block
+    int ndots;
 
     int32_t dist; // distance to the block center (squared)
 } blk;
@@ -118,7 +119,8 @@ struct {
     lh_arr_declare(blk,task);  // current active building task
     lh_arr_declare(blkr,plan); // currently loaded/created buildplan
 
-    int buildable[MAXBUILDABLE];
+    int bq[MAXBUILDABLE];      // list of buildable blocks from the task
+    int nbq;                   // number of buildable blocks
 
     int32_t     xmin,xmax,ymin,ymax,zmin,zmax;
 } build;
@@ -213,6 +215,26 @@ static void remove_distant_dots(blk *b) {
     b->inreach = (b->dist > 0);
 }
 
+static inline int count_dots_row(uint16_t dots) {
+    int i,c=0;
+    for (i=0; i<15; dots>>=1,i++)
+        c += (dots&1);
+    return c;
+}
+
+static int count_dots(blk *b) {
+    int f;
+    int c=0;
+    for(f=0; f<6; f++) {
+        int dr;
+        for(dr=0; dr<15; dr++) {
+            c += count_dots_row(b->dots[f][dr]);
+        }
+    }
+
+    return c;
+}
+
 void build_update() {
     // player position or look have changed - update our placeable blocks list
     if (!build.active) return;
@@ -238,7 +260,8 @@ void build_update() {
     }
     if (num_inreach==0) {
         // no potentially buildable blocks nearby - don't bother with the rest
-        build.buildable[0] = -1;
+        build.nbq = 0;
+        build.bq[0] = -1;
         return;
     }
 
@@ -264,6 +287,7 @@ void build_update() {
     bid_t * world = export_cuboid(Xo, Xsz, Zo, Zsz, yo, ysz, NULL);
 
     // 3. determine which blocks are occupied and which neighbors are available
+    build.nbq = 0;
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
         bid_t bl = world[OFF(b->x,b->z,b->y)];
@@ -299,7 +323,12 @@ void build_update() {
 
         // calculate exact distance to each of the dots and remove those out of reach
         remove_distant_dots(b);
+
+        b->ndots = count_dots(b);
+        if (b->ndots>0 && build.nbq<MAXBUILDABLE)
+            build.bq[build.nbq++] = i;
     }
+    build.bq[build.nbq] = -1;
 
     /* Further strategy:
        - skip those neighbor faces looking away from you
@@ -445,7 +474,7 @@ void build_dump_task() {
     char buf[256];
     for(i=0; i<C(build.task); i++) {
         blk *b = &P(build.task)[i];
-        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d (%.2f) %c%c%c %c%c%c%c%c%c material=%s\n",
+        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d (%.2f) %c%c%c %c%c%c%c%c%c (%3d) material=%s\n",
                i, b->x, b->z, b->y, b->b.bid, b->b.meta,
                b->dist, sqrt((float)b->dist)/32,
                b->inreach?'R':'.',
@@ -458,6 +487,8 @@ void build_dump_task() {
                b->n_zn ? '*':'.',
                b->n_xp ? '*':'.',
                b->n_xn ? '*':'.',
+               b->ndots,
+
                get_bid_name(buf, b->b));
     }
 }
@@ -470,7 +501,7 @@ void build_clear() {
 void build_cancel() {
     build.active = 0;
     lh_arr_free(BTASK);
-    build.buildable[0] = -1;
+    build.bq[0] = -1;
 }
 
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
