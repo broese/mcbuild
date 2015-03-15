@@ -103,6 +103,8 @@ typedef struct {
     int ndots;
 
     int32_t dist; // distance to the block center (squared)
+
+    uint64_t last;              // last timestamp when we attempted to place this block
 } blk;
 
 // this structure defines a relative block placement 
@@ -381,11 +383,30 @@ void build_update() {
     free(world);
 }
 
+#define BUILD_BLKINT 50000
+
 void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
     // time update - try to build any blocks from the placeable blocks list
     if (!build.active) return;
 
-    //TODO: select one of the blocks from the buildable list and place it
+    //TODO: inventory switching
+    slot_t * hslot = &gs.inv.slots[gs.inv.held+36];
+
+    uint64_t ts = gettimestamp();
+    int i;
+    for(i=0; i<build.nbq; i++) {
+        blk *b = P(build.task)+build.bq[i];
+        if (ts-b->last < BUILD_BLKINT) continue;
+
+        //TODO: differentiate the block meta
+        if (hslot->item != b->b.bid) continue;
+
+        char buf[4096];
+        printf("Placing block %d,%d,%d (%s)\n",b->x,b->y,b->z,
+               get_item_name(buf, hslot));
+
+        b->last = ts;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

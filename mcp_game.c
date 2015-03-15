@@ -379,8 +379,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             if (opt.holeradar && gs.own.pos_change)
                 hole_radar(pkt->cl?bq:tq);
 
-            if (gs.own.pos_change)
-                build_update();
+            build_update();
 
             gs.own.pos_change = 0;
 
