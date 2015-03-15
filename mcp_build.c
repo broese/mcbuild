@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <stdarg.h>
 #include <math.h>
 
@@ -235,6 +236,16 @@ static int count_dots(blk *b) {
     return c;
 }
 
+static int sort_blocks(const void *a, const void *b) {
+    int ia = *((int *)a);
+    int ib = *((int *)b);
+
+    if (P(build.task)[ia].dist > P(build.task)[ib].dist) return -1;
+    if (P(build.task)[ia].dist < P(build.task)[ib].dist) return 1;
+
+    return 0;
+}
+
 void build_update() {
     // player position or look have changed - update our placeable blocks list
     if (!build.active) return;
@@ -329,6 +340,8 @@ void build_update() {
             build.bq[build.nbq++] = i;
     }
     build.bq[build.nbq] = -1;
+
+    qsort(build.bq, build.nbq, sizeof(build.bq[0]), sort_blocks);
 
     /* Further strategy:
        - skip those neighbor faces looking away from you
@@ -493,6 +506,30 @@ void build_dump_task() {
     }
 }
 
+void build_dump_queue() {
+    int i;
+    char buf[256];
+    for(i=0; i<build.nbq; i++) {
+        blk *b = P(build.task)+build.bq[i];
+        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d (%.4f) %c%c%c %c%c%c%c%c%c (%3d) material=%s\n",
+               build.bq[i], b->x, b->z, b->y, b->b.bid, b->b.meta,
+               b->dist, sqrt((float)b->dist)/32,
+               b->inreach?'R':'.',
+               b->empty  ?'E':'.',
+               b->placed ?'P':'.',
+
+               b->n_yp ? '*':'.',
+               b->n_yn ? '*':'.',
+               b->n_zp ? '*':'.',
+               b->n_zn ? '*':'.',
+               b->n_xp ? '*':'.',
+               b->n_xn ? '*':'.',
+               b->ndots,
+
+               get_bid_name(buf, b->b));
+    }
+}
+
 void build_clear() {
     build_cancel();
     lh_arr_free(BPLAN);
@@ -525,6 +562,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "dumptask")) {
         build_dump_task();
+    }
+    else if (!strcmp(words[1], "dumpqueue")) {
+        build_dump_queue();
     }
 
     if (reply[0]) chat_message(reply, cq, "green", 0);
