@@ -269,6 +269,85 @@ nbt_t * nbt_clone(nbt_t *src) {
     return dst;
 }
 
+void nbt_write(uint8_t **w, nbt_t *nbt) {
+    if (!nbt) {
+        lh_write_char(*w, 0);
+        return;
+    }
+
+    // if the object is unnamed - don't write type or name
+    if (nbt->name) {
+        lh_write_char(*w, nbt->type);
+        ssize_t nlen = strlen(nbt->name);
+        lh_write_short_be(*w, nlen);
+        memmove(*w, nbt->name, nlen);
+        *w += nlen;
+    }
+
+    int i;
+    switch (nbt->type) {
+        case NBT_BYTE:
+            lh_write_char(*w, nbt->b);
+            break;
+
+        case NBT_SHORT:
+            lh_write_short_be(*w, nbt->s);
+            break;
+
+        case NBT_INT:
+            lh_write_int_be(*w, nbt->i);
+            break;
+
+        case NBT_LONG:
+            lh_write_long_be(*w, nbt->l);
+            break;
+
+        case NBT_FLOAT:
+            lh_write_float_be(*w, nbt->f);
+            break;
+
+        case NBT_DOUBLE:
+            lh_write_double_be(*w, nbt->d);
+            break;
+
+        case NBT_BYTE_ARRAY:
+            lh_write_int_be(*w, nbt->count);
+            memmove(*w, nbt->ba, nbt->count);
+            *w += nbt->count;
+            break;
+
+        case NBT_INT_ARRAY:
+            lh_write_int_be(*w, nbt->count);
+            for(i=0; i<nbt->count; i++)
+                lh_write_int_be(*w, nbt->ia[i]);
+            break;
+
+        case NBT_STRING:
+            lh_write_short_be(*w, strlen(nbt->st));
+            memmove(*w, nbt->st, nbt->count);
+            *w += nbt->count;
+            break;
+
+        case NBT_LIST: {
+            uint8_t ltype = nbt->li[0]->type;
+            lh_write_char(*w, ltype);
+            lh_write_int_be(*w, nbt->count);
+
+            for(i=0; i<nbt->count; i++)
+                nbt_write(w, nbt->li[i]);
+
+            break;
+        }
+
+        case NBT_COMPOUND: {
+            for(i=0; i<nbt->count; i++)
+                nbt_write(w, nbt->li[i]);
+            lh_write_char(*w, NBT_END);
+            break;
+        }
+    }
+}
+
 #if TEST
 
 int main(int ac, char **av) {
@@ -279,7 +358,7 @@ int main(int ac, char **av) {
 
     uint8_t * buf;
     ssize_t sz = lh_load_alloc(av[1], &buf);
-    //hexdump(buf, sz);
+    hexdump(buf, sz);
 
     uint8_t *p = buf;
     nbt_t * nbt = nbt_parse(&p);
@@ -288,6 +367,12 @@ int main(int ac, char **av) {
 
     nbt_t * newnbt = nbt_clone(nbt);
     nbt_dump(newnbt);
+
+    uint8_t wbuf[65536];
+    uint8_t *w = wbuf;
+    nbt_write(&w, newnbt);
+    ssize_t szw = w-wbuf;
+    hexdump(wbuf, szw);
 
     nbt_free(nbt);
     nbt_free(newnbt);
