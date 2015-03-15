@@ -39,11 +39,6 @@ static inline int mydist(fixp x, fixp y, fixp z) {
     return SQ(gs.own.x-x)+SQ(HEADPOSY(gs.own.y)-y)+SQ(gs.own.z-z);
 }
 
-#define NEWPACKET(type,name)                     \
-    lh_create_obj(MCPacket,name);                \
-    name->pid = type;                            \
-    type##_pkt *t##name = &name->_##type;
-
 ////////////////////////////////////////////////////////////////////////////////
 // Autokill
 

@@ -585,5 +585,10 @@ void       dump_packet(MCPacket *pkt);
 void       free_packet  (MCPacket *pkt);
 void       queue_packet (MCPacket *pkt, MCPacketQueue *q);
 
+#define NEWPACKET(type,name)                     \
+    lh_create_obj(MCPacket,name);                \
+    name->pid = type;                            \
+    type##_pkt *t##name = &name->_##type;
+
 ////////////////////////////////////////////////////////////////////////////////
 
