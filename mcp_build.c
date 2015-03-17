@@ -458,18 +458,58 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static bid_t build_arg_material(char **words, char *reply) {
+    bid_t mat;
+
+    // determine the building material
+    int bid=0, meta=0;
+    // first option: BID,meta specified
+    if (scan_opt(words, "mat=%d,%d", &bid, &meta)!=2) {
+        // second option: just block ID, assume meta=0
+        meta = 0;
+        if (scan_opt(words, "mat=%d", &bid)!=1) {
+            // third option: take the same material the player is currently holding
+            slot_t *s = &gs.inv.slots[gs.inv.held+36];
+            if (s->item < 0 || s->item==0 || ITEMS[s->item].flags&I_ITEM) {
+                sprintf(reply, "You must specify material - either explicitly with "
+                               "mat=<bid>[,<meta>] or by holding a placeable block");
+                return mat;
+            }
+            else {
+                bid = s->item;
+                meta = s->damage;
+                if (!(ITEMS[s->item].flags&I_MTYPE) && meta) {
+                    printf("Warning: item %d is not I_MTYPE but has a non-zero damage value (%d)\n",
+                           s->item, meta);
+                    meta = 0;
+                }
+            }
+        }
+    }
+
+    mat.bid = bid;
+    mat.meta = meta;
+    return mat;
+}
+
 static void build_floor(char **words, char *reply) {
     build_clear();
 
+    // floor size
     int xsize,zsize;
     if (scan_opt(words, "size=%d,%d", &xsize, &zsize)!=2) {
         sprintf(reply, "Usage: build floor size=<xsize>,<zsize>");
         return;
     }
-    if (xsize<=0 || zsize<=0) return;
+    if (xsize<=0 || zsize<=0) {
+        sprintf(reply, "Usage: illegal floor size %d,%d",xsize,zsize);
+        return;
+    }
 
-    //TODO: material
-    bid_t mat = BLOCKTYPE(4,0);
+    bid_t mat = build_arg_material(words, reply);
+    if (reply[0]) return;
+
+    //TODO: for slab-type blocks, parse an additional option to select upper/lower placement
 
     int x,z;
     for(x=0; x<xsize; x++) {
