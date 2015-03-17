@@ -558,9 +558,27 @@ static void build_place(char **words, char *reply) {
         blkr *bp = P(build.plan)+i;
         blk  *bt = lh_arr_new_c(BTASK); // new element in the buildtask
 
-        bt->x = bp->x+px;
-        bt->y = bp->y+py;
-        bt->z = bp->z+pz;
+        switch (dir) {
+            case DIR_SOUTH:
+                bt->x = px-bp->x;
+                bt->z = pz-bp->z;
+                break;
+            case DIR_NORTH:
+                bt->x = px+bp->x;
+                bt->z = pz+bp->z;
+                break;
+            case DIR_EAST:
+                bt->x = px-bp->z;
+                bt->z = pz+bp->x;
+                break;
+            case DIR_WEST:
+                bt->x = px+bp->z;
+                bt->z = pz-bp->x;
+                break;
+        }
+        bt->y = py+bp->y;
+
+        //TODO: correct the I_MPOS-dependent metas
         bt->b = bp->b;
     }
     build.active = 1;
