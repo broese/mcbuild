@@ -379,7 +379,6 @@ void build_update() {
 static void choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz) {
     int f,dr,dc;
     int i=random()%b->ndots;
-    printf("ndots=%d, i=%d\n", b->ndots, i);
 
     for(f=0; f<6; f++) {
         if (!((b->neigh>>f)&1)) continue;
