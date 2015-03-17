@@ -115,40 +115,35 @@ static void hole_radar(MCPacketQueue *sq) {
     bid_t data[(HR_DISTC+1)*256];
     int off,sh;
 
-    //TODO: make a separate function to get direction
-    if (abs(lx) > abs(lz)) {
-        lz=0;
-        // looking into east or west direction
-        if (lx<0) {
-            //to west
+    switch(player_direction()) {
+        case DIR_WEST:
+            lz=0;
             lx=-1;
             export_cuboid(X-HR_DISTC,HR_DISTC+1,Z,1,y,1,data);
             off = (x&0x0f)+HR_DISTB+(z&0x0f)*(HR_DISTB+16);
-        }
-        else {
-            // east
+            sh=-1;
+            break;
+        case DIR_EAST:
+            lz=0;
             lx=1;
             export_cuboid(X,HR_DISTC+1,Z,1,y,1,data);
             off = (x&0x0f)+(z&0x0f)*(HR_DISTB+16);
-        }
-        sh=lx;
-    }
-    else {
-        lx=0;
-        // looking into north or south direction
-        if (lz<0) {
-            //to north
+            sh=1;
+            break;
+        case DIR_NORTH:
+            lx=0;
             lz=-1;
             export_cuboid(X,1,Z-HR_DISTC,HR_DISTC+1,y,1,data);
             off = (x&0x0f)+((z&0x0f)+HR_DISTB)*16;
-        }
-        else {
-            // south
+            sh=-16;
+            break;
+        case DIR_SOUTH:
+            lx=0;
             lz=1;
             export_cuboid(X,1,Z,HR_DISTC+1,y,1,data);
             off = (x&0x0f)+(z&0x0f)*16;
-        }
-        sh = 16*lz;
+            sh=16;
+            break;
     }
 
     int i;
