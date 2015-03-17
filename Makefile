@@ -6,6 +6,7 @@ INC=-I../libhelper
 
 UNAME := $(shell uname -s)
 ifeq ($(UNAME),SunOS)
+	DEFS += -DBUG_UNNAMED_INITIALIZER=1
         INC  += -I/users/atm/broese/include
         LIBS += -lsocket -lnsl -lmd5 -L/users/atm/broese/lib -lz -lssl -lcrypto
 endif

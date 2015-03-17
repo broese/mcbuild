@@ -469,7 +469,7 @@ static void build_floor(char **words, char *reply) {
     if (xsize<=0 || zsize<=0) return;
 
     //TODO: material
-    bid_t mat = { .bid=0x04, .meta=0 };
+    bid_t mat = BLOCKTYPE(4,0);
 
     int x,z;
     for(x=0; x<xsize; x++) {
