@@ -161,6 +161,29 @@ static void hole_radar(MCPacketQueue *sq) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Inventory Handling
+
+// change the currently selected quickbar slot
+void gmi_change_held(MCPacketQueue *sq, MCPacketQueue *cq, int sid, int notify_client) {
+    assert(sid>=0 && sid<=8);
+
+    // send command to the server
+    NEWPACKET(CP_HeldItemChange, cp);
+    tcp->sid = sid;
+    queue_packet(cp, sq);
+
+    // notify gamestate
+    gs_packet(cp);
+
+    if (notify_client) {
+        // send command to the client if we want to keep it updated
+        NEWPACKET(SP_HeldItemChange, sp);
+        tsp->sid = sid;
+        queue_packet(sp, cq);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
 
 void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {
@@ -262,6 +285,14 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         opt.holeradar = !opt.holeradar;
         sprintf(reply,"Hole radar is %s",opt.holeradar?"ON":"OFF");
         rpos = 2;
+    }
+    else if (!strcmp(words[0],"changeheld")) {
+        if (!words[1] || !words[2]) {
+            sprintf(reply,"Usage: changeheld <sid> <notify_client>");
+        }
+        else {
+            gmi_change_held(tq, bq, atoi(words[1]),atoi(words[2]));
+        }
     }
 
     // send an immediate reply if any was given
