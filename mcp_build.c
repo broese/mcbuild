@@ -36,13 +36,6 @@ static int scan_opt(char **words, const char *fmt, ...) {
 ////////////////////////////////////////////////////////////////////////////////
 // Structures
 
-#define DIR_UP      0
-#define DIR_DOWN    1
-#define DIR_SOUTH   2
-#define DIR_NORTH   3
-#define DIR_EAST    4
-#define DIR_WEST    5
-
 // offsets to the neighbor blocks
 int32_t NOFF[6][3] = {
     //               x   z   y

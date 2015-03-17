@@ -64,6 +64,15 @@ typedef struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define DIR_UP      0
+#define DIR_DOWN    1
+#define DIR_SOUTH   2
+#define DIR_NORTH   3
+#define DIR_EAST    4
+#define DIR_WEST    5
+
+////////////////////////////////////////////////////////////////////////////////
+
 typedef struct _gamestate {
     // game
     int64_t time; // timestamp from the last received server tick
@@ -126,3 +135,5 @@ void dump_inventory();
 
 bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
                       int32_t yl, int32_t ys, bid_t *data);
+
+int player_direction();

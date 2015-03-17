@@ -809,6 +809,18 @@ static void inv_throw(int button, int16_t sid) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Player
+
+int player_direction() {
+    int lx=-(int)(65536*sin(gs.own.yaw/180*M_PI));
+    int lz=(int)(65536*cos(gs.own.yaw/180*M_PI));
+
+    return (abs(lx) > abs(lz)) ?
+        ( (lx<0) ? DIR_WEST : DIR_EAST ) :
+        ( (lz<0) ? DIR_NORTH : DIR_SOUTH );
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Packet processing
 
 #define GSP(name)                               \
