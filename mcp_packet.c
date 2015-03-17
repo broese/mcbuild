@@ -542,7 +542,7 @@ DECODE_BEGIN(SP_HeldItemChange,_1_8_1) {
 
 ENCODE_BEGIN(SP_HeldItemChange,_1_8_1) {
     Wchar(sid);
-} DECODE_END;
+} ENCODE_END;
 
 DUMP_BEGIN(SP_HeldItemChange) {
     printf("sid=%d", tpkt->sid);
@@ -1184,7 +1184,7 @@ DECODE_BEGIN(CP_HeldItemChange,_1_8_1) {
 
 ENCODE_BEGIN(CP_HeldItemChange,_1_8_1) {
     Wshort(sid);
-} DECODE_END;
+} ENCODE_END;
 
 DUMP_BEGIN(CP_HeldItemChange) {
     printf("sid=%d", tpkt->sid);
@@ -1231,7 +1231,7 @@ DECODE_BEGIN(CP_CloseWindow,_1_8_1) {
 
 ENCODE_BEGIN(CP_CloseWindow,_1_8_1) {
     Wchar(wid);
-} DECODE_END;
+} ENCODE_END;
 
 DUMP_BEGIN(CP_CloseWindow) {
     printf("wid=%d", tpkt->wid);
