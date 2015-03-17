@@ -69,9 +69,9 @@ typedef struct {
 } bid_t;
 
 #ifdef BUG_UNNAMED_INITIALIZER
-#define BLOCKTYPE(bid,meta) { meta, bid }
+#define BLOCKTYPE(b,m) { m, b }
 #else
-#define BLOCKTYPE(bid,meta) { .bid = bid, .meta = meta }
+#define BLOCKTYPE(b,m) { .bid = b, .meta = m }
 #endif
 
 // used for skylight and blocklight
