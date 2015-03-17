@@ -529,12 +529,25 @@ static void build_place(char **words, char *reply) {
     }
 
     // parse coords
+    // TODO: placement at player's position
     int px,py,pz;
     if (scan_opt(words, "coord=%d,%d,%d", &px, &pz, &py)!=3) {
         sprintf(reply, "Usage: build place coord=<x>,<z>,<y>");
         return;
     }
     sprintf(reply, "Place pivot at %d,%d (%d)\n",px,pz,py);
+
+    // parse placement direction
+    int dir;
+    if (scan_opt(words, "dir=%d", &dir)!=1) {
+        // if not specified, derive from the player's look direction
+        dir = player_direction();
+    }
+
+    if (dir<DIR_SOUTH || dir>DIR_WEST) {
+        sprintf(reply, "incorrect direction code, use: SOUTH=2,NORTH=3,EAST=4,WEST=5");
+        return;
+    }
 
     // abort current buildtask
     build_cancel();
