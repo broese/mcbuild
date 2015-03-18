@@ -128,6 +128,7 @@ typedef struct {
 
 void dump_slot(slot_t *s);
 void clear_slot(slot_t *s);
+slot_t * clone_slot(slot_t *src, slot_t *dst);
 
 
 

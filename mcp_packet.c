@@ -240,6 +240,18 @@ void clear_slot(slot_t *s) {
     s->damage = 0;
 }
 
+slot_t * clone_slot(slot_t *src, slot_t *dst) {
+    if (!dst)
+        lh_alloc_obj(dst);
+
+    dst->item = src->item;
+    dst->count = src->count;
+    dst->damage = src->damage;
+    dst->nbt = nbt_clone(src->nbt);
+
+    return dst;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #define Rx(n,type,fun) type n = lh_read_ ## fun ## _be(p)
