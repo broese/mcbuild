@@ -1261,6 +1261,15 @@ DECODE_BEGIN(CP_ClickWindow,_1_8_1) {
     p = read_slot(p, &tpkt->slot);
 } DECODE_END;
 
+ENCODE_BEGIN(CP_ClickWindow,_1_8_1) {
+    Wchar(wid);
+    Wshort(sid);
+    Wchar(button);
+    Wshort(aid);
+    Wchar(mode);
+    w = read_slot(w, &tpkt->slot);
+} ENCODE_END;
+
 DUMP_BEGIN(CP_ClickWindow) {
     printf("wid=%d, sid=%d, aid=%d, button=%d, mode=%d, slot:",
            tpkt->wid, tpkt->sid, tpkt->aid, tpkt->button, tpkt->mode);
@@ -1321,7 +1330,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (CP_Animation,_1_8_1),
         SUPPORT_DE  (CP_EntityAction,_1_8_1),
         SUPPORT_DE  (CP_CloseWindow,_1_8_1),
-        SUPPORT_DF  (CP_ClickWindow,_1_8_1),
+        SUPPORT_DEDF(CP_ClickWindow,_1_8_1),
     },
 };
 
