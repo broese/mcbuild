@@ -1010,6 +1010,12 @@ DECODE_BEGIN(SP_SetSlot,_1_8_1) {
     p = read_slot(p, &tpkt->slot);
 } DECODE_END;
 
+ENCODE_BEGIN(SP_SetSlot,_1_8_1) {
+    Wchar(wid);
+    Wshort(sid);
+    w = write_slot(w, &tpkt->slot);
+} ENCODE_END;
+
 DUMP_BEGIN(SP_SetSlot) {
     printf("wid=%d sid=%d slot:",tpkt->wid,tpkt->sid);
     dump_slot(&tpkt->slot);
@@ -1314,7 +1320,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_Explosion,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
-        SUPPORT_DF  (SP_SetSlot,_1_8_1),
+        SUPPORT_DEF (SP_SetSlot,_1_8_1),
         SUPPORT_DD  (SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
