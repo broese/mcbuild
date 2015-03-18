@@ -234,8 +234,19 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
     queue_packet(cwin, sq);
     dump_packet(cwin);
 
+    // 5. Update Client (Slot A)
+    NEWPACKET(SP_SetSlot, cla);
+    tcla->wid = 0;
+    tcla->sid = sa;
+    clone_slot(a, &tcla->slot);
+    queue_packet(cla, cq);
 
-    //TODO: update client too?
+    // 6. Update Client (Slot B)
+    NEWPACKET(SP_SetSlot, clb);
+    tclb->wid = 0;
+    tclb->sid = sb;
+    clone_slot(b, &tclb->slot);
+    queue_packet(clb, cq);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
