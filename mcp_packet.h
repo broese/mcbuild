@@ -460,7 +460,7 @@ typedef struct {
 // 0x0e
 typedef struct {
     uint8_t  wid;
-    int16_t sid;
+    int16_t  sid;
     uint8_t  button;
     uint16_t aid;
     uint8_t  mode;
