@@ -183,6 +183,61 @@ void gmi_change_held(MCPacketQueue *sq, MCPacketQueue *cq, int sid, int notify_c
     }
 }
 
+// swap the contents of two slots - will also transfer item from a slot into
+// empty slot if one of them is empty
+void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
+    assert(sa>=9 && sa<45);
+    assert(sb>=9 && sb<45);
+
+    slot_t *a = &gs.inv.slots[sa];
+    slot_t *b = &gs.inv.slots[sb];
+
+    assert(!sameitem(a,b)); // ensure the items are not same (or not stackable),
+                            // so our clickery will actually swap them
+
+    // 1. Click on the first slot
+    NEWPACKET(CP_ClickWindow, pick);
+    tpick->wid = 0;
+    tpick->sid = sa;
+    tpick->button = 0; // Left-click, mode 0 - pick up all items
+    tpick->aid = 10000;
+    tpick->mode = 0;
+    clone_slot(a, &tpick->slot);
+    queue_packet(pick, sq);
+    gs_packet(pick);
+
+    // 2. Click on the second slot - swap items
+    NEWPACKET(CP_ClickWindow, swap);
+    tswap->wid = 0;
+    tswap->sid = sb;
+    tswap->button = 0;
+    tswap->aid = 10001;
+    tswap->mode = 0;
+    clone_slot(b, &tswap->slot);
+    queue_packet(swap, sq);
+    gs_packet(swap);
+
+    // 3. Click again on the first slot - drop the swapped items
+    NEWPACKET(CP_ClickWindow, put);
+    tput->wid = 0;
+    tput->sid = sa;
+    tput->button = 0;
+    tput->aid = 10002;
+    tput->mode = 0;
+    clone_slot(a, &tput->slot);
+    queue_packet(put, sq);
+    gs_packet(put);
+
+    // 4. Close window
+    NEWPACKET(CP_CloseWindow, cwin);
+    tcwin->wid=0;
+    queue_packet(cwin, sq);
+    dump_packet(cwin);
+
+
+    //TODO: update client too?
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
 
@@ -291,7 +346,15 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
             sprintf(reply,"Usage: changeheld <sid> <notify_client>");
         }
         else {
-            gmi_change_held(tq, bq, atoi(words[1]),atoi(words[2]));
+            gmi_change_held(tq, bq, atoi(words[1]), atoi(words[2]));
+        }
+    }
+    else if (!strcmp(words[0],"swapslots")) {
+        if (!words[1] || !words[2]) {
+            sprintf(reply,"Usage: swapslots <sid1> <sid2>");
+        }
+        else {
+            gmi_swap_slots(tq, bq, atoi(words[1]), atoi(words[2]));
         }
     }
 
