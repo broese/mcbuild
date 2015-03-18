@@ -258,7 +258,7 @@ bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
 
 #define DEBUG_INVENTORY 0
 
-static inline int sameitem(slot_t *a, slot_t *b) {
+int sameitem(slot_t *a, slot_t *b) {
     //Note: we don't need to consider sameness of items like
     // 0x4b/0x4c (Redstone Torch on/off), since one type
     // may only appear as a block in the map, never as item

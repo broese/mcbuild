@@ -137,3 +137,4 @@ bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
                       int32_t yl, int32_t ys, bid_t *data);
 
 int player_direction();
+int sameitem(slot_t *a, slot_t *b);
