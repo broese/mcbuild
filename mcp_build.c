@@ -167,13 +167,13 @@ static int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
 
     if (mslot<0) return -1; // material not available in the inventory
 
-    if (mslot>=36 && mslot<=44) return mslot; // found in thequickbar
+    if (mslot>=36 && mslot<=44) return mslot-36; // found in thequickbar
 
     // fetch the material from main inventory to a suitable quickbar slot
     int eslot = find_evictable_slot();
-    gmi_swap_slots(sq, cq, mslot, eslot);
+    gmi_swap_slots(sq, cq, mslot, eslot+36);
 
-    return eslot-36;
+    return eslot;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -468,6 +468,8 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
     uint64_t ts = gettimestamp();
     int i, bc=0;
+    int held=gs.inv.held;
+
     for(i=0; i<build.nbq && bc<BUILD_BLKMAX; i++) {
         blk *b = P(build.task)+build.bq[i];
         if (ts-b->last < BUILD_BLKINT) continue;
@@ -485,7 +487,8 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
         int8_t face, cx, cy, cz;
         choose_dot(b, &face, &cx, &cy, &cz);
-        printf("Placing block %d,%d,%d (%s)\n",b->x,b->y,b->z, get_item_name(buf, hslot));
+        printf("Placing block %d,%d,%d (%s)\n",
+               b->x,b->y,b->z, get_item_name(buf, hslot));
 
         // place block
         NEWPACKET(CP_PlayerBlockPlacement, pbp);
@@ -509,7 +512,8 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
     // switch back to whatever the client was holding
-    gmi_change_held(sq, cq, gs.inv.held, 0);
+    if (held != gs.inv.held)
+        gmi_change_held(sq, cq, held, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
