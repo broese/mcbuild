@@ -161,6 +161,19 @@ static int find_material_slot(bid_t mat) {
     return -1;
 }
 
+// fetch necessary material to the quickbar
+static int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
+    int mslot = find_material_slot(mat);
+
+    if (mslot<0) return -1; // material not available in the inventory
+
+    if (mslot>=36 && mslot<=44) return mslot; // found in thequickbar
+
+    // fetch the material from main inventory to a suitable quickbar slot
+    int eslot = find_evictable_slot();
+    gmi_swap_slots(sq, cq, mslot, eslot);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // maximum reach distance for building, squared, in fixp units (1/32 block)
