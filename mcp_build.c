@@ -29,6 +29,16 @@ static int scan_opt(char **words, const char *fmt, ...) {
     return 0;
 }
 
+// locate in which inventory slot do we have some specific material type
+// quickbar is preferred, -1 if nothing found
+static int find_material_slot(bid_t mat) {
+    int i;
+    for(i=44; i>8; i--)
+        if (gs.inv.slots[i].item == mat.bid && gs.inv.slots[i].damage == mat.meta)
+            return i;
+    return -1;
+}
+
 #define SQ(x) ((x)*(x))
 #define MIN(x,y) (((x)<(y))?(x):(y))
 #define MAX(x,y) (((x)>(y))?(x):(y))
