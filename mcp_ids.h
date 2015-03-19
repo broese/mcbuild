@@ -288,3 +288,4 @@ extern const char * ANSI_BLOCK[];
 
 const char * get_item_name(char *buf, slot_t *s);
 const char * get_bid_name(char *buf, bid_t b);
+bid_t get_base_material(bid_t mat);

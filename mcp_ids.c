@@ -488,6 +488,44 @@ const char * get_bid_name(char *buf, bid_t b) {
     return get_item_name(buf, &s);
 }
 
+bid_t get_base_material(bid_t mat) {
+    // only accept existing block types
+    assert(mat.bid <0x100);
+    const item_id * it = &ITEMS[mat.bid];
+    assert(it->name);
+
+    // if the block has no I_MTYPE subtypes, so base meta is 0
+    if (!(it->flags&I_MTYPE)) { mat.meta = 0; return mat; }
+
+    // block meta is used for I_MTYPE but not used for position/state => base meta as is
+    if (!(it->flags&(I_MPOS|I_STATE))) return mat;
+
+    // everything else needs to be determined individually
+    switch (mat.bid) {
+        case 0x06: // Sapling
+        case 0x2c: // Stone slab
+        case 0x7e: // Wooden slab
+        case 0xaf: // Large Flower
+            mat.meta &= 7;
+            break;
+
+        case 0x11: // Wood
+        case 0x12: // Leaves
+        case 0xa1: // Leaves2
+        case 0xa2: // Wood2
+            mat.meta &= 3;
+            break;
+
+        case 0x9b:
+            if (mat.meta > 2) mat.meta = 2;
+            break;
+
+        default:
+            assert(0);
+    }
+    return mat;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
 
