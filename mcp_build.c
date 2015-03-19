@@ -172,6 +172,8 @@ static int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
     // fetch the material from main inventory to a suitable quickbar slot
     int eslot = find_evictable_slot();
     gmi_swap_slots(sq, cq, mslot, eslot);
+
+    return eslot-36;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -295,8 +297,6 @@ void build_update() {
     // player position or look have changed - update our placeable blocks list
     if (!build.active) return;
 
-    //TODO: recalculate placeable blocks list
-
     int i;
 
     // 1. Update 'inreach' flag for all blocks and set the block distance
@@ -418,8 +418,10 @@ void build_update() {
        + store the suitable dots (as a bit array in a 16xshorts?) in the
          blk struct
 
-       - when building, select the first suitable block for building,
+       + when building, select the first suitable block for building,
          and choose a random dot from the stored set
+
+       + automatically fetch materials into a quickbar slot
 
     */
 
@@ -454,29 +456,36 @@ static void choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz)
     assert(0);
 }
 
+// minimum interval between attempting to build the same block
 #define BUILD_BLKINT 50000
+
+// maximum number of blocks to attempt to place in one go
+#define BUILD_BLKMAX 3
 
 void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
     // time update - try to build any blocks from the placeable blocks list
     if (!build.active) return;
 
-    //TODO: inventory switching
-    slot_t * hslot = &gs.inv.slots[gs.inv.held+36];
-
     uint64_t ts = gettimestamp();
-    int i;
-    for(i=0; i<build.nbq; i++) {
+    int i, bc=0;
+    for(i=0; i<build.nbq && bc<BUILD_BLKMAX; i++) {
         blk *b = P(build.task)+build.bq[i];
         if (ts-b->last < BUILD_BLKINT) continue;
 
-        //TODO: differentiate the block meta
-        if (hslot->item != b->b.bid) continue;
+        // fetch block's material into quickbar slot
+        int islot = prefetch_material(sq, cq, get_base_material(b->b));
+        if (islot<0) continue; // we don't have this material
+        //TODO: notify user about missing materials
+
+        // silently switch to this slot
+        gmi_change_held(sq, cq, islot, 0);
+        slot_t * hslot = &gs.inv.slots[islot+36];
 
         char buf[4096];
 
         int8_t face, cx, cy, cz;
         choose_dot(b, &face, &cx, &cy, &cz);
-        //printf("Placing block %d,%d,%d (%s)\n",b->x,b->y,b->z, get_item_name(buf, hslot));
+        printf("Placing block %d,%d,%d (%s)\n",b->x,b->y,b->z, get_item_name(buf, hslot));
 
         // place block
         NEWPACKET(CP_PlayerBlockPlacement, pbp);
@@ -495,7 +504,12 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         queue_packet(anim, sq);
 
         b->last = ts;
+        mat_last[islot] = ts;
+        bc++;
     }
+
+    // switch back to whatever the client was holding
+    gmi_change_held(sq, cq, gs.inv.held, 0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
