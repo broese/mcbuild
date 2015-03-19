@@ -29,16 +29,6 @@ static int scan_opt(char **words, const char *fmt, ...) {
     return 0;
 }
 
-// locate in which inventory slot do we have some specific material type
-// quickbar is preferred, -1 if nothing found
-static int find_material_slot(bid_t mat) {
-    int i;
-    for(i=44; i>8; i--)
-        if (gs.inv.slots[i].item == mat.bid && gs.inv.slots[i].damage == mat.meta)
-            return i;
-    return -1;
-}
-
 #define SQ(x) ((x)*(x))
 #define MIN(x,y) (((x)<(y))?(x):(y))
 #define MAX(x,y) (((x)>(y))?(x):(y))
@@ -133,6 +123,43 @@ struct {
 
 #define BTASK GAR(build.task)
 #define BPLAN GAR(build.plan)
+
+////////////////////////////////////////////////////////////////////////////////
+// Inventory
+
+// slot range in the quickbar that can be used for material fetching
+int matl=3, math=7;
+
+// timestamps when the material slots were last accessed - used to select evictable slots
+int64_t mat_last[9];
+
+static int find_evictable_slot() {
+    int i;
+    int best_s;
+    int64_t best_ts = mat_last[matl];
+
+    for(i=matl; i<=math; i++) {
+        if (gs.inv.slots[i+36].item == -1)
+            return i; // empty slot is the best candidate
+
+        if (mat_last[i] < best_ts) {
+            best_s = i;
+            best_ts = mat_last[i];
+        }
+    }
+
+    return best_s; // return slot that has not been used longest
+}
+
+// locate in which inventory slot do we have some specific material type
+// quickbar is preferred, -1 if nothing found
+static int find_material_slot(bid_t mat) {
+    int i;
+    for(i=44; i>8; i--)
+        if (gs.inv.slots[i].item == mat.bid && gs.inv.slots[i].damage == mat.meta)
+            return i;
+    return -1;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
