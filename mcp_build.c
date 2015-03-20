@@ -767,6 +767,39 @@ void build_save(const char * name, char * reply) {
     lh_free(buf);
 }
 
+void build_load(const char * name, char * reply) {
+    if (!name) {
+        sprintf(reply, "Usage: #build load <name> (w/o extension)");
+        return;
+    }
+
+    char fname[256];
+    sprintf(fname, "%s.bplan", name);
+
+    build_clear();
+
+    uint8_t *buf;
+    ssize_t sz = lh_load_alloc(fname, &buf);
+
+    if (sz <= 0) {
+        sprintf(reply, "Error loading from %s", fname);
+        return;
+    }
+
+    uint8_t *p = buf;
+    while(sz>=14) {
+        blkr *b = lh_arr_new(BPLAN);
+        b->x = lh_read_int_be(p);
+        b->y = lh_read_int_be(p);
+        b->z = lh_read_int_be(p);
+        b->b.raw = lh_read_short_be(p);
+    }
+
+    sprintf(reply, "Loaded a buildplan with %d blocks from %s", C(build.plan), fname);
+
+    lh_free(buf);
+}
+
 void build_clear() {
     build_cancel();
     lh_arr_free(BPLAN);
@@ -805,6 +838,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "save")) {
         build_save(words[2], reply);
+    }
+    else if (!strcmp(words[1], "load")) {
+        build_load(words[2], reply);
     }
 
     if (reply[0]) chat_message(reply, cq, "green", 0);
