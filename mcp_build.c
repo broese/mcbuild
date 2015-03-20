@@ -2,6 +2,10 @@
 #include <stdarg.h>
 #include <math.h>
 
+#include <lh_buffers.h>
+#include <lh_files.h>
+#include <lh_bytes.h>
+
 #include "mcp_ids.h"
 #include "mcp_build.h"
 #include "mcp_gamestate.h"
@@ -729,6 +733,40 @@ void build_dump_queue() {
     }
 }
 
+void build_save(const char * name, char * reply) {
+    if (!name) {
+        sprintf(reply, "Usage: #build save <name> (w/o extension)");
+        return;
+    }
+
+    char fname[256];
+    sprintf(fname, "%s.bplan", name);
+
+    if (C(build.plan) <= 0) {
+        sprintf(reply, "Cannot save - your buildplan is empty");
+        return;
+    }
+
+    lh_create_buf(buf, sizeof(blkr)*C(build.plan));
+    int i;
+    uint8_t *w = buf;
+    for(i=0; i<C(build.plan); i++) {
+        blkr *b = P(build.plan)+i;
+        lh_write_int_be(w, b->x);
+        lh_write_int_be(w, b->y);
+        lh_write_int_be(w, b->z);
+        lh_write_short_be(w, b->b.raw);
+    }
+
+    ssize_t sz = lh_save(fname, buf, w-buf);
+    if (sz > 0)
+        sprintf(reply, "Saved buildplan to %s", fname);
+    else
+        sprintf(reply, "Error saving to %s", fname);
+
+    lh_free(buf);
+}
+
 void build_clear() {
     build_cancel();
     lh_arr_free(BPLAN);
@@ -764,6 +802,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "dumpqueue")) {
         build_dump_queue();
+    }
+    else if (!strcmp(words[1], "save")) {
+        build_save(words[2], reply);
     }
 
     if (reply[0]) chat_message(reply, cq, "green", 0);
