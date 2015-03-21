@@ -526,6 +526,58 @@ bid_t get_base_material(bid_t mat) {
     return mat;
 }
 
+uint8_t get_state_mask(int bid) {
+    assert (bid>=0 && bid<0x100);
+
+    const item_id * it = &ITEMS[bid];
+
+    if (!(it->flags&I_STATE)) return 0; // no I_STATE - no bits for state
+    if (!(it->flags&(I_MPOS|I_MTYPE))) return 0x0f; // I_STATE but no I_MPOS or I_MTYPE - all bits for state
+
+    switch (bid) {
+        case 0x06: // Sapling
+        case 0x17: // Dispenser
+        case 0x1d: // Sticky Piston
+        case 0x21: // Piston
+        case 0x22: // Piston Head
+        case 0x1b: // Powered Rail
+        case 0x1c: // Detector Rail
+        case 0x45: // Lever
+        case 0x4d: // Stone Button
+        case 0x8f: // Wooden Button
+        case 0x9d: // Actiator Rail
+        case 0x9a: // Hopper
+        case 0x9e: // Dropper
+        case 0xaf: // Large Flower
+            return 8;
+        case 0x1a: // Bed
+        case 0x40: // Wooden Door
+        case 0x47: // Iron Door
+        case 0x60: // Trapdoor
+        case 0x6b: // Fence Gate
+        case 0xa7: // Iron Trapdoor
+        case 0xb7: // SpruceFence Gate
+        case 0xb8: // Birch Fence Gate
+        case 0xb9: // Jungle Fence Gate
+        case 0xba: // Dark Oak Fence Gate
+        case 0xbb: // Acacia Fence Gate
+        case 0xc1: // Spruce Door
+        case 0xc2: // Birch Door
+        case 0xc3: // Jungle Door
+        case 0xc4: // Dark Oak Door
+        case 0xc5: // Acacia Door
+            return 4;
+        case 0x12: // Leaves
+        case 0x5d: // Repeater (off)
+        case 0x5e: // Repeater (on)
+        case 0x83: // Tripwire hook
+        case 0x95: // Comparator (off)
+        case 0x96: // Comparator (on)
+        case 0xa1: // Leaves2
+            return 12;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
 
