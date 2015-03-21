@@ -27,3 +27,4 @@ gmon.out
 mtrace
 outcast.c
 doc
+*.bplan
