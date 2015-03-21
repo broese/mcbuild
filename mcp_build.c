@@ -127,6 +127,7 @@ struct {
                                // (SP_BlockChange or SP_MultiBlockChange)
 
     int32_t px,py,pz;          // BREC pivot block
+    int pd;                    // BREC pivot direction
     int pivotset;              // nonzero if pivot block has been set
 
     int bq[MAXBUILDABLE];      // list of buildable blocks from the task
@@ -530,6 +531,8 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         gmi_change_held(sq, cq, held, 0);
 }
 
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 static bid_t build_arg_material(char **words, char *reply) {
@@ -706,6 +709,79 @@ static void build_rec(char **words, char *reply) {
         else
             sprintf(reply, "BREC continued, pivot not set");
     }
+}
+
+void brec_blockupdate(MCPacket *pkt) {
+    if (!build.recording) return;
+
+    assert(pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange);
+}
+
+static void dump_brec_pending() {
+    printf("BREC pending queue: %d entries\n",build.nbrp);
+
+    int i;
+    char buf[256];
+    for(i=0; i<build.nbrp; i++) {
+        blkr *bl = &build.brp[i];
+        printf("%2d : %d,%d,%d (%s)\n", i,
+               bl->x, bl->y, bl->z, get_bid_name(buf, bl->b));
+    }
+}
+
+void brec_blockplace(MCPacket *pkt) {
+    if (!build.recording) return;
+
+    assert(pkt->pid == CP_PlayerBlockPlacement);
+    CP_PlayerBlockPlacement_pkt *tpkt = &pkt->_CP_PlayerBlockPlacement;
+
+    if (tpkt->face < 0) return; // ignore "fake" block placements
+    bid_t b = BLOCKTYPE(tpkt->item.item, tpkt->item.damage);
+
+    int32_t x = tpkt->bpos.x - NOFF[tpkt->face][0];
+    int32_t z = tpkt->bpos.z - NOFF[tpkt->face][1];
+    int32_t y = tpkt->bpos.y - NOFF[tpkt->face][2];
+
+    //printf("Recording block at %d,%d,%d\n",x,y,z);
+
+    // verify if this block is already in the pending queue
+    int i;
+    for(i=0; i<build.nbrp; i++) {
+        blkr *bl = &build.brp[i];
+        if (bl->x == x && bl->y == y && bl->z == z) {
+            printf("BREC: warning, block %d,%d,%d already in the pending queue\n",x,y,z);
+            bl->b = b; // update the block ID just in case
+            return;
+        }
+    }
+
+    if (build.nbrp >= MAXBUILDABLE) {
+        printf("Warning: ignoring block placement, pending block queue full!\n");
+        return;
+    }
+
+    // create a new record in the pending queue
+    blkr *bl = &build.brp[build.nbrp];
+    build.nbrp++;
+
+    bl->x = x;
+    bl->y = y;
+    bl->z = z;
+    bl->b = b;
+
+    // if this is the first block being recorded, set it as pivot
+    if (!build.pivotset) {
+        build.pivotset = 1;
+        build.px = x;
+        build.py = y;
+        build.pz = z;
+        build.pd = player_direction();
+
+        printf("Set pivot block at %d,%d,%d dir=%d\n",
+               build.px,build.py,build.pz,build.pd);
+    }
+
+    dump_brec_pending();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

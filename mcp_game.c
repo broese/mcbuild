@@ -454,6 +454,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         case CP_PlayerLook:
         case SP_MultiBlockChange:
         case SP_BlockChange:
+        case CP_PlayerBlockPlacement:
         case SP_Explosion: {
 
             // check if our position or orientation have changed
@@ -475,6 +476,12 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 hole_radar(pkt->cl?bq:tq);
 
             build_update();
+
+            if (pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange)
+                brec_blockupdate(pkt);
+
+            if (pkt->pid == CP_PlayerBlockPlacement)
+                brec_blockplace(pkt);
 
             gs.own.pos_change = 0;
 
