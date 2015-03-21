@@ -122,7 +122,7 @@ struct {
     lh_arr_declare(blkr,plan); // currently loaded/created buildplan
 
     blkr brp[MAXBUILDABLE];    // records the 'pending' blocks from the build recorder
-    int  nbrp;                 // we add blocks as we place them (CP_PlayerBlockPlacement)
+    ssize_t nbrp;              // we add blocks as we place them (CP_PlayerBlockPlacement)
                                // and remove them as we get the confirmation from the server
                                // (SP_BlockChange or SP_MultiBlockChange)
 
@@ -711,14 +711,8 @@ static void build_rec(char **words, char *reply) {
     }
 }
 
-void brec_blockupdate(MCPacket *pkt) {
-    if (!build.recording) return;
-
-    assert(pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange);
-}
-
 static void dump_brec_pending() {
-    printf("BREC pending queue: %d entries\n",build.nbrp);
+    //printf("BREC pending queue: %zd entries\n",build.nbrp);
 
     int i;
     char buf[256];
@@ -726,6 +720,83 @@ static void dump_brec_pending() {
         blkr *bl = &build.brp[i];
         printf("%2d : %d,%d,%d (%s)\n", i,
                bl->x, bl->y, bl->z, get_bid_name(buf, bl->b));
+    }
+}
+
+static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
+    //TODO: clear the state bits from meta
+
+    int i;
+    for(i=0; i<build.nbrp; i++) {
+        blkr *bl = &build.brp[i];
+        if (bl->x==x && bl->y==y && bl->z==z) {
+            printf("Found pending block idx=%d %d,%d,%d %02x/%02x => %02x/%02x\n",
+                   i, x, y, z, bl->b.bid, bl->b.meta, block.bid, block.meta);
+
+            // remove block from the pending queue
+            blkr *brp = build.brp;
+            lh_arr_delete(brp, build.nbrp, 1, i);
+
+            // add block to the buildplan
+            int j;
+            for(j=0; j<C(build.plan); j++) {
+                blkr *bp = P(build.plan)+j;
+                if (bp->x==x && bp->y==y && bp->z==z) {
+                    printf("Warning: block %d,%d,%d is already in the buildplan, updating bid  %02x/%02x => %02x/%02x\n",
+                           x, y, z, bp->b.bid, bp->b.meta, block.bid, block.meta);
+                    bp->b.raw = block.raw;
+                    return;
+                }
+            }
+
+            // this block was not in the buildplan, add it
+            blkr *bp = lh_arr_new(BPLAN);
+
+            switch (build.pd) {
+                case DIR_SOUTH:
+                    bp->x = build.px-x;
+                    bp->z = build.pz-z;
+                    break;
+                case DIR_NORTH:
+                    bp->x = x-build.px;
+                    bp->z = z-build.pz;
+                    break;
+                case DIR_EAST:
+                    bp->x = z-build.pz;
+                    bp->z = build.px-x;
+                    break;
+                case DIR_WEST:
+                    bp->x = build.pz-z;
+                    bp->z = x-build.px;
+                    break;
+            }
+            bp->y = y-build.py;
+
+            //TODO: correct the I_MPOS-dependent metas
+            bp->b = block;
+
+            dump_brec_pending();
+            return;
+        }
+    }
+}
+
+void brec_blockupdate(MCPacket *pkt) {
+    if (!build.recording) return;
+
+    assert(pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange);
+
+    if (pkt->pid == SP_BlockChange) {
+        SP_BlockChange_pkt *tpkt = &pkt->_SP_BlockChange;
+        brec_blockupdate_blk(tpkt->pos.x,tpkt->pos.y,tpkt->pos.z,tpkt->block);
+    }
+    else if (pkt->pid == SP_MultiBlockChange) {
+        SP_MultiBlockChange_pkt *tpkt = &pkt->_SP_MultiBlockChange;
+        int i;
+        for(i=0; i<tpkt->count; i++) {
+            blkrec *br = tpkt->blocks+i;
+            brec_blockupdate_blk((tpkt->X)<<4+br->x,br->y,(tpkt->Z)<<4+br->z,br->bid);
+        }
     }
 }
 

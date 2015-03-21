@@ -1321,7 +1321,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DEF (SP_SetSlot,_1_8_1),
-        SUPPORT_DD  (SP_ConfirmTransaction,_1_8_1),
+        SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {
@@ -1331,12 +1331,12 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),
         SUPPORT_D   (CP_PlayerLook,_1_8_1),
         SUPPORT_D   (CP_PlayerPositionLook,_1_8_1),
-        SUPPORT_DEDF(CP_PlayerBlockPlacement,_1_8_1),
+        SUPPORT_DEF (CP_PlayerBlockPlacement,_1_8_1),
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
         SUPPORT_DE  (CP_EntityAction,_1_8_1),
-        SUPPORT_DED (CP_CloseWindow,_1_8_1),
-        SUPPORT_DEDF(CP_ClickWindow,_1_8_1),
+        SUPPORT_DE  (CP_CloseWindow,_1_8_1),
+        SUPPORT_DEF (CP_ClickWindow,_1_8_1),
     },
 };
 
