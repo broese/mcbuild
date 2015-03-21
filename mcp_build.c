@@ -731,7 +731,7 @@ static void dump_brec_pending() {
 }
 
 static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
-    //TODO: clear the state bits from meta
+    block.meta &= ~(get_state_mask(block.bid));
 
     int i;
     for(i=0; i<build.nbrp; i++) {
