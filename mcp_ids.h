@@ -186,6 +186,9 @@
 // flag and define a separate one (like I_SLAB)
 #define I_MPOS   (1<<8)
 
+// slab-type block - I_MPOS lower/upper placement in the meta bit 3
+#define I_SLAB   (1<<9)
+
 
 // macros to determine armor type
 #define I_HELMET(id)     ((id)==0x12a || (id)==0x12e || (id)==0x132 || (id)==0x136 || (id)==0x13a)
