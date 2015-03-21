@@ -787,7 +787,7 @@ void build_load(const char * name, char * reply) {
     }
 
     uint8_t *p = buf;
-    while(sz>=14) {
+    while(p<buf+sz-13) {
         blkr *b = lh_arr_new(BPLAN);
         b->x = lh_read_int_be(p);
         b->y = lh_read_int_be(p);
@@ -795,7 +795,8 @@ void build_load(const char * name, char * reply) {
         b->b.raw = lh_read_short_be(p);
     }
 
-    sprintf(reply, "Loaded a buildplan with %d blocks from %s", C(build.plan), fname);
+    sprintf(reply, "Loaded a buildplan with %zd blocks from %s",
+            C(build.plan), fname);
 
     lh_free(buf);
 }
