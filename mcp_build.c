@@ -115,9 +115,19 @@ typedef struct {
 #define MAXBUILDABLE 1024
 
 struct {
-    int active;
+    int active;                // if nonzero - buildtask is being built
+    int recording;             // if nonzero - build recording active
+
     lh_arr_declare(blk,task);  // current active building task
     lh_arr_declare(blkr,plan); // currently loaded/created buildplan
+
+    blkr brp[MAXBUILDABLE];    // records the 'pending' blocks from the build recorder
+    int  nbrp;                 // we add blocks as we place them (CP_PlayerBlockPlacement)
+                               // and remove them as we get the confirmation from the server
+                               // (SP_BlockChange or SP_MultiBlockChange)
+
+    int32_t px,py,pz;          // BREC pivot block
+    int pivotset;              // nonzero if pivot block has been set
 
     int bq[MAXBUILDABLE];      // list of buildable blocks from the task
     int nbq;                   // number of buildable blocks
@@ -673,6 +683,32 @@ static void build_place(char **words, char *reply) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Build Recorder
+
+static void build_rec(char **words, char *reply) {
+    build_cancel(); // stop current building process if there was any
+    build.nbrp = 0; // clear the pending queue
+
+    if (!words[0] || !strcmp(words[0],"start")) {
+        build_clear();
+        build.recording = 1;
+        build.pivotset = 0;
+        sprintf(reply, "BREC started, buildplan cleared");
+    }
+    else if (!strcmp(words[0],"stop")) {
+        build.recording = 0;
+        sprintf(reply, "BREC stopped");
+    }
+    else if (!strcmp(words[0],"add") || !strcmp(words[0],"cont") || !strcmp(words[0],"continue")) {
+        build.recording = 1;
+        if (build.pivotset)
+            sprintf(reply, "BREC continued, pivot at %d,%d,%d",build.px,build.py,build.pz);
+        else
+            sprintf(reply, "BREC continued, pivot not set");
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 //TODO: print needed material amounts
 void build_dump_plan() {
@@ -842,6 +878,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "load")) {
         build_load(words[2], reply);
+    }
+    else if (!strcmp(words[1], "rec")) {
+        build_rec(words+2, reply);
     }
 
     if (reply[0]) chat_message(reply, cq, "green", 0);
