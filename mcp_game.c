@@ -490,13 +490,6 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         }
 
         ////////////////////////////////////////////////////////////////
-        // Gamestate
-
-        GMP(SP_TimeUpdate) {
-            build_progress(bq, tq);
-        } _GMP;
-
-        ////////////////////////////////////////////////////////////////
 
         default:
             // by default - just forward the packet
@@ -510,4 +503,6 @@ void gm_reset() {
 
 void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (opt.autokill) autokill(sq);
+
+    build_progress(sq, cq);
 }

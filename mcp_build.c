@@ -115,6 +115,8 @@ typedef struct {
 #define MAXBUILDABLE 1024
 
 struct {
+    int64_t lastbuild;         // timestamp of last block placement
+
     int active;                // if nonzero - buildtask is being built
     int recording;             // if nonzero - build recording active
 
@@ -473,6 +475,7 @@ static void choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz)
 
 // minimum interval between attempting to build the same block
 #define BUILD_BLKINT 50000
+#define BUILD_BLDINT 50000
 
 // maximum number of blocks to attempt to place in one go
 #define BUILD_BLKMAX 3
@@ -482,6 +485,9 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (!build.active) return;
 
     uint64_t ts = gettimestamp();
+
+    if (ts < build.lastbuild+BUILD_BLDINT) return;
+
     int i, bc=0;
     int held=gs.inv.held;
 
@@ -522,6 +528,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         queue_packet(anim, sq);
 
         b->last = ts;
+        build.lastbuild = ts;
         mat_last[islot] = ts;
         bc++;
     }
