@@ -34,6 +34,14 @@ static int scan_opt(char **words, const char *fmt, ...) {
     return 0;
 }
 
+static int find_opt(char **words, const char *name) {
+    int i;
+    for(i=0; words[i]; i++)
+        if (!strcmp(words[i], name))
+            return 1;
+    return 0;
+}
+
 #define SQ(x) ((x)*(x))
 #define MIN(x,y) (((x)<(y))?(x):(y))
 #define MAX(x,y) (((x)>(y))?(x):(y))
@@ -641,7 +649,6 @@ static void build_floor(char **words, char *reply) {
             xsize, zsize, get_bid_name(buf, mat));
 }
 
-//TODO: orientation and rotate brec accordingly
 static void build_place(char **words, char *reply) {
     // check if we have a plan
     if (!C(build.plan)) {
@@ -649,17 +656,31 @@ static void build_place(char **words, char *reply) {
         return;
     }
 
-    // parse coords
-    // TODO: placement at player's position
+    // pivot coordinates and direction
     int px,py,pz;
+    int dir;
+
+    // parse coords
     if (scan_opt(words, "coord=%d,%d,%d", &px, &pz, &py)!=3) {
-        sprintf(reply, "Usage: build place coord=<x>,<z>,<y>");
-        return;
+        // second possibility - place at player's position (in front of him)
+        if (find_opt(words, "here")) {
+            px = gs.own.x>>5;
+            py = gs.own.y>>5;
+            pz = gs.own.z>>5;
+
+            dir = player_direction();
+            switch (dir) {
+                case DIR_SOUTH: pz++; break;
+                case DIR_NORTH: pz--; break;
+                case DIR_EAST:  px++; break;
+                case DIR_WEST:  px--; break;
+            }
+        }
+
+        // sprintf(reply, "Usage: build place coord=<x>,<z>,<y>");
     }
-    sprintf(reply, "Place pivot at %d,%d (%d)\n",px,pz,py);
 
     // parse placement direction
-    int dir;
     if (scan_opt(words, "dir=%d", &dir)!=1) {
         // if not specified, derive from the player's look direction
         dir = player_direction();
@@ -669,6 +690,8 @@ static void build_place(char **words, char *reply) {
         sprintf(reply, "incorrect direction code, use: SOUTH=2,NORTH=3,EAST=4,WEST=5");
         return;
     }
+
+    sprintf(reply, "Place pivot at %d,%d (%d), dir=%d\n",px,pz,py,dir);
 
     // abort current buildtask
     build_cancel();
