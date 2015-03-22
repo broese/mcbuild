@@ -9,6 +9,7 @@
 #include "mcp_ids.h"
 #include "mcp_build.h"
 #include "mcp_gamestate.h"
+#include "mcp_game.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
@@ -725,7 +726,6 @@ static void build_place(char **words, char *reply) {
 
 static void build_rec(char **words, char *reply) {
     build_cancel(); // stop current building process if there was any
-    build.nbrp = 0; // clear the pending queue
 
     if (!words[0] || !strcmp(words[0],"start")) {
         build_clear();
@@ -830,7 +830,7 @@ void brec_blockupdate(MCPacket *pkt) {
         int i;
         for(i=0; i<tpkt->count; i++) {
             blkrec *br = tpkt->blocks+i;
-            brec_blockupdate_blk((tpkt->X)<<4+br->x,br->y,(tpkt->Z)<<4+br->z,br->bid);
+            brec_blockupdate_blk(((tpkt->X)<<4)+br->x,br->y,((tpkt->Z)<<4)+br->z,br->bid);
         }
     }
 }
@@ -1023,12 +1023,14 @@ void build_load(const char * name, char * reply) {
 void build_clear() {
     build_cancel();
     lh_arr_free(BPLAN);
+    lh_clear_obj(build);
 }
 
 void build_cancel() {
     build.active = 0;
     lh_arr_free(BTASK);
     build.bq[0] = -1;
+    build.nbrp = 0; // clear the pending queue
 }
 
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {

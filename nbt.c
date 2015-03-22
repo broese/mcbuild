@@ -160,7 +160,7 @@ nbt_t * nbt_parse_type(uint8_t **p, uint8_t type, int named) {
         case NBT_COMPOUND: {
             nbt->count = 0;
             uint8_t ctype;
-            while(ctype=lh_read_char(*p)) {
+            while( (ctype=lh_read_char(*p)) ) {
                 lh_resize(nbt->co, nbt->count+1);
                 nbt->co[nbt->count] = nbt_parse_type(p, ctype, 1);
                 nbt->count++;

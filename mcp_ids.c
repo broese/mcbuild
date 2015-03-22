@@ -576,6 +576,9 @@ uint8_t get_state_mask(int bid) {
         case 0xa1: // Leaves2
             return 12;
     }
+
+    printf("get_state_mask: unknown bid=%d\n",bid);
+    return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

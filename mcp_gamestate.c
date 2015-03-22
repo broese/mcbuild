@@ -829,7 +829,7 @@ int player_direction() {
 
 #define _GSP break; }
 
-int gs_packet(MCPacket *pkt) {
+void gs_packet(MCPacket *pkt) {
     switch (pkt->pid) {
         ////////////////////////////////////////////////////////////////
         // Gamestate

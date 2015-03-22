@@ -1,3 +1,4 @@
+CC=clang
 CFLAGS=-g
 LIBS_LIBHELPER=-L../libhelper -lhelper
 LIBS=-lm -lpng -lz -lpcap -lcurl $(LIBS_LIBHELPER)

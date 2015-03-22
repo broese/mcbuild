@@ -1,6 +1,7 @@
 #include <math.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/time.h>
 
 #define LH_DECLARE_SHORT_NAMES 1
 
@@ -10,6 +11,9 @@
 #include "mcp_gamestate.h"
 #include "mcp_game.h"
 #include "mcp_build.h"
+
+// from mcproxy.c
+void drop_connection();
 
 // Various options
 struct {
@@ -27,6 +31,7 @@ uint64_t gettimestamp() {
     struct timeval tv;
     gettimeofday(&tv, NULL);
     uint64_t ts = (uint64_t)tv.tv_sec*1000000+(uint64_t)tv.tv_usec;
+    return ts;
 }
 
 #define MIN(a,b) ((a<b)?(a):(b))
@@ -296,7 +301,7 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
 
     ////////////////////////////////////////////////////////////////////////
 
-    uint8_t reply[32768];
+    char reply[32768];
     reply[0] = 0;
     int rpos = 0;
 
@@ -498,7 +503,8 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
 }
 
 void gm_reset() {
-    CLEAR(opt);
+    lh_clear_obj(opt);
+    build_clear();
 }
 
 void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {

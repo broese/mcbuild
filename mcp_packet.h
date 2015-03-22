@@ -491,17 +491,17 @@ typedef struct {
 typedef struct {
     char     serverID[4096];
     uint32_t klen;
-    char     pkey[1024];
+    uint8_t  pkey[1024];
     uint32_t tlen;
-    char     token[1024];
+    uint8_t  token[1024];
 } SL_EncryptionRequest_pkt;
 
 // CL_EncryptionResponse
 typedef struct {
     uint32_t sklen;
-    char     skey[1024];
+    uint8_t  skey[1024];
     uint32_t tklen;
-    char     token[1024];
+    uint8_t  token[1024];
 } CL_EncryptionResponse_pkt;
 
 void decode_handshake(CI_Handshake_pkt *tpkt, uint8_t *p);

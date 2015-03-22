@@ -128,7 +128,7 @@ void gs_destroy();
 int  gs_setopt(int optid, int value);
 int  gs_getopt(int optid);
 
-int  gs_packet(MCPacket *pkt);
+void gs_packet(MCPacket *pkt);
 
 void dump_entities();
 void dump_inventory();

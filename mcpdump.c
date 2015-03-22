@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <openssl/rand.h>
 
 #define LH_DECLARE_SHORT_NAMES 1
 
@@ -112,7 +113,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 ////////////////////////////////////////////////////////////////////////////////
 
 // print a single chunk slice (16x16x1 blocks) on the screen using ANSI_COLORS
-static print_slice(bid_t * data,int Xs, int Zs) {
+static void print_slice(bid_t * data,int Xs, int Zs) {
     int x,z;
     for(z=0; z<16*Zs; z++) {
         printf("%s%3d ",ANSI_CLEAR,z);
@@ -124,7 +125,7 @@ static print_slice(bid_t * data,int Xs, int Zs) {
     }
 }
 
-extract_cuboid(int X, int Z, int y) {
+void extract_cuboid(int X, int Z, int y) {
     int Xs=5,Zs=5;
     bid_t * map = export_cuboid(X,Xs,Z,Zs,y,1,NULL);
     //hexdump((char *)map,512);
