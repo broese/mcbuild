@@ -871,7 +871,8 @@ void build_dump_plan() {
     for(i=0; i<C(build.plan); i++) {
         blkr *b = &P(build.plan)[i];
         printf("%3d %+4d,%+4d,%3d %3x/%02x (%s)\n",
-               i, b->x, b->z, b->y, b->b.bid, b->b.meta, get_bid_name(buf, b->b));
+               i, b->x, b->z, b->y, b->b.bid, b->b.meta,
+               get_bid_name(buf, get_base_material(b->b)));
     }
 }
 
@@ -895,7 +896,7 @@ void build_dump_task() {
                b->n_xn ? '*':'.',
                b->ndots,
 
-               get_bid_name(buf, b->b));
+               get_bid_name(buf, get_base_material(b->b)));
     }
 }
 
@@ -919,7 +920,7 @@ void build_dump_queue() {
                b->n_xn ? '*':'.',
                b->ndots,
 
-               get_bid_name(buf, b->b));
+               get_bid_name(buf, get_base_material(b->b)));
     }
 }
 

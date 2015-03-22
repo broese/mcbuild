@@ -167,7 +167,7 @@ const item_id ITEMS[] = {
     [0x7b] = { "Redstone Lamp" },
     [0x7c] = { "Redstone Lamp (lit)" },
     [0x7d] = { "Wooden Double Slab", I_MTYPE, MNAMES_WOOD },
-    [0x7e] = { "Wooden Slab", I_MTYPE|I_MPOS|I_SLAB, MNAMES_OLDWOOD }, // P: up/down
+    [0x7e] = { "Wooden Slab", I_MTYPE|I_MPOS|I_SLAB, MNAMES_WOOD }, // P: up/down
     [0x7f] = { "Cocoa", I_STATE },                              // S: level
 
     [0x80] = { "Sandstone Stairs", I_MPOS },                    // P: dir
