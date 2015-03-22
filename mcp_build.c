@@ -702,6 +702,7 @@ void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
 
 static void build_place(char **words, char *reply) {
     if (find_opt(words, "cancel")) {
+        sprintf(reply, "Placement canceled\n");
         build.placemode = 0;
         return;
     }
@@ -769,7 +770,7 @@ static void build_place(char **words, char *reply) {
 
 }
 
-void build_placemode(MCPacket *pkt) {
+void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     CP_PlayerBlockPlacement_pkt *tpkt = &pkt->_CP_PlayerBlockPlacement;
 
     if (tpkt->face < 0) return; // ignore "fake" block placements
@@ -781,10 +782,14 @@ void build_placemode(MCPacket *pkt) {
 
     if (build.placemode == 1) {
         build.placemode = 0;
-        build_cancel();
+        build_cancel(); // don't cancel the task in "multiple placement" mode
     }
 
     place_pivot(x,y,z,dir);
+
+    char reply[4096];
+    sprintf(reply, "Place pivot at %d,%d (%d), dir=%d\n",x,z,y,dir);
+    chat_message(reply, cq, "green", 0);
 
     //TODO: send a SetSlot to the client, so it does not decrement the block count ?
 }
@@ -1135,7 +1140,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     if (reply[0]) chat_message(reply, cq, "green", 0);
 }
 
-void build_packet(MCPacket *pkt) {
+int build_packet(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     if (build.recording) {
         if (pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange) {
             brec_blockupdate(pkt);
@@ -1143,8 +1148,12 @@ void build_packet(MCPacket *pkt) {
         else if (pkt->pid == CP_PlayerBlockPlacement) {
             brec_blockplace(pkt);
         }
+        return 1;
     }
     else if (build.placemode && pkt->pid == CP_PlayerBlockPlacement) {
-        build_placemode(pkt);
+        build_placemode(pkt, sq, cq);
+        return 0; // do not forward the packet to the server
     }
+
+    return 1;
 }

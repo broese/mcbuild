@@ -388,6 +388,10 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
 
 void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
     dump_packet(pkt);
+
+    MCPacketQueue *sq = pkt->cl ? tq : bq;
+    MCPacketQueue *cq = pkt->cl ? bq : tq;
+
     switch (pkt->pid) {
 
         ////////////////////////////////////////////////////////////////
@@ -478,14 +482,15 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             }
 
             if (opt.holeradar && gs.own.pos_change)
-                hole_radar(pkt->cl?bq:tq);
+                hole_radar(cq);
 
             build_update();
-            build_packet(pkt);
 
             gs.own.pos_change = 0;
 
-            queue_packet(pkt, tq);
+            if (build_packet(pkt, sq, cq))
+                queue_packet(pkt, tq);
+
             break;
         }
 
