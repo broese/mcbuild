@@ -128,6 +128,7 @@ struct {
 
     int active;                // if nonzero - buildtask is being built
     int recording;             // if nonzero - build recording active
+    int placemode;             // 0-disabled, 1-once, 2-multiple
 
     lh_arr_declare(blk,task);  // current active building task
     lh_arr_declare(blkr,plan); // currently loaded/created buildplan
@@ -649,53 +650,7 @@ static void build_floor(char **words, char *reply) {
             xsize, zsize, get_bid_name(buf, mat));
 }
 
-static void build_place(char **words, char *reply) {
-    // check if we have a plan
-    if (!C(build.plan)) {
-        sprintf(reply, "You have no active buildplan!\n");
-        return;
-    }
-
-    // pivot coordinates and direction
-    int px,py,pz;
-    int dir;
-
-    // parse coords
-    if (scan_opt(words, "coord=%d,%d,%d", &px, &pz, &py)!=3) {
-        // second possibility - place at player's position (in front of him)
-        if (find_opt(words, "here")) {
-            px = gs.own.x>>5;
-            py = gs.own.y>>5;
-            pz = gs.own.z>>5;
-
-            dir = player_direction();
-            switch (dir) {
-                case DIR_SOUTH: pz++; break;
-                case DIR_NORTH: pz--; break;
-                case DIR_EAST:  px++; break;
-                case DIR_WEST:  px--; break;
-            }
-        }
-
-        // sprintf(reply, "Usage: build place coord=<x>,<z>,<y>");
-    }
-
-    // parse placement direction
-    if (scan_opt(words, "dir=%d", &dir)!=1) {
-        // if not specified, derive from the player's look direction
-        dir = player_direction();
-    }
-
-    if (dir<DIR_SOUTH || dir>DIR_WEST) {
-        sprintf(reply, "incorrect direction code, use: SOUTH=2,NORTH=3,EAST=4,WEST=5");
-        return;
-    }
-
-    sprintf(reply, "Place pivot at %d,%d (%d), dir=%d\n",px,pz,py,dir);
-
-    // abort current buildtask
-    build_cancel();
-
+void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
     // create a new buildtask from our buildplan
     int i;
     for(i=0; i<C(build.plan); i++) {
@@ -743,6 +698,95 @@ static void build_place(char **words, char *reply) {
            build.xmin, build.xmax, build.zmin, build.zmax, build.ymin, build.ymax);
 
     build_update();
+}
+
+static void build_place(char **words, char *reply) {
+    if (find_opt(words, "cancel")) {
+        build.placemode = 0;
+        return;
+    }
+
+    // check if we have a plan
+    if (!C(build.plan)) {
+        sprintf(reply, "You have no active buildplan!\n");
+        return;
+    }
+
+    // pivot coordinates and direction
+    int px,py,pz;
+    int dir = -1;
+
+    // parse coords
+    if (scan_opt(words, "coord=%d,%d,%d", &px, &pz, &py)!=3) {
+        // second possibility - place at player's position (in front of him)
+        if (find_opt(words, "here")) {
+            px = gs.own.x>>5;
+            py = gs.own.y>>5;
+            pz = gs.own.z>>5;
+
+            dir = player_direction();
+            switch (dir) {
+                case DIR_SOUTH: pz++; break;
+                case DIR_NORTH: pz--; break;
+                case DIR_EAST:  px++; break;
+                case DIR_WEST:  px--; break;
+            }
+        }
+
+        // next possibility - place by placing the pivot block manually
+        else if (find_opt(words, "once")) {
+            sprintf(reply, "Mark pivot position by placing a block - will be build once");
+            build.placemode = 1; // only once (gets cleared after first placement)
+            return;
+        }
+        else if (find_opt(words, "many")) {
+            sprintf(reply, "Mark pivot positions by placing block, disable with #build place cancel");
+            build.placemode = 2; // many times (cancel explicitly)
+            return;
+        }
+
+        sprintf(reply, "Usage: build place coord=<x>,<z>,<y>|here|once|many|cancel");
+    }
+
+    // parse placement direction
+    if (dir<0) {
+        if (scan_opt(words, "dir=%d", &dir)!=1) {
+            // if not specified, derive from the player's look direction
+            dir = player_direction();
+        }
+    }
+
+    if (dir<DIR_SOUTH || dir>DIR_WEST) {
+        sprintf(reply, "incorrect direction code, use: SOUTH=2,NORTH=3,EAST=4,WEST=5");
+        return;
+    }
+
+    // abort current buildtask
+    build_cancel();
+
+    sprintf(reply, "Place pivot at %d,%d (%d), dir=%d\n",px,pz,py,dir);
+    place_pivot(px,pz,py,dir);
+
+}
+
+void build_placemode(MCPacket *pkt) {
+    CP_PlayerBlockPlacement_pkt *tpkt = &pkt->_CP_PlayerBlockPlacement;
+
+    if (tpkt->face < 0) return; // ignore "fake" block placements
+    int32_t x = tpkt->bpos.x - NOFF[tpkt->face][0];
+    int32_t z = tpkt->bpos.z - NOFF[tpkt->face][1];
+    int32_t y = tpkt->bpos.y - NOFF[tpkt->face][2];
+
+    int dir = player_direction();
+
+    if (build.placemode == 1) {
+        build.placemode = 0;
+        build_cancel();
+    }
+
+    place_pivot(x,y,z,dir);
+
+    //TODO: send a SetSlot to the client, so it does not decrement the block count ?
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -840,9 +884,7 @@ static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
     }
 }
 
-void brec_blockupdate(MCPacket *pkt) {
-    if (!build.recording) return;
-
+static void brec_blockupdate(MCPacket *pkt) {
     assert(pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange);
 
     if (pkt->pid == SP_BlockChange) {
@@ -859,9 +901,7 @@ void brec_blockupdate(MCPacket *pkt) {
     }
 }
 
-void brec_blockplace(MCPacket *pkt) {
-    if (!build.recording) return;
-
+static void brec_blockplace(MCPacket *pkt) {
     assert(pkt->pid == CP_PlayerBlockPlacement);
     CP_PlayerBlockPlacement_pkt *tpkt = &pkt->_CP_PlayerBlockPlacement;
 
@@ -1093,4 +1133,18 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
     if (reply[0]) chat_message(reply, cq, "green", 0);
+}
+
+void build_packet(MCPacket *pkt) {
+    if (build.recording) {
+        if (pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange) {
+            brec_blockupdate(pkt);
+        }
+        else if (pkt->pid == CP_PlayerBlockPlacement) {
+            brec_blockplace(pkt);
+        }
+    }
+    else if (build.placemode && pkt->pid == CP_PlayerBlockPlacement) {
+        build_placemode(pkt);
+    }
 }

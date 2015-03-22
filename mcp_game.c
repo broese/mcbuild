@@ -481,12 +481,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 hole_radar(pkt->cl?bq:tq);
 
             build_update();
-
-            if (pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange)
-                brec_blockupdate(pkt);
-
-            if (pkt->pid == CP_PlayerBlockPlacement)
-                brec_blockplace(pkt);
+            build_packet(pkt);
 
             gs.own.pos_change = 0;
 
