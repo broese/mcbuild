@@ -632,7 +632,20 @@ static void build_floor(char **words, char *reply) {
     bid_t mat = build_arg_material(words, reply);
     if (reply[0]) return;
 
-    //TODO: for slab-type blocks, parse an additional option to select upper/lower placement
+    int assume_lower = 0;
+    if (ITEMS[mat.bid].flags&I_SLAB) {
+        // for slab blocks additionally parse the upper/lower placement
+        if (find_opt(words, "upper") || find_opt(words, "u") || find_opt(words, "up")) {
+            mat.meta |= 8;
+        }
+        else if (find_opt(words, "lower") || find_opt(words, "l") || find_opt(words, "dn")) {
+            mat.meta &= 7;
+        }
+        else {
+            mat.meta &= 7;
+            assume_lower = 1;
+        }
+    }
 
     int x,z;
     for(x=0; x<xsize; x++) {
@@ -646,8 +659,14 @@ static void build_floor(char **words, char *reply) {
     }
 
     char buf[256];
-    sprintf(reply, "Created floor %dx%d material=%s\n",
-            xsize, zsize, get_bid_name(buf, mat));
+    int off = sprintf(reply, "Created floor %dx%d material=%s",
+                      xsize, zsize, get_bid_name(buf, mat));
+
+    if (ITEMS[mat.bid].flags&I_SLAB) {
+        off += sprintf(reply+off, " (%s)", (mat.meta&8)?"upper":"lower");
+        if (assume_lower)
+            sprintf(reply+off, " - assuming lower placement as none was specified");
+    }
 }
 
 void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
