@@ -420,31 +420,63 @@ void build_update() {
             if (!((b->neigh>>n)&1)) continue;
 
             //TODO: provide support for ALL position-dependent blocks
+            uint16_t *dots = NULL;
             if (it->flags&I_SLAB) {
                 // Slabs
-                switch (n) {
-                    case DIR_UP:
-                        if (b->b.meta&8) {
-                            memcpy(b->dots[n], DOTS_ALL, sizeof(DOTS_ALL));
-                        }
+                if (b->b.meta&8) {
+                    // upper half placement
+                    if (n==DIR_UP) { dots=DOTS_ALL; }
+                    else if (n==DIR_DOWN) { dots=NULL; }
+                    else { dots=DOTS_UPPER; }
+                }
+                else {
+                    // lower half placement
+                    if (n==DIR_DOWN) { dots=DOTS_ALL; }
+                    else if (n==DIR_UP) { dots=NULL; }
+                    else { dots=DOTS_LOWER; }
+                }
+            }
+            else if (it->flags&I_STAIR) {
+                // Stairs
+                if (b->b.meta&4) {
+                    // upside-down placement
+                    if (n==DIR_UP) { dots=DOTS_ALL; }
+                    else if (n==DIR_DOWN) { dots=NULL; }
+                    else { dots=DOTS_UPPER; }
+                }
+                else {
+                    // straight placement
+                    if (n==DIR_DOWN) { dots=DOTS_ALL; }
+                    else if (n==DIR_UP) { dots=NULL; }
+                    else { dots=DOTS_LOWER; }
+                }
+
+                int bdir = block_face(b->x, b->z);
+                int sdir = b->b.meta&3; // orientation of the stairs
+                switch (sdir) {
+                    case 0: // must place from the west side
+                        if (bdir != DIR_WEST) dots=NULL;
                         break;
-                    case DIR_DOWN:
-                        if (!(b->b.meta&8)) {
-                            memcpy(b->dots[n], DOTS_ALL, sizeof(DOTS_ALL));
-                        }
+                    case 1: // from east
+                        if (bdir != DIR_EAST) dots=NULL;
                         break;
-                    default:
-                        if (b->b.meta & 8) {
-                            memcpy(b->dots[n], DOTS_UPPER, sizeof(DOTS_UPPER));
-                        }
-                        else {
-                            memcpy(b->dots[n], DOTS_LOWER, sizeof(DOTS_LOWER));
-                        }
+                    case 2: // from north
+                        if (bdir != DIR_NORTH) dots=NULL;
+                        break;
+                    case 3: // from south
+                        if (bdir != DIR_SOUTH) dots=NULL;
+                        break;
                 }
             }
             else {
-                memcpy(b->dots[n], DOTS_ALL, sizeof(DOTS_ALL));
+                // Non-positionally dependent block
+                dots=DOTS_ALL;
             }
+
+            if (dots)
+                memcpy(b->dots[n], dots, sizeof(DOTS_ALL));
+            else
+                memset(b->dots[n], 0, sizeof(DOTS_ALL));
         }
 
         // calculate exact distance to each of the dots and remove those out of reach
