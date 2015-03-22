@@ -322,6 +322,20 @@ static int sort_blocks(const void *a, const void *b) {
     return 0;
 }
 
+// determine which face of a block is the closest to the player
+static inline int block_face(int x, int z) {
+    int32_t dx = gs.own.x-(x<<5)+16;
+    int32_t dz = gs.own.z-(z<<5)+16;
+
+    if (abs(dx) > abs(dz)) {
+        // we're looking from the eastern or western direction at the block
+        return (dx>0) ? DIR_EAST : DIR_WEST;
+    }
+    else {
+        return (dz>0) ? DIR_SOUTH : DIR_NORTH;
+    }
+}
+
 void build_update() {
     // player position or look have changed - update our placeable blocks list
     if (!build.active) return;
