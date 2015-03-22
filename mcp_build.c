@@ -55,11 +55,11 @@ uint16_t DOTS_ALL[15] = {
     0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff,
     0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff };
 
-uint16_t DOTS_UPPER[15] = {
+uint16_t DOTS_LOWER[15] = {
     0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0,
     0, 0, 0, 0, 0, 0, 0 };
 
-uint16_t DOTS_LOWER[15] = {
+uint16_t DOTS_UPPER[15] = {
     0, 0, 0, 0, 0, 0, 0, 0,
     0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff };
 
@@ -211,11 +211,12 @@ static inline int ISEMPTY(int bid) {
 
 typedef struct {
     fixp x,z,y;     // position of the dot 0,0
-    fixp rx,rz,ry;  // deltas to the next dot in row
     fixp cx,cz,cy;  // deltas to the next dot in column
+    fixp rx,rz,ry;  // deltas to the next dot in row
 } dotpos_t;
 
 static dotpos_t DOTPOS[6] = {
+    //               start     cols    rows
     //               x  z  y   x z y   x z y
     [DIR_UP]    = {  2, 2, 0,  2,0,0,  0,2,0, }, // X-Z
     [DIR_DOWN]  = {  2, 2,32,  2,0,0,  0,2,0, }, // X-Z
@@ -363,6 +364,8 @@ void build_update() {
     build.nbq = 0;
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
+        const item_id *it = &ITEMS[b->b.bid];
+
         bid_t bl = world[OFF(b->x,b->z,b->y)];
 
         // check if this block is already correctly placed (including meta)
@@ -385,13 +388,38 @@ void build_update() {
         // skip the blocks we can't place
         if (b->placed || !b->empty || !b->neigh) continue;
 
-        // determine usable dots on the neighbr faces
+        // determine usable dots on the neighbor faces
         lh_clear_obj(b->dots);
         int n;
         for (n=0; n<6; n++) {
             if (!((b->neigh>>n)&1)) continue;
-            //TODO: provide support for position-dependent blocks
-            memcpy(b->dots[n], DOTS_ALL, sizeof(DOTS_ALL));
+
+            //TODO: provide support for ALL position-dependent blocks
+            if (it->flags&I_SLAB) {
+                // Slabs
+                switch (n) {
+                    case DIR_UP:
+                        if (b->b.meta&8) {
+                            memcpy(b->dots[n], DOTS_ALL, sizeof(DOTS_ALL));
+                        }
+                        break;
+                    case DIR_DOWN:
+                        if (!(b->b.meta&8)) {
+                            memcpy(b->dots[n], DOTS_ALL, sizeof(DOTS_ALL));
+                        }
+                        break;
+                    default:
+                        if (b->b.meta & 8) {
+                            memcpy(b->dots[n], DOTS_UPPER, sizeof(DOTS_UPPER));
+                        }
+                        else {
+                            memcpy(b->dots[n], DOTS_LOWER, sizeof(DOTS_LOWER));
+                        }
+                }
+            }
+            else {
+                memcpy(b->dots[n], DOTS_ALL, sizeof(DOTS_ALL));
+            }
         }
 
         // calculate exact distance to each of the dots and remove those out of reach
