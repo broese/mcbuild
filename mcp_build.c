@@ -153,7 +153,7 @@ int64_t mat_last[9];
 
 static int find_evictable_slot() {
     int i;
-    int best_s;
+    int best_s = matl;
     int64_t best_ts = mat_last[matl];
 
     for(i=matl; i<=math; i++) {
@@ -189,6 +189,7 @@ static int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
 
     // fetch the material from main inventory to a suitable quickbar slot
     int eslot = find_evictable_slot();
+    //printf("swapping slots: %d %d\n", mslot, eslot+36);
     gmi_swap_slots(sq, cq, mslot, eslot+36);
 
     return eslot;
