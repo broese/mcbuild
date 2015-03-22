@@ -502,7 +502,7 @@ static void choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz)
 }
 
 // minimum interval between attempting to build the same block
-#define BUILD_BLKINT 50000
+#define BUILD_BLKINT 200000
 #define BUILD_BLDINT 50000
 
 // maximum number of blocks to attempt to place in one go
@@ -765,8 +765,8 @@ static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
     for(i=0; i<build.nbrp; i++) {
         blkr *bl = &build.brp[i];
         if (bl->x==x && bl->y==y && bl->z==z) {
-            printf("Found pending block idx=%d %d,%d,%d %02x/%02x => %02x/%02x\n",
-                   i, x, y, z, bl->b.bid, bl->b.meta, block.bid, block.meta);
+            //printf("Found pending block idx=%d %d,%d,%d %02x/%02x => %02x/%02x\n",
+            //       i, x, y, z, bl->b.bid, bl->b.meta, block.bid, block.meta);
 
             // remove block from the pending queue
             blkr *brp = build.brp;
