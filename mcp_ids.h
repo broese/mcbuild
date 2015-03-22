@@ -189,6 +189,9 @@
 // slab-type block - I_MPOS lower/upper placement in the meta bit 3
 #define I_SLAB   (1<<9)
 
+// stair-type block - I_MPOS straight/upside-down in the meta bit 2, direction in bits 0-1
+#define I_STAIR (1<<10)
+
 
 // macros to determine armor type
 #define I_HELMET(id)     ((id)==0x12a || (id)==0x12e || (id)==0x132 || (id)==0x136 || (id)==0x13a)
