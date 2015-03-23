@@ -715,6 +715,64 @@ static void build_floor(char **words, char *reply) {
     }
 }
 
+static void build_scaffolding(char **words, char *reply) {
+    build_clear();
+
+    int wd,hg;
+    if (scan_opt(words, "size=%d,%d", &wd, &hg)!=2) {
+        sprintf(reply, "Usage: build scaffolding size=<width>,<floors>");
+        return;
+    }
+    if (wd<=0 || hg<=0) {
+        sprintf(reply, "Usage: illegal scaffolding size %d,%d",wd,hg);
+        return;
+    }
+    if (wd<4) wd=4; // so we can connect the stairs
+
+    // determine the building material
+    int bid=0, meta=0;
+    // first option: BID,meta specified
+    if (scan_opt(words, "mat=%d,%d", &bid, &meta)!=2) {
+        // second option: just block ID, assume meta=0
+        meta = 0;
+        if (scan_opt(words, "mat=%d", &bid)!=1) {
+            // third option: use dirt
+            bid = 0x01;
+        }
+    }
+    bid_t mat = BLOCKTYPE(bid, meta);
+
+    int floor;
+    for(floor=0; floor<hg; floor++) {
+        int x;
+        blkr *b;
+        // bridge
+        for(x=0; x<wd; x++) {
+            b = lh_arr_new(BPLAN);
+            b->b = mat;
+            b->x = x;
+            b->z = 0;
+            b->y = 2+3*floor;
+        }
+        // stairs
+        for(x=0; x<3; x++) {
+            b = lh_arr_new(BPLAN);
+            b->b = mat;
+            b->x = x;
+            b->z = 1;
+            b->y = x+3*floor;
+
+            b = lh_arr_new(BPLAN);
+            b->b = mat;
+            b->x = x+1;
+            b->z = 1;
+            b->y = x+3*floor;
+        }
+    }
+
+    sprintf(reply, "Created scaffolding: %d floors, %d blocks wide", hg, wd);
+}
+
 void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
     // create a new buildtask from our buildplan
     int i;
@@ -1176,6 +1234,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "floor")) {
         build_floor(words+2, reply);
+    }
+    else if (!strcmp(words[1], "scaf")) {
+        build_scaffolding(words+2, reply);
     }
     else if (!strcmp(words[1], "place")) {
         build_place(words+2, reply);
