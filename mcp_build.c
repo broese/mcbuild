@@ -822,6 +822,14 @@ static void build_stairs(char **words, char *reply) {
     sprintf(reply, "Created stairs: %d floors, %d blocks wide", hg, wd);
 }
 
+// rotation mapping for the stairs-type blocks (2 low bits in the meta)
+static uint8_t ROTATE_SLAB[][4] = {
+    [DIR_NORTH] = { 0, 1, 2, 3 },
+    [DIR_SOUTH] = { 1, 0, 3, 2 },
+    [DIR_EAST]  = { 2, 3, 1, 0 },
+    [DIR_WEST]  = { 3, 2, 0, 1 },
+};
+
 void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
     // create a new buildtask from our buildplan
     int i;
@@ -851,6 +859,12 @@ void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
 
         //TODO: correct the I_MPOS-dependent metas
         bt->b = bp->b;
+
+        if (ITEMS[bt->b.bid].flags&I_STAIR) {
+            // rotate stair-type blocks
+            uint8_t slab_rot = ROTATE_SLAB[dir][bt->b.meta&3];
+            bt->b.meta = (bt->b.meta&4)|(slab_rot&3);
+        }
     }
     build.active = 1;
 
