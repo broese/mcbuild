@@ -773,6 +773,49 @@ static void build_scaffolding(char **words, char *reply) {
     sprintf(reply, "Created scaffolding: %d floors, %d blocks wide", hg, wd);
 }
 
+static void build_stairs(char **words, char *reply) {
+    build_clear();
+
+    int wd,hg;
+    if (scan_opt(words, "size=%d,%d", &wd, &hg)!=2) {
+        sprintf(reply, "Usage: build stairs size=<width>,<floors>");
+        return;
+    }
+    if (wd<=0 || hg<=0) {
+        sprintf(reply, "Usage: illegal stairs size %d,%d",wd,hg);
+        return;
+    }
+
+    bid_t mat = build_arg_material(words, reply);
+    if (reply[0]) return;
+
+    // make stairs-type block face player
+    if ((ITEMS[mat.bid].flags&I_STAIR)) mat.meta=3;
+
+    int floor;
+    for(floor=0; floor<hg; floor++) {
+        int x;
+        blkr *b;
+        for(x=0; x<wd; x++) {
+            b = lh_arr_new(BPLAN);
+            b->b = mat;
+            b->x = x;
+            b->z = -floor;
+            b->y = floor;
+
+            //TODO: make this optional?
+            //TODO: make it match the stairs block
+            b = lh_arr_new(BPLAN);
+            b->b = mat;
+            b->x = x;
+            b->z = -floor-1;
+            b->y = floor;
+        }
+    }
+
+    sprintf(reply, "Created stairs: %d floors, %d blocks wide", hg, wd);
+}
+
 void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
     // create a new buildtask from our buildplan
     int i;
@@ -1237,6 +1280,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "scaf")) {
         build_scaffolding(words+2, reply);
+    }
+    else if (!strcmp(words[1], "stairs")) {
+        build_stairs(words+2, reply);
     }
     else if (!strcmp(words[1], "place")) {
         build_place(words+2, reply);
