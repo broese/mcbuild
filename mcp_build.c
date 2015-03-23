@@ -327,6 +327,10 @@ static inline int block_face(int x, int z) {
     int32_t dx = gs.own.x-(x<<5)+16;
     int32_t dz = gs.own.z-(z<<5)+16;
 
+    // user is too close to the diagonal - return illegal value to avoid conflicts
+    int ratio = (abs(dx)*1000/abs(dz));
+    if (ratio>900 && ratio<1100) return -1;
+
     if (abs(dx) > abs(dz)) {
         // we're looking from the eastern or western direction at the block
         return (dx>0) ? DIR_EAST : DIR_WEST;
@@ -466,6 +470,8 @@ void build_update() {
                     case 3: // from south
                         if (bdir != DIR_SOUTH) dots=NULL;
                         break;
+                    default: // too close to diagonal
+                        dots = NULL;
                 }
             }
             else {
