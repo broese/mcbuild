@@ -743,7 +743,7 @@ static void build_scaffolding(char **words, char *reply) {
         meta = 0;
         if (scan_opt(words, "mat=%d", &bid)!=1) {
             // third option: use dirt
-            bid = 0x01;
+            bid = 0x03; // Dirt
         }
     }
     bid_t mat = BLOCKTYPE(bid, meta);
@@ -1298,7 +1298,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     else if (!strcmp(words[1], "floor")) {
         build_floor(words+2, reply);
     }
-    else if (!strcmp(words[1], "scaf")) {
+    else if (!strcmp(words[1], "scaf") || !strcmp(words[1], "scaffolding")) {
         build_scaffolding(words+2, reply);
     }
     else if (!strcmp(words[1], "stairs")) {
