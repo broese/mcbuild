@@ -923,7 +923,74 @@ static void build_stairs(char **words, char *reply) {
     }
 
     sprintf(reply, "Created stairs: %d floors, %d blocks wide", hg, wd);
+    buildplan_updated();
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+static void build_extend(char **words, char *reply) {
+    int ox,oy,oz;
+    // first option: offset x,z,y
+    if (scan_opt(words, "offset=%d,%d,%d", &ox, &oz, &oy)!=3) {
+
+        // second option: offset x,z
+        oy=0;
+        if (scan_opt(words, "offset=%d,%d", &ox, &oz)!=2) {
+
+            // third option: offset x only
+            oz=0;
+            if (scan_opt(words, "offset=%d", &ox)!=1) {
+
+                // fourth option: direction
+                //TODO: support direction+offset
+                if (find_opt(words, "up") || find_opt(words, "u")) {
+                    ox=0; oz=0; oy=build.bpsy;
+                }
+                else if (find_opt(words, "down") || find_opt(words, "d")) {
+                    ox=0; oz=0; oy=-build.bpsy;
+                }
+                else if (find_opt(words, "right") || find_opt(words, "r")) {
+                    ox=build.bpsx; oz=0; oy=0;
+                }
+                else if (find_opt(words, "left") || find_opt(words, "l")) {
+                    ox=-build.bpsx; oz=0; oy=0;
+                }
+                else if (find_opt(words, "front") || find_opt(words, "f")) {
+                    ox=0; oz=-build.bpsz; oy=0;
+                }
+                else if (find_opt(words, "back") || find_opt(words, "b")) {
+                    ox=0; oz=build.bpsz; oy=0;
+                }
+                else {
+                    sprintf(reply, "Usage: #build extend offset=x[,z[,y]]|u|d|r|l|f|b");
+                    return;
+                }
+            }
+        }
+    }
+
+    int count;
+    if (scan_opt(words, "count=%d", &count)!=1) {
+        count=1;
+    }
+
+    int i,j;
+    int bc=C(build.plan);
+    for(i=1; i<=count; i++) {
+        for(j=0; j<bc; j++) {
+            blkr *bo = P(build.plan)+j;
+            blkr *bn = lh_arr_new(BPLAN);
+            bn->x = bo->x+ox*i;
+            bn->y = bo->y+oy*i;
+            bn->z = bo->z+oz*i;
+            bn->b = bo->b;
+        }
+    }
+
+    buildplan_updated();
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 // rotation mapping for the stairs-type blocks (2 low bits in the meta)
 static uint8_t ROTATE_STAIR[][4] = {
@@ -1474,6 +1541,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "rec")) {
         build_rec(words+2, reply);
+    }
+    else if (!strcmp(words[1], "ext") || !strcmp(words[1], "extend")) {
+        build_extend(words+2, reply);
     }
 
     if (reply[0]) chat_message(reply, cq, "green", 0);
