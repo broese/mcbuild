@@ -893,13 +893,14 @@ static void build_stairs(char **words, char *reply) {
 }
 
 // rotation mapping for the stairs-type blocks (2 low bits in the meta)
-static uint8_t ROTATE_SLAB[][4] = {
+static uint8_t ROTATE_STAIR[][4] = {
     [DIR_NORTH] = { 0, 1, 2, 3 },
     [DIR_SOUTH] = { 1, 0, 3, 2 },
     [DIR_EAST]  = { 2, 3, 1, 0 },
     [DIR_WEST]  = { 3, 2, 0, 1 },
 };
 
+// a pivot block has been placed (using whatever method)
 void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
     // create a new buildtask from our buildplan
     int i;
@@ -932,8 +933,8 @@ void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
         //correct the I_MPOS-dependent metas
         if (ITEMS[bt->b.bid].flags&I_STAIR) {
             // rotate stair-type blocks
-            uint8_t slab_rot = ROTATE_SLAB[dir][bt->b.meta&3];
-            bt->b.meta = (bt->b.meta&4)|(slab_rot&3);
+            uint8_t stair_rot = ROTATE_STAIR[dir][bt->b.meta&3];
+            bt->b.meta = (bt->b.meta&4)|(stair_rot&3);
         }
         //TODO: other I_MPOS blocks
     }
@@ -957,6 +958,7 @@ void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
     build_update();
 }
 
+// chat command "#build place cancel|once|many|coord=<x,z,y> [dir=<d>]"
 static void build_place(char **words, char *reply) {
     if (find_opt(words, "cancel")) {
         sprintf(reply, "Placement canceled\n");
@@ -1027,6 +1029,7 @@ static void build_place(char **words, char *reply) {
 
 }
 
+// handler for placing the pivot block in-game ("place once" or "place many")
 void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     CP_PlayerBlockPlacement_pkt *tpkt = &pkt->_CP_PlayerBlockPlacement;
 
@@ -1054,6 +1057,7 @@ void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
 ////////////////////////////////////////////////////////////////////////////////
 // Build Recorder
 
+// chat command "#build rec start|stop|add"
 static void build_rec(char **words, char *reply) {
     build_cancel(); // stop current building process if there was any
 
@@ -1076,6 +1080,7 @@ static void build_rec(char **words, char *reply) {
     }
 }
 
+// dump BREC blocks that are pending block update from the server
 static void dump_brec_pending() {
     //printf("BREC pending queue: %zd entries\n",build.nbrp);
 
@@ -1088,6 +1093,8 @@ static void dump_brec_pending() {
     }
 }
 
+// received a block update from the server - check if we have this block in the
+// BREC pending queue and record it in the buildplan
 static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
     block.meta &= ~(get_state_mask(block.bid));
 
@@ -1140,16 +1147,17 @@ static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
             bp->b = block;
 
             //correct the I_MPOS-dependent metas
+            int rot=build.pd;
+            switch(build.pd) {
+                case DIR_EAST: rot=DIR_WEST; break;
+                case DIR_WEST: rot=DIR_EAST; break;
+                default: rot=build.pd;
+            }
+
             if (ITEMS[block.bid].flags&I_STAIR) { //stair-type blocks
                 // we can use the same table, but switch east and west
-                int rot=build.pd;
-                switch(build.pd) {
-                    case DIR_EAST: rot=DIR_WEST; break;
-                    case DIR_WEST: rot=DIR_EAST; break;
-                    default: rot=build.pd;
-                }
-                uint8_t slab_rot = ROTATE_SLAB[rot][bp->b.meta&3];
-                bp->b.meta = (bp->b.meta&4)|(slab_rot&3);
+                uint8_t stair_rot = ROTATE_STAIR[rot][bp->b.meta&3];
+                bp->b.meta = (bp->b.meta&4)|(stair_rot&3);
             }
             //TODO: other I_MPOS blocks
 
@@ -1159,6 +1167,8 @@ static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
     }
 }
 
+// handler for the SP_BlockChange and SP_MultiBlockChange messages from the server
+// dispatch each updated block to brec_blockupdate_blk()
 static void brec_blockupdate(MCPacket *pkt) {
     assert(pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange);
 
@@ -1176,6 +1186,9 @@ static void brec_blockupdate(MCPacket *pkt) {
     }
 }
 
+// handler for the CP_PlayerBlockPlacement message from the client
+// place this block in the pending queue - it will be recorded once
+// we get a confirmation from the server that it's been placed
 static void brec_blockplace(MCPacket *pkt) {
     assert(pkt->pid == CP_PlayerBlockPlacement);
     CP_PlayerBlockPlacement_pkt *tpkt = &pkt->_CP_PlayerBlockPlacement;
@@ -1231,7 +1244,7 @@ static void brec_blockplace(MCPacket *pkt) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-//TODO: print needed material amounts
+// dump our buildplan to console
 void build_dump_plan() {
     int i;
     char buf[256];
@@ -1243,6 +1256,7 @@ void build_dump_plan() {
     }
 }
 
+// dump our buildtask to console
 void build_dump_task() {
     int i;
     char buf[256];
@@ -1267,6 +1281,7 @@ void build_dump_task() {
     }
 }
 
+// dump our buildqueue to console
 void build_dump_queue() {
     int i;
     char buf[256];
@@ -1291,6 +1306,9 @@ void build_dump_queue() {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+// save buildplan to a file
 void build_save(const char * name, char * reply) {
     if (!name) {
         sprintf(reply, "Usage: #build save <name> (w/o extension)");
@@ -1325,6 +1343,7 @@ void build_save(const char * name, char * reply) {
     lh_free(buf);
 }
 
+// load a buildplan from a file
 void build_load(const char * name, char * reply) {
     if (!name) {
         sprintf(reply, "Usage: #build load <name> (w/o extension)");
@@ -1359,6 +1378,8 @@ void build_load(const char * name, char * reply) {
     lh_free(buf);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 void build_clear() {
     build_cancel();
     lh_arr_free(BPLAN);
@@ -1371,6 +1392,8 @@ void build_cancel() {
     build.bq[0] = -1;
     build.nbrp = 0; // clear the pending queue
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     char reply[32768];
@@ -1419,6 +1442,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     if (reply[0]) chat_message(reply, cq, "green", 0);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+// dispatch for the building-relevant packets we get from mcp_game
 int build_packet(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     if (build.recording) {
         if (pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange) {
