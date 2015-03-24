@@ -212,6 +212,18 @@ extern const item_id ITEMS[];
     ( ITEMS[item].flags&I_NSTACK ? 1 : ( ITEMS[item].flags&I_S16 ? 16 : 64 ) )
 
 ////////////////////////////////////////////////////////////////////////////////
+// Directions
+
+#define DIR_UP      0
+#define DIR_DOWN    1
+#define DIR_SOUTH   2
+#define DIR_NORTH   3
+#define DIR_EAST    4
+#define DIR_WEST    5
+
+extern const char * DIRNAME[];
+
+////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
 
 typedef enum {

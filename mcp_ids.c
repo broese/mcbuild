@@ -582,6 +582,18 @@ uint8_t get_state_mask(int bid) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Orientation
+
+const char * DIRNAME[] = {
+    [DIR_UP]    = "up",
+    [DIR_DOWN]  = "down",
+    [DIR_SOUTH] = "south",
+    [DIR_NORTH] = "north",
+    [DIR_EAST]  = "east",
+    [DIR_WEST]  = "west",
+};
+
+////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
 
 const char * METANAME[][32] = {

@@ -64,15 +64,6 @@ typedef struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define DIR_UP      0
-#define DIR_DOWN    1
-#define DIR_SOUTH   2
-#define DIR_NORTH   3
-#define DIR_EAST    4
-#define DIR_WEST    5
-
-////////////////////////////////////////////////////////////////////////////////
-
 typedef struct _gamestate {
     // game
     int64_t time; // timestamp from the last received server tick
