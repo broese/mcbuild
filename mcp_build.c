@@ -204,6 +204,67 @@ static int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
     return eslot;
 }
 
+static int calculate_material(int plan) {
+    int i;
+
+    if (plan) {
+        printf("=== Material Demand for the Buildplan ===\n");
+    }
+    else {
+        printf("=== Material Demand for the Buildtask ===\n");
+        build_update();
+    }
+
+    // buildplan/task count per material type
+    int bc[65536];
+    lh_clear_obj(bc);
+
+    if (plan) {
+        for (i=0; i<C(build.plan); i++) {
+            bid_t bmat = get_base_material(P(build.plan)[i].b);
+            bc[bmat.raw]++;
+        }
+    }
+    else {
+        for (i=0; i<C(build.task); i++) {
+            if (P(build.task)[i].placed) continue;
+            bid_t bmat = get_base_material(P(build.task)[i].b);
+            bc[bmat.raw]++;
+        }
+    }
+
+    // inventory count, per material type
+    int ic[65536];
+    lh_clear_obj(ic);
+
+    for (i=9; i<45; i++) {
+        if (gs.inv.slots[i].item<0 || gs.inv.slots[i].item>=0x100) continue;
+        bid_t bmat = BLOCKTYPE(gs.inv.slots[i].item, gs.inv.slots[i].damage);
+        ic[bmat.raw] += gs.inv.slots[i].count;
+    }
+
+    // print material demand
+    for(i=0; i<65536; i++) {
+        if (bc[i] > 0) {
+            bid_t mat;
+            mat.raw = (uint16_t)i;
+
+            printf("block:%02x/%02x need:%4d have:%4d ",mat.bid,mat.meta,bc[i],ic[i]);
+
+            int need = bc[i]-ic[i];
+            if (need <= 0)
+                printf("              ");
+            else
+                printf("%3dS+%-2d short ", need/STACKSIZE(mat.bid), need%STACKSIZE(mat.bid));
+
+            char buf[256];
+            printf("%s\n",get_bid_name(buf, mat));
+        }
+    }
+
+    printf("=========================================\n");
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // maximum reach distance for building, squared, in fixp units (1/32 block)
@@ -1327,6 +1388,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "dumpqueue")) {
         build_dump_queue();
+    }
+    else if (!strcmp(words[1], "dumpmat")) {
+        calculate_material(find_opt(words+2, "plan"));
     }
     else if (!strcmp(words[1], "save")) {
         build_save(words[2], reply);
