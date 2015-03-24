@@ -204,7 +204,7 @@ static int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
     return eslot;
 }
 
-static int calculate_material(int plan) {
+static void calculate_material(int plan) {
     int i;
 
     if (plan) {
@@ -927,14 +927,15 @@ void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
         }
         bt->y = py+bp->y;
 
-        //TODO: correct the I_MPOS-dependent metas
         bt->b = bp->b;
 
+        //correct the I_MPOS-dependent metas
         if (ITEMS[bt->b.bid].flags&I_STAIR) {
             // rotate stair-type blocks
             uint8_t slab_rot = ROTATE_SLAB[dir][bt->b.meta&3];
             bt->b.meta = (bt->b.meta&4)|(slab_rot&3);
         }
+        //TODO: other I_MPOS blocks
     }
     build.active = 1;
 
@@ -1136,8 +1137,21 @@ static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
             }
             bp->y = y-build.py;
 
-            //TODO: correct the I_MPOS-dependent metas
             bp->b = block;
+
+            //correct the I_MPOS-dependent metas
+            if (ITEMS[block.bid].flags&I_STAIR) { //stair-type blocks
+                // we can use the same table, but switch east and west
+                int rot=build.pd;
+                switch(build.pd) {
+                    case DIR_EAST: rot=DIR_WEST; break;
+                    case DIR_WEST: rot=DIR_EAST; break;
+                    default: rot=build.pd;
+                }
+                uint8_t slab_rot = ROTATE_SLAB[rot][bp->b.meta&3];
+                bp->b.meta = (bp->b.meta&4)|(slab_rot&3);
+            }
+            //TODO: other I_MPOS blocks
 
             dump_brec_pending();
             return;
