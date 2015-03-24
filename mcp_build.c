@@ -146,6 +146,8 @@ struct {
     int nbq;                   // number of buildable blocks
 
     int32_t     xmin,xmax,ymin,ymax,zmin,zmax;
+
+    int32_t bpsx,bpsy,bpsz;
 } build;
 
 #define BTASK GAR(build.task)
@@ -694,6 +696,35 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// recalculate the size of the buildplan
+static void buildplan_updated() {
+    if (C(build.plan)==0) {
+        // we have no buildplan
+        build.bpsx=build.bpsy=build.bpsz=0;
+        return;
+    }
+
+    int32_t xn,xx,yn,yx,zn,zx;
+
+    xn=xx=P(build.plan)[0].x;
+    yn=yx=P(build.plan)[0].y;
+    zn=zx=P(build.plan)[0].z;
+
+    int i;
+    for(i=0; i<C(build.plan); i++) {
+        xn = MIN(P(build.plan)[i].x, xn);
+        xx = MAX(P(build.plan)[i].x, xx);
+        yn = MIN(P(build.plan)[i].y, yn);
+        yx = MAX(P(build.plan)[i].y, yx);
+        zn = MIN(P(build.plan)[i].z, zn);
+        zx = MAX(P(build.plan)[i].z, zx);
+    }
+
+    build.bpsx=xx-xn+1;
+    build.bpsy=yx-yn+1;
+    build.bpsz=zx-zn+1;
+}
+
 static bid_t build_arg_material(char **words, char *reply) {
     bid_t mat;
 
@@ -780,6 +811,7 @@ static void build_floor(char **words, char *reply) {
         if (assume_lower)
             sprintf(reply+off, " - assuming lower placement as none was specified");
     }
+    buildplan_updated();
 }
 
 static int SCAFF_STAIR[5][2] = { { 1, -1}, { 2, -1 }, { 2, 0 }, { 3, 0 }, { 3, 1 } };
@@ -847,6 +879,7 @@ static void build_scaffolding(char **words, char *reply) {
     }
 
     sprintf(reply, "Created scaffolding: %d floors, %d blocks wide", hg, wd);
+    buildplan_updated();
 }
 
 static void build_stairs(char **words, char *reply) {
@@ -1184,6 +1217,7 @@ static void brec_blockupdate(MCPacket *pkt) {
             brec_blockupdate_blk(((tpkt->X)<<4)+br->x,br->y,((tpkt->Z)<<4)+br->z,br->bid);
         }
     }
+    buildplan_updated();
 }
 
 // handler for the CP_PlayerBlockPlacement message from the client
@@ -1254,6 +1288,7 @@ void build_dump_plan() {
                i, b->x, b->z, b->y, b->b.bid, b->b.meta,
                get_bid_name(buf, get_base_material(b->b)));
     }
+    printf("Buildplan size: W:%d D:%d H:%d\n",build.bpsx,build.bpsz,build.bpsy);
 }
 
 // dump our buildtask to console
@@ -1376,6 +1411,7 @@ void build_load(const char * name, char * reply) {
             C(build.plan), fname);
 
     lh_free(buf);
+    buildplan_updated();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1384,6 +1420,7 @@ void build_clear() {
     build_cancel();
     lh_arr_free(BPLAN);
     lh_clear_obj(build);
+    buildplan_updated();
 }
 
 void build_cancel() {
