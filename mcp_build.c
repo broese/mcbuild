@@ -721,6 +721,8 @@ static void build_floor(char **words, char *reply) {
     }
 }
 
+static int SCAFF_STAIR[5][2] = { { 1, -1}, { 2, -1 }, { 2, 0 }, { 3, 0 }, { 3, 1 } };
+
 static void build_scaffolding(char **words, char *reply) {
     build_clear();
 
@@ -733,7 +735,10 @@ static void build_scaffolding(char **words, char *reply) {
         sprintf(reply, "Usage: illegal scaffolding size %d,%d",wd,hg);
         return;
     }
-    if (wd<4) wd=4; // so we can connect the stairs
+
+    // ensure minimum width so we can connect the stairs
+    if (hg==1 && wd<4) wd=4;
+    if (hg>1 && wd<7) wd=7;
 
     // determine the building material
     int bid=0, meta=0;
@@ -748,31 +753,35 @@ static void build_scaffolding(char **words, char *reply) {
     }
     bid_t mat = BLOCKTYPE(bid, meta);
 
+    //TODO: use a secondary material to build stairs, set meta=0 for stair-type blocks
+
     int floor;
     for(floor=0; floor<hg; floor++) {
-        int x;
+        int i;
         blkr *b;
         // bridge
-        for(x=0; x<wd; x++) {
+        for(i=0; i<wd; i++) {
             b = lh_arr_new(BPLAN);
             b->b = mat;
-            b->x = x;
+            b->x = i;
             b->z = 0;
             b->y = 2+3*floor;
         }
+        // column
+        for(i=0; i<2; i++) {
+            b = lh_arr_new(BPLAN);
+            b->b = mat;
+            b->x = 0;
+            b->z = 0;
+            b->y = i+3*floor;
+        }
         // stairs
-        for(x=0; x<3; x++) {
+        for(i=0; i<5; i++) {
             b = lh_arr_new(BPLAN);
             b->b = mat;
-            b->x = x;
+            b->x = SCAFF_STAIR[i][0]+3*(floor&1);
             b->z = 1;
-            b->y = x+3*floor;
-
-            b = lh_arr_new(BPLAN);
-            b->b = mat;
-            b->x = x+1;
-            b->z = 1;
-            b->y = x+3*floor;
+            b->y = SCAFF_STAIR[i][1]+3*floor;
         }
     }
 
