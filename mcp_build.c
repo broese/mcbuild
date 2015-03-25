@@ -814,6 +814,112 @@ static void build_floor(char **words, char *reply) {
     buildplan_updated();
 }
 
+#define PLACE_DOT(_x,_z)                            \
+    b = lh_arr_new(BPLAN); b->b = mat; b->y = 0;    \
+    b->x = (_x);  b->z = (_z);
+
+static void build_ring(char **words, char *reply) {
+    build_clear();
+
+    // ring diameter
+    int diam;
+    if (scan_opt(words, "size=%d", &diam)!=1) {
+        sprintf(reply, "Usage: build ring size=<diameter>");
+        return;
+    }
+    if (diam<=0) {
+        sprintf(reply, "Usage: illegal ring size %d",diam);
+        return;
+    }
+
+    bid_t mat = build_arg_material(words, reply);
+    if (reply[0]) return;
+
+    int assume_lower = 0;
+    if (ITEMS[mat.bid].flags&I_SLAB) {
+        // for slab blocks additionally parse the upper/lower placement
+        if (find_opt(words, "upper") || find_opt(words, "u") || find_opt(words, "up")) {
+            mat.meta |= 8;
+        }
+        else if (find_opt(words, "lower") || find_opt(words, "l") || find_opt(words, "dn")) {
+            mat.meta &= 7;
+        }
+        else {
+            mat.meta &= 7;
+            assume_lower = 1;
+        }
+    }
+
+    int x,z,o;
+    blkr *b;
+    if (diam&1) { // odd diameter - a block in the center
+        int r=diam/2;
+        for(x=0,z=r; x<z; x++) {
+            int err1=abs(SQ(x)+SQ(z)-SQ(r));
+            int err2=abs(SQ(x)+SQ(z-1)-SQ(r));
+            //printf("x=%d z=%d err1=%d err2=%d   =>  ",x,z,err1,err2);
+            if (err2<err1) z--;
+            //printf("DOT %d,%d\n",x,z);
+
+            // distribute the calculated dot to all octants
+            PLACE_DOT(x,z);
+            PLACE_DOT(x,-z);
+            if (x!=z) {
+                PLACE_DOT(z,x);
+                PLACE_DOT(-z,x);
+            }
+
+            if (x!=0) {
+                PLACE_DOT(-x,z);
+                PLACE_DOT(-x,-z);
+                if (x!=z) {
+                    PLACE_DOT(z,-x);
+                    PLACE_DOT(-z,-x);
+                }
+            }
+        }
+    }
+    else {
+        int r=diam-1;
+        for(x=0,z=r/2; x<z; x++) {
+            int err1=abs(SQ(2*x)+SQ(2*z)-SQ(r));
+            int err2=abs(SQ(2*x)+SQ(2*(z-1))-SQ(r));
+            //printf("x=%d z=%d err1=%d err2=%d   =>  ",x,z,err1,err2);
+            if (err2<err1) z--;
+            //printf("DOT %d,%d\n",x,z);
+
+            // distribute the calculated dot to all octants
+            PLACE_DOT(x,z);
+            PLACE_DOT(x,-z-1);
+            if (x!=z) {
+                PLACE_DOT(z,x);
+                PLACE_DOT(-z-1,x);
+            }
+
+            if (x!=0) {
+                PLACE_DOT(-x-1,z);
+                PLACE_DOT(-x-1,-z-1);
+                if (x!=z) {
+                    PLACE_DOT(z,-x-1);
+                    PLACE_DOT(-z-1,-x-1);
+                }
+            }
+        }
+    }
+
+    char buf[256];
+    int off = sprintf(reply, "Created ring diam=%d material=%s",
+                      diam, get_bid_name(buf, mat));
+
+    if (ITEMS[mat.bid].flags&I_SLAB) {
+        off += sprintf(reply+off, " (%s)", (mat.meta&8)?"upper":"lower");
+        if (assume_lower)
+            sprintf(reply+off, " - assuming lower placement as none was specified");
+    }
+
+    buildplan_updated();
+}
+
 static int SCAFF_STAIR[5][2] = { { 1, -1}, { 2, -1 }, { 2, 0 }, { 3, 0 }, { 3, 1 } };
 
 static void build_scaffolding(char **words, char *reply) {
@@ -1508,6 +1614,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "floor")) {
         build_floor(words+2, reply);
+    }
+    else if (!strcmp(words[1], "ring")) {
+        build_ring(words+2, reply);
     }
     else if (!strcmp(words[1], "scaf") || !strcmp(words[1], "scaffolding")) {
         build_scaffolding(words+2, reply);
