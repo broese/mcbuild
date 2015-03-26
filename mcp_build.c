@@ -400,24 +400,6 @@ static inline void setdots(blk *b, uint16_t *u, uint16_t *d,
     if (b->n_zn) memcpy(b->dots[DIR_NORTH], n, sizeof(DOTS_ALL));
 }
 
-// determine which face of a block is the closest to the player
-static inline int block_face(int x, int z) {
-    int32_t dx = gs.own.x-(x<<5)+16;
-    int32_t dz = gs.own.z-(z<<5)+16;
-
-    if (abs(dx) > abs(dz)*2) {
-        // we're looking from the eastern or western direction at the block
-        return (dx>0) ? DIR_EAST : DIR_WEST;
-    }
-    else if (abs(dz) > abs(dx)*2) {
-        // south or north
-        return (dz>0) ? DIR_SOUTH : DIR_NORTH;
-    }
-    else {
-        return -1; // too close to diagonal to tell
-    }
-}
-
 void build_update() {
     // player position or look have changed - update our placeable blocks list
     if (!build.active) return;
@@ -508,24 +490,22 @@ void build_update() {
         }
         else if (it->flags&I_STAIR) {
             // Stairs
-            if (b->b.meta&4) // upside-down placement
-                setdots(b, DOTS_ALL, DOTS_NONE, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER);
-            else // straight placement
-                setdots(b, DOTS_NONE, DOTS_ALL, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER);
 
-            // determine the required direction of the block placement
+            // determine the required look direction for the correct block placement
             int rdir = (b->b.meta&2) ?
-                ((b->b.meta&1) ? DIR_SOUTH : DIR_NORTH ) :
-                ((b->b.meta&1) ? DIR_EAST  : DIR_WEST );
+                ((b->b.meta&1) ? DIR_NORTH : DIR_SOUTH ) :
+                ((b->b.meta&1) ? DIR_WEST  : DIR_EAST );
 
-            // check all neighbor faces if we are looking at the block from right direction
-            // and disable that face if we don't
-            for (f=0; f<6; f++) {
-                if (!((b->neigh>>f)&1)) continue; // skip if the faces with no neighbor
-
-                // direction we are looking at the block we would click at
-                int bdir = block_face(b->x+NOFF[f][0], b->z+NOFF[f][1]);
-                if (bdir != rdir) memset(b->dots[f], 0, sizeof(DOTS_ALL));
+            int pdir = player_direction();
+            if (pdir != rdir) {
+                // placement not possible
+                setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
+            }
+            else {
+                if (b->b.meta&4) // upside-down placement
+                    setdots(b, DOTS_ALL, DOTS_NONE, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER);
+                else // straight placement
+                    setdots(b, DOTS_NONE, DOTS_ALL, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER);
             }
         }
         else {
