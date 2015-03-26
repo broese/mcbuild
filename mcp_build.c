@@ -72,6 +72,10 @@ uint16_t DOTS_UPPER[15] = {
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff };
 
+uint16_t DOTS_NONE[15] = {
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0 };
+
 // this structure is used to define an absolute block placement
 // in the active building process
 typedef struct {
@@ -106,9 +110,9 @@ typedef struct {
     };
 
     uint16_t dots[6][15];       // usable dots on the 6 neighbor faces to place the block
-    int ndots;
+    int ndots;                  // number of dots on this block we can use to place it correctly
 
-    int32_t dist; // distance to the block center (squared)
+    int32_t dist;               // distance to the block center (squared)
 
     uint64_t last;              // last timestamp when we attempted to place this block
 } blk;
@@ -385,16 +389,27 @@ static int sort_blocks(const void *a, const void *b) {
     return 0;
 }
 
+// set all dot faces on the block
+static inline void setdots(blk *b, uint16_t *u, uint16_t *d,
+                           uint16_t *s, uint16_t *n, uint16_t *e, uint16_t *w) {
+    if (b->n_yp) memcpy(b->dots[DIR_UP],    u, sizeof(DOTS_ALL));
+    if (b->n_yn) memcpy(b->dots[DIR_DOWN],  d, sizeof(DOTS_ALL));
+    if (b->n_xp) memcpy(b->dots[DIR_EAST],  e, sizeof(DOTS_ALL));
+    if (b->n_xn) memcpy(b->dots[DIR_WEST],  w, sizeof(DOTS_ALL));
+    if (b->n_zp) memcpy(b->dots[DIR_SOUTH], s, sizeof(DOTS_ALL));
+    if (b->n_zn) memcpy(b->dots[DIR_NORTH], n, sizeof(DOTS_ALL));
+}
+
 // determine which face of a block is the closest to the player
 static inline int block_face(int x, int z) {
     int32_t dx = gs.own.x-(x<<5)+16;
     int32_t dz = gs.own.z-(z<<5)+16;
 
-    if (abs(dx) > abs(dz)*1300/1000) {
+    if (abs(dx) > abs(dz)*2) {
         // we're looking from the eastern or western direction at the block
         return (dx>0) ? DIR_EAST : DIR_WEST;
     }
-    else if (abs(dz) > abs(dx)*1300/1000) {
+    else if (abs(dz) > abs(dx)*2) {
         // south or north
         return (dz>0) ? DIR_SOUTH : DIR_NORTH;
     }
@@ -407,7 +422,7 @@ void build_update() {
     // player position or look have changed - update our placeable blocks list
     if (!build.active) return;
 
-    int i;
+    int i,f;
 
     // 1. Update 'inreach' flag for all blocks and set the block distance
     // inreach=1 does not necessarily mean the block is really reachable -
@@ -482,71 +497,46 @@ void build_update() {
 
         // determine usable dots on the neighbor faces
         lh_clear_obj(b->dots);
-        int n;
-        for (n=0; n<6; n++) {
-            if (!((b->neigh>>n)&1)) continue;
 
-            //TODO: provide support for ALL position-dependent blocks
-            uint16_t *dots = NULL;
-            if (it->flags&I_SLAB) {
-                // Slabs
-                if (b->b.meta&8) {
-                    // upper half placement
-                    if (n==DIR_UP) { dots=DOTS_ALL; }
-                    else if (n==DIR_DOWN) { dots=NULL; }
-                    else { dots=DOTS_UPPER; }
-                }
-                else {
-                    // lower half placement
-                    if (n==DIR_DOWN) { dots=DOTS_ALL; }
-                    else if (n==DIR_UP) { dots=NULL; }
-                    else { dots=DOTS_LOWER; }
-                }
-            }
-            else if (it->flags&I_STAIR) {
-                // Stairs
-                if (b->b.meta&4) {
-                    // upside-down placement
-                    if (n==DIR_UP) { dots=DOTS_ALL; }
-                    else if (n==DIR_DOWN) { dots=NULL; }
-                    else { dots=DOTS_UPPER; }
-                }
-                else {
-                    // straight placement
-                    if (n==DIR_DOWN) { dots=DOTS_ALL; }
-                    else if (n==DIR_UP) { dots=NULL; }
-                    else { dots=DOTS_LOWER; }
-                }
-
-                int bdir = block_face(b->x, b->z);
-                int sdir = b->b.meta&3; // orientation of the stairs
-                switch (sdir) {
-                    case 0: // must place from the west side
-                        if (bdir != DIR_WEST) dots=NULL;
-                        break;
-                    case 1: // from east
-                        if (bdir != DIR_EAST) dots=NULL;
-                        break;
-                    case 2: // from north
-                        if (bdir != DIR_NORTH) dots=NULL;
-                        break;
-                    case 3: // from south
-                        if (bdir != DIR_SOUTH) dots=NULL;
-                        break;
-                    default: // too close to diagonal
-                        dots = NULL;
-                }
-            }
-            else {
-                // Non-positionally dependent block
-                dots=DOTS_ALL;
-            }
-
-            if (dots)
-                memcpy(b->dots[n], dots, sizeof(DOTS_ALL));
-            else
-                memset(b->dots[n], 0, sizeof(DOTS_ALL));
+        //TODO: provide support for ALL position-dependent blocks
+        if (it->flags&I_SLAB) {
+            // Slabs
+            if (b->b.meta&8) // upper half placement
+                setdots(b, DOTS_ALL, DOTS_NONE, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER);
+            else // lower half placement
+                setdots(b, DOTS_NONE, DOTS_ALL, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER);
         }
+        else if (it->flags&I_STAIR) {
+            // Stairs
+            if (b->b.meta&4) // upside-down placement
+                setdots(b, DOTS_ALL, DOTS_NONE, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER);
+            else // straight placement
+                setdots(b, DOTS_NONE, DOTS_ALL, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER);
+
+            // determine the required direction of the block placement
+            int rdir = (b->b.meta&2) ?
+                ((b->b.meta&1) ? DIR_SOUTH : DIR_NORTH ) :
+                ((b->b.meta&1) ? DIR_EAST  : DIR_WEST );
+
+            // check all neighbor faces if we are looking at the block from right direction
+            // and disable that face if we don't
+            for (f=0; f<6; f++) {
+                if (!((b->neigh>>f)&1)) continue; // skip if the faces with no neighbor
+
+                // direction we are looking at the block we would click at
+                int bdir = block_face(b->x+NOFF[f][0], b->z+NOFF[f][1]);
+                if (bdir != rdir) memset(b->dots[f], 0, sizeof(DOTS_ALL));
+            }
+        }
+        else {
+            // Blocks that don't have I_MPOS or not supported
+            setdots(b, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL);
+        }
+
+        // disable the faces where there is no neighbor
+        for (f=0; f<6; f++)
+            if (!((b->neigh>>f)&1))
+                memset(b->dots[f], 0, sizeof(DOTS_ALL));
 
         // calculate exact distance to each of the dots and remove those out of reach
         remove_distant_dots(b);
@@ -1258,6 +1248,7 @@ void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     chat_message(reply, cq, "green", 0);
 
     //TODO: send a SetSlot to the client, so it does not decrement the block count ?
+    //TODO: detect when player accesses chests/etc
 }
 
 ////////////////////////////////////////////////////////////////////////////////
