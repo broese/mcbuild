@@ -981,8 +981,9 @@ static void build_stairs(char **words, char *reply) {
     build_clear();
 
     int wd,hg;
-    if (scan_opt(words, "size=%d,%d", &wd, &hg)!=2) {
-        sprintf(reply, "Usage: build stairs size=<width>,<floors>");
+    mcpopt opt_size = {{"size","sz","s",NULL}, 0, {"%d,%d","%dx%d",NULL}};
+    if (mcparg_parse(words, &opt_size, &wd, &hg)<0) {
+        sprintf(reply, "Usage: build stairs size=<width>,<height>");
         return;
     }
     if (wd<=0 || hg<=0) {
@@ -996,6 +997,20 @@ static void build_stairs(char **words, char *reply) {
     // make stairs-type block face player
     if ((ITEMS[mat.bid].flags&I_STAIR)) mat.meta=3;
 
+    int base=1; // default=minimal base
+    if (mcparg_find(words, "nobase", "none", "no", "nb", "n", NULL)) {
+        base=0;
+    }
+    else if (mcparg_find(words, "minbase", "min", "mb", "m", NULL)) {
+        base=1;
+    }
+    else if (mcparg_find(words, "fullbase", "full", "fb", "f", NULL)) {
+        base=2;
+    }
+    //TODO: different material for the stairs base,
+    //      or even automatically match material
+    //      (e.g. Sandstone stairs => Sandstone)
+
     int floor;
     for(floor=0; floor<hg; floor++) {
         int x;
@@ -1007,17 +1022,18 @@ static void build_stairs(char **words, char *reply) {
             b->z = -floor;
             b->y = floor;
 
-            //TODO: make this optional?
-            //TODO: make it match the stairs block
-            b = lh_arr_new(BPLAN);
-            b->b = mat;
-            b->x = x;
-            b->z = -floor-1;
-            b->y = floor;
+            if (floor!=(hg-1) && (base==2 || (base==1 && x==0))) {
+                b = lh_arr_new(BPLAN);
+                b->b = mat;
+                b->x = x;
+                b->z = -floor-1;
+                b->y = floor;
+            }
         }
     }
 
-    sprintf(reply, "Created stairs: %d floors, %d blocks wide", hg, wd);
+    sprintf(reply, "Created stairs: %d floors, %d blocks wide, base=%s",
+            hg, wd, base ? ( (base==1) ? "minimal" : "full" ) : "none");
     buildplan_updated();
 }
 
