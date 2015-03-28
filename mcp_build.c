@@ -918,8 +918,9 @@ static void build_scaffolding(char **words, char *reply) {
     build_clear();
 
     int wd,hg;
-    if (scan_opt(words, "size=%d,%d", &wd, &hg)!=2) {
-        sprintf(reply, "Usage: build scaffolding size=<width>,<floors>");
+    mcpopt opt_size = {{"size","sz","s",NULL}, 0, {"%d,%d","%dx%d",NULL}};
+    if (mcparg_parse(words, &opt_size, &wd, &hg)<0) {
+        sprintf(reply, "Usage: build scaffolding size=<width>,<height>");
         return;
     }
     if (wd<=0 || hg<=0) {
@@ -931,18 +932,12 @@ static void build_scaffolding(char **words, char *reply) {
     if (hg==1 && wd<4) wd=4;
     if (hg>1 && wd<7) wd=7;
 
-    // determine the building material
-    int bid=0, meta=0;
-    // first option: BID,meta specified
-    if (scan_opt(words, "mat=%d,%d", &bid, &meta)!=2) {
-        // second option: just block ID, assume meta=0
-        meta = 0;
-        if (scan_opt(words, "mat=%d", &bid)!=1) {
-            // third option: use dirt
-            bid = 0x03; // Dirt
-        }
+    bid_t mat = build_arg_material(words, reply);
+    if (reply[0]) {
+        reply[0]=0;
+        mat.bid = 0x03;
+        mat.meta = 0;
     }
-    bid_t mat = BLOCKTYPE(bid, meta);
 
     //TODO: use a secondary material to build stairs, set meta=0 for stair-type blocks
 
@@ -976,7 +971,9 @@ static void build_scaffolding(char **words, char *reply) {
         }
     }
 
-    sprintf(reply, "Created scaffolding: %d floors, %d blocks wide", hg, wd);
+    char buf[256];
+    sprintf(reply, "Created scaffolding: %d floors, %d blocks wide, material=%s",
+            hg, wd, get_bid_name(buf, mat));
     buildplan_updated();
 }
 
