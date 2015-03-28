@@ -766,6 +766,15 @@ static bid_t build_arg_material(char **words, char *reply) {
 
     mat.bid = bid;
     mat.meta = meta;
+
+    if (ITEMS[mat.bid].flags&I_SLAB) {
+        // for slab blocks additionally parse the upper/lower placement
+        if (mcparg_find(words,"upper","up","u","high","h",NULL))
+            mat.meta |= 8;
+        else
+            mat.meta &= 7;
+    }
+
     return mat;
 }
 
@@ -795,23 +804,6 @@ static void build_floor(char **words, char *reply) {
     bid_t mat = build_arg_material(words, reply);
     if (reply[0]) return;
 
-    int assume_lower = 0;
-    if (ITEMS[mat.bid].flags&I_SLAB) {
-        // for slab blocks additionally parse the upper/lower placement
-        mcpopt opt_upper = {{"upper","up","u","high","h",NULL}, 0, {"",NULL}};
-        mcpopt opt_lower = {{"lower","low","l","down","dn","d",NULL}, 0, {"",NULL}};
-
-        if (mcparg_parse(words, &opt_upper)>=0) {
-            mat.meta |= 8;
-        }
-        else if (mcparg_parse(words, &opt_lower)>=0) {
-            mat.meta &= 7;
-        }
-        else {
-            mat.meta &= 7;
-            assume_lower = 1;
-        }
-    }
 
     int x,z;
     for(x=0; x<xsize; x++) {
@@ -828,14 +820,10 @@ static void build_floor(char **words, char *reply) {
     int off = sprintf(reply, "Created floor %dx%d material=%s",
                       xsize, zsize, get_bid_name(buf, mat));
 
-    if (ITEMS[mat.bid].flags&I_SLAB) {
-        off += sprintf(reply+off, " (%s)", (mat.meta&8)?"upper":"lower");
-        if (assume_lower)
-            sprintf(reply+off, " - assuming lower placement as none was specified");
-    }
     buildplan_updated();
 }
 
+// add a single block to the buildplan
 #define PLACE_DOT(_x,_z)                            \
     b = lh_arr_new(BPLAN); b->b = mat; b->y = 0;    \
     b->x = (_x);  b->z = (_z);
@@ -856,21 +844,6 @@ static void build_ring(char **words, char *reply) {
 
     bid_t mat = build_arg_material(words, reply);
     if (reply[0]) return;
-
-    int assume_lower = 0;
-    if (ITEMS[mat.bid].flags&I_SLAB) {
-        // for slab blocks additionally parse the upper/lower placement
-        if (find_opt(words, "upper") || find_opt(words, "u") || find_opt(words, "up")) {
-            mat.meta |= 8;
-        }
-        else if (find_opt(words, "lower") || find_opt(words, "l") || find_opt(words, "dn")) {
-            mat.meta &= 7;
-        }
-        else {
-            mat.meta &= 7;
-            assume_lower = 1;
-        }
-    }
 
     int x,z,o;
     blkr *b;
@@ -932,12 +905,6 @@ static void build_ring(char **words, char *reply) {
     char buf[256];
     int off = sprintf(reply, "Created ring diam=%d material=%s",
                       diam, get_bid_name(buf, mat));
-
-    if (ITEMS[mat.bid].flags&I_SLAB) {
-        off += sprintf(reply+off, " (%s)", (mat.meta&8)?"upper":"lower");
-        if (assume_lower)
-            sprintf(reply+off, " - assuming lower placement as none was specified");
-    }
 
     buildplan_updated();
 }
