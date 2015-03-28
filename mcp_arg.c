@@ -66,6 +66,26 @@ int mcparg_parse(char **words, mcpopt *opt, ...) {
     return MCPARG_NOT_PARSED;
 }
 
+int mcparg_find(char **words, ...) {
+    va_list args;
+    va_start (args, words);
+    char * name;
+    while(1) {
+        name = va_arg(args, char *);
+        if (!name) break;
+        int i;
+        for(i=0; words[i]; i++) {
+            if (!strcmp(words[i],name)) {
+                va_end (args);
+                return 1;
+            }
+        }
+    }
+    va_end (args);
+
+    return 0;
+}
+
 #if TEST
 
 mcpopt OPT_OFFSET = {
@@ -110,7 +130,9 @@ int main(int ac, char **av) {
         }
     }
 
-    printf("Offset: %d,%d,%d\n",ox,oz,oy);
+    int upper=mcparg_find(words,"upper","up","u","high","h",NULL);
+
+    printf("Offset: %d,%d,%d Upper:%d\n",ox,oz,oy,upper);
     return 0;
 }
 

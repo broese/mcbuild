@@ -14,3 +14,4 @@ typedef struct {
 } mcpopt;
 
 int mcparg_parse(char **words, mcpopt *opt, ...);
+int mcparg_find(char **words, ...);
