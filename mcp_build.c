@@ -1612,6 +1612,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "cancel")) {
         build_cancel();
+        build.placemode=0;
     }
     else if (!strcmp(words[1], "dumpplan")) {
         build_dump_plan();
