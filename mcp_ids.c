@@ -466,64 +466,79 @@ const item_id ITEMS[] = {
     [0x8ff] = { NULL }, //Terminator
 };
 
-const char * get_item_name(char *buf, slot_t *s) {
-    if (s->item<0) {
-        sprintf(buf, "-");
-        return buf;
-    }
-
-    if (ITEMS[s->item].name) {
-        int pos = sprintf(buf, "%s", ITEMS[s->item].name);
-        if ((ITEMS[s->item].flags&I_MTYPE) && ITEMS[s->item].mname[s->damage])
-            sprintf(buf+pos, " (%s)",ITEMS[s->item].mname[s->damage]);
-    }
-    else {
-        printf(buf, "???");
-    }
-    return buf;
-}
-
-const char * get_bid_name(char *buf, bid_t b) {
-    slot_t s = { .count=1, .item = b.bid, .damage = b.meta };
-    return get_item_name(buf, &s);
-}
-
-bid_t get_base_material(bid_t mat) {
+int get_base_meta(int id, int meta) {
     // only accept existing block types
-    assert(mat.bid <0x100);
-    const item_id * it = &ITEMS[mat.bid];
+    const item_id * it = &ITEMS[id];
     assert(it->name);
 
     // if the block has no I_MTYPE subtypes, so base meta is 0
-    if (!(it->flags&I_MTYPE)) { mat.meta = 0; return mat; }
+    if (!(it->flags&I_MTYPE)) return 0;
 
     // block meta is used for I_MTYPE but not used for position/state => base meta as is
-    if (!(it->flags&(I_MPOS|I_STATE))) return mat;
+    if (!(it->flags&(I_MPOS|I_STATE))) return meta;
 
     // everything else needs to be determined individually
-    switch (mat.bid) {
+    switch (id) {
         case 0x06: // Sapling
         case 0x2c: // Stone slab
         case 0x7e: // Wooden slab
         case 0xaf: // Large Flower
-            mat.meta &= 7;
-            break;
+            return meta&7;
 
         case 0x11: // Wood
         case 0x12: // Leaves
         case 0xa1: // Leaves2
         case 0xa2: // Wood2
-            mat.meta &= 3;
-            break;
+            return meta&3;
 
         case 0x9b:
-            if (mat.meta > 2) mat.meta = 2;
-            break;
+            return (meta>2) ? 2 : meta;
 
         default:
+            printf("id=%d\n",id);
             assert(0);
     }
+    return meta;
+}
+
+bid_t get_base_material(bid_t mat) {
+    assert(mat.bid <0x100);
+    mat.meta = get_base_meta(mat.bid, mat.meta);
     return mat;
+}
+
+const char * get_mat_name(char *buf, int id, int meta) {
+    if (id<0) {
+        sprintf(buf, "-");
+        return buf;
+    }
+
+    int bmeta = (id<0x100) ? get_base_meta(id, meta) : 0;
+
+    const item_id *it = &ITEMS[id];
+    if (it->name) {
+        int pos = sprintf(buf, "%s", it->name);
+
+        if ((it->flags&I_MTYPE) && it->mname[bmeta])
+            pos += sprintf(buf+pos, " (%s)",it->mname[bmeta]);
+
+        //TODO: support other block types with I_MPOS
+        if (it->flags&I_SLAB)
+            sprintf(buf+pos, " (%s)",(meta&8)?"upper":"lower");
+    }
+    else {
+        printf(buf, "???");
+    }
+    return buf;
+
+}
+
+const char * get_bid_name(char *buf, bid_t b) {
+    return get_mat_name(buf, b.bid, b.meta);
+}
+
+const char * get_item_name(char *buf, slot_t *s) {
+    return get_mat_name(buf, s->item, s->damage);
 }
 
 uint8_t get_state_mask(int bid) {
