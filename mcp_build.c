@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
+#include <strings.h>
 #include <math.h>
 
 #include <lh_buffers.h>
@@ -10,6 +12,7 @@
 #include "mcp_build.h"
 #include "mcp_gamestate.h"
 #include "mcp_game.h"
+#include "mcp_arg.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
@@ -45,6 +48,27 @@ static int find_opt(char **words, const char *name) {
 #define SQ(x) ((x)*(x))
 #define MIN(x,y) (((x)<(y))?(x):(y))
 #define MAX(x,y) (((x)>(y))?(x):(y))
+
+////////////////////////////////////////////////////////////////////////////////
+// Options
+
+mcpopt OPT_OFFSET = {
+    { "offset", "off", "o", NULL },
+    0,
+    { "%d,%d,%d", "%d,%d", "%d", NULL },
+};
+
+mcpopt OPT_DIR = {
+    { "direction", "dir", "d", NULL },
+    0,
+    { "%s", NULL },
+};
+
+mcpopt OPT_COUNT = {
+    { "count", "cnt", "c", NULL },
+    1,
+    { "%d", NULL },
+};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Structures
@@ -1006,49 +1030,35 @@ static void build_stairs(char **words, char *reply) {
 
 static void build_extend(char **words, char *reply) {
     int ox,oy,oz;
-    // first option: offset x,z,y
-    if (scan_opt(words, "offset=%d,%d,%d", &ox, &oz, &oy)!=3) {
 
-        // second option: offset x,z
-        oy=0;
-        if (scan_opt(words, "offset=%d,%d", &ox, &oz)!=2) {
+    switch(mcparg_parse(words, &OPT_OFFSET, &ox, &oz, &oy)) {
+        case 0: break;
+        case 1: oy=0; break;
+        case 2: oz=0; oy=0; break;
+        default: {
+            char dir[256];
+            if (mcparg_parse(words, &OPT_DIR, dir)<0) {
+                sprintf(reply, "Usage: #build extend offset=x[,z[,y]]|u|d|r|l|f|b");
+                return;
+            }
 
-            // third option: offset x only
-            oz=0;
-            if (scan_opt(words, "offset=%d", &ox)!=1) {
-
-                // fourth option: direction
-                //TODO: support direction+offset
-                if (find_opt(words, "up") || find_opt(words, "u")) {
-                    ox=0; oz=0; oy=build.bpsy;
-                }
-                else if (find_opt(words, "down") || find_opt(words, "d")) {
-                    ox=0; oz=0; oy=-build.bpsy;
-                }
-                else if (find_opt(words, "right") || find_opt(words, "r")) {
-                    ox=build.bpsx; oz=0; oy=0;
-                }
-                else if (find_opt(words, "left") || find_opt(words, "l")) {
-                    ox=-build.bpsx; oz=0; oy=0;
-                }
-                else if (find_opt(words, "front") || find_opt(words, "f")) {
-                    ox=0; oz=-build.bpsz; oy=0;
-                }
-                else if (find_opt(words, "back") || find_opt(words, "b")) {
-                    ox=0; oz=build.bpsz; oy=0;
-                }
-                else {
+            switch(dir[0]) {
+                case 'u': ox=0; oz=0; oy=build.bpsy; break;
+                case 'd': ox=0; oz=0; oy=-build.bpsy; break;
+                case 'r': ox=build.bpsx; oz=0; oy=0; break;
+                case 'l': ox=-build.bpsx; oz=0; oy=0; break;
+                case 'f': ox=0; oz=build.bpsz; oy=0; break;
+                case 'b': ox=0; oz=-build.bpsz; oy=0; break;
+                default:
                     sprintf(reply, "Usage: #build extend offset=x[,z[,y]]|u|d|r|l|f|b");
                     return;
-                }
             }
         }
     }
 
     int count;
-    if (scan_opt(words, "count=%d", &count)!=1) {
+    if (mcparg_parse(words, &OPT_COUNT, &count)<0)
         count=1;
-    }
 
     int i,j;
     int bc=C(build.plan);
@@ -1063,6 +1073,8 @@ static void build_extend(char **words, char *reply) {
         }
     }
 
+    sprintf(reply, "Extended buildplan %d times, offset=%d,%d,%d",
+            count, ox,oz,oy);
     buildplan_updated();
 }
 
