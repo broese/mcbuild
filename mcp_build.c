@@ -731,33 +731,38 @@ static void buildplan_updated() {
 // Parametric structures
 
 static bid_t build_arg_material(char **words, char *reply) {
+    mcpopt opt_mat = {{"material","mat","m",NULL}, -1, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
+
     bid_t mat;
 
     // determine the building material
-    int bid=0, meta=0;
-    // first option: BID,meta specified
-    if (scan_opt(words, "mat=%d,%d", &bid, &meta)!=2) {
-        // second option: just block ID, assume meta=0
-        meta = 0;
-        if (scan_opt(words, "mat=%d", &bid)!=1) {
-            // third option: take the same material the player is currently holding
+    int bid=-1, meta=0;
+    switch(mcparg_parse(words, &opt_mat, &bid, &meta)) {
+        case 0:
+        case 1:
+        case 2:
+            // bid+meta specified explicitly
+            break;
+        case 3:
+            // no meta specified - assume 0
+            meta=0;
+            break;
+        default: {
+            // nothing specified, take the same material the player is currently holding
             slot_t *s = &gs.inv.slots[gs.inv.held+36];
-            if (s->item < 0 || s->item==0 || ITEMS[s->item].flags&I_ITEM) {
-                sprintf(reply, "You must specify material - either explicitly with "
-                               "mat=<bid>[,<meta>] or by holding a placeable block");
-                return mat;
-            }
-            else {
+            if (s->item > 0 && !(ITEMS[s->item].flags&I_ITEM)) {
                 bid = s->item;
                 meta = s->damage;
-                if (!(ITEMS[s->item].flags&I_MTYPE) && meta) {
-                    printf("Warning: item %d is not I_MTYPE but has a non-zero damage value (%d)\n",
-                           s->item, meta);
-                    meta = 0;
-                }
+            }
+            else {
+                bid = -1;
             }
         }
     }
+
+    if (bid<0)
+        sprintf(reply, "You must specify material - either explicitly with "
+                "mat=<bid>[,<meta>] or by holding a placeable block");
 
     mat.bid = bid;
     mat.meta = meta;
