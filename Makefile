@@ -17,7 +17,7 @@ ifeq ($(UNAME),Linux)
 endif
 
 
-all: mcproxy mcpdump nbttest
+all: mcproxy mcpdump nbttest argtest
 
 
 
@@ -28,7 +28,10 @@ mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o mcp_ids.o nbt.o
 	$(CC) -o $@ $^ $(LIBS)
 
 nbttest: nbt.c
-	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ nbt.c $(LIBS_LIBHELPER)
+	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS_LIBHELPER)
+
+argtest: mcp_arg.c
+	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS_LIBHELPER)
 
 varint: varint.c
 	$(CC) $(CFLAGS) $(INC) -o $@ $^ $(LIBS)
@@ -54,4 +57,4 @@ mcp_packet.o: nbt.h
 
 
 clean:
-	rm -f *.o *~ nbttest mcproxy mcpdump
+	rm -f *.o *~ nbttest mcproxy mcpdump argtest
