@@ -14,6 +14,10 @@
 #include "mcp_game.h"
 #include "mcp_arg.h"
 
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
 
@@ -45,30 +49,10 @@ static int find_opt(char **words, const char *name) {
     return 0;
 }
 
-#define SQ(x) ((x)*(x))
-#define MIN(x,y) (((x)<(y))?(x):(y))
-#define MAX(x,y) (((x)>(y))?(x):(y))
 
-////////////////////////////////////////////////////////////////////////////////
-// Options
 
-mcpopt OPT_OFFSET = {
-    { "offset", "off", "o", NULL },
-    0,
-    { "%d,%d,%d", "%d,%d", "%d", NULL },
-};
 
-mcpopt OPT_DIR = {
-    { "direction", "dir", "d", NULL },
-    0,
-    { "%s", NULL },
-};
 
-mcpopt OPT_COUNT = {
-    { "count", "cnt", "c", NULL },
-    1,
-    { "%d", NULL },
-};
 
 ////////////////////////////////////////////////////////////////////////////////
 // Structures
@@ -141,7 +125,7 @@ typedef struct {
     uint64_t last;              // last timestamp when we attempted to place this block
 } blk;
 
-// this structure defines a relative block placement 
+// this structure defines a relative block placement in a buildplan
 typedef struct {
     int32_t     x,y,z;  // coordinates of the block to place (relative to pivot)
     bid_t       b;      // block type, including the meta
@@ -180,6 +164,11 @@ struct {
 
 #define BTASK GAR(build.task)
 #define BPLAN GAR(build.plan)
+
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory
@@ -295,7 +284,18 @@ static void calculate_material(int plan) {
     printf("=========================================\n");
 }
 
+
+
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
+// Building process
+
+#define SQ(x) ((x)*(x))
+#define MIN(x,y) (((x)<(y))?(x):(y))
+#define MAX(x,y) (((x)>(y))?(x):(y))
 
 // maximum reach distance for building, squared, in fixp units (1/32 block)
 #define EYEHEIGHT 52
@@ -390,7 +390,7 @@ static inline int count_dots_row(uint16_t dots) {
     return c;
 }
 
-static int count_dots(blk *b) {
+static inline int count_dots(blk *b) {
     int f;
     int c=0;
     for(f=0; f<6; f++) {
@@ -424,8 +424,8 @@ static inline void setdots(blk *b, uint16_t *u, uint16_t *d,
     if (b->n_zn) memcpy(b->dots[DIR_NORTH], n, sizeof(DOTS_ALL));
 }
 
+// called when player position or look have changed - update our placeable blocks list
 void build_update() {
-    // player position or look have changed - update our placeable blocks list
     if (!build.active) return;
 
     int i,f;
@@ -688,7 +688,11 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
 
 
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
+// Buildplan updates/calculations
 
 // recalculate the size of the buildplan
 static void buildplan_updated() {
@@ -718,6 +722,13 @@ static void buildplan_updated() {
     build.bpsy=yx-yn+1;
     build.bpsz=zx-zn+1;
 }
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Parametric structures
 
 static bid_t build_arg_material(char **words, char *reply) {
     bid_t mat;
@@ -1026,18 +1037,35 @@ static void build_stairs(char **words, char *reply) {
     buildplan_updated();
 }
 
-////////////////////////////////////////////////////////////////////////////////
 
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Buildplan manipulation
+
+/*
+Extend the buildplan by replicating it a given number of times.
+
+#build extend <offset|direction> [<count>]
+<offset>    := [offset=]<dx>[,<dz>[,<dy>]]      # explicit offset, default=0
+<direction> := [direction=](u|d|r|l|f|b)        # offset by buildplan size
+<count>     := [count=]<count>                  # how many times, default=1
+*/
 static void build_extend(char **words, char *reply) {
+    mcpopt opt_offset = {{"offset","off","o",NULL},    0, {"%d,%d,%d","%d,%d","%d",NULL}};
+    mcpopt opt_dir    = {{"direction","dir","d",NULL}, 0, {"%s",NULL}};
+    mcpopt opt_count  = {{"count","cnt","c",NULL},     1, {"%d",NULL}};
+
     int ox,oy,oz;
 
-    switch(mcparg_parse(words, &OPT_OFFSET, &ox, &oz, &oy)) {
+    switch(mcparg_parse(words, &opt_offset, &ox, &oz, &oy)) {
         case 0: break;
         case 1: oy=0; break;
         case 2: oz=0; oy=0; break;
         default: {
             char dir[256];
-            if (mcparg_parse(words, &OPT_DIR, dir)<0) {
+            if (mcparg_parse(words, &opt_dir, dir)<0) {
                 sprintf(reply, "Usage: #build extend offset=x[,z[,y]]|u|d|r|l|f|b");
                 return;
             }
@@ -1057,7 +1085,7 @@ static void build_extend(char **words, char *reply) {
     }
 
     int count;
-    if (mcparg_parse(words, &OPT_COUNT, &count)<0)
+    if (mcparg_parse(words, &opt_count, &count)<0)
         count=1;
 
     int i,j;
@@ -1078,7 +1106,13 @@ static void build_extend(char **words, char *reply) {
     buildplan_updated();
 }
 
+
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
+// Pivot placement
 
 // rotation mapping for the stairs-type blocks (2 low bits in the meta)
 static uint8_t ROTATE_STAIR[][4] = {
@@ -1242,6 +1276,10 @@ void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     //TODO: send a SetSlot to the client, so it does not decrement the block count ?
     //TODO: detect when player accesses chests/etc
 }
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Build Recorder
@@ -1432,7 +1470,12 @@ static void brec_blockplace(MCPacket *pkt) {
     dump_brec_pending();
 }
 
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
+// Debugging
 
 // dump our buildplan to console
 void build_dump_plan() {
@@ -1497,7 +1540,12 @@ void build_dump_queue() {
     }
 }
 
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
+// Save/Load
 
 // save buildplan to a file
 void build_save(const char * name, char * reply) {
@@ -1570,7 +1618,12 @@ void build_load(const char * name, char * reply) {
     buildplan_updated();
 }
 
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
+// Canceling Build
 
 void build_clear() {
     build_cancel();
@@ -1586,7 +1639,13 @@ void build_cancel() {
     build.nbrp = 0; // clear the pending queue
 }
 
+
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
+// Main build command dispatch
 
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     char reply[32768];
