@@ -760,12 +760,14 @@ static bid_t build_arg_material(char **words, char *reply) {
         }
     }
 
-    if (bid<0)
-        sprintf(reply, "You must specify material - either explicitly with "
-                "mat=<bid>[,<meta>] or by holding a placeable block");
-
     mat.bid = bid;
     mat.meta = meta;
+
+    if (bid<0) {
+        sprintf(reply, "You must specify material - either explicitly with "
+                "mat=<bid>[,<meta>] or by holding a placeable block");
+        return mat;
+    }
 
     if (ITEMS[mat.bid].flags&I_SLAB) {
         // for slab blocks additionally parse the upper/lower placement
@@ -833,8 +835,9 @@ static void build_ring(char **words, char *reply) {
 
     // ring diameter
     int diam;
-    if (scan_opt(words, "size=%d", &diam)!=1) {
-        sprintf(reply, "Usage: build ring size=<diameter>");
+    mcpopt opt_diam = {{"size","sz","s","diameter","diam","D","d",NULL}, 0, {"%d",NULL}};
+    if (mcparg_parse(words, &opt_diam, &diam)!=0) {
+        sprintf(reply, "Usage: #build ring size=<diameter>");
         return;
     }
     if (diam<=0) {
