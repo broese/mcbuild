@@ -774,10 +774,19 @@ static void build_floor(char **words, char *reply) {
 
     // floor size
     int xsize,zsize;
-    if (scan_opt(words, "size=%d,%d", &xsize, &zsize)!=2) {
-        sprintf(reply, "Usage: build floor size=<xsize>,<zsize>");
-        return;
+    mcpopt opt_size = {{"size","sz","s",NULL}, 0, {"%d,%d","%dx%d","%d",NULL}};
+    switch(mcparg_parse(words, &opt_size, &xsize, &zsize)) {
+        case 0:
+        case 1:
+            break;
+        case 2:
+            zsize=xsize; // square floor
+            break;
+        default:
+            sprintf(reply, "Usage: build floor size=<xsize>,<zsize>");
+            return;
     }
+
     if (xsize<=0 || zsize<=0) {
         sprintf(reply, "Usage: illegal floor size %d,%d",xsize,zsize);
         return;
@@ -789,10 +798,13 @@ static void build_floor(char **words, char *reply) {
     int assume_lower = 0;
     if (ITEMS[mat.bid].flags&I_SLAB) {
         // for slab blocks additionally parse the upper/lower placement
-        if (find_opt(words, "upper") || find_opt(words, "u") || find_opt(words, "up")) {
+        mcpopt opt_upper = {{"upper","up","u","high","h",NULL}, 0, {"",NULL}};
+        mcpopt opt_lower = {{"lower","low","l","down","dn","d",NULL}, 0, {"",NULL}};
+
+        if (mcparg_parse(words, &opt_upper)>=0) {
             mat.meta |= 8;
         }
-        else if (find_opt(words, "lower") || find_opt(words, "l") || find_opt(words, "dn")) {
+        else if (mcparg_parse(words, &opt_lower)>=0) {
             mat.meta &= 7;
         }
         else {
