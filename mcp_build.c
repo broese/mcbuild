@@ -1182,7 +1182,7 @@ void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
 
 // chat command "#build place cancel|once|many|coord=<x,z,y> [dir=<d>]"
 static void build_place(char **words, char *reply) {
-    if (find_opt(words, "cancel")) {
+    if (mcparg_find(words, "cancel", NULL)) {
         sprintf(reply, "Placement canceled\n");
         build.placemode = 0;
         return;
@@ -1199,56 +1199,85 @@ static void build_place(char **words, char *reply) {
     int dir = -1;
 
     // parse coords
-    if (scan_opt(words, "coord=%d,%d,%d", &px, &pz, &py)!=3) {
-        // second possibility - place at player's position (in front of him)
-        if (find_opt(words, "here")) {
+    mcpopt opt_coord = {{"coordinates","coords","coord","c",NULL}, 0, {"%d,%d,%d","%d,%d","%d",NULL}};
+    switch(mcparg_parse(words, &opt_coord, &px, &pz, &py)) {
+        case 0:
+            break;
+        case 1:
+            py=gs.own.y>>5;
+            break;
+        case 2: {
+            int dist=px;
             px = gs.own.x>>5;
             py = gs.own.y>>5;
             pz = gs.own.z>>5;
-
-            dir = player_direction();
-            switch (dir) {
-                case DIR_SOUTH: pz++; break;
-                case DIR_NORTH: pz--; break;
-                case DIR_EAST:  px++; break;
-                case DIR_WEST:  px--; break;
+            switch (player_direction()) {
+                case DIR_SOUTH: pz+=dist; break;
+                case DIR_NORTH: pz-=dist; break;
+                case DIR_EAST:  px+=dist; break;
+                case DIR_WEST:  px-=dist; break;
             }
+            break;
         }
+        default:
+            if (mcparg_find(words, "here", "h", "player", "p", NULL)) {
+                px = gs.own.x>>5;
+                py = gs.own.y>>5;
+                pz = gs.own.z>>5;
+            }
+            else if (mcparg_find(words, "many", NULL)) {
+                sprintf(reply, "Mark pivot positions by placing block, disable with #build place cancel");
+                build.placemode = 2; 
+                return;
+            }
+            else {
+                sprintf(reply, "Mark pivot position by placing a block - will be build once");
+                build.placemode = 1; // only once (gets cleared after first placement)
+                return;
+            }
+    }
 
-        // next possibility - place by placing the pivot block manually
-        else if (find_opt(words, "once")) {
-            sprintf(reply, "Mark pivot position by placing a block - will be build once");
-            build.placemode = 1; // only once (gets cleared after first placement)
+    mcpopt opt_dir = {{"direction","dir","d",NULL}, 1, {"%s",NULL}};
+    char direction[256];
+    switch(mcparg_parse(words, &opt_dir, direction)) {
+        case 0: {
+            switch(direction[0]) {
+                case 's':
+                case '2':
+                    dir = DIR_SOUTH;
+                    break;
+                case 'n':
+                case '3':
+                    dir = DIR_NORTH;
+                    break;
+                case 'e':
+                case '4':
+                    dir = DIR_EAST;
+                    break;
+                case 'w':
+                case '5':
+                    dir = DIR_WEST;
+                    break;
+                default:
+                    sprintf(reply, "Usage: #build place coord=<x,z,y> dir=<south|north|east|west>");
+                    return;
+            }
+            break;
+        }
+        case MCPARG_NOT_PARSED:
+            sprintf(reply, "Usage: #build place coord=<x,z,y> dir=<south|north|east|west>");
             return;
-        }
-        else if (find_opt(words, "many")) {
-            sprintf(reply, "Mark pivot positions by placing block, disable with #build place cancel");
-            build.placemode = 2; // many times (cancel explicitly)
-            return;
-        }
-
-        sprintf(reply, "Usage: build place coord=<x>,<z>,<y>|here|once|many|cancel");
+        default:
+            dir= player_direction();
+            break;
     }
 
-    // parse placement direction
-    if (dir<0) {
-        if (scan_opt(words, "dir=%d", &dir)!=1) {
-            // if not specified, derive from the player's look direction
-            dir = player_direction();
-        }
-    }
-
-    if (dir<DIR_SOUTH || dir>DIR_WEST) {
-        sprintf(reply, "incorrect direction code, use: SOUTH=2,NORTH=3,EAST=4,WEST=5");
-        return;
-    }
 
     // abort current buildtask
     build_cancel();
 
-    sprintf(reply, "Place pivot at %d,%d (%d), dir=%d\n",px,pz,py,dir);
-    place_pivot(px,pz,py,dir);
-
+    sprintf(reply, "Place pivot at %d,%d (%d), dir=%d (%s)\n",px,pz,py,dir,DIRNAME[dir]);
+    place_pivot(px,py,pz,dir);
 }
 
 // handler for placing the pivot block in-game ("place once" or "place many")
