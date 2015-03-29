@@ -141,6 +141,7 @@ struct {
     int active;                // if nonzero - buildtask is being built
     int recording;             // if nonzero - build recording active
     int placemode;             // 0-disabled, 1-once, 2-multiple
+    int wallmode;
 
     lh_arr_declare(blk,task);  // current active building task
     lh_arr_declare(blkr,plan); // currently loaded/created buildplan
@@ -437,6 +438,15 @@ void build_update() {
     int num_inreach = 0;
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
+
+        if (build.wallmode) {
+            // in wallmode we don't build blocks higher than our own position
+            if (b->y > (gs.own.y>>5)-1) {
+                b->inreach = 0;
+                continue;
+            }
+        }
+
         int32_t dx = gs.own.x-(b->x<<5)+16;
         int32_t dy = gs.own.y-(b->y<<5)+16+EYEHEIGHT;
         int32_t dz = gs.own.z-(b->z<<5)+16;
@@ -477,6 +487,8 @@ void build_update() {
     build.nbq = 0;
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
+        if (!b->inreach) continue;
+
         const item_id *it = &ITEMS[b->b.bid];
 
         bid_t bl = world[OFF(b->x,b->z,b->y)];
@@ -1721,6 +1733,7 @@ void build_cancel() {
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     char reply[32768];
     reply[0]=0;
+    int rpos = 0;
 
     if (!words[1]) {
         sprintf(reply, "Usage: build <type> [ parameters ... ] or build cancel");
@@ -1771,8 +1784,13 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     else if (!strcmp(words[1], "ext") || !strcmp(words[1], "extend")) {
         build_extend(words+2, reply);
     }
+    else if (!strcmp(words[1], "wallmode") || !strcmp(words[1], "wm")) {
+        build.wallmode = !build.wallmode;
+        sprintf(reply, "Wallmode is %s",build.wallmode?"ON":"OFF");
+        rpos = 2;
+    }
 
-    if (reply[0]) chat_message(reply, cq, "green", 0);
+    if (reply[0]) chat_message(reply, cq, "green", rpos);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
