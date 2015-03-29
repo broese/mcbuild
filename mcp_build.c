@@ -1688,17 +1688,10 @@ void build_save(const char * name, char * reply) {
     lh_free(buf);
 }
 
-// load a buildplan from a file
-void build_load(const char * name, char * reply) {
-    if (!name) {
-        sprintf(reply, "Usage: #build load <name> (w/o extension)");
-        return;
-    }
-
+// append a buildplan from a file to existing buildplan
+void build_loadappend(const char * name, char * reply, int ox, int oz, int oy) {
     char fname[256];
     sprintf(fname, "%s.bplan", name);
-
-    build_clear();
 
     uint8_t *buf;
     ssize_t sz = lh_load_alloc(fname, &buf);
@@ -1711,9 +1704,9 @@ void build_load(const char * name, char * reply) {
     uint8_t *p = buf;
     while(p<buf+sz-13) {
         blkr *b = lh_arr_new(BPLAN);
-        b->x = lh_read_int_be(p);
-        b->y = lh_read_int_be(p);
-        b->z = lh_read_int_be(p);
+        b->x = lh_read_int_be(p)+ox;
+        b->y = lh_read_int_be(p)+oy;
+        b->z = lh_read_int_be(p)+oz;
         b->b.raw = lh_read_short_be(p);
     }
 
@@ -1724,7 +1717,29 @@ void build_load(const char * name, char * reply) {
     buildplan_updated();
 }
 
+void build_load(const char * name, char * reply) {
+    if (!name) {
+        sprintf(reply, "Usage: #build load <name> (name w/o extension)");
+        return;
+    }
+    build_clear();
+    build_loadappend(name, reply, 0, 0, 0);
+}
 
+void build_append(char ** words, char * reply) {
+    mcpopt opt_name = {{"name","n",NULL}, 0, {"%s",NULL}};
+    char name[256];
+    if (mcparg_parse(words, &opt_name, name)!=0) {
+        sprintf(reply, "Usage: #build append <name> [offset=ox,oz,oy] (name w/o extension)");
+        return;
+    }
+
+    int ox,oy,oz;
+    build_arg_offset(words, reply, 1, &ox, &oz, &oy);
+    if (reply[0]) return;
+
+    build_loadappend(name, reply, ox, oz, oy);
+}
 
 
 
@@ -1800,6 +1815,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "load")) {
         build_load(words[2], reply);
+    }
+    else if (!strcmp(words[1], "append")) {
+        build_append(words+2, reply);
     }
     else if (!strcmp(words[1], "rec")) {
         build_rec(words+2, reply);
