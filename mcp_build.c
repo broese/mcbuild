@@ -753,7 +753,7 @@ static void buildplan_updated() {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// Parametric structures
+// Helpers for parameter parsing
 
 static bid_t build_arg_material(char **words, char *reply) {
     mcpopt opt_mat = {{"material","mat","m",NULL}, -1, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
@@ -804,6 +804,42 @@ static bid_t build_arg_material(char **words, char *reply) {
 
     return mat;
 }
+
+static void build_arg_offset(char **words, char *reply, int argpos, int *ox, int *oz, int *oy) {
+    mcpopt opt_offset = {{"offset","off","o",NULL},    argpos, {"%d,%d,%d","%d,%d","%d",NULL}};
+    mcpopt opt_dir    = {{"direction","dir","d",NULL}, argpos, {"%s",NULL}};
+
+    switch(mcparg_parse(words, &opt_offset, ox, oz, oy)) {
+        case 0: break;
+        case 1: *oy=0; break;
+        case 2: *oz=0; *oy=0; break;
+        default: {
+            char dir[256];
+            if (mcparg_parse(words, &opt_dir, dir)<0) {
+                sprintf(reply, "Usage: offset=x[,z[,y]]|u|d|r|l|f|b");
+                return;
+            }
+
+            switch(dir[0]) {
+                case 'u': *ox=0; *oz=0; *oy=build.bpsy; break;
+                case 'd': *ox=0; *oz=0; *oy=-build.bpsy; break;
+                case 'r': *ox=build.bpsx; *oz=0; *oy=0; break;
+                case 'l': *ox=-build.bpsx; *oz=0; *oy=0; break;
+                case 'f': *ox=0; *oz=build.bpsz; *oy=0; break;
+                case 'b': *ox=0; *oz=-build.bpsz; *oy=0; break;
+                default:
+                    sprintf(reply, "Usage: offset=x[,z[,y]]|u|d|r|l|f|b");
+                    return;
+            }
+        }
+    }
+}
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Parametric structures
 
 static void build_floor(char **words, char *reply) {
     build_clear();
@@ -1120,37 +1156,11 @@ Extend the buildplan by replicating it a given number of times.
 <count>     := [count=]<count>                  # how many times, default=1
 */
 static void build_extend(char **words, char *reply) {
-    mcpopt opt_offset = {{"offset","off","o",NULL},    0, {"%d,%d,%d","%d,%d","%d",NULL}};
-    mcpopt opt_dir    = {{"direction","dir","d",NULL}, 0, {"%s",NULL}};
-    mcpopt opt_count  = {{"count","cnt","c",NULL},     1, {"%d",NULL}};
-
     int ox,oy,oz;
+    build_arg_offset(words, reply, 0, &ox, &oz, &oy);
+    if (reply[0]) return;
 
-    switch(mcparg_parse(words, &opt_offset, &ox, &oz, &oy)) {
-        case 0: break;
-        case 1: oy=0; break;
-        case 2: oz=0; oy=0; break;
-        default: {
-            char dir[256];
-            if (mcparg_parse(words, &opt_dir, dir)<0) {
-                sprintf(reply, "Usage: #build extend offset=x[,z[,y]]|u|d|r|l|f|b");
-                return;
-            }
-
-            switch(dir[0]) {
-                case 'u': ox=0; oz=0; oy=build.bpsy; break;
-                case 'd': ox=0; oz=0; oy=-build.bpsy; break;
-                case 'r': ox=build.bpsx; oz=0; oy=0; break;
-                case 'l': ox=-build.bpsx; oz=0; oy=0; break;
-                case 'f': ox=0; oz=build.bpsz; oy=0; break;
-                case 'b': ox=0; oz=-build.bpsz; oy=0; break;
-                default:
-                    sprintf(reply, "Usage: #build extend offset=x[,z[,y]]|u|d|r|l|f|b");
-                    return;
-            }
-        }
-    }
-
+    mcpopt opt_count  = {{"count","cnt","c",NULL},     1, {"%d",NULL}};
     int count;
     if (mcparg_parse(words, &opt_count, &count)<0)
         count=1;
