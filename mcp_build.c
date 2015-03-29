@@ -1037,7 +1037,49 @@ static void build_stairs(char **words, char *reply) {
     buildplan_updated();
 }
 
+static void build_wall(char **words, char *reply) {
+    build_clear();
 
+    // wall size
+    int width,height;
+    mcpopt opt_size = {{"size","sz","s",NULL}, 0, {"%d,%d","%dx%d","%d",NULL}};
+    switch(mcparg_parse(words, &opt_size, &width, &height)) {
+        case 0:
+        case 1:
+            break;
+        case 2:
+            height=width; // square wall
+            break;
+        default:
+            sprintf(reply, "Usage: build wall size=<width>,<height>");
+            return;
+    }
+
+    if (width<=0 || height<=0) {
+        sprintf(reply, "Usage: illegal wall size %d,%d",width,height);
+        return;
+    }
+
+    bid_t mat = build_arg_material(words, reply);
+    if (reply[0]) return;
+
+    int x,y;
+    for(y=0; y<height; y++) {
+        for(x=0; x<width; x++) {
+            blkr *b = lh_arr_new(BPLAN);
+            b->b = mat;
+            b->x = x;
+            b->z = 0;
+            b->y = y;
+        }
+    }
+
+    char buf[256];
+    int off = sprintf(reply, "Created wall %dx%d material=%s",
+                      height, width, get_bid_name(buf, mat));
+
+    buildplan_updated();
+}
 
 
 
@@ -1685,6 +1727,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "floor")) {
         build_floor(words+2, reply);
+    }
+    else if (!strcmp(words[1], "wall")) {
+        build_wall(words+2, reply);
     }
     else if (!strcmp(words[1], "ring")) {
         build_ring(words+2, reply);
