@@ -141,7 +141,10 @@ struct {
     int active;                // if nonzero - buildtask is being built
     int recording;             // if nonzero - build recording active
     int placemode;             // 0-disabled, 1-once, 2-multiple
-    int wallmode;
+    int wallmode;              // if nonzero - do not build blocks higher than your own position
+    int anyface;               // attempt to build on any faces, even those looking away from you
+                               // this type of building will work on vanilla servers, but may be
+                               // blocked on some, including 2b2t
 
     lh_arr_declare(blk,task);  // current active building task
     lh_arr_declare(blkr,plan); // currently loaded/created buildplan
@@ -553,6 +556,16 @@ void build_update() {
         for (f=0; f<6; f++)
             if (!((b->neigh>>f)&1))
                 memset(b->dots[f], 0, sizeof(DOTS_ALL));
+
+        // disable faces looking away from you
+        if (!build.anyface) {
+            if (b->y < (gs.own.y>>5)+1) memset(b->dots[DIR_UP], 0, sizeof(DOTS_ALL));
+            if (b->y > (gs.own.y>>5)+2) memset(b->dots[DIR_DOWN], 0, sizeof(DOTS_ALL));
+            if (b->x < (gs.own.x>>5)) memset(b->dots[DIR_EAST], 0, sizeof(DOTS_ALL));
+            if (b->x > (gs.own.x>>5)) memset(b->dots[DIR_WEST], 0, sizeof(DOTS_ALL));
+            if (b->z < (gs.own.z>>5)) memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
+            if (b->z > (gs.own.z>>5)) memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
+        }
 
         // calculate exact distance to each of the dots and remove those out of reach
         remove_distant_dots(b);
@@ -1787,6 +1800,11 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     else if (!strcmp(words[1], "wallmode") || !strcmp(words[1], "wm")) {
         build.wallmode = !build.wallmode;
         sprintf(reply, "Wallmode is %s",build.wallmode?"ON":"OFF");
+        rpos = 2;
+    }
+    else if (!strcmp(words[1], "anyface") || !strcmp(words[1], "af")) {
+        build.anyface = !build.anyface;
+        sprintf(reply, "Anyface buildng is %s",build.anyface?"ON":"OFF");
         rpos = 2;
     }
 
