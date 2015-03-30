@@ -835,6 +835,44 @@ static void build_arg_offset(char **words, char *reply, int argpos, int *ox, int
     }
 }
 
+static int build_arg_dir(char **words, char *reply, int argpos) {
+    int dir;
+    mcpopt opt_dir = {{"direction","dir","d",NULL}, 1, {"%s",NULL}};
+    char direction[256];
+    switch(mcparg_parse(words, &opt_dir, direction)) {
+        case 0: {
+            switch(direction[0]) {
+                case 's':
+                case '2':
+                    dir = DIR_SOUTH;
+                    break;
+                case 'n':
+                case '3':
+                    dir = DIR_NORTH;
+                    break;
+                case 'e':
+                case '4':
+                    dir = DIR_EAST;
+                    break;
+                case 'w':
+                case '5':
+                    dir = DIR_WEST;
+                    break;
+                default:
+                    sprintf(reply, "Usage: dir=<south|north|east|west>");
+                    return -1;
+            }
+            break;
+        }
+        case MCPARG_NOT_PARSED:
+            sprintf(reply, "Usage: dir=<south|north|east|west>");
+            return -1;
+        default:
+            dir= player_direction();
+            break;
+    }
+    return dir;
+}
 
 
 
@@ -1314,41 +1352,8 @@ static void build_place(char **words, char *reply) {
             }
     }
 
-    mcpopt opt_dir = {{"direction","dir","d",NULL}, 1, {"%s",NULL}};
-    char direction[256];
-    switch(mcparg_parse(words, &opt_dir, direction)) {
-        case 0: {
-            switch(direction[0]) {
-                case 's':
-                case '2':
-                    dir = DIR_SOUTH;
-                    break;
-                case 'n':
-                case '3':
-                    dir = DIR_NORTH;
-                    break;
-                case 'e':
-                case '4':
-                    dir = DIR_EAST;
-                    break;
-                case 'w':
-                case '5':
-                    dir = DIR_WEST;
-                    break;
-                default:
-                    sprintf(reply, "Usage: #build place coord=<x,z,y> dir=<south|north|east|west>");
-                    return;
-            }
-            break;
-        }
-        case MCPARG_NOT_PARSED:
-            sprintf(reply, "Usage: #build place coord=<x,z,y> dir=<south|north|east|west>");
-            return;
-        default:
-            dir= player_direction();
-            break;
-    }
-
+    dir = build_arg_dir(words, reply, 1);
+    if (dir<0 || reply[0]) return;
 
     // abort current buildtask
     build_cancel();
