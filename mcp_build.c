@@ -1978,8 +1978,8 @@ void build_sload(const char *name, char *reply) {
     nbt_t *Length = nbt_hget(n,"Length");
     nbt_t *Width  = nbt_hget(n,"Width");
 
-    uint8_t *blocks = Blocks->ba;
-    uint8_t *metas  = Metas->ba;
+    uint8_t *blocks = (uint8_t *)Blocks->ba;
+    uint8_t *metas  = (uint8_t *)Metas->ba;
     int hg = Height->s;
     int wd = Width->s;
     int ln = Length->s;

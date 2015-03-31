@@ -357,6 +357,7 @@ nbt_t * nbt_hget(nbt_t *nbt, const char *name) {
         if (elname && !strcmp(elname, name))
             return nbt->co[i];
     }
+    return NULL;
 }
 
 #if TEST
