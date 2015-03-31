@@ -235,7 +235,7 @@ static int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
     return eslot;
 }
 
-static void calculate_material(int plan) {
+void calculate_material(int plan) {
     int i;
 
     if (plan) {
@@ -274,22 +274,25 @@ static void calculate_material(int plan) {
         ic[bmat.raw] += gs.inv.slots[i].count;
     }
 
+    printf("BL/MT Name                             Count   Have   Need\n");
     // print material demand
     for(i=0; i<65536; i++) {
         if (bc[i] > 0) {
             bid_t mat;
             mat.raw = (uint16_t)i;
 
-            printf("block:%02x/%02x need:%4d have:%4d ",mat.bid,mat.meta,bc[i],ic[i]);
+            char buf[256];
+            printf("%02x/%02x %-32s %5d  %5d  ",mat.bid,mat.meta,get_bid_name(buf, mat),bc[i],ic[i]);
 
             int need = bc[i]-ic[i];
             if (need <= 0)
-                printf("              ");
-            else
-                printf("%3dS+%-2d short ", need/STACKSIZE(mat.bid), need%STACKSIZE(mat.bid));
-
-            char buf[256];
-            printf("%s\n",get_bid_name(buf, mat));
+                printf("-\n");
+            else {
+                if (need >= STACKSIZE(mat.bid))
+                    printf("%5.1f$\n", (float)need/STACKSIZE(mat.bid));
+                else
+                    printf("%3d\n",need);
+            }
         }
     }
 

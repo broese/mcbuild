@@ -37,6 +37,7 @@
 #include "mcp_packet.h"
 #include "mcp_gamestate.h"
 #include "mcp_game.h"
+#include "mcp_build.h"
 
 // forward declaration
 int query_auth_server();
