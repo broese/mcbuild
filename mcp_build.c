@@ -1180,6 +1180,58 @@ static void build_wall(char **words, char *reply) {
     buildplan_updated();
 }
 
+static void build_scan(char **words, char *reply) {
+    build_clear();
+
+    // pivot block position
+    int px,py,pz;
+    mcpopt opt_from = {{"from","pivot","f",NULL}, 0, {"%d,%d,%d",NULL}};
+    if (mcparg_parse(words, &opt_from, &px, &pz, &py)<0) {
+        if (mcparg_find(words, "here", "h", "player", "p", NULL)) {
+            px = gs.own.x>>5;
+            py = gs.own.y>>5;
+            pz = gs.own.z>>5;
+        }
+        else {
+            sprintf(reply, "Usage: specify pivot position either with 'from=<x,z,y>' or with 'here'");
+            return;
+        }
+    }
+
+    // pivot direction
+    int dir = build_arg_dir(words, reply, 2);
+    if (dir<0 || reply[0]) return;
+
+    // opposize point
+    int tx,ty,tz;
+    mcpopt opt_to = {{"to","t",NULL}, 0, {"%d,%d,%d",NULL}};
+    if (mcparg_parse(words, &opt_to, &tx, &tz, &ty)<0) {
+        // alternatively the user can specify the size
+        int wd,hg,dp;
+        mcpopt opt_size = {{"size","sz","s",NULL}, -1, {"%d,%d,%d",NULL}};
+        if (mcparg_parse(words, &opt_size, &wd, &dp, &hg)<0) {
+            sprintf(reply, "Usage: specify the extent of the scan either with 'to=<x,z,y>' or with 'size=<width,depth,height>'");
+            return;
+        }
+
+        wd--; hg--; dp--;
+        switch (dir) {
+            case DIR_NORTH: tx=px+wd; tz=pz-dp; break;
+            case DIR_SOUTH: tx=px-wd; tz=pz+dp; break;
+            case DIR_EAST:  tx=px+dp; tz=pz+wd; break;
+            case DIR_WEST:  tx=px-dp; tz=pz-wd; break;
+        }
+        ty=py+hg;
+    }
+
+    // calculate the extent of the scan independent from direction
+    int minx = MIN(px,tx); int maxx=MAX(px,tx);
+    int miny = MIN(py,ty); int maxy=MAX(py,ty);
+    int minz = MIN(pz,tz); int maxz=MAX(pz,tz);
+
+    printf("%d,%d,%d - %d,%d,%d, pivot:%d,%d,%d, dir:%s\n",minx,minz,miny,maxx,maxz,maxy,px,pz,py,DIRNAME[dir]);
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1220,6 +1272,7 @@ static void build_extend(char **words, char *reply) {
             count, ox,oz,oy);
     buildplan_updated();
 }
+
 
 
 
@@ -1826,6 +1879,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "rec")) {
         build_rec(words+2, reply);
+    }
+    else if (!strcmp(words[1], "scan")) {
+        build_scan(words+2, reply);
     }
     else if (!strcmp(words[1], "ext") || !strcmp(words[1], "extend")) {
         build_extend(words+2, reply);
