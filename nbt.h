@@ -90,3 +90,4 @@ void    nbt_write(uint8_t **w, nbt_t *nbt);
 nbt_t * nbt_clone(nbt_t *nbt);
 void    nbt_dump(nbt_t *nbt);
 void    nbt_free(nbt_t *nbt);
+nbt_t * nbt_hget(nbt_t *nbt, const char *name);

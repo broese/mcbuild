@@ -348,6 +348,17 @@ void nbt_write(uint8_t **w, nbt_t *nbt) {
     }
 }
 
+nbt_t * nbt_hget(nbt_t *nbt, const char *name) {
+    if (nbt->type != NBT_COMPOUND) return NULL;
+
+    int i;
+    for(i=0; i<nbt->count; i++) {
+        const char *elname = nbt->co[i]->name;
+        if (elname && !strcmp(elname, name))
+            return nbt->co[i];
+    }
+}
+
 #if TEST
 
 int main(int ac, char **av) {
@@ -358,7 +369,7 @@ int main(int ac, char **av) {
 
     uint8_t * buf;
     ssize_t sz = lh_load_alloc(av[1], &buf);
-    hexdump(buf, sz);
+    //hexdump(buf, sz);
 
     uint8_t *p = buf;
     nbt_t * nbt = nbt_parse(&p);
@@ -372,7 +383,10 @@ int main(int ac, char **av) {
     uint8_t *w = wbuf;
     nbt_write(&w, newnbt);
     ssize_t szw = w-wbuf;
-    hexdump(wbuf, szw);
+    //hexdump(wbuf, szw);
+
+    nbt_t *nested = nbt_hget(nbt, "nested compound test");
+    nbt_dump(nested);
 
     nbt_free(nbt);
     nbt_free(newnbt);
