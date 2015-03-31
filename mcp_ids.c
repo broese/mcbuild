@@ -608,6 +608,39 @@ const char * DIRNAME[] = {
     [DIR_WEST]  = "west",
 };
 
+#define BITS_4ADD(a,b,c,d,n) ((a)+(n)),((b)+(n)),((c)+(n)),((d)+(n))
+#define ROT_BITS01(a,b,c,d) a,b,c,d,BITS_4ADD(a,b,c,d,4),BITS_4ADD(a,b,c,d,8),BITS_4ADD(a,b,c,d,12)
+
+// rotation mapping for the stairs-type blocks (2 low bits in the meta)
+static uint8_t ROT_STAIR[][16] = {
+    [DIR_NORTH] = { ROT_BITS01(0,1,2,3) },
+    [DIR_SOUTH] = { ROT_BITS01(1,0,3,2) },
+    [DIR_EAST]  = { ROT_BITS01(2,3,1,0) },
+    [DIR_WEST]  = { ROT_BITS01(3,2,0,1) },
+};
+
+// rotate block meta from north-orientation to dir-orientation
+bid_t meta_n2d(bid_t b, int dir) {
+    if (ITEMS[b.bid].flags&I_STAIR) { //stair-type blocks
+        b.meta = ROT_STAIR[dir][b.meta];
+    }
+    else if (I_LOG(b.bid)) { // wooden logs
+        if (dir==DIR_EAST || dir==DIR_WEST) {
+            b.meta ^= 12; // translate 10xx <=> 01xx
+        }
+    }
+
+    //TODO: support for other I_MPOS blocks
+    return b;
+}
+
+// rotate block meta from dir-orientation to north-orientation
+bid_t meta_d2n(bid_t b, int dir) {
+    int rdir = (dir==DIR_EAST || dir==DIR_WEST) ? (dir^1) : dir; //flip EAST<->WEST
+    return meta_n2d(b, rdir);
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
 

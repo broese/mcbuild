@@ -310,3 +310,6 @@ const char * get_item_name(char *buf, slot_t *s);
 const char * get_bid_name(char *buf, bid_t b);
 bid_t get_base_material(bid_t mat);
 uint8_t get_state_mask(int bid);
+
+bid_t meta_n2d(bid_t b, int dir);
+bid_t meta_d2n(bid_t b, int dir);

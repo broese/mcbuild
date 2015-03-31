@@ -170,14 +170,6 @@ struct {
 #define BTASK GAR(build.task)
 #define BPLAN GAR(build.plan)
 
-// rotation mapping for the stairs-type blocks (2 low bits in the meta)
-static uint8_t ROTATE_STAIR[][4] = {
-    [DIR_NORTH] = { 0, 1, 2, 3 },
-    [DIR_SOUTH] = { 1, 0, 3, 2 },
-    [DIR_EAST]  = { 2, 3, 1, 0 },
-    [DIR_WEST]  = { 3, 2, 0, 1 },
-};
-
 
 
 
@@ -1300,33 +1292,8 @@ static void build_scan(char **words, char *reply) {
                 bid_t bl = world[OFF(x,z,y)];
                 if (NOSCAN(bl.bid)) continue;
 
-                //correct the I_MPOS-dependent metas
-                int rot=dir;
-                switch(dir) {
-                    case DIR_EAST: rot=DIR_WEST; break;
-                    case DIR_WEST: rot=DIR_EAST; break;
-                    default: rot=dir;
-                }
-
-                if (ITEMS[bl.bid].flags&I_STAIR) { //stair-type blocks
-                    uint8_t stair_rot = ROTATE_STAIR[rot][bl.meta&3];
-                    bl.meta = (bl.meta&4)|(stair_rot&3);
-                }
-                else if (I_LOG(bl.bid)) {
-                    if (dir==DIR_EAST || dir==DIR_WEST) {
-                        // we need to rotate the log
-                        int log_rot = (bl.meta>>2)&3;
-                        switch(log_rot) {
-                            case 1: log_rot=2; break;
-                            case 2: log_rot=1; break;
-                        }
-                        bl.meta = (bl.meta&3)|(log_rot<<2);
-                    }
-                }
-                //TODO: support for other I_MPOS blocks
-
                 blkr *b = lh_arr_new(BPLAN);
-                b->b = bl;
+                b->b = meta_d2n(bl,dir);
                 b->y = y-py;
 
                 switch (dir) {
@@ -1432,27 +1399,7 @@ void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
                 break;
         }
         bt->y = py+bp->y;
-
-        bt->b = bp->b;
-
-        //correct the I_MPOS-dependent metas
-        if (ITEMS[bt->b.bid].flags&I_STAIR) {
-            // rotate stair-type blocks
-            uint8_t stair_rot = ROTATE_STAIR[dir][bt->b.meta&3];
-            bt->b.meta = (bt->b.meta&4)|(stair_rot&3);
-        }
-        else if (I_LOG(bt->b.bid)) {
-            if (dir==DIR_EAST || dir==DIR_WEST) {
-                // we need to rotate the log
-                int log_rot = (bt->b.meta>>2)&3;
-                switch(log_rot) {
-                    case 1: log_rot=2; break;
-                    case 2: log_rot=1; break;
-                }
-                bt->b.meta = (bt->b.meta&3)|(log_rot<<2);
-            }
-        }
-        //TODO: other I_MPOS blocks
+        bt->b = meta_n2d(bp->b, dir);
     }
     build.active = 1;
 
@@ -1660,36 +1607,9 @@ static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
                     break;
             }
             bp->y = y-build.py;
+            bp->b = meta_d2n(block,build.pd);
 
-            bp->b = block;
-
-            //correct the I_MPOS-dependent metas
-            int rot=build.pd;
-            switch(build.pd) {
-                case DIR_EAST: rot=DIR_WEST; break;
-                case DIR_WEST: rot=DIR_EAST; break;
-                default: rot=build.pd;
-            }
-
-            if (ITEMS[block.bid].flags&I_STAIR) { //stair-type blocks
-                // we can use the same table, but switch east and west
-                uint8_t stair_rot = ROTATE_STAIR[rot][bp->b.meta&3];
-                bp->b.meta = (bp->b.meta&4)|(stair_rot&3);
-            }
-            else if (I_LOG(block.bid)) {
-                if (build.pd==DIR_EAST || build.pd==DIR_WEST) {
-                    // we need to rotate the log
-                    int log_rot = (bp->b.meta>>2)&3;
-                    switch(log_rot) {
-                        case 1: log_rot=2; break;
-                        case 2: log_rot=1; break;
-                    }
-                    bp->b.meta = (bp->b.meta&3)|(log_rot<<2);
-                }
-            }
-            //TODO: other I_MPOS blocks
-
-            dump_brec_pending();
+            //dump_brec_pending();
             return;
         }
     }
