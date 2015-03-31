@@ -192,6 +192,8 @@
 // stair-type block - I_MPOS straight/upside-down in the meta bit 2, direction in bits 0-1
 #define I_STAIR (1<<10)
 
+// wood log type blocks - use a macro instead of a flag, since it's just 2 types
+#define I_LOG(id) ((id)==0x11 || (id)==0xa2)
 
 // macros to determine armor type
 #define I_HELMET(id)     ((id)==0x12a || (id)==0x12e || (id)==0x132 || (id)==0x136 || (id)==0x13a)

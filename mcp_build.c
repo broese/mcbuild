@@ -578,6 +578,20 @@ void build_update() {
                     setdots(b, DOTS_NONE, DOTS_ALL, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER);
             }
         }
+        else if (I_LOG(b->b.bid)) {
+            switch((b->b.meta>>2)&3) {
+                case 0: // Up-Down
+                case 3: // All-bark (not possible, but we just assume up-down)
+                    setdots(b, DOTS_ALL, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
+                    break;
+                case 1: // East-West
+                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_ALL);
+                    break;
+                case 2: // North-South
+                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_ALL, DOTS_NONE, DOTS_NONE);
+                    break;
+            }
+        }
         else {
             // Blocks that don't have I_MPOS or not supported
             setdots(b, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL);
@@ -1298,6 +1312,17 @@ static void build_scan(char **words, char *reply) {
                     uint8_t stair_rot = ROTATE_STAIR[rot][bl.meta&3];
                     bl.meta = (bl.meta&4)|(stair_rot&3);
                 }
+                else if (I_LOG(bl.bid)) {
+                    if (dir==DIR_EAST || dir==DIR_WEST) {
+                        // we need to rotate the log
+                        int log_rot = (bl.meta>>2)&3;
+                        switch(log_rot) {
+                            case 1: log_rot=2; break;
+                            case 2: log_rot=1; break;
+                        }
+                        bl.meta = (bl.meta&3)|(log_rot<<2);
+                    }
+                }
                 //TODO: support for other I_MPOS blocks
 
                 blkr *b = lh_arr_new(BPLAN);
@@ -1415,6 +1440,17 @@ void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
             // rotate stair-type blocks
             uint8_t stair_rot = ROTATE_STAIR[dir][bt->b.meta&3];
             bt->b.meta = (bt->b.meta&4)|(stair_rot&3);
+        }
+        else if (I_LOG(bt->b.bid)) {
+            if (dir==DIR_EAST || dir==DIR_WEST) {
+                // we need to rotate the log
+                int log_rot = (bt->b.meta>>2)&3;
+                switch(log_rot) {
+                    case 1: log_rot=2; break;
+                    case 2: log_rot=1; break;
+                }
+                bt->b.meta = (bt->b.meta&3)|(log_rot<<2);
+            }
         }
         //TODO: other I_MPOS blocks
     }
@@ -1639,6 +1675,17 @@ static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
                 // we can use the same table, but switch east and west
                 uint8_t stair_rot = ROTATE_STAIR[rot][bp->b.meta&3];
                 bp->b.meta = (bp->b.meta&4)|(stair_rot&3);
+            }
+            else if (I_LOG(block.bid)) {
+                if (build.pd==DIR_EAST || build.pd==DIR_WEST) {
+                    // we need to rotate the log
+                    int log_rot = (bp->b.meta>>2)&3;
+                    switch(log_rot) {
+                        case 1: log_rot=2; break;
+                        case 2: log_rot=1; break;
+                    }
+                    bp->b.meta = (bp->b.meta&3)|(log_rot<<2);
+                }
             }
             //TODO: other I_MPOS blocks
 
