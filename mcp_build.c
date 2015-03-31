@@ -169,6 +169,14 @@ struct {
 #define BTASK GAR(build.task)
 #define BPLAN GAR(build.plan)
 
+// rotation mapping for the stairs-type blocks (2 low bits in the meta)
+static uint8_t ROTATE_STAIR[][4] = {
+    [DIR_NORTH] = { 0, 1, 2, 3 },
+    [DIR_SOUTH] = { 1, 0, 3, 2 },
+    [DIR_EAST]  = { 2, 3, 1, 0 },
+    [DIR_WEST]  = { 3, 2, 0, 1 },
+};
+
 
 
 
@@ -313,6 +321,20 @@ static inline int ISEMPTY(int bid) {
              bid==0x0a || bid==0x0b ||  // lava
              bid==0x1f ||               // tallgrass
              bid==0x33 );               // fire
+}
+
+// block types we should exclude from scanning
+static inline int NOSCAN(int bid) {
+    return ( bid==0x00 ||               // air
+             bid==0x1f ||               // tallgrass
+             bid==0x22 ||               // piston head
+             bid==0x24 ||               // piston extension
+             bid==0x33 ||               // fire
+             bid==0x3b ||               // wheat
+             bid==0x5a ||               // portal field
+             //bid==0x63 || bid==0x64 || // giant mushrooms
+             bid==0x8d || bid==0x8e     // carrots, potatoes
+             );
 }
 
 typedef struct {
@@ -1229,7 +1251,74 @@ static void build_scan(char **words, char *reply) {
     int miny = MIN(py,ty); int maxy=MAX(py,ty);
     int minz = MIN(pz,tz); int maxz=MAX(pz,tz);
 
-    printf("%d,%d,%d - %d,%d,%d, pivot:%d,%d,%d, dir:%s\n",minx,minz,miny,maxx,maxz,maxy,px,pz,py,DIRNAME[dir]);
+    //printf("%d,%d,%d - %d,%d,%d, pivot:%d,%d,%d, dir:%s\n",minx,minz,miny,maxx,maxz,maxy,px,pz,py,DIRNAME[dir]);
+
+    // offset coords of the cuboid
+    int32_t Xo = minx>>4;
+    int32_t Zo = minz>>4;
+    int32_t xo = Xo<<4;
+    int32_t zo = Zo<<4;
+    int32_t yo = miny;
+
+    // cuboid size
+    int32_t Xsz = (maxx>>4)-Xo+1;
+    int32_t Zsz = (maxz>>4)-Zo+1;
+    int32_t xsz = Xsz<<4;
+    int32_t zsz = Zsz<<4;
+    int32_t ysz = maxy-miny+1;
+
+    // obtain the cuboid containing our scan region
+    bid_t * world = export_cuboid(Xo, Xsz, Zo, Zsz, yo, ysz, NULL);
+
+    int x,y,z;
+    for(y=miny; y<=maxy; y++) {
+        for(z=minz; z<=maxz; z++) {
+            for(x=minx; x<=maxx; x++) {
+                bid_t bl = world[OFF(x,z,y)];
+                if (NOSCAN(bl.bid)) continue;
+
+                //correct the I_MPOS-dependent metas
+                int rot=dir;
+                switch(dir) {
+                    case DIR_EAST: rot=DIR_WEST; break;
+                    case DIR_WEST: rot=DIR_EAST; break;
+                    default: rot=dir;
+                }
+
+                if (ITEMS[bl.bid].flags&I_STAIR) { //stair-type blocks
+                    uint8_t stair_rot = ROTATE_STAIR[rot][bl.meta&3];
+                    bl.meta = (bl.meta&4)|(stair_rot&3);
+                }
+                //TODO: support for other I_MPOS blocks
+
+                blkr *b = lh_arr_new(BPLAN);
+                b->b = bl;
+                b->y = y-py;
+
+                switch (dir) {
+                    case DIR_NORTH:
+                        b->x = x-px;
+                        b->z = z-pz;
+                        break;
+                    case DIR_SOUTH:
+                        b->x = px-x;
+                        b->z = pz-z;
+                        break;
+                    case DIR_EAST:
+                        b->x = z-pz;
+                        b->z = px-x;
+                        break;
+                    case DIR_WEST:
+                        b->x = pz-z;
+                        b->z = x-px;
+                        break;
+                }
+            }
+        }
+    }
+
+    sprintf(reply, "Scanned %zd blocks from a %dx%dx%d area\n", C(build.plan), maxx-minx+1, maxz-minz+1, ysz);
+    buildplan_updated();
 }
 
 
@@ -1281,14 +1370,6 @@ static void build_extend(char **words, char *reply) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pivot placement
-
-// rotation mapping for the stairs-type blocks (2 low bits in the meta)
-static uint8_t ROTATE_STAIR[][4] = {
-    [DIR_NORTH] = { 0, 1, 2, 3 },
-    [DIR_SOUTH] = { 1, 0, 3, 2 },
-    [DIR_EAST]  = { 2, 3, 1, 0 },
-    [DIR_WEST]  = { 3, 2, 0, 1 },
-};
 
 // a pivot block has been placed (using whatever method)
 void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
