@@ -1063,10 +1063,24 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     return 0;
 }
 
+void test_stuff(int ac, char **av) {
+    char reply[32768];
+    reply[0] = 0;
+    build_sload(av[1], reply);
+
+    if (reply[0]) {
+        printf("Reply: %s\n",reply);
+    }
+    build_dump_plan();
+    calculate_material(1);
+}
+
 int main(int ac, char **av) {
 #if DEBUG_MEMORY
     mtrace();
 #endif
+
+    //test_stuff(ac, av); return;
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
