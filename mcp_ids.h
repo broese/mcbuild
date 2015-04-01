@@ -195,6 +195,9 @@
 // wood log type blocks
 #define I_LOG (1<<11)
 
+// torches and redstone torches
+#define I_TORCH (1<<12)
+
 // macros to determine armor type
 #define I_HELMET(id)     ((id)==0x12a || (id)==0x12e || (id)==0x132 || (id)==0x136 || (id)==0x13a)
 #define I_CHESTPLATE(id) ((id)==0x12b || (id)==0x12f || (id)==0x133 || (id)==0x137 || (id)==0x13b)

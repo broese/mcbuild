@@ -84,7 +84,7 @@ const item_id ITEMS[] = {
 
     [0x30] = { "Mossy Stone" },
     [0x31] = { "Obsidian" },
-    [0x32] = { "Torch", I_MPOS },                               // P: dir
+    [0x32] = { "Torch", I_MPOS|I_TORCH },                       // P: dir
     [0x33] = { "Fire", I_STATE },                               // S: age
     [0x34] = { "Spawner" },
     [0x35] = { "Wooden Stairs", I_MPOS|I_STAIR },               // P: dir
@@ -110,8 +110,8 @@ const item_id ITEMS[] = {
     [0x48] = { "Wooden Pressure Plate", I_STATE },              // S: pressed
     [0x49] = { "Redstone Ore" },
     [0x4a] = { "Glowing Redstone Ore" },
-    [0x4b] = { "Redstone Torch (off)", I_MPOS },                // P: dir
-    [0x4c] = { "Redstone Torch (on)", I_MPOS },                 // P: dir
+    [0x4b] = { "Redstone Torch (off)", I_MPOS|I_TORCH },        // P: dir
+    [0x4c] = { "Redstone Torch (on)", I_MPOS|I_TORCH },         // P: dir
     [0x4d] = { "Stone Button", I_MPOS|I_STATE },                // P: dir, S: pressed
     [0x4e] = { "Snow Layer", I_STATE },                         // P: level
     [0x4f] = { "Ice" },
@@ -619,6 +619,13 @@ static uint8_t ROT_STAIR[][16] = {
     [DIR_WEST]  = { ROT_BITS01(3,2,0,1) },
 };
 
+static uint8_t ROT_TORCH[][16] = {
+    [DIR_NORTH] = { 0, 1, 2, 3, 4, 5 },
+    [DIR_SOUTH] = { 0, 2, 1, 4, 3, 5 },
+    [DIR_EAST]  = { 0, 3, 4, 2, 1, 5 },
+    [DIR_WEST]  = { 0, 4, 3, 1, 2, 5 },
+};
+
 // rotate block meta from north-orientation to dir-orientation
 bid_t meta_n2d(bid_t b, int dir) {
     const item_id *it = &ITEMS[b.bid];
@@ -630,6 +637,9 @@ bid_t meta_n2d(bid_t b, int dir) {
         if (dir==DIR_EAST || dir==DIR_WEST) {
             b.meta ^= 12; // translate 10xx <=> 01xx
         }
+    }
+    else if (it->flags&I_TORCH) { // torches
+        b.meta = ROT_TORCH[dir][b.meta];
     }
 
     //TODO: support for other I_MPOS blocks
