@@ -435,7 +435,8 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             }
 
             if (strcmp(tpkt->name,"mob.sheep.say") &&
-                strcmp(tpkt->name,"mob.sheep.step")) {
+                strcmp(tpkt->name,"mob.sheep.step") &&
+                strncmp(tpkt->name,"note.",5) ) {
                 queue_packet(pkt, tq);
             }
         } _GMP;
