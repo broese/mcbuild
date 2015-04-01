@@ -1080,7 +1080,7 @@ int main(int ac, char **av) {
     mtrace();
 #endif
 
-    //test_stuff(ac, av); return;
+    //test_stuff(ac, av); return 0;
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
