@@ -1923,6 +1923,9 @@ void build_sload(const char *name, char *reply) {
         }
     }
 
+    sprintf(reply, "Loaded schematic %s with %zd blocks, size=%dx%dx%d\n",
+            fname, C(build.plan), wd, ln, hg);
+
     nbt_free(n);
     lh_free(dbuf);
     lh_free(buf);
