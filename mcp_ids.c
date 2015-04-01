@@ -37,7 +37,7 @@ const item_id ITEMS[] = {
     [0x0f] = { "Iron ore" },
 
     [0x10] = { "Coal ore" },
-    [0x11] = { "Wood", I_MTYPE|I_MPOS, MNAMES_OLDWOOD },        // P: dir
+    [0x11] = { "Wood", I_MTYPE|I_MPOS|I_LOG, MNAMES_OLDWOOD },  // P: dir
     [0x12] = { "Leaves", I_MTYPE|I_STATE, MNAMES_OLDWOOD },     // S: decay
     [0x13] = { "Sponge", I_MTYPE,
                { NULL, "Wet" }, },
@@ -208,7 +208,7 @@ const item_id ITEMS[] = {
 
     [0xa0] = { "Stained Glass Pane", I_MTYPE, MNAMES_COLOR },
     [0xa1] = { "Leaves2", I_MTYPE|I_STATE, MNAMES_NEWWOOD },    // S: decay
-    [0xa2] = { "Wood2", I_MTYPE|I_MPOS, MNAMES_NEWWOOD },       // P: dir
+    [0xa2] = { "Wood2", I_MTYPE|I_MPOS|I_LOG, MNAMES_NEWWOOD }, // P: dir
     [0xa3] = { "Acacia Stairs", I_MPOS|I_STAIR },               // P: dir
     [0xa4] = { "Dark Oak Stairs", I_MPOS|I_STAIR },             // P: dir
     [0xa5] = { "Slime Block" },
@@ -621,10 +621,12 @@ static uint8_t ROT_STAIR[][16] = {
 
 // rotate block meta from north-orientation to dir-orientation
 bid_t meta_n2d(bid_t b, int dir) {
-    if (ITEMS[b.bid].flags&I_STAIR) { //stair-type blocks
+    const item_id *it = &ITEMS[b.bid];
+
+    if (it->flags&I_STAIR) { //stair-type blocks
         b.meta = ROT_STAIR[dir][b.meta];
     }
-    else if (I_LOG(b.bid)) { // wooden logs
+    else if (it->flags&I_LOG) { // wooden logs
         if (dir==DIR_EAST || dir==DIR_WEST) {
             b.meta ^= 12; // translate 10xx <=> 01xx
         }

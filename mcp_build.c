@@ -577,7 +577,7 @@ void build_update() {
                     setdots(b, DOTS_NONE, DOTS_ALL, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER);
             }
         }
-        else if (I_LOG(b->b.bid)) {
+        else if (it->flags&I_LOG) {
             switch((b->b.meta>>2)&3) {
                 case 0: // Up-Down
                 case 3: // All-bark (not possible, but we just assume up-down)
