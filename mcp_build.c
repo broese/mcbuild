@@ -311,6 +311,13 @@ void calculate_material(int plan) {
 #define MAXREACH SQ(4<<5)
 #define OFF(x,z,y) (((x)-xo)+((z)-zo)*(xsz)+((y)-yo)*(xsz*zsz))
 
+// minimum interval between attempting to build the same block
+#define BUILD_BLKINT 1000000
+#define BUILD_BLDINT 250000
+
+// maximum number of blocks to attempt to place in one go
+#define BUILD_BLKMAX 2
+
 static inline int ISEMPTY(int bid) {
     return ( bid==0x00 ||               // air
              bid==0x08 || bid==0x09 ||  // water
@@ -682,13 +689,6 @@ static void choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz)
     printf("Fail: i=%d\n",i);
     assert(0);
 }
-
-// minimum interval between attempting to build the same block
-#define BUILD_BLKINT 200000
-#define BUILD_BLDINT 50000
-
-// maximum number of blocks to attempt to place in one go
-#define BUILD_BLKMAX 3
 
 void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
     // time update - try to build any blocks from the placeable blocks list
