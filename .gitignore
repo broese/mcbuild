@@ -11,6 +11,7 @@ mtrace
 outcast.c
 test.c
 *.bplan
+bases.txt
 
 # applications
 mcproxy

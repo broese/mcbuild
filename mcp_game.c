@@ -2,6 +2,8 @@
 #include <time.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <string.h>
+#include <errno.h>
 
 #define LH_DECLARE_SHORT_NAMES 1
 
@@ -23,6 +25,17 @@ struct {
     int holeradar;
     int build;
 } opt;
+
+// loaded base locations - for thunder protection
+#define MAXBASES 256
+#define BASESFILE "bases.txt"
+#define BASEDIST 1500
+
+typedef struct {
+    int32_t x,z;
+} wcoord_t;
+wcoord_t bases[MAXBASES];
+int nbases=0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // helpers
@@ -426,14 +439,26 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         } _GMP;
 
         GMP(SP_SoundEffect) {
+            // thunder protection
             if (!strcmp(tpkt->name,"ambient.weather.thunder")) {
-                printf("**** THUNDER ****\n"
-                       "coords=%d,%d,%d vol=%.4f pitch=%d\n",
+                printf("**** THUNDER **** coords=%d,%d,%d vol=%.4f pitch=%d\n",
                        tpkt->x/8,tpkt->y/8,tpkt->z/8,
                        tpkt->vol,tpkt->pitch);
-                drop_connection();
+                int i;
+                for(i=0; i<nbases; i++) {
+                    float dx = (float)(bases[i].x - gs.own.x/32);
+                    float dz = (float)(bases[i].z - gs.own.z/32);
+                    if ( sqrtf(dx*dx+dz*dz) < BASEDIST ) {
+                        printf("Dropping connection because we are too close to base #%d at %d,%d : "
+                               "dx=%.0f dz=%.0f dist=%d\n",
+                               i, bases[i].x, bases[i].z,dx,dz,BASEDIST);
+                        drop_connection();
+                        break;
+                    }
+                }
             }
 
+            // block annoying sounds
             if (strcmp(tpkt->name,"mob.sheep.say") &&
                 strcmp(tpkt->name,"mob.sheep.step") &&
                 strncmp(tpkt->name,"note.",5) ) {
@@ -503,9 +528,40 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
     }
 }
 
+// load bases coords for thunder protection
+void readbases() {
+    FILE *fp = fopen(BASESFILE, "r");
+    if (!fp) {
+        printf("Cannot open file %s for reading: %s\n",BASESFILE,strerror(errno));
+        return;
+    }
+
+    nbases=0;
+    while (!feof(fp) && nbases<MAXBASES) {
+        char buf[256];
+        if (!fgets(buf, sizeof(buf), fp)) break;
+        if (buf[0]=='#' || buf[0]==0x0d || buf[0]==0x0a) continue;
+
+        int32_t x,z;
+        if (sscanf(buf, "%d,%d", &x, &z)!=2) {
+            printf("Error parsing line '%s' in %s\n",buf,BASESFILE);
+            continue;
+        }
+        bases[nbases].x = x;
+        bases[nbases].z = z;
+        nbases++;
+    }
+
+    int i;
+    for(i=0; i<nbases; i++) {
+        printf("%3d : %+5d,%+5d\n",i,bases[i].x,bases[i].z);
+    }
+}
+
 void gm_reset() {
     lh_clear_obj(opt);
     build_clear();
+    readbases();
 }
 
 void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
