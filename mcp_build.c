@@ -1560,8 +1560,25 @@ void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     sprintf(reply, "Place pivot at %d,%d (%d), dir=%d\n",x,z,y,dir);
     chat_message(reply, cq, "green", 0);
 
-    //TODO: send a SetSlot to the client, so it does not decrement the block count ?
     //TODO: detect when player accesses chests/etc
+
+    // send a BlockChange to the client to remove the fake block it thinks it just placed
+    bid_t blocks[256];
+    export_cuboid(x>>4,1,z>>4,1,y,1,blocks);
+
+    NEWPACKET(SP_BlockChange, bc);
+    tbc->pos.x = x;
+    tbc->pos.y = y;
+    tbc->pos.z = z;
+    tbc->block = blocks[(x&15)+((z&15)<<4)];
+    queue_packet(bc, cq);
+
+    // send a SetSlot to the client for the held item to restore item count
+    NEWPACKET(SP_SetSlot, hi);
+    thi->wid = 0;
+    thi->sid = gs.inv.held+36;
+    clone_slot(&gs.inv.slots[thi->sid], &thi->slot);
+    queue_packet(hi, cq);
 }
 
 
