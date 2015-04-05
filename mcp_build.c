@@ -740,8 +740,36 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
         int8_t face, cx, cy, cz;
         choose_dot(b, &face, &cx, &cy, &cz);
-        printf("Placing block %d,%d,%d (%s)\n",
-               b->x,b->y,b->z, get_item_name(buf, hslot));
+
+        // dot's absolute 3D coordinates (fixed point)
+        fixp tx = ((b->x+NOFF[face][0])<<5) + cx*2;
+        fixp tz = ((b->z+NOFF[face][1])<<5) + cz*2;
+        fixp ty = ((b->y+NOFF[face][2])<<5) + cy*2;
+
+        // calculate player look to this dot
+        // taken from http://wiki.vg/Protocol#Player_Look
+        float dx = (float)(tx-gs.own.x)/32.0;
+        float dz = (float)(tz-gs.own.z)/32.0;
+        float dy = (float)(ty-(gs.own.y+EYEHEIGHT))/32.0;
+        float c  = sqrt(dx*dx+dz*dz);
+        if (c==0) c=0.0001;
+        float alpha = asinf(dx/c)/M_PI*180;
+        float yaw = (dz<0) ? (180+alpha) : (360-alpha);
+        float pitch = -atanf(dy/c)/M_PI*180;
+
+        printf("Placing Block: %d,%d,%d (%s)  Face:%d Cursor:%d,%d,%d  Player: %.1f,%.1f,%.1f  Dot: %.1f,%.1f,%.1f  Diff:%.1f,%.1f,%.1f  Dist=%.2f  Rot=%.2f,%.2f\n",
+               b->x,b->y,b->z, get_item_name(buf, hslot),
+               face, cx, cy, cz,
+               (float)gs.own.x/32, (float)(gs.own.y+EYEHEIGHT)/32, (float)gs.own.z/32,
+               (float)b->x+(float)cx/16,(float)b->y+(float)cy/16,(float)b->z+(float)cz/16,
+               dx, dy, dz, c, yaw, pitch);
+
+        // turn player look to the dot
+        NEWPACKET(CP_PlayerLook, pl);
+        tpl->yaw = yaw;
+        tpl->pitch = pitch;
+        tpl->onground = gs.own.onground;
+        queue_packet(pl,sq);
 
         // place block
         NEWPACKET(CP_PlayerBlockPlacement, pbp);
