@@ -879,6 +879,11 @@ DECODE_BEGIN(SP_BlockChange,_1_8_1) {
     tpkt->block.raw = (uint16_t)bid;
 } DECODE_END;
 
+ENCODE_BEGIN(SP_BlockChange,_1_8_1) {
+    Wlong(pos.p);
+    Wvarint(block.raw);
+} ENCODE_END;
+
 DUMP_BEGIN(SP_BlockChange) {
     printf("coord=%d,%d,%d bid=%3x meta=%d",
            tpkt->pos.x, tpkt->pos.y, tpkt->pos.z,
@@ -1321,7 +1326,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_SetExperience,_1_8_1),
         SUPPORT_DF  (SP_ChunkData,_1_8_1),
         SUPPORT_DF  (SP_MultiBlockChange,_1_8_1),
-        SUPPORT_D   (SP_BlockChange,_1_8_1),
+        SUPPORT_DE  (SP_BlockChange,_1_8_1),
         SUPPORT_DF  (SP_MapChunkBulk,_1_8_1),
         SUPPORT_DF  (SP_Explosion,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
