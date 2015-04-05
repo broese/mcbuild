@@ -16,8 +16,8 @@
 #include "mcp_arg.h"
 
 
-
-
+#define EYEHEIGHT 52
+#define YAWMARGIN 3
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
@@ -48,6 +48,36 @@ static int find_opt(char **words, const char *name) {
         if (!strcmp(words[i], name))
             return 1;
     return 0;
+}
+
+int calculate_yaw_pitch(fixp x, fixp z, fixp y, float *yaw, float *pitch) {
+    // relative distance to the dot
+    float dx = (float)(x-gs.own.x)/32.0;
+    float dz = (float)(z-gs.own.z)/32.0;
+    float dy = (float)(y-(gs.own.y+EYEHEIGHT))/32.0;
+    float c  = sqrt(dx*dx+dz*dz);
+    if (c==0) c=0.0001;
+
+    float alpha = asinf(dx/c)/M_PI*180;
+    *yaw = (dz<0) ? (180+alpha) : (360-alpha);
+    if (*yaw >= 360.0) *yaw-=360; // normalize yaw
+
+    *pitch = -atanf(dy/c)/M_PI*180;
+
+    if (*yaw < 45-YAWMARGIN || *yaw > 315+YAWMARGIN) {
+        return DIR_SOUTH;
+    }
+    else if (*yaw < 135-YAWMARGIN) {
+        return DIR_WEST;
+    }
+    else if (*yaw < 225-YAWMARGIN) {
+        return DIR_NORTH;
+    }
+    else if (*yaw < 315-YAWMARGIN) {
+        return DIR_EAST;
+    }
+
+    return DIR_ANY;
 }
 
 
@@ -90,6 +120,9 @@ uint16_t DOTS_NONE[15] = {
 typedef struct {
     int32_t     x,y,z;          // coordinates of the block to place
     bid_t       b;              // block type, including the meta
+
+    int         rdir;           // required placement direction
+                                // one of the DIR_* constants, -1 if doesn't matter
 
     // state flags
     union {
@@ -306,7 +339,6 @@ void calculate_material(int plan) {
 #define MAX(x,y) (((x)>(y))?(x):(y))
 
 // maximum reach distance for building, squared, in fixp units (1/32 block)
-#define EYEHEIGHT 52
 #define MAXREACH_COARSE SQ(5<<5)
 #define MAXREACH SQ(4<<5)
 #define OFF(x,z,y) (((x)-xo)+((z)-zo)*(xsz)+((y)-yo)*(xsz*zsz))
@@ -405,11 +437,26 @@ static void remove_distant_dots(blk *b) {
                 if (dist > MAXREACH) {
                     dots[dr] &= ~mask; // this dot is too far away - disable it
                     drow = dots[dr];
+                    continue;
                 }
-                else {
-                    if (b->dist < dist)
-                        b->dist = dist;
+
+                if (b->rdir != DIR_ANY) {
+                    // this block requires a certain player look direction on placement
+                    float yaw,pitch;
+                    int yawdir = calculate_yaw_pitch(x, z, y, &yaw, &pitch);
+                    if (yawdir != b->rdir) {
+                        // direction does not match - we can't place this block
+                        // as needed from player's perspective
+                        dots[dr] &= ~mask;
+                        drow = dots[dr];
+                        continue;
+                    }
                 }
+
+                // update block distance - necessary for the decision
+                // which block to place first
+                if (b->dist < dist)
+                    b->dist = dist;
             }
         }
     }
@@ -520,6 +567,7 @@ void build_update() {
     build.nbq = 0;
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
+        b->rdir = DIR_ANY;
         if (!b->inreach) continue;
 
         const item_id *it = &ITEMS[b->b.bid];
@@ -561,21 +609,15 @@ void build_update() {
             // Stairs
 
             // determine the required look direction for the correct block placement
-            int rdir = (b->b.meta&2) ?
+            b->rdir = (b->b.meta&2) ?
                 ((b->b.meta&1) ? DIR_NORTH : DIR_SOUTH ) :
                 ((b->b.meta&1) ? DIR_WEST  : DIR_EAST );
+            // the direction will be checked for each dot in remove_distant_dots()
 
-            int pdir = player_direction();
-            if (pdir != rdir) {
-                // placement not possible
-                setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
-            }
-            else {
-                if (b->b.meta&4) // upside-down placement
-                    setdots(b, DOTS_ALL, DOTS_NONE, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER);
-                else // straight placement
-                    setdots(b, DOTS_NONE, DOTS_ALL, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER);
-            }
+            if (b->b.meta&4) // upside-down placement
+                setdots(b, DOTS_ALL, DOTS_NONE, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER);
+            else // straight placement
+                setdots(b, DOTS_NONE, DOTS_ALL, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER);
         }
         else if (it->flags&I_LOG) {
             switch((b->b.meta>>2)&3) {
@@ -746,23 +788,17 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         fixp tz = ((b->z+NOFF[face][1])<<5) + cz*2;
         fixp ty = ((b->y+NOFF[face][2])<<5) + cy*2;
 
-        // calculate player look to this dot
-        // taken from http://wiki.vg/Protocol#Player_Look
-        float dx = (float)(tx-gs.own.x)/32.0;
-        float dz = (float)(tz-gs.own.z)/32.0;
-        float dy = (float)(ty-(gs.own.y+EYEHEIGHT))/32.0;
-        float c  = sqrt(dx*dx+dz*dz);
-        if (c==0) c=0.0001;
-        float alpha = asinf(dx/c)/M_PI*180;
-        float yaw = (dz<0) ? (180+alpha) : (360-alpha);
-        float pitch = -atanf(dy/c)/M_PI*180;
+        float yaw, pitch;
+        int ldir = calculate_yaw_pitch(tx, tz, ty, &yaw, &pitch);
 
-        printf("Placing Block: %d,%d,%d (%s)  Face:%d Cursor:%d,%d,%d  Player: %.1f,%.1f,%.1f  Dot: %.1f,%.1f,%.1f  Diff:%.1f,%.1f,%.1f  Dist=%.2f  Rot=%.2f,%.2f\n",
+        printf("Placing Block: %d,%d,%d (%s)  Face:%d Cursor:%d,%d,%d  "
+               "Player: %.1f,%.1f,%.1f  Dot: %.1f,%.1f,%.1f  "
+               "Rot=%.2f,%.2f  Dir=%d (%s)\n",
                b->x,b->y,b->z, get_item_name(buf, hslot),
                face, cx, cy, cz,
                (float)gs.own.x/32, (float)(gs.own.y+EYEHEIGHT)/32, (float)gs.own.z/32,
                (float)b->x+(float)cx/16,(float)b->y+(float)cy/16,(float)b->z+(float)cz/16,
-               dx, dy, dz, c, yaw, pitch);
+               yaw, pitch, ldir, DIRNAME[ldir]);
 
         // turn player look to the dot
         NEWPACKET(CP_PlayerLook, pl);

@@ -599,14 +599,8 @@ uint8_t get_state_mask(int bid) {
 ////////////////////////////////////////////////////////////////////////////////
 // Orientation
 
-const char * DIRNAME[] = {
-    [DIR_UP]    = "up",
-    [DIR_DOWN]  = "down",
-    [DIR_SOUTH] = "south",
-    [DIR_NORTH] = "north",
-    [DIR_EAST]  = "east",
-    [DIR_WEST]  = "west",
-};
+static const char * _DIRNAME[] = { "any", "up", "down", "south", "north", "east", "west" };
+const char ** DIRNAME = _DIRNAME+1;
 
 #define BITS_4ADD(a,b,c,d,n) ((a)+(n)),((b)+(n)),((c)+(n)),((d)+(n))
 #define ROT_BITS01(a,b,c,d) a,b,c,d,BITS_4ADD(a,b,c,d,4),BITS_4ADD(a,b,c,d,8),BITS_4ADD(a,b,c,d,12)

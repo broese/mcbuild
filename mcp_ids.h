@@ -219,6 +219,7 @@ extern const item_id ITEMS[];
 ////////////////////////////////////////////////////////////////////////////////
 // Directions
 
+#define DIR_ANY    -1
 #define DIR_UP      0
 #define DIR_DOWN    1
 #define DIR_SOUTH   2
@@ -226,7 +227,7 @@ extern const item_id ITEMS[];
 #define DIR_EAST    4
 #define DIR_WEST    5
 
-extern const char * DIRNAME[];
+extern const char ** DIRNAME;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
