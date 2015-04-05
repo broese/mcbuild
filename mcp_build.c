@@ -312,11 +312,11 @@ void calculate_material(int plan) {
 #define OFF(x,z,y) (((x)-xo)+((z)-zo)*(xsz)+((y)-yo)*(xsz*zsz))
 
 // minimum interval between attempting to build the same block
-#define BUILD_BLKINT 1000000
-#define BUILD_BLDINT 250000
+#define BUILD_BLKINT 2000000
+#define BUILD_BLDINT  500000
 
 // maximum number of blocks to attempt to place in one go
-#define BUILD_BLKMAX 2
+#define BUILD_BLKMAX 1
 
 static inline int ISEMPTY(int bid) {
     return ( bid==0x00 ||               // air
