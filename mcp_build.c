@@ -6,6 +6,7 @@
 
 #include <lh_buffers.h>
 #include <lh_files.h>
+#include <lh_debug.h>
 #include <lh_bytes.h>
 #include <lh_compress.h>
 
@@ -198,13 +199,38 @@ struct {
     int32_t     xmin,xmax,ymin,ymax,zmin,zmax;
 
     int32_t bpsx,bpsy,bpsz;
+
 } build;
 
 #define BTASK GAR(build.task)
 #define BPLAN GAR(build.plan)
 
+// Options
 
+struct {
+    int init;
+    int blkint;            // interval (in microseconds) between attempting to place same block
+    int bldint;            // interval between placing any block
+    int blkmax;            // maximum number of blocks to be places at once
+} buildopts = { 0 };
 
+typedef struct {
+    const char * name;
+    const char * description;
+    int * var;
+    int defvalue;
+} bopt_t;
+
+#define BUILD_BLKINT 2000000
+#define BUILD_BLDINT  500000
+#define BUILD_BLKMAX       1
+
+bopt_t OPTIONS[] = {
+    { "blkint", "interval (us) between attempting to place same block", &buildopts.blkint, BUILD_BLKINT},
+    { "bldint", "interval (us) between attempting to place any block",  &buildopts.bldint, BUILD_BLDINT},
+    { "blkmax", "max number of blocks to place at once",                &buildopts.blkmax, BUILD_BLKMAX},
+    { NULL, NULL, NULL, 0 }, //list terminator
+};
 
 
 
@@ -212,7 +238,7 @@ struct {
 // Inventory
 
 // slot range in the quickbar that can be used for material fetching
-int matl=3, math=7;
+int matl=4, math=7;
 
 // timestamps when the material slots were last accessed - used to select evictable slots
 int64_t mat_last[9];
@@ -342,13 +368,6 @@ void calculate_material(int plan) {
 #define MAXREACH_COARSE SQ(5<<5)
 #define MAXREACH SQ(4<<5)
 #define OFF(x,z,y) (((x)-xo)+((z)-zo)*(xsz)+((y)-yo)*(xsz*zsz))
-
-// minimum interval between attempting to build the same block
-#define BUILD_BLKINT 2000000
-#define BUILD_BLDINT  500000
-
-// maximum number of blocks to attempt to place in one go
-#define BUILD_BLKMAX 1
 
 static inline int ISEMPTY(int bid) {
     return ( bid==0x00 ||               // air
@@ -760,14 +779,14 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
     uint64_t ts = gettimestamp();
 
-    if (ts < build.lastbuild+BUILD_BLDINT) return;
+    if (ts < build.lastbuild+buildopts.bldint) return;
 
     int i, bc=0;
     int held=gs.inv.held;
 
-    for(i=0; i<build.nbq && bc<BUILD_BLKMAX; i++) {
+    for(i=0; i<build.nbq && bc<buildopts.blkmax; i++) {
         blk *b = P(build.task)+build.bq[i];
-        if (ts-b->last < BUILD_BLKINT) continue;
+        if (ts-b->last < buildopts.blkint) continue;
 
         // fetch block's material into quickbar slot
         int islot = prefetch_material(sq, cq, get_base_material(b->b));
@@ -1795,6 +1814,87 @@ static void brec_blockplace(MCPacket *pkt) {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+// Options
+
+#define BUILDOPT_STDOUT 1
+#define BUILDOPT_CHAT   2
+
+void buildopt_print(int where, MCPacketQueue *cq) {
+    char buf[4096];
+    int i;
+    for (i=0; OPTIONS[i].name; i++) {
+        sprintf(buf, "%s=%d : %s", OPTIONS[i].name, *OPTIONS[i].var, OPTIONS[i].description);
+        if (where&BUILDOPT_STDOUT)
+            printf("%s\n",buf);
+        if (where&BUILDOPT_CHAT)
+            chat_message(buf, cq, "green", 0);
+    }
+}
+
+void buildopt_setdefault() {
+    int i;
+    for(i=0; OPTIONS[i].name; i++) {
+        *OPTIONS[i].var = OPTIONS[i].defvalue;
+    }
+    buildopts.init = 1;
+    buildopt_print(BUILDOPT_STDOUT, NULL);
+}
+
+void buildopt(char **words, MCPacketQueue *cq) {
+    if (!words[0] || !strcmp(words[0],"list")) {
+        buildopt_print(BUILDOPT_STDOUT|BUILDOPT_CHAT, cq);
+        return;
+    }
+    else if (!strcmp(words[0],"reset")) {
+        buildopt_setdefault();
+        return;
+    }
+
+    char name[256];
+    int  val;
+    int  set=0;
+
+    char *eq = index(words[0],'=');
+    if (eq) {
+        *eq=0;
+        strcpy(name, words[0]);
+        if (sscanf(eq+1,"%d",&val)==1)
+            set=1;
+    }
+    else if (words[1] && sscanf(words[1], "%d", &val)==1) {
+        strcpy(name, words[0]);
+        set=1;
+    }
+    else {
+        strcpy(name, words[0]);
+    }
+
+    int i;
+    for(i=0; OPTIONS[i].name; i++) {
+        if (!strcmp(OPTIONS[i].name, name)) {
+            break;
+        }
+    }
+
+    char reply[256]; reply[0]=0;
+
+    if (!OPTIONS[i].name) {
+        sprintf(reply, "No such variable %s", name);
+    }
+    else {
+        if (set) {
+            *OPTIONS[i].var = val;
+            sprintf(reply, "set %s=%d",name,val);
+        }
+        else {
+            sprintf(reply, "%s=%d",name,*OPTIONS[i].var);
+        }
+    }
+
+    if (reply[0])
+        chat_message(reply, cq, "green", 0);
+}
 
 
 
@@ -2044,6 +2144,9 @@ void build_clear() {
     lh_arr_free(BPLAN);
     lh_clear_obj(build);
     buildplan_updated();
+
+    if (!buildopts.init)
+        buildopt_setdefault();
 }
 
 void build_cancel() {
@@ -2133,6 +2236,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         build.anyface = !build.anyface;
         sprintf(reply, "Anyface buildng is %s",build.anyface?"ON":"OFF");
         rpos = 2;
+    }
+    else if (!strcmp(words[1], "opt") || !strcmp(words[1], "set")) {
+        buildopt(words+2, cq);
     }
 
     if (reply[0]) chat_message(reply, cq, "green", rpos);
