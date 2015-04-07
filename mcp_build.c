@@ -1473,8 +1473,8 @@ static void build_extend(char **words, char *reply) {
     int bc=C(build.plan);
     for(i=1; i<=count; i++) {
         for(j=0; j<bc; j++) {
-            blkr *bo = P(build.plan)+j;
             blkr *bn = lh_arr_new(BPLAN);
+            blkr *bo = P(build.plan)+j;
             bn->x = bo->x+ox*i;
             bn->y = bo->y+oy*i;
             bn->z = bo->z+oz*i;
