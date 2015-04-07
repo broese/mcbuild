@@ -1468,7 +1468,38 @@ static void build_extend(char **words, char *reply) {
     buildplan_updated();
 }
 
+static void build_replace(char **words, char *reply) {
+    mcpopt opt_mat1  = {{"from","material1","mat1","m1",NULL}, 0, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
+    mcpopt opt_mat2  = {{"to","material2","mat2","m2",NULL},   1, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
 
+    int b1,m1,b2,m2;
+    int res1 = mcparg_parse(words, &opt_mat1, &b1, &m1);
+    int res2 = mcparg_parse(words, &opt_mat2, &b2, &m2);
+    if (res1<0 || res2<0) {
+        sprintf(reply, "Usage: #build replace mat1=<bid>[:<meta>] mat2=<bid>[:<meta>]");
+        return;
+    }
+
+    //TODO: handle replacing material with same meta makeup, e.g. replacing stairs material
+    if (res1==3) m1=0;
+    if (res2==3) m2=0;
+
+    bid_t mat1 = BLOCKTYPE(b1,m1);
+    bid_t mat2 = BLOCKTYPE(b2,m2);
+
+    int i, count=0;
+    for(i=0; i<C(build.plan); i++) {
+        if (P(build.plan)[i].b.raw == mat1.raw) {
+            P(build.plan)[i].b = mat2;
+            count++;
+        }
+    }
+
+    char buf1[256], buf2[256];
+    sprintf(reply, "Replaced %d blocks %d:%d (%s) to %d:%d (%s)", count,
+            mat1.bid, mat1.meta, get_bid_name(buf1, mat1),
+            mat2.bid, mat2.meta, get_bid_name(buf2, mat2));
+}
 
 
 
@@ -2239,6 +2270,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "opt") || !strcmp(words[1], "set")) {
         buildopt(words+2, cq);
+    }
+    else if (!strcmp(words[1], "replace")) {
+        build_replace(words+2, reply);
     }
 
     if (reply[0]) chat_message(reply, cq, "green", rpos);
