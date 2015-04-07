@@ -1501,7 +1501,45 @@ static void build_replace(char **words, char *reply) {
             mat2.bid, mat2.meta, get_bid_name(buf2, mat2));
 }
 
+static void build_hollow(char **words, char *reply) {
+    int i,j,f;
+    int removed=0;
 
+    lh_arr_declare_i(blkr, keep);
+
+    for(i=0; i<C(build.plan); i++) {
+        blkr *b = P(build.plan)+i;
+        int nn=0; //number of adjacent blocks
+        for(f=0; f<6; f++) {
+            int32_t x = b->x + NOFF[f][0];
+            int32_t z = b->z + NOFF[f][1];
+            int32_t y = b->y + NOFF[f][2];
+
+            // check the list again to see if we have this neighbor in the plan
+            for(j=0; j<C(build.plan); j++) {
+                blkr *n = P(build.plan)+j;
+                if (x==n->x && z==n->z && y==n->y) {
+                    nn++;
+                    break;
+                }
+            }
+        }
+
+        if (nn<6) {
+            // this block is not completely surrounded and should be kept
+            blkr *k = lh_arr_new(GAR(keep));
+            *k = *b;
+        }
+        else
+            removed++;
+    }
+
+    lh_arr_free(BPLAN);
+    C(build.plan) = C(keep);
+    P(build.plan) = P(keep);
+
+    sprintf(reply, "Removed %d blocks, kept %zd", removed, C(build.plan));
+}
 
 
 
@@ -2273,6 +2311,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "replace")) {
         build_replace(words+2, reply);
+    }
+    else if (!strcmp(words[1], "hollow")) {
+        build_hollow(words+2, reply);
     }
 
     if (reply[0]) chat_message(reply, cq, "green", rpos);
