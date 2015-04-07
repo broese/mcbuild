@@ -674,6 +674,25 @@ void build_update() {
                     break;
             }
         }
+        else if (it->flags&I_ONWALL) {
+            switch(b->b.meta) {
+                case 2: //north
+                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE);
+                    break;
+                case 3: //south
+                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE);
+                    break;
+                case 4: //west
+                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE);
+                    break;
+                case 5: //east
+                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL);
+                    break;
+                default:
+                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
+                    break;
+            }
+        }
         else {
             // Blocks that don't have I_MPOS or not supported
             setdots(b, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL);

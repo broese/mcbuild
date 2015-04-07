@@ -100,10 +100,10 @@ const item_id ITEMS[] = {
     [0x3f] = { "Standing Sign", I_MPOS },                       // P: dir
 
     [0x40] = { "Wooden Door", I_MPOS|I_STATE },                 // P: dir, S: open/close
-    [0x41] = { "Ladder", I_MPOS },                              // P: dir
+    [0x41] = { "Ladder", I_MPOS|I_ONWALL },                     // P: dir
     [0x42] = { "Rail", I_MPOS },                                // P: dir
     [0x43] = { "Cobblestone Stairs", I_MPOS|I_STAIR },          // P: dir
-    [0x44] = { "Wall Sign", I_MPOS },                           // P: dir
+    [0x44] = { "Wall Sign", I_MPOS|I_ONWALL },                  // P: dir
     [0x45] = { "Lever", I_MPOS|I_STATE },                       // P: dir, S: up/down
     [0x46] = { "Stone Pressure Plate", I_STATE },               // S: pressed
     [0x47] = { "Iron Door", I_MPOS|I_STATE },                   // P: dir, S: open/close
@@ -227,7 +227,7 @@ const item_id ITEMS[] = {
                  "Rose Bush", "Peony", NULL, NULL }, },
 
     [0xb0] = { "Standing Banner", I_MPOS },                     // P: dir
-    [0xb1] = { "Wall Banner", I_MPOS },                         // P: dir
+    [0xb1] = { "Wall Banner", I_MPOS|I_ONWALL },                // P: dir
     [0xb2] = { "Inv. Daylight Sensor" },
     [0xb3] = { "Red Sandstone", I_MTYPE,
                { NULL, "Chiseled", "Smooth"} },
@@ -620,6 +620,13 @@ static uint8_t ROT_TORCH[][16] = {
     [DIR_WEST]  = { 0, 4, 3, 1, 2, 5 },
 };
 
+static uint8_t ROT_ONWALL[][16] = {
+    [DIR_NORTH] = { 0, 0, 2, 3, 4, 5 },
+    [DIR_SOUTH] = { 0, 0, 3, 2, 5, 4 },
+    [DIR_EAST]  = { 0, 0, 5, 4, 2, 3 },
+    [DIR_WEST]  = { 0, 0, 4, 5, 3, 2 },
+};
+
 // rotate block meta from north-orientation to dir-orientation
 bid_t meta_n2d(bid_t b, int dir) {
     const item_id *it = &ITEMS[b.bid];
@@ -634,6 +641,9 @@ bid_t meta_n2d(bid_t b, int dir) {
     }
     else if (it->flags&I_TORCH) { // torches
         b.meta = ROT_TORCH[dir][b.meta];
+    }
+    else if (it->flags&I_ONWALL) { // ladders/signs/banners on walls
+        b.meta = ROT_ONWALL[dir][b.meta];
     }
 
     //TODO: support for other I_MPOS blocks
