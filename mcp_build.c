@@ -18,7 +18,7 @@
 
 
 #define EYEHEIGHT 52
-#define YAWMARGIN 3
+#define YAWMARGIN 0.5
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
@@ -68,13 +68,13 @@ int calculate_yaw_pitch(fixp x, fixp z, fixp y, float *yaw, float *pitch) {
     if (*yaw < 45-YAWMARGIN || *yaw > 315+YAWMARGIN) {
         return DIR_SOUTH;
     }
-    else if (*yaw < 135-YAWMARGIN) {
+    else if (*yaw > 45+YAWMARGIN && *yaw < 135-YAWMARGIN) {
         return DIR_WEST;
     }
-    else if (*yaw < 225-YAWMARGIN) {
+    else if (*yaw > 135+YAWMARGIN && *yaw < 225-YAWMARGIN) {
         return DIR_NORTH;
     }
-    else if (*yaw < 315-YAWMARGIN) {
+    else if (*yaw > 225+YAWMARGIN && *yaw < 315-YAWMARGIN) {
         return DIR_EAST;
     }
 
@@ -830,10 +830,12 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         float yaw, pitch;
         int ldir = calculate_yaw_pitch(tx, tz, ty, &yaw, &pitch);
 
-        printf("Placing Block: %d,%d,%d (%s)  Face:%d Cursor:%d,%d,%d  "
+        printf("Placing Block: %d,%d,%d (%s)  On: %d,%d,%d  "
+               "Face:%d Cursor:%d,%d,%d  "
                "Player: %.1f,%.1f,%.1f  Dot: %.1f,%.1f,%.1f  "
                "Rot=%.2f,%.2f  Dir=%d (%s)\n",
                b->x,b->y,b->z, get_item_name(buf, hslot),
+               b->x+NOFF[face][0],b->z+NOFF[face][1],b->y+NOFF[face][2],
                face, cx, cy, cz,
                (float)gs.own.x/32, (float)(gs.own.y+EYEHEIGHT)/32, (float)gs.own.z/32,
                (float)b->x+(float)cx/16,(float)b->y+(float)cy/16,(float)b->z+(float)cz/16,
