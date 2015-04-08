@@ -779,9 +779,10 @@ static void choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz)
                     if (i<0) {
                         dotpos_t dotpos = DOTPOS[f];
                         *face = f;
-                        *cx = (dotpos.rx*dr+dotpos.cx*dc)/2;
-                        *cy = (dotpos.ry*dr+dotpos.cy*dc)/2;
-                        *cz = (dotpos.rz*dr+dotpos.cz*dc)/2;
+                        *cx = (dotpos.x+dotpos.rx*dr+dotpos.cx*dc)/2;
+                        *cy = (dotpos.y+dotpos.ry*dr+dotpos.cy*dc)/2;
+                        *cz = (dotpos.z+dotpos.rz*dr+dotpos.cz*dc)/2;
+                        //printf("face=%d dot=%d,%d, cur=%d,%d,%d\n",*face,dr,dc,*cx,*cy,*cz);
                         return;
                     }
                 }
