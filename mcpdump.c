@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <openssl/rand.h>
 
 #define LH_DECLARE_SHORT_NAMES 1
@@ -22,6 +23,39 @@
 #define STATE_PLAY     3
 
 static char * states = "ISLP";
+
+#define VIEWDIST (158<<5)
+#define THUNDERDIST (160000<<5)
+
+void track_remote_sounds(int32_t x, int32_t z, struct timeval tv) {
+    fixp dx = x - gs.own.x;
+    fixp dz = z - gs.own.z;
+    int32_t sqdist = dx*dx+dz*dz;
+
+    // thunder within view distance - ignore local thunder
+    if (sqdist < VIEWDIST*VIEWDIST) return;
+
+    float scale = (float)THUNDERDIST / sqrtf((float)sqdist);
+    fixp rx = (fixp)((float)dx*scale)+gs.own.x;
+    fixp rz = (fixp)((float)dz*scale)+gs.own.z;
+
+    // process output with ./mcpdump | egrep '^thunder' | sed 's/thunder: //' > output.csv
+    printf("thunder: %d,%d,%d,%d,%d\n",tv.tv_sec,gs.own.x>>5,gs.own.z>>5,rx>>5,rz>>5);
+}
+
+void mcpd_packet(MCPacket *pkt) {
+    switch (pkt->pid) {
+        case SP_SoundEffect: {
+            SP_SoundEffect_pkt *tpkt = (SP_SoundEffect_pkt *)&pkt->_SP_SoundEffect;
+            if (!strcmp(tpkt->name,"ambient.weather.thunder")) {
+                fixp tx = tpkt->x*4;
+                fixp tz = tpkt->z*4;
+                track_remote_sounds(tx, tz, pkt->ts);
+            }
+            break;
+        }
+    }
+}
 
 void parse_mcp(uint8_t *data, ssize_t size) {
     uint8_t *hdr = data;
@@ -70,6 +104,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
             pkt->ts.tv_usec = usec;
             dump_packet(pkt);
             gs_packet(pkt);
+            mcpd_packet(pkt);
             free_packet(pkt);
         }
 
