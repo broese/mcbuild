@@ -24,6 +24,7 @@ struct {
     int maxlevel;
     int holeradar;
     int build;
+    int antiafk;
 } opt;
 
 // loaded base locations - for thunder protection
@@ -268,6 +269,27 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Anti-AFK
+
+#define AFK_TIMEOUT 30000000
+
+uint64_t last_antiafk = 0;
+
+static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
+    uint64_t ts = gettimestamp();
+    if (ts - last_antiafk < AFK_TIMEOUT) return;
+
+    // don't interfere if the client already has a window open
+    if (gs.inv.windowopen) {
+        last_antiafk = ts;
+        return;
+    }
+
+    //TODO: implement a working AFK routine
+    //one possibility: put and break a torch
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
 
 void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {
@@ -329,6 +351,11 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
     else if (!strcmp(words[0],"ak") || !strcmp(words[0],"autokill")) {
         opt.autokill = !opt.autokill;
         sprintf(reply,"Autokill is %s",opt.autokill?"ON":"OFF");
+        rpos = 2;
+    }
+    else if (!strcmp(words[0],"afk") || !strcmp(words[0],"antiafk")) {
+        opt.antiafk = !opt.antiafk;
+        sprintf(reply,"Anti-AFK is %s",opt.antiafk?"ON":"OFF");
         rpos = 2;
     }
     else if (!strcmp(words[0],"coords")) {
@@ -566,6 +593,7 @@ void gm_reset() {
 
 void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (opt.autokill) autokill(sq);
+    if (opt.antiafk)  antiafk(sq, cq);
 
     build_progress(sq, cq);
 }
