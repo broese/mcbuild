@@ -17,7 +17,7 @@ ifeq ($(UNAME),Linux)
 endif
 
 
-all: mcproxy mcpdump nbttest argtest
+all: mcproxy mcpdump nbttest argtest tmap
 
 
 
@@ -34,9 +34,10 @@ argtest: mcp_arg.c
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS_LIBHELPER)
 
 varint: varint.c
-	$(CC) $(CFLAGS) $(INC) -o $@ $^ $(LIBS)
+	$(CC) $(CFLAGS) $(INC) $(DEFS) -o $@ $^ $(LIBS)
 
-
+tmap: thundermap.c
+	$(CC) $(CFLAGS) $(INC) $(DEFS) -o $@ $^ $(LIBS)
 
 .c.o:
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -o $@ -c $<
