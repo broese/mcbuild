@@ -99,6 +99,8 @@ typedef struct _gamestate {
         int16_t     pslots[256];
         int         pcount;
         int         ptype;
+
+        int         windowopen;         // nonzero if the client has an open window
     } inv;
 
     // tracked entities

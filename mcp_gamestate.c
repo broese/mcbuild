@@ -1093,6 +1093,9 @@ void gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(CP_ClickWindow) {
+            // set flag that the client has a window open right now
+            gs.inv.windowopen = 1;
+
             // ignore non-inventory windows - we will receive an explicit update
             // for those via SP_SetSlot messages after the window closes,
             // but the main inventory window (wid=0) needs to be tracked
@@ -1178,6 +1181,8 @@ void gs_packet(MCPacket *pkt) {
                 prune_slot(&gs.inv.slots[i]);
             }
 
+            gs.inv.windowopen = 0;
+
             break;
         }
     }
@@ -1199,6 +1204,7 @@ void gs_reset() {
     }
     // reset the currently dragged item to none
     gs.inv.drag.item = -1;
+    gs.inv.windowopen = 0;
 
     gs_used = 1;
 }
