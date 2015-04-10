@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdint.h>
+#include <sys/time.h>
 
 #include <lh_arr.h>
 
@@ -531,6 +532,8 @@ typedef struct {
 
     uint8_t * raw;      // raw packet data
     ssize_t   rawlen;
+
+    struct timeval ts;  // timestamp when the packet was recevied
 
     // various packet types depending on pid
     union {

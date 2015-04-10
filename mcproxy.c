@@ -412,7 +412,8 @@ void flush_queue(MCPacketQueue *q, lh_buf_t *qx) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
+void process_play_packet(int is_client, struct timeval ts,
+                         uint8_t *ptr, uint8_t *lim,
                          lh_buf_t *tx, lh_buf_t *bx) {
 
     char comp = ' ';
@@ -462,6 +463,7 @@ void process_play_packet(int is_client, uint8_t *ptr, uint8_t *lim,
         printf("Failed to decode packet\n");
         return;
     }
+    pkt->ts = ts;
 
     //TODO: enable compression if SP_SetCompression is received
 
@@ -572,11 +574,11 @@ ssize_t handle_proxy(lh_conn *conn) {
         ssize_t ll = p-rx->P(data); // length of the varint
         if (plen+ll > rx->C(data)) break; // packet is incomplete
 
+        struct timeval tv;
+        gettimeofday(&tv, NULL);
+
         if (mitm.output) {
             // write packet to the MCS file
-            struct timeval tv;
-            gettimeofday(&tv, NULL);
-
             uint8_t header[4096];
             uint8_t *hp = header;
             write_int(hp, is_client);
@@ -592,7 +594,7 @@ ssize_t handle_proxy(lh_conn *conn) {
         // data and/or responses into tx and bx buffers respectively as needed
         if ( mitm.state == STATE_PLAY )
             // PLAY packets are processed in mcp_game module
-            process_play_packet(is_client, p, p+plen, tx, bx);
+            process_play_packet(is_client, tv, p, p+plen, tx, bx);
             //write_packet_raw(p, plen, tx);
         else
             // handle IDLE, STATUS and LOGIN packets here

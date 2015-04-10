@@ -66,6 +66,8 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
         if (state == STATE_PLAY) {
             MCPacket *pkt = decode_packet(is_client, p, plen);
+            pkt->ts.tv_sec = sec;
+            pkt->ts.tv_usec = usec;
             dump_packet(pkt);
             gs_packet(pkt);
             free_packet(pkt);
