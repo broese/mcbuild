@@ -40,7 +40,7 @@ void track_remote_sounds(int32_t x, int32_t z, struct timeval tv) {
     fixp rz = (fixp)((float)dz*scale)+gs.own.z;
 
     // process output with ./mcpdump | egrep '^thunder' | sed 's/thunder: //' > output.csv
-    printf("thunder: %d,%d,%d,%d,%d\n",tv.tv_sec,gs.own.x>>5,gs.own.z>>5,rx>>5,rz>>5);
+    printf("thunder: %ld,%d,%d,%d,%d\n",tv.tv_sec,gs.own.x>>5,gs.own.z>>5,rx>>5,rz>>5);
 }
 
 void mcpd_packet(MCPacket *pkt) {
