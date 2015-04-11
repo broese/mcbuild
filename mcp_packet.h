@@ -131,7 +131,10 @@ void dump_slot(slot_t *s);
 void clear_slot(slot_t *s);
 slot_t * clone_slot(slot_t *src, slot_t *dst);
 
+////////////////////////////////////////////////////////////////////////////////
+// Misc
 
+int decode_chat_json(const char *json, char *name, char *message);
 
 
 

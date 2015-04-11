@@ -51,6 +51,26 @@ static uint8_t * write_string(uint8_t *w, const char *s) {
     return w;
 }
 
+int decode_chat_json(const char *json, char *name, char *message) {
+    if (strncmp(json, "{\"extra\":[\"\\u003c",17)) return 0;
+
+    const char *nptr = json+17;
+    const char *tptr = index(nptr, '\\');
+    if (tptr) {
+        strncpy(name, nptr, tptr-nptr);
+        name[tptr-nptr]=0;
+
+        const char * mptr = tptr+7;
+        tptr = index(mptr, '"');
+        if (tptr) {
+            strncpy(message, mptr, tptr-mptr);
+            message[tptr-mptr]=0;
+            return 1;
+        }
+    }
+    return 0;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
 
@@ -477,6 +497,11 @@ ENCODE_BEGIN(SP_ChatMessage,_1_8_1) {
 
 DUMP_BEGIN(SP_ChatMessage) {
     printf("json=%s",tpkt->json);
+
+    char name[256], message[256];
+    if (decode_chat_json(tpkt->json, name, message)) {
+        printf(" name=%s message=\"%s\"",name,message);
+    }
 } DUMP_END;
 
 FREE_BEGIN(SP_ChatMessage) {
