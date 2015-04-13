@@ -465,7 +465,12 @@ void process_play_packet(int is_client, struct timeval ts,
     }
     pkt->ts = ts;
 
-    //TODO: enable compression if SP_SetCompression is received
+    // Enable/update compression setting in Play state
+    if (pkt->pid == SP_SetCompression) {
+        mitm.comptr = pkt->_SP_SetCompression.threshold;
+        write_packet_raw(raw_ptr, raw_len, tx);
+        return;
+    }
 
 #if 0
     printf("MCPacket @%p:\n",pkt);
