@@ -154,6 +154,8 @@ static void free_chunks(gsworld *w) {
             lh_free(w->chunks[i]);
 
         lh_free(w->chunks);
+        w->Xs = 0;
+        w->Zs = 0;
     }
 }
 
