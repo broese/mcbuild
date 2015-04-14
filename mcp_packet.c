@@ -1389,6 +1389,14 @@ void decode_handshake(CI_Handshake_pkt *tpkt, uint8_t *p) {
     Pvarint(nextState);
 }
 
+uint8_t * encode_handshake(CI_Handshake_pkt *tpkt, uint8_t *w) {
+    Wvarint(protocolVer);
+    Wstr(serverAddr);
+    Wshort(serverPort);
+    Wvarint(nextState);
+    return w;
+}
+
 void decode_encryption_request(SL_EncryptionRequest_pkt *tpkt, uint8_t *p) {
     Pstr(serverID);
     Pvarint(klen);

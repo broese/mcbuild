@@ -509,6 +509,7 @@ typedef struct {
 } CL_EncryptionResponse_pkt;
 
 void decode_handshake(CI_Handshake_pkt *tpkt, uint8_t *p);
+uint8_t * encode_handshake(CI_Handshake_pkt *tpkt, uint8_t *w);
 void decode_encryption_request(SL_EncryptionRequest_pkt *tpkt, uint8_t *p);
 void decode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *p);
 
