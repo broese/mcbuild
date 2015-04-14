@@ -136,6 +136,10 @@ struct {
     int comptr; // compression threshold, -1 means compression is disabled
 } mitm;
 
+char server_addr[1024]; // server address to connect to, dotted IP or domain name
+uint32_t server_ip;     // resolved server IP address
+uint16_t server_port;   // server port
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void write_packet_raw(uint8_t *ptr, ssize_t len, lh_buf_t *buf) {
@@ -1093,12 +1097,15 @@ int main(int ac, char **av) {
 
     // if an argument is specified - it's the server address we want to
     // forward connections to, otherwise - 2b2t.org
-    uint32_t server_ip = lh_dns_addr_ipv4(av[1]?av[1]:SERVER_ADDR);
+    sprintf(server_addr, "%s", av[1]?av[1]:SERVER_ADDR);
+    server_port = SERVER_PORT; //TODO: make possible to specify server port
+
+    server_ip = lh_dns_addr_ipv4(server_addr);
     if (server_ip == 0xffffffff)
-        LH_ERROR(-1, "Failed to obtain IP address for the server %s",SERVER_ADDR);
+        LH_ERROR(-1, "Failed to obtain IP address for the server %s",server_addr);
 
     // start monitoring connection events
-    proxy_pump(server_ip, SERVER_PORT);
+    proxy_pump(server_ip, server_port);
 
     // cleanup openssl and curl
     ERR_remove_state(getpid());
