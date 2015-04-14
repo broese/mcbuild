@@ -319,7 +319,16 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
             mitm.state = pkt.nextState;
             printf("C %-30s protocol=%d server=%s:%d nextState=%d\n","Handshake",
                    pkt.protocolVer,pkt.serverAddr,pkt.serverPort,pkt.nextState);
-            write_packet_raw(ptr, len, tx);
+
+            // replace the server address in the message with our proper server
+            // some servers refuse to accept connections for "127.0.0.1"
+            sprintf(pkt.serverAddr, "%s", server_addr);
+            pkt.serverPort = server_port;
+
+            write_varint(w, PID(CI_Handshake));
+            w = encode_handshake(&pkt, w);
+            write_packet_raw(output, w-output, tx);
+
             break;
         }
 
