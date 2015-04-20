@@ -7,7 +7,8 @@
 
 #define LH_DECLARE_SHORT_NAMES 1
 
-#include "lh_bytes.h"
+#include <lh_bytes.h>
+#include <lh_debug.h>
 
 #include "mcp_ids.h"
 #include "mcp_gamestate.h"
@@ -272,11 +273,14 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
 ////////////////////////////////////////////////////////////////////////////////
 // Anti-AFK
 
-#define AFK_TIMEOUT 30000000
+#define AFK_TIMEOUT 10000000LL
 
 uint64_t last_antiafk = 0;
 
 static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
+    char reply[256], bname[256];
+    reply[0] = 0;
+
     uint64_t ts = gettimestamp();
     if (ts - last_antiafk < AFK_TIMEOUT) return;
 
@@ -286,8 +290,57 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
         return;
     }
 
-    //TODO: implement a working AFK routine
-    //one possibility: put and break a torch
+    int x=gs.own.x>>5;
+    int y=gs.own.y>>5;
+    int z=gs.own.z>>5;
+
+    bid_t world[256];
+    export_cuboid(x>>4,1,z>>4,1,y,1,world);
+
+    bid_t b = world[(x&15)+(z&15)*16];
+
+    if (b.raw != 0) {
+        sprintf(reply,"Anti-AFK: please remove any blocks at your feet (%d,%d/%d), found %s",
+                x,z,y,get_bid_name(bname,b));
+        goto sendreply;
+    }
+
+    int tslot = prefetch_material(sq, cq, BLOCKTYPE(0x32,0) );
+    if (tslot<0) {
+        sprintf(reply,"Anti-AFK: you need to have torches in your inventory");
+        goto sendreply;
+    }
+
+    int held=gs.inv.held;
+    gmi_change_held(sq, cq, tslot, 0);
+    slot_t * hslot = &gs.inv.slots[tslot+36];
+
+    // place torch
+    NEWPACKET(CP_PlayerBlockPlacement, pbp);
+    tpbp->bpos.x = x;
+    tpbp->bpos.z = z;
+    tpbp->bpos.y = y-1;
+    tpbp->face   = 1;
+    tpbp->cx     = 8;
+    tpbp->cy     = 16;
+    tpbp->cz     = 8;
+    queue_packet(pbp,sq);
+    dump_packet(pbp);
+
+    // Wave arm
+    NEWPACKET(CP_Animation, anim);
+    queue_packet(anim, sq);
+
+    // switch back to whatever the client was holding
+    if (held != gs.inv.held)
+        gmi_change_held(sq, cq, held, 0);
+
+ sendreply:
+    if (reply[0])
+        chat_message(reply, cq, "gold", 0);
+
+    last_antiafk = ts;
+    return;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
