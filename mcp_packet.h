@@ -432,6 +432,13 @@ typedef struct {
     uint8_t onground;
 } CP_PlayerPositionLook_pkt;
 
+// 0x07
+typedef struct {
+    uint8_t status;
+    pos_t   loc;
+    uint8_t face;
+} CP_PlayerDigging_pkt;
+
 // 0x08
 typedef struct {
     pos_t   bpos;
@@ -578,6 +585,7 @@ typedef struct {
         PKT(CP_PlayerPosition);
         PKT(CP_PlayerLook);
         PKT(CP_PlayerPositionLook);
+        PKT(CP_PlayerDigging);
         PKT(CP_PlayerBlockPlacement);
         PKT(CP_HeldItemChange);
         PKT(CP_Animation);

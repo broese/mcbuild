@@ -1198,6 +1198,26 @@ DUMP_BEGIN(CP_PlayerPositionLook) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x07 CP_PlayerDigging
+
+DECODE_BEGIN(CP_PlayerDigging,_1_8_1) {
+    Pchar(status);
+    Plong(loc.p);
+    Pchar(face);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_PlayerDigging,_1_8_1) {
+    Wchar(status);
+    Wlong(loc.p);
+    Wchar(face);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_PlayerDigging) {
+    printf("status=%d, location=%d,%d,%d, face=%d",
+           tpkt->status, tpkt->loc.x, tpkt->loc.y, tpkt->loc.z, tpkt->face);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x08 CP_PlayerBlockPlacement
 
 DECODE_BEGIN(CP_PlayerBlockPlacement,_1_8_1) {
@@ -1367,6 +1387,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),
         SUPPORT_DE  (CP_PlayerLook,_1_8_1),
         SUPPORT_D   (CP_PlayerPositionLook,_1_8_1),
+        SUPPORT_DE  (CP_PlayerDigging,_1_8_1),
         SUPPORT_DEF (CP_PlayerBlockPlacement,_1_8_1),
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
