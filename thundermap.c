@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <math.h>
 #include <errno.h>
 
 #include <lh_files.h>
@@ -9,12 +10,14 @@
 #include <lh_image.h>
 
 #define SEPINT 300
-#define WD 1024
-#define HG 1024
+#define SZ 12
+#define WD (1<<SZ)
+#define HG (1<<SZ)
 #define OFFX (WD/2)
 #define OFFZ (HG/2)
 
-float img[WD][HG], layer[WD][HG];
+float img[WD][HG];
+uint8_t layer[WD][HG];
 int init=0;
 
 void flush_layer() {
@@ -24,20 +27,19 @@ void flush_layer() {
         // init the image for the first time
         for(z=0; z<HG; z++)
             for(x=0; x<WD; x++)
-                img[x][z] = 1.0;
+                img[x][z] = 0.0;
         init=1;
     }
-    else {
-        // merge layer onto image by multiplication
-        for(z=0; z<HG; z++)
-            for(x=0; x<WD; x++)
-                img[x][z] += layer[x][z];
-    }
+
+    for(z=0; z<HG; z++)
+        for(x=0; x<WD; x++)
+            if (layer[x][z])
+                img[x][z] += 1.0;
 
     // re-initialze layer
     for(z=0; z<HG; z++)
         for(x=0; x<WD; x++)
-            layer[x][z] = 1.0;
+            layer[x][z] = 0;
 }
 
 void draw_line(int32_t px, int32_t pz, int32_t rx, int32_t rz) {
@@ -67,7 +69,7 @@ void draw_line(int32_t px, int32_t pz, int32_t rx, int32_t rz) {
 
     // note - we don't set the first dot, to avoid concentrations at the observation points
     //TODO: maybe skip a certain amount of the first dots?
-    while (px!=rx && pz!=rz) {
+    while (1) {
         *m += ms; // always walk in the major direction
         q-=nv;
         if (q<=0) {
@@ -78,9 +80,11 @@ void draw_line(int32_t px, int32_t pz, int32_t rx, int32_t rz) {
         if ((px+OFFX)>=WD || (px+OFFX)<0) break;
         if ((pz+OFFZ)>=HG || (pz+OFFZ)<0) break;
 
-        layer[px+OFFX][pz+OFFZ] += 1.0;
+        layer[px+OFFX][pz+OFFZ] = 1;
     }
 }
+
+#define REGSIZE 8
 
 int main(int ac, char **av) {
     if (!av[1]) {
@@ -96,6 +100,7 @@ int main(int ac, char **av) {
 
     int line = 0;
     time_t last_ts = 0;
+    int32_t last_px, last_pz;
 
     while (!feof(fh)) {
         char buf[256];
@@ -109,10 +114,11 @@ int main(int ac, char **av) {
             continue;
         }
 
-        if (ts>last_ts+SEPINT) flush_layer();
-        last_ts = ts;
+        if ((px>>REGSIZE)!=last_px && (pz>>REGSIZE)!=last_pz ) flush_layer();
+        last_px = px>>REGSIZE;
+        last_pz = pz>>REGSIZE;
 
-        draw_line(px>>9,pz>>9,rx>>9,rz>>9);
+        draw_line(px>>REGSIZE,pz>>REGSIZE,rx>>REGSIZE,rz>>REGSIZE);
     }
     flush_layer();
 
@@ -121,15 +127,18 @@ int main(int ac, char **av) {
     // calculate maximum - for the color scaling
     float maxval = 0.0;
     for(z=0; z<HG; z++)
-        for(x=0; x<WD; x++)
-            if (img[x][z] > maxval)
-                maxval = img[x][z];
+        for(x=0; x<WD; x++) {
+            if (img[x][z] < 1.0) continue;
+            if ((img[x][z]) > maxval)
+                maxval = (img[x][z]);
+        }
 
     // convert to image
     lhimage *image = allocate_image(WD,HG,-1);
     for(z=0; z<HG; z++)
         for(x=0; x<WD; x++) {
-            unsigned char level = (unsigned char)(255*img[x][z]/maxval);
+            uint32_t level = (img[x][z]<1.0) ? 0 :
+                (unsigned char)(255*(img[x][z])/maxval)*0x010101;
             IMGDOT(image,x,z) = level;
         }
     //TODO: draw axis and gridlines
