@@ -272,7 +272,7 @@ static int find_material_slot(bid_t mat) {
 }
 
 // fetch necessary material to the quickbar
-static int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
+int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
     int mslot = find_material_slot(mat);
 
     if (mslot<0) return -1; // material not available in the inventory
