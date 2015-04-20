@@ -273,7 +273,7 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
 ////////////////////////////////////////////////////////////////////////////////
 // Anti-AFK
 
-#define AFK_TIMEOUT 10000000LL
+#define AFK_TIMEOUT 300*1000000LL
 
 uint64_t last_antiafk = 0;
 
@@ -299,43 +299,57 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
 
     bid_t b = world[(x&15)+(z&15)*16];
 
-    if (b.raw != 0) {
+    if (b.bid == 0x32) {
+        // We have the torch at our feet - break it
+        NEWPACKET(CP_PlayerDigging, pd);
+        tpd->status = 0;
+        tpd->loc.x  = x;
+        tpd->loc.y  = y;
+        tpd->loc.z  = z;
+        tpd->face   = 1;
+        queue_packet(pd,sq);
+
+        // Wave arm
+        NEWPACKET(CP_Animation, anim);
+        queue_packet(anim, sq);
+    }
+    else if (b.raw != 0) {
+        // Something else at our feet - cannot continue
         sprintf(reply,"Anti-AFK: please remove any blocks at your feet (%d,%d/%d), found %s",
                 x,z,y,get_bid_name(bname,b));
-        goto sendreply;
+    }
+    else {
+        // Empty spot - place a torch
+        int tslot = prefetch_material(sq, cq, BLOCKTYPE(0x32,0) );
+        if (tslot<0) {
+            sprintf(reply,"Anti-AFK: you need to have torches in your inventory");
+        }
+        else {
+            int held=gs.inv.held;
+            gmi_change_held(sq, cq, tslot, 0);
+
+            // place torch
+            NEWPACKET(CP_PlayerBlockPlacement, pbp);
+            tpbp->bpos.x = x;
+            tpbp->bpos.z = z;
+            tpbp->bpos.y = y-1;
+            tpbp->face   = 1;
+            tpbp->cx     = 8;
+            tpbp->cy     = 16;
+            tpbp->cz     = 8;
+            queue_packet(pbp,sq);
+            dump_packet(pbp);
+
+            // Wave arm
+            NEWPACKET(CP_Animation, anim);
+            queue_packet(anim, sq);
+
+            // switch back to whatever the client was holding
+            if (held != gs.inv.held)
+                gmi_change_held(sq, cq, held, 0);
+        }
     }
 
-    int tslot = prefetch_material(sq, cq, BLOCKTYPE(0x32,0) );
-    if (tslot<0) {
-        sprintf(reply,"Anti-AFK: you need to have torches in your inventory");
-        goto sendreply;
-    }
-
-    int held=gs.inv.held;
-    gmi_change_held(sq, cq, tslot, 0);
-    slot_t * hslot = &gs.inv.slots[tslot+36];
-
-    // place torch
-    NEWPACKET(CP_PlayerBlockPlacement, pbp);
-    tpbp->bpos.x = x;
-    tpbp->bpos.z = z;
-    tpbp->bpos.y = y-1;
-    tpbp->face   = 1;
-    tpbp->cx     = 8;
-    tpbp->cy     = 16;
-    tpbp->cz     = 8;
-    queue_packet(pbp,sq);
-    dump_packet(pbp);
-
-    // Wave arm
-    NEWPACKET(CP_Animation, anim);
-    queue_packet(anim, sq);
-
-    // switch back to whatever the client was holding
-    if (held != gs.inv.held)
-        gmi_change_held(sq, cq, held, 0);
-
- sendreply:
     if (reply[0])
         chat_message(reply, cq, "gold", 0);
 
