@@ -658,7 +658,7 @@ DUMP_BEGIN(SP_SpawnMob) {
            (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
            (float)tpkt->yaw/256,(float)tpkt->pitch/256,(float)tpkt->headpitch/256,
            tpkt->vx,tpkt->vy,tpkt->vz);
-    dump_metadata(tpkt->meta, LivingEntity);
+    dump_metadata(tpkt->meta, tpkt->mobtype);
 } DUMP_END;
 
 FREE_BEGIN(SP_SpawnMob) {
