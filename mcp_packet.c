@@ -832,6 +832,26 @@ DUMP_BEGIN(SP_EntityTeleport) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x1c SP_EntityMetadata
+
+DECODE_BEGIN(SP_EntityMetadata,_1_8_1) {
+    Pvarint(eid);
+    Pmeta(meta);
+} DECODE_END;
+
+DUMP_BEGIN(SP_EntityMetadata) {
+    char buf[256];
+    printf("eid=%08x", tpkt->eid);
+
+    // unfortunately we don't have access to proper entity type here
+    dump_metadata(tpkt->meta, Entity);
+} DUMP_END;
+
+FREE_BEGIN(SP_EntityMetadata) {
+    free(tpkt->meta);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x1f SP_SetExperience
 
 DECODE_BEGIN(SP_SetExperience,_1_8_1) {
@@ -1382,6 +1402,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityLook,_1_8_1),
         SUPPORT_D   (SP_EntityLookRelMove,_1_8_1),
         SUPPORT_D   (SP_EntityTeleport,_1_8_1),
+        SUPPORT_DF  (SP_EntityMetadata,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
         SUPPORT_DF  (SP_ChunkData,_1_8_1),
         SUPPORT_DF  (SP_MultiBlockChange,_1_8_1),

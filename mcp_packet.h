@@ -309,6 +309,12 @@ typedef struct {
     uint8_t  onground;
 } SP_EntityTeleport_pkt;
 
+// 0x1c
+typedef struct {
+    uint32_t eid;
+    metadata *meta;
+} SP_EntityMetadata_pkt;
+
 // 0x1f
 typedef struct {
     float    bar;   // state of the experience bar
@@ -569,6 +575,7 @@ typedef struct {
         PKT(SP_EntityLook);
         PKT(SP_EntityLookRelMove);
         PKT(SP_EntityTeleport);
+        PKT(SP_EntityMetadata);
         PKT(SP_SetExperience);
         PKT(SP_ChunkData);
         PKT(SP_MultiBlockChange);
