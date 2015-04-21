@@ -236,43 +236,71 @@ extern const char ** DIRNAME;
 // Entity Metadata
 
 typedef enum {
-    IllegalEntityType = -1,
-    Entity = 0,
-    LivingEntity,
-    Ageable,
-    ArmorStand,
-    Human,
-    Horse,
-    Bat,
-    Tameable,
-    Ocelot,
-    Wolf,
-    Pig,
-    Rabbit,
-    Sheep,
-    Villager,
-    Enderman,
-    Zombie,
-    ZombiePigman,
-    Blaze,
-    Spider,
-    CaveSpider,
-    Creeper,
-    Ghast,
-    Slime,
-    MagmaCube,
-    Skeleton,
-    Witch,
-    IronGolem,
-    Wither,
-    Boat,
-    Minecart,
-    FurnaceMinecart,
-    Item,
-    Arrow,
-    Firework,
-    ItemFrame,
-    EnderCrystal,
+    //// Superclasses
+    IllegalEntityType   = -1,
+    Entity              = 0,
+    LivingEntity        = 1,
+    Ageable             = 2,
+    Human               = 3,
+    Tameable            = 4,
+    Item                = 5,
+    Firework            = 6,
+    Mob                 = 48,
+    Monster             = 49,
+
+
+    //// Mobs
+    Creeper             = 50,
+    Skeleton            = 51,
+    Spider              = 52,
+    GiantZombie         = 53,
+    Zombie              = 54,
+    Slime               = 55,
+    Ghast               = 56,
+    ZombiePigman        = 57,
+    Enderman            = 58,
+    CaveSpider          = 59,
+
+    Silverfish          = 60,
+    Blaze               = 61,
+    MagmaCube           = 62,
+    Enderdragon         = 63,
+    Wither              = 64,
+    Bat                 = 65,
+    Witch               = 66,
+    Endermite           = 67,
+    Guardian            = 68,
+
+    Pig                 = 90,
+    Sheep               = 91,
+    Cow                 = 92,
+    Chicken             = 93,
+    Squid               = 94,
+    Wolf                = 95,
+    Mooshroom           = 96,
+    Snowman             = 97,
+    Ocelot              = 98,
+    IronGolem           = 99,
+
+    Horse               = 100,
+    Rabbit              = 101,
+
+    Villager            = 120,
+
+    //// Objects
+    Boat                = 1 +256,
+    ItemStack           = 2 +256,
+    Minecart            = 10+256,
+    ChestMinecart       = 11+256, // deprecated since 1.6
+    FurnaceMinecart     = 12+256, // deprecated since 1.6
+    EnderCrystal        = 51+256,
+    Arrow               = 60+256,
+    ItemFrame           = 71+256,
+    ArmorStand          = 78+256,
+    //TODO: other objects
+
+    //// Terminating ID
+    MaxEntityType       = 512,
 } EntityType;
 
 extern const char * METANAME[][32];
