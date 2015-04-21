@@ -946,6 +946,27 @@ void gs_packet(MCPacket *pkt) {
             e->z = tpkt->z;
         } _GSP;
 
+        GSP(SP_EntityMetadata) {
+            int idx = find_entity(tpkt->eid);
+            if (idx<0) break;
+            entity *e = P(gs.entity)+idx;
+
+            if (!e->mdata) {
+                e->mdata = clone_metadata(tpkt->meta);
+            }
+            else {
+                int i;
+                for(i=0; i<32; i++) {
+                    if (tpkt->meta[i].h != 0x7f) {
+                        if (e->type == META_SLOT && e->mdata[i].slot.nbt)
+                            nbt_free(e->mdata[i].slot.nbt);
+                        e->mdata[i] = tpkt->meta[i];
+                        e->mdata[i].slot.nbt = nbt_clone(tpkt->meta[i].slot.nbt);
+                    }
+                }
+            }
+        } _GSP;
+
         ////////////////////////////////////////////////////////////////
         // Player coordinates
 
