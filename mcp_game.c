@@ -27,6 +27,7 @@ struct {
     int build;
     int antiafk;
     int antispam;
+    int autoshear;
 } opt;
 
 // loaded base locations - for thunder protection
@@ -108,6 +109,73 @@ static void autokill(MCPacketQueue *sq) {
         NEWPACKET(CP_UseEntity, atk);
         tatk->target = e->id;
         tatk->action = 1; // attack
+        queue_packet(atk, sq);
+
+        // Wave arm
+        NEWPACKET(CP_Animation, anim);
+        queue_packet(anim, sq);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Autoshear
+
+// use same constants from Autokill
+
+uint64_t last_autoshear = 0;
+
+static void autoshear(MCPacketQueue *sq) {
+    // player must hold shears as active item
+    slot_t * islot = &gs.inv.slots[gs.inv.held+36];
+    if (islot->item != 359) return;
+
+    // skip if we used autoshear less than MIN_ATTACK_DELAY us ago
+    uint64_t ts = gettimestamp();
+    if ((ts-last_autoshear)<MIN_ATTACK_DELAY) return;
+
+    // calculate list of usable entities in range
+    uint32_t hent[MAX_ENTITIES];
+
+    int i,j,hi=0;
+    for(i=0; i<C(gs.entity) && hi<MAX_ENTITIES; i++) {
+        entity *e = P(gs.entity)+i;
+
+        // check if the entity is a sheep
+        if (e->mtype != Sheep) continue;
+
+        // access entity metadata to see if the sheep is sheared or not
+        assert(e->mdata);
+        int sheared = 1;
+        for(j=0; e->mdata[j].h != 0x7f; j++) {
+            if (e->mdata[j].key == 16) { // Sheep wool color/state
+                assert(e->mdata[j].type == META_BYTE);
+                sheared = (e->mdata[j].b >= 0x10);
+                break;
+            }
+        }
+        if (sheared) continue;
+
+        // skip entities we hit only recently
+        if ((ts-e->lasthit) < MIN_ENTITY_DELAY) continue;
+
+        // only take entities that are within our reach
+        int sd = mydist(e->x, e->y, e->z) >> 10;
+        if (sd<=SQ(REACH_RANGE))
+            hent[hi++] = i;
+    }
+    //TODO: check for obstruction
+
+    for(i=0; i<hi && i<MAX_ATTACK; i++) {
+        entity *e = P(gs.entity)+hent[i];
+        printf("Shearing entity %08x\n",e->id);
+
+        e->lasthit = ts;
+        last_autoshear = ts;
+
+        // Shear entity
+        NEWPACKET(CP_UseEntity, atk);
+        tatk->target = e->id;
+        tatk->action = 0; // interact
         queue_packet(atk, sq);
 
         // Wave arm
@@ -426,6 +494,11 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"Anti-AFK is %s",opt.antiafk?"ON":"OFF");
         rpos = 2;
     }
+    else if (!strcmp(words[0],"ash") || !strcmp(words[0],"autoshear")) {
+        opt.autoshear = !opt.autoshear;
+        sprintf(reply,"Autoshear is %s",opt.autoshear?"ON":"OFF");
+        rpos = 2;
+    }
     else if (!strcmp(words[0],"as") || !strcmp(words[0],"antispam")) {
         opt.antispam = !opt.antispam;
         sprintf(reply,"Antispam filter is %s",opt.antispam?"ON":"OFF");
@@ -687,6 +760,7 @@ void gm_reset() {
 void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (opt.autokill) autokill(sq);
     if (opt.antiafk)  antiafk(sq, cq);
+    if (opt.autoshear) autoshear(sq);
 
     build_progress(sq, cq);
 }
