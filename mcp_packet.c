@@ -146,6 +146,19 @@ static void dump_metadata(metadata *meta, EntityType et) {
     }
 }
 
+metadata * clone_metadata(metadata *meta) {
+    if (!meta) return NULL;
+
+    int i;
+    // count the number of elements in the array
+    for (i=0; meta[i].h !=0x7f; i++);
+
+    lh_create_num(metadata, newmeta, lh_align(i+1,4));
+    memmove(newmeta, meta, lh_align(i+1,4)*sizeof(metadata));
+
+    return newmeta;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Map Chunk
 
