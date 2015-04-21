@@ -81,11 +81,24 @@ static uint8_t * read_metadata(uint8_t *p, metadata **meta) {
     assert(!*meta);
     ssize_t mc = 0;
 
-    while(1) {
-        // allocate next key-value pair, it can become a terminator if we parse 0x7f
-        metadata *mm = lh_arr_new_c(*meta, mc, 4);
-        mm->h = lh_read_char(p);
-        if (mm->h == 0x7f) break; // terminator
+    // allocate a whole set of 32 values
+    lh_alloc_num(*meta, 32);
+    metadata *m = *meta;
+
+    int i;
+
+    // mark all entries as not present - we use the same 0x7f value
+    // that Mojang uses as terminator
+    for(i=0; i<32; i++) m[i].h = 0x7f;
+
+    while (1) {
+        uint8_t kv = read_char(p);
+        if (kv == 0x7f) break; // terminator
+
+        uint8_t k = kv&31;
+        uint8_t type = (kv>>5)&7;
+        metadata *mm = &m[k];
+        mm->h = kv;
 
         switch (mm->type) {
             case META_BYTE:   mm->b = read_char(p);    break;
@@ -114,25 +127,20 @@ static void dump_metadata(metadata *meta, EntityType et) {
     if (!meta) return;
 
     int i;
-    for (i=0; meta[i].h !=0x7f; i++) {
+    for (i=0; i<32; i++) {
         metadata *mm = meta+i;
+        if (mm->h==0x7f) continue;
+
         printf("\n    ");
 
         const char * name = NULL;
         EntityType ett = et;
-        //printf("key:%d\n",mm->key);
         while ((!name) && (ett!=IllegalEntityType)) {
-            //printf("      et=%d\n",et);
             name = METANAME[ett][mm->key];
             ett = ENTITY_HIERARCHY[ett];
         }
 
-        if (name)
-            printf("%-24s ",name);
-        else
-            printf("Unknown(%2d)              ", mm->key);
-
-        printf("[%-6s] = ",METATYPES[mm->type]);
+        printf("%2d %-24s [%-6s] = ", mm->key, name?name:"Unknown",METATYPES[mm->type]);
         switch (mm->type) {
             case META_BYTE:   printf("%d",  mm->b);   break;
             case META_SHORT:  printf("%d",  mm->s);   break;
@@ -150,14 +158,9 @@ static void dump_metadata(metadata *meta, EntityType et) {
 
 metadata * clone_metadata(metadata *meta) {
     if (!meta) return NULL;
-
+    lh_create_num(metadata, newmeta, 32);
+    memmove(newmeta, meta, 32*sizeof(metadata));
     int i;
-    // count the number of elements in the array
-    for (i=0; meta[i].h !=0x7f; i++);
-
-    lh_create_num(metadata, newmeta, lh_align(i+1,4));
-    memmove(newmeta, meta, lh_align(i+1,4)*sizeof(metadata));
-
     for(i=0; i<32; i++)
         if (newmeta[i].type == META_SLOT && newmeta[i].slot.nbt)
             newmeta[i].slot.nbt = nbt_clone(newmeta[i].slot.nbt);
