@@ -25,6 +25,20 @@ typedef struct {
 } pos_t;
 
 ////////////////////////////////////////////////////////////////////////////////
+// Slots and inventory
+
+typedef struct {
+    int16_t item;
+    int16_t count;  // actually int8_t, but we need to have a larger capacity to deal with crafting
+    int16_t damage;
+    nbt_t   *nbt;   // auxiliary data - enchantments etc.
+} slot_t;
+
+void dump_slot(slot_t *s);
+void clear_slot(slot_t *s);
+slot_t * clone_slot(slot_t *src, slot_t *dst);
+
+////////////////////////////////////////////////////////////////////////////////
 // Metadata
 
 // single metadata key-value pair
@@ -42,7 +56,7 @@ typedef struct {
         int32_t i;
         float   f;
         char    str[256];
-        //TODO: slot;
+        slot_t  slot;
         struct {
             int32_t x;
             int32_t y;
@@ -118,20 +132,6 @@ typedef struct {
 typedef struct {
     int8_t dx,dy,dz;
 } boff_t;
-
-////////////////////////////////////////////////////////////////////////////////
-// Slots and inventory
-
-typedef struct {
-    int16_t item;
-    int16_t count;  // actually int8_t, but we need to have a larger capacity to deal with crafting
-    int16_t damage;
-    nbt_t   *nbt;   // auxiliary data - enchantments etc.
-} slot_t;
-
-void dump_slot(slot_t *s);
-void clear_slot(slot_t *s);
-slot_t * clone_slot(slot_t *src, slot_t *dst);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Misc
