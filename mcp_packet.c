@@ -74,6 +74,8 @@ int decode_chat_json(const char *json, char *name, char *message) {
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
 
+static uint8_t * read_slot(uint8_t *p, slot_t *s);
+
 static uint8_t * read_metadata(uint8_t *p, metadata **meta) {
     assert(meta);
     assert(!*meta);
@@ -91,7 +93,7 @@ static uint8_t * read_metadata(uint8_t *p, metadata **meta) {
             case META_INT:    mm->i = read_int(p);     break;
             case META_FLOAT:  mm->f = read_float(p);   break;
             case META_STRING: p = read_string(p,mm->str); break;
-            case META_SLOT:   assert(0); break;
+            case META_SLOT:   p = read_slot(p,&mm->slot); break;
             case META_COORD:
                 mm->x = read_int(p);
                 mm->y = read_int(p);
@@ -137,7 +139,7 @@ static void dump_metadata(metadata *meta, EntityType et) {
             case META_INT:    printf("%d",  mm->i);   break;
             case META_FLOAT:  printf("%.1f",mm->f);   break;
             case META_STRING: printf("\"%s\"", mm->str); break;
-            case META_SLOT:   assert(0); break;
+            case META_SLOT:   dump_slot(&mm->slot); break;
             case META_COORD:
                 printf("(%d,%d,%d)",mm->x,mm->y,mm->z); break;
             case META_ROT:
@@ -156,6 +158,9 @@ metadata * clone_metadata(metadata *meta) {
     lh_create_num(metadata, newmeta, lh_align(i+1,4));
     memmove(newmeta, meta, lh_align(i+1,4)*sizeof(metadata));
 
+    for(i=0; i<32; i++)
+        if (newmeta[i].type == META_SLOT && newmeta[i].slot.nbt)
+            newmeta[i].slot.nbt = nbt_clone(newmeta[i].slot.nbt);
     return newmeta;
 }
 
@@ -622,6 +627,10 @@ DUMP_BEGIN(SP_SpawnPlayer) {
 } DUMP_END;
 
 FREE_BEGIN(SP_SpawnPlayer) {
+    int i;
+    for(i=0; i<32; i++)
+        if (tpkt->meta[i].type == META_SLOT && tpkt->meta[i].slot.nbt)
+            nbt_free(tpkt->meta[i].slot.nbt);
     free(tpkt->meta);
 } FREE_END;
 
@@ -675,6 +684,10 @@ DUMP_BEGIN(SP_SpawnMob) {
 } DUMP_END;
 
 FREE_BEGIN(SP_SpawnMob) {
+    int i;
+    for(i=0; i<32; i++)
+        if (tpkt->meta[i].type == META_SLOT && tpkt->meta[i].slot.nbt)
+            nbt_free(tpkt->meta[i].slot.nbt);
     free(tpkt->meta);
 } FREE_END;
 
@@ -848,6 +861,10 @@ DUMP_BEGIN(SP_EntityMetadata) {
 } DUMP_END;
 
 FREE_BEGIN(SP_EntityMetadata) {
+    int i;
+    for(i=0; i<32; i++)
+        if (tpkt->meta[i].type == META_SLOT && tpkt->meta[i].slot.nbt)
+            nbt_free(tpkt->meta[i].slot.nbt);
     free(tpkt->meta);
 } FREE_END;
 
