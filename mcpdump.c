@@ -104,7 +104,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
             pkt->ts.tv_usec = usec;
             dump_packet(pkt);
             gs_packet(pkt);
-            mcpd_packet(pkt);
+            //mcpd_packet(pkt);
             free_packet(pkt);
         }
 

@@ -305,6 +305,8 @@ typedef enum {
 
 extern const char * METANAME[][32];
 extern const EntityType ENTITY_HIERARCHY[];
+extern const char * ENTITY_NAMES[];
+const char * get_entity_name(char *buf, EntityType type);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata

@@ -848,6 +848,57 @@ const EntityType ENTITY_HIERARCHY[] = {
     [EnderCrystal]    = Entity,
 };
 
+#define ENUMNAME(name) [name] = #name
+
+const char * ENTITY_NAMES[MaxEntityType] = {
+    ENUMNAME(Creeper),
+    ENUMNAME(Skeleton),
+    ENUMNAME(Spider),
+    ENUMNAME(GiantZombie),
+    ENUMNAME(Zombie),
+    ENUMNAME(Slime),
+    ENUMNAME(Ghast),
+    ENUMNAME(ZombiePigman),
+    ENUMNAME(Enderman),
+    ENUMNAME(CaveSpider),
+    ENUMNAME(Silverfish),
+    ENUMNAME(Blaze),
+    ENUMNAME(MagmaCube),
+    ENUMNAME(Enderdragon),
+    ENUMNAME(Wither),
+    ENUMNAME(Bat),
+    ENUMNAME(Witch),
+    ENUMNAME(Endermite),
+    ENUMNAME(Guardian),
+
+    ENUMNAME(Pig),
+    ENUMNAME(Sheep),
+    ENUMNAME(Cow),
+    ENUMNAME(Chicken),
+    ENUMNAME(Squid),
+    ENUMNAME(Wolf),
+    ENUMNAME(Mooshroom),
+    ENUMNAME(Snowman),
+    ENUMNAME(Ocelot),
+    ENUMNAME(IronGolem),
+    ENUMNAME(Horse),
+    ENUMNAME(Rabbit),
+    ENUMNAME(Villager),
+};
+
+const char * get_entity_name(char *buf, EntityType type) {
+    if (type < 0 || type >= MaxEntityType ) {
+        sprintf(buf, "%s", "IllegalEntityType");
+    }
+    else if ( ENTITY_NAMES[type] ) {
+        sprintf(buf, "%s", ENTITY_NAMES[type]);
+    }
+    else {
+        sprintf(buf, "%s", "UnknownEntity");
+    }
+    return buf;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // ANSI representation of blocks
 

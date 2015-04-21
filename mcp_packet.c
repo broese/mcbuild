@@ -652,8 +652,9 @@ DECODE_BEGIN(SP_SpawnMob,_1_8_1) {
 } DECODE_END;
 
 DUMP_BEGIN(SP_SpawnMob) {
-    printf("eid=%08x, mobtype=%d, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f,%.1f, vel=%d,%d,%d",
-           tpkt->eid, tpkt->mobtype,
+    char buf[256];
+    printf("eid=%08x, mobtype=%d (%s), coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f,%.1f, vel=%d,%d,%d",
+           tpkt->eid, tpkt->mobtype, get_entity_name(buf, tpkt->mobtype),
            (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
            (float)tpkt->yaw/256,(float)tpkt->pitch/256,(float)tpkt->headpitch/256,
            tpkt->vx,tpkt->vy,tpkt->vz);
