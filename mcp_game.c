@@ -143,17 +143,17 @@ static void autoshear(MCPacketQueue *sq) {
         // check if the entity is a sheep
         if (e->mtype != Sheep) continue;
 
-        // access entity metadata to see if the sheep is sheared or not
-        assert(e->mdata);
-        int sheared = 1;
-        for(j=0; e->mdata[j].h != 0x7f; j++) {
-            if (e->mdata[j].key == 16) { // Sheep wool color/state
-                assert(e->mdata[j].type == META_BYTE);
-                sheared = (e->mdata[j].b >= 0x10);
-                break;
-            }
-        }
-        if (sheared) continue;
+        if (!e->mdata) continue;
+
+        // skip sheared sheep
+        assert(e->mdata[16].h != 0x7f);
+        assert(e->mdata[16].type == META_BYTE);
+        if (e->mdata[16].b >= 0x10) continue;
+
+        // skip baby sheep
+        assert(e->mdata[12].h != 0x7f);
+        assert(e->mdata[12].type == META_BYTE);
+        if (e->mdata[12].b < 0) continue;
 
         // skip entities we hit only recently
         if ((ts-e->lasthit) < MIN_ENTITY_DELAY) continue;
