@@ -914,7 +914,7 @@ void gs_packet(MCPacket *pkt) {
             for(i=0; i<tpkt->count; i++) {
                 int idx = find_entity(tpkt->eids[i]);
                 if (idx<0) continue;
-                lh_free(P(gs.entity)[i].mdata);
+                free_metadata(P(gs.entity)[idx].mdata);
                 lh_arr_delete(GAR(gs.entity),idx);
             }
         } _GSP;
@@ -1227,7 +1227,7 @@ void gs_destroy() {
 
     // delete tracked entities
     for(i=0; i<C(gs.entity); i++)
-        lh_free(P(gs.entity)[i].mdata);
+        free_metadata(P(gs.entity)[i].mdata);
     lh_free(P(gs.entity));
 
     for(i=0; i<45; i++)

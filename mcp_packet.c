@@ -167,6 +167,15 @@ metadata * clone_metadata(metadata *meta) {
     return newmeta;
 }
 
+void free_metadata(metadata *meta) {
+    if (!meta) return;
+    int i;
+    for(i=0; i<32; i++)
+        if (meta[i].type == META_SLOT && meta[i].slot.nbt)
+            nbt_free(meta[i].slot.nbt);
+    free(meta);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Map Chunk
 
@@ -630,11 +639,7 @@ DUMP_BEGIN(SP_SpawnPlayer) {
 } DUMP_END;
 
 FREE_BEGIN(SP_SpawnPlayer) {
-    int i;
-    for(i=0; i<32; i++)
-        if (tpkt->meta[i].type == META_SLOT && tpkt->meta[i].slot.nbt)
-            nbt_free(tpkt->meta[i].slot.nbt);
-    free(tpkt->meta);
+    free_metadata(tpkt->meta);
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -687,11 +692,7 @@ DUMP_BEGIN(SP_SpawnMob) {
 } DUMP_END;
 
 FREE_BEGIN(SP_SpawnMob) {
-    int i;
-    for(i=0; i<32; i++)
-        if (tpkt->meta[i].type == META_SLOT && tpkt->meta[i].slot.nbt)
-            nbt_free(tpkt->meta[i].slot.nbt);
-    free(tpkt->meta);
+    free_metadata(tpkt->meta);
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -864,11 +865,7 @@ DUMP_BEGIN(SP_EntityMetadata) {
 } DUMP_END;
 
 FREE_BEGIN(SP_EntityMetadata) {
-    int i;
-    for(i=0; i<32; i++)
-        if (tpkt->meta[i].type == META_SLOT && tpkt->meta[i].slot.nbt)
-            nbt_free(tpkt->meta[i].slot.nbt);
-    free(tpkt->meta);
+    free_metadata(tpkt->meta);
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////

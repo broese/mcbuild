@@ -71,6 +71,7 @@ typedef struct {
 } metadata;
 
 metadata * clone_metadata(metadata *meta);
+void free_metadata(metadata *meta);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Map data
