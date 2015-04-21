@@ -32,10 +32,11 @@ typedef struct _entity {
     int32_t  id;        // EID
     fixp     x,y,z;     // note: fixed-point coords, divide by 32
     int      type;      // one of the ENTITY_ variables
-    int      mtype;     // mob/object type as used natively
+    EntityType mtype;   // mob/object type as used natively
     int      hostile;   // whether marked hostile
     uint64_t lasthit;   // timestamp when this entity was last attacked - for limiting the attack rate
     char     name[256]; // only valid for players
+    metadata *mdata;    // entity metadata
 } entity;
 
 ////////////////////////////////////////////////////////////////////////////////

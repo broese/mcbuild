@@ -850,8 +850,10 @@ void gs_packet(MCPacket *pkt) {
             e->y  = tpkt->y;
             e->z  = tpkt->z;
             e->type = ENTITY_PLAYER;
+            e->mtype = Human;
             //TODO: name
             //TODO: mark players hostile/neutral/friendly depending on the faglist
+            e->mdata = clone_metadata(tpkt->meta);
         } _GSP;
 
         GSP(SP_SpawnObject) {
@@ -861,6 +863,8 @@ void gs_packet(MCPacket *pkt) {
             e->y  = tpkt->y;
             e->z  = tpkt->z;
             e->type = ENTITY_OBJECT;
+            e->mtype = Item;
+            e->mdata = NULL; //TODO: object metadata
         } _GSP;
 
         GSP(SP_SpawnMob) {
@@ -879,6 +883,8 @@ void gs_packet(MCPacket *pkt) {
             // mark creepers extra hostile to make them priority targets
             if (e->mtype == 50)
                 e->hostile = 2;
+
+            e->mdata = clone_metadata(tpkt->meta);
         } _GSP;
 
         GSP(SP_SpawnPainting) {
@@ -888,6 +894,8 @@ void gs_packet(MCPacket *pkt) {
             e->y  = tpkt->pos.y*32;
             e->z  = tpkt->pos.z*32;
             e->type = ENTITY_OTHER;
+            e->mtype = Entity;
+            e->mdata = NULL;
         } _GSP;
 
         GSP(SP_SpawnExperienceOrb) {
@@ -897,6 +905,8 @@ void gs_packet(MCPacket *pkt) {
             e->y  = tpkt->y;
             e->z  = tpkt->z;
             e->type = ENTITY_OTHER;
+            e->mtype = Entity;
+            e->mdata = NULL;
         } _GSP;
 
         GSP(SP_DestroyEntities) {
@@ -904,6 +914,7 @@ void gs_packet(MCPacket *pkt) {
             for(i=0; i<tpkt->count; i++) {
                 int idx = find_entity(tpkt->eids[i]);
                 if (idx<0) continue;
+                lh_free(P(gs.entity)[i].mdata);
                 lh_arr_delete(GAR(gs.entity),idx);
             }
         } _GSP;
@@ -1212,10 +1223,13 @@ void gs_reset() {
 }
 
 void gs_destroy() {
+    int i;
+
     // delete tracked entities
+    for(i=0; i<C(gs.entity); i++)
+        lh_free(P(gs.entity)[i].mdata);
     lh_free(P(gs.entity));
 
-    int i;
     for(i=0; i<45; i++)
         clear_slot(&gs.inv.slots[i]);
 
