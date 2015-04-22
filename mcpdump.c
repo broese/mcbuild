@@ -43,14 +43,32 @@ void track_remote_sounds(int32_t x, int32_t z, struct timeval tv) {
     printf("thunder: %ld,%d,%d,%d,%d\n",tv.tv_sec,gs.own.x>>5,gs.own.z>>5,rx>>5,rz>>5);
 }
 
+#define MAXPLEN (4*1024*1024)
+
 void mcpd_packet(MCPacket *pkt) {
     switch (pkt->pid) {
+#if 0
         case SP_SoundEffect: {
             SP_SoundEffect_pkt *tpkt = (SP_SoundEffect_pkt *)&pkt->_SP_SoundEffect;
             if (!strcmp(tpkt->name,"ambient.weather.thunder")) {
                 fixp tx = tpkt->x*4;
                 fixp tz = tpkt->z*4;
                 track_remote_sounds(tx, tz, pkt->ts);
+            }
+            break;
+        }
+#endif
+        case SP_ChunkData: {
+            SP_ChunkData_pkt *tpkt = (SP_ChunkData_pkt *)&pkt->_SP_ChunkData;
+            if (tpkt->chunk.mask) {
+                lh_save("pkt_original",pkt->raw, pkt->rawlen);
+                uint8_t buf[MAXPLEN];
+                ssize_t sz = encode_packet(pkt, buf);
+                lh_save("pkt_encoded",buf+1, sz-1); //skip the packet ID that encode_packet adds
+                pkt->modified = 1;
+                sz = encode_packet(pkt, buf);
+                lh_save("pkt_reencoded",buf+1, sz-1);
+                exit(0);
             }
             break;
         }
@@ -104,7 +122,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
             pkt->ts.tv_usec = usec;
             dump_packet(pkt);
             gs_packet(pkt);
-            //mcpd_packet(pkt);
+            mcpd_packet(pkt);
             free_packet(pkt);
         }
 
