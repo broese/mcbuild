@@ -237,11 +237,11 @@ uint8_t * read_chunk(uint8_t *p, int8_t skylight, chunk_t *chunk) {
     return p;
 }
 
-uint8_t * write_chunk(uint8_t *w, int8_t skylight, uint16_t mask, chunk_t *chunk) {
+uint8_t * write_chunk(uint8_t *w, int8_t skylight, chunk_t *chunk) {
     int i;
 
     // block data
-    uint16_t tmask = mask;
+    uint16_t tmask = chunk->mask;
     for (i=0; tmask; tmask>>=1, i++) {
         if (tmask&1) {
             memmove(w, chunk->cubes[i]->blocks, 8192);
@@ -250,7 +250,7 @@ uint8_t * write_chunk(uint8_t *w, int8_t skylight, uint16_t mask, chunk_t *chunk
     }
 
     // light data
-    tmask = mask;
+    tmask = chunk->mask;
     for (i=0; tmask; tmask>>=1, i++) {
         if (tmask&1) {
             memmove(w, chunk->cubes[i]->light, 2048);
@@ -260,7 +260,7 @@ uint8_t * write_chunk(uint8_t *w, int8_t skylight, uint16_t mask, chunk_t *chunk
 
     // skylight data (if available)
     if (skylight) {
-        tmask = mask;
+        tmask = chunk->mask;
         for (i=0; tmask; tmask>>=1, i++) {
             if (tmask&1) {
                 memmove(w, chunk->cubes[i]->skylight, 2048);
@@ -946,26 +946,19 @@ ENCODE_BEGIN(SP_ChunkData,_1_8_1) {
     Wint(chunk.Z);
     Wchar(cont);
 
-    // recreate the chunk mask from available cubes
-    uint16_t mask = 0;
-    int Y, nblk;
-    for(Y=0; Y<16; Y++) {
-        if (tpkt->chunk.cubes[Y]) {
-            mask |= (1<<Y);
-            nblk++;
-        }
-    }
-    lh_write_short_be(w, mask);
+    Wshort(chunk.mask);
 
-    int32_t size = 256 + nblk*(10240+2048*tpkt->skylight);
+    int nblk = count_bits(tpkt->chunk.mask);
+    uint32_t size = 256 + nblk*(10240+2048*tpkt->skylight);
     lh_write_varint(w, size);
 
-    w = write_chunk(w, tpkt->skylight, mask, &tpkt->chunk);
+    w = write_chunk(w, tpkt->skylight, &tpkt->chunk);
 } ENCODE_END;
 
 DUMP_BEGIN(SP_ChunkData) {
-    printf("coord=%4d:%4d, cont=%d, skylight=%d",
-           tpkt->chunk.X, tpkt->chunk.Z, tpkt->cont, tpkt->skylight);
+    printf("coord=%4d:%4d, cont=%d, skylight=%d, mask=%04x",
+           tpkt->chunk.X, tpkt->chunk.Z, tpkt->cont,
+           tpkt->skylight, tpkt->chunk.mask);
 } DUMP_END;
 
 FREE_BEGIN(SP_ChunkData) {
