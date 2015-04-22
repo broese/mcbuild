@@ -1,7 +1,3 @@
-#if MEMORY_DEBUG
-#include <mcheck.h>
-#endif
-
 #include "lh_buffers.h"
 #include "lh_debug.h"
 #include "lh_compress.h"
@@ -296,10 +292,6 @@ static inline int read_string(char **p, char *s, char *limit) {
 #define CCC(a,b,c) CLR(a,a,b,b,c,c)
 
 int main(int ac, char ** av) {
-#if MEMORY_DEBUG
-    mtrace();
-#endif
-
     int i=1;
     while(av[i]) {
         off_t sz;
@@ -466,8 +458,4 @@ int main(int ac, char ** av) {
 
         i++;
     }
-#if MEMORY_DEBUG
-    muntrace();
-#endif
-    
 }

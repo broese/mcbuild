@@ -1096,10 +1096,6 @@ void test_stuff(int ac, char **av) {
 }
 
 int main(int ac, char **av) {
-#if DEBUG_MEMORY
-    mtrace();
-#endif
-
     //test_stuff(ac, av); return 0;
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -1120,10 +1116,6 @@ int main(int ac, char **av) {
     ERR_remove_state(getpid());
     ERR_free_strings();
     curl_global_cleanup();
-
-#if DEBUG_MEMORY
-    muntrace();
-#endif
 
     return 0;
 }

@@ -2,7 +2,7 @@ CC=clang
 CFLAGS=-g
 LIBS_LIBHELPER=-L../libhelper -lhelper
 LIBS=-lm -lpng -lz -lpcap -lcurl $(LIBS_LIBHELPER)
-DEFS=-DDEBUG_MEMORY=0 -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
+DEFS=-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
 INC=-I../libhelper
 
 UNAME := $(shell uname -s)

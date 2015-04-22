@@ -1,7 +1,3 @@
-#if MEMORY_DEBUG
-#include <mcheck.h>
-#endif
-
 #include <SDL/SDL.h> // main SDL header
 #include <signal.h>
 
@@ -250,10 +246,6 @@ static inline int read_string(char **p, char *s, char *limit) {
 }
 
 int main(int ac, char ** av) {
-#if MEMORY_DEBUG
-    mtrace();
-#endif
-
     signal_caught = 0;
     struct sigaction sa;
     CLEAR(sa);
@@ -400,9 +392,4 @@ int main(int ac, char ** av) {
 
     free(buf);
     fclose(mcs);
-
-#if MEMORY_DEBUG
-    muntrace();
-#endif
-    
 }
