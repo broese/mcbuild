@@ -237,6 +237,45 @@ uint8_t * read_chunk(uint8_t *p, int8_t skylight, chunk_t *chunk) {
     return p;
 }
 
+uint8_t * write_chunk(uint8_t *w, int8_t skylight, uint16_t mask, chunk_t *chunk) {
+    int i;
+
+    // block data
+    uint16_t tmask = mask;
+    for (i=0; tmask; tmask>>=1, i++) {
+        if (tmask&1) {
+            memmove(w, chunk->cubes[i]->blocks, 8192);
+            w+=8192;
+        }
+    }
+
+    // light data
+    tmask = mask;
+    for (i=0; tmask; tmask>>=1, i++) {
+        if (tmask&1) {
+            memmove(w, chunk->cubes[i]->light, 2048);
+            w+=2048;
+        }
+    }
+
+    // skylight data (if available)
+    if (skylight) {
+        tmask = mask;
+        for (i=0; tmask; tmask>>=1, i++) {
+            if (tmask&1) {
+                memmove(w, chunk->cubes[i]->skylight, 2048);
+                w+=2048;
+            }
+        }
+    }
+
+    // biome data (only once per chunk)
+    memmove(w, chunk->biome, 256);
+    w+=256;
+
+    return w;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory Slot
 
