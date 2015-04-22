@@ -1041,6 +1041,23 @@ DECODE_BEGIN(SP_MapChunkBulk,_1_8_1) {
     }
 } DECODE_END;
 
+ENCODE_BEGIN(SP_MapChunkBulk,_1_8_1) {
+    Wchar(skylight);
+    Wvarint(nchunks);
+
+    int i;
+    // write chunk headers
+    for(i=0; i<tpkt->nchunks; i++) {
+        Wint(chunk[i].X);
+        Wint(chunk[i].Z);
+        Wshort(chunk[i].mask);
+    }
+    // write chunk data
+    for(i=0; i<tpkt->nchunks; i++) {
+        w=write_chunk(w, tpkt->skylight, &tpkt->chunk[i]);
+    }
+} ENCODE_END;
+
 DUMP_BEGIN(SP_MapChunkBulk) {
     int i;
     printf("nchunks=%d, skylight=%d",tpkt->nchunks,tpkt->skylight);
@@ -1478,7 +1495,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_ChunkData,_1_8_1),
         SUPPORT_DF  (SP_MultiBlockChange,_1_8_1),
         SUPPORT_DE  (SP_BlockChange,_1_8_1),
-        SUPPORT_DF  (SP_MapChunkBulk,_1_8_1),
+        SUPPORT_DEF (SP_MapChunkBulk,_1_8_1),
         SUPPORT_DF  (SP_Explosion,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
