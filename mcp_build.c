@@ -864,6 +864,13 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         NEWPACKET(CP_Animation, anim);
         queue_packet(anim, sq);
 
+        // restore the former look direction
+        NEWPACKET(CP_PlayerLook, pl2);
+        tpl2->yaw = gs.own.yaw;
+        tpl2->pitch = gs.own.pitch;
+        tpl2->onground = gs.own.onground;
+        queue_packet(pl2,sq);
+
         b->last = ts;
         build.lastbuild = ts;
         mat_last[islot] = ts;

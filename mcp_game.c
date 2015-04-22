@@ -341,7 +341,7 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
 ////////////////////////////////////////////////////////////////////////////////
 // Anti-AFK
 
-#define AFK_TIMEOUT 300*1000000LL
+#define AFK_TIMEOUT 60*1000000LL
 
 uint64_t last_antiafk = 0;
 
