@@ -197,11 +197,11 @@ void blkdump(const bid_t * data, int count) {
     }
 }
 
-uint8_t * read_chunk(uint8_t *p, int8_t skylight, uint16_t mask, chunk_t *chunk) {
+uint8_t * read_chunk(uint8_t *p, int8_t skylight, chunk_t *chunk) {
     int i;
 
     // block data
-    uint16_t tmask = mask;
+    uint16_t tmask = chunk->mask;
     for (i=0; tmask; tmask>>=1, i++) {
         if (tmask&1) {
             lh_alloc_obj(chunk->cubes[i]);
@@ -211,7 +211,7 @@ uint8_t * read_chunk(uint8_t *p, int8_t skylight, uint16_t mask, chunk_t *chunk)
     }
 
     // light data
-    tmask = mask;
+    tmask = chunk->mask;
     for (i=0; tmask; tmask>>=1, i++) {
         if (tmask&1) {
             memmove(chunk->cubes[i]->light, p, 2048);
@@ -221,7 +221,7 @@ uint8_t * read_chunk(uint8_t *p, int8_t skylight, uint16_t mask, chunk_t *chunk)
 
     // skylight data (if available)
     if (skylight) {
-        tmask = mask;
+        tmask = chunk->mask;
         for (i=0; tmask; tmask>>=1, i++) {
             if (tmask&1) {
                 memmove(chunk->cubes[i]->skylight, p, 2048);
@@ -888,18 +888,18 @@ DECODE_BEGIN(SP_ChunkData,_1_8_1) {
     Pint(chunk.X);
     Pint(chunk.Z);
     Pchar(cont);
-    Rshort(mask);
+    Pshort(chunk.mask);
     Rvarint(size);
 
     tpkt->skylight=0;
 
-    if (mask) {
-        int nblk = count_bits(mask);
+    if (tpkt->chunk.mask) {
+        int nblk = count_bits(tpkt->chunk.mask);
         int bpc  = (size-256)/nblk;
         tpkt->skylight = ((size-256)/nblk == 3*4096);
     }
 
-    p=read_chunk(p, tpkt->skylight, mask, &tpkt->chunk);
+    p=read_chunk(p, tpkt->skylight, &tpkt->chunk);
 } DECODE_END;
 
 DUMP_BEGIN(SP_ChunkData) {
@@ -983,7 +983,7 @@ DECODE_BEGIN(SP_MapChunkBulk,_1_8_1) {
     }
     // read chunk data
     for(i=0; i<tpkt->nchunks; i++) {
-        p=read_chunk(p, tpkt->skylight, tpkt->chunk[i].mask, &tpkt->chunk[i]);
+        p=read_chunk(p, tpkt->skylight, &tpkt->chunk[i]);
     }
 } DECODE_END;
 
