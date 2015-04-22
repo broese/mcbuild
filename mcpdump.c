@@ -58,6 +58,8 @@ void mcpd_packet(MCPacket *pkt) {
             break;
         }
 #endif
+
+#if 0
         case SP_ChunkData: {
             SP_ChunkData_pkt *tpkt = (SP_ChunkData_pkt *)&pkt->_SP_ChunkData;
             if (tpkt->chunk.mask) {
@@ -72,6 +74,22 @@ void mcpd_packet(MCPacket *pkt) {
             }
             break;
         }
+#endif
+
+#if 0
+        case SP_MapChunkBulk: {
+            SP_MapChunkBulk_pkt *tpkt = (SP_MapChunkBulk_pkt *)&pkt->_SP_MapChunkBulk;
+            lh_save("pkt_original",pkt->raw, pkt->rawlen);
+            uint8_t buf[MAXPLEN];
+            ssize_t sz = encode_packet(pkt, buf);
+            lh_save("pkt_encoded",buf+1, sz-1); //skip the packet ID that encode_packet adds
+            pkt->modified = 1;
+            sz = encode_packet(pkt, buf);
+            lh_save("pkt_reencoded",buf+1, sz-1);
+            exit(0);
+            break;
+        }
+#endif
     }
 }
 
@@ -122,7 +140,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
             pkt->ts.tv_usec = usec;
             dump_packet(pkt);
             gs_packet(pkt);
-            mcpd_packet(pkt);
+            //mcpd_packet(pkt);
             free_packet(pkt);
         }
 
