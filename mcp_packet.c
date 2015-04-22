@@ -941,6 +941,28 @@ DECODE_BEGIN(SP_ChunkData,_1_8_1) {
     p=read_chunk(p, tpkt->skylight, &tpkt->chunk);
 } DECODE_END;
 
+ENCODE_BEGIN(SP_ChunkData,_1_8_1) {
+    Wint(chunk.X);
+    Wint(chunk.Z);
+    Wchar(cont);
+
+    // recreate the chunk mask from available cubes
+    uint16_t mask = 0;
+    int Y, nblk;
+    for(Y=0; Y<16; Y++) {
+        if (tpkt->chunk.cubes[Y]) {
+            mask |= (1<<Y);
+            nblk++;
+        }
+    }
+    lh_write_short_be(w, mask);
+
+    int32_t size = 256 + nblk*(10240+2048*tpkt->skylight);
+    lh_write_varint(w, size);
+
+    w = write_chunk(w, tpkt->skylight, mask, &tpkt->chunk);
+} ENCODE_END;
+
 DUMP_BEGIN(SP_ChunkData) {
     printf("coord=%4d:%4d, cont=%d, skylight=%d",
            tpkt->chunk.X, tpkt->chunk.Z, tpkt->cont, tpkt->skylight);
@@ -1460,7 +1482,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityTeleport,_1_8_1),
         SUPPORT_DF  (SP_EntityMetadata,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
-        SUPPORT_DF  (SP_ChunkData,_1_8_1),
+        SUPPORT_DEF (SP_ChunkData,_1_8_1),
         SUPPORT_DF  (SP_MultiBlockChange,_1_8_1),
         SUPPORT_DE  (SP_BlockChange,_1_8_1),
         SUPPORT_DF  (SP_MapChunkBulk,_1_8_1),
