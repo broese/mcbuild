@@ -407,6 +407,22 @@ nbt_t * nbt_new(int type, const char *name, ...) {
             nbt->st = strdup(va_arg(ap, const char *));
             nbt->count = strlen(nbt->st);
             break;
+        case NBT_LIST: {
+            nbt->count = va_arg(ap, int);
+            lh_alloc_num(nbt->li, nbt->count);
+            int i;
+            for(i=0; i<nbt->count; i++)
+                nbt->li[i] = va_arg(ap, nbt_t *);
+            break;
+        }
+        case NBT_COMPOUND: {
+            nbt->count = va_arg(ap, int);
+            lh_alloc_num(nbt->co, nbt->count);
+            int i;
+            for(i=0; i<nbt->count; i++)
+                nbt->co[i] = va_arg(ap, nbt_t *);
+            break;
+        }
         case NBT_INT_ARRAY: {
             int32_t *values = va_arg(ap, int32_t *);
             nbt->count = va_arg(ap, int);
@@ -456,8 +472,6 @@ int main(int ac, char **av) {
     lh_free(buf);
 #endif
 
-    int intarr[] = { 1, 1, 2, 3, 5, 8, 13, 21, 34, 55 };
-
     nbt_t * b = nbt_new(NBT_BYTE,   "MyByte",   12);
     nbt_t * s = nbt_new(NBT_SHORT,  "MyShort",  1234);
     nbt_t * i = nbt_new(NBT_INT,    "MyInt",    12345678);
@@ -466,7 +480,16 @@ int main(int ac, char **av) {
     nbt_t * d = nbt_new(NBT_DOUBLE, "MyDouble", 1.234567890123456789);
     nbt_t * ba = nbt_new(NBT_BYTE_ARRAY, "MyByteArray", "ABCDEFGH", 8);
     nbt_t * st = nbt_new(NBT_STRING, "MyString", "This is a test string!");
-    nbt_t * ia = nbt_new(NBT_INT_ARRAY, "MyIntArray", intarr, 10);
+    nbt_t * ia = nbt_new(NBT_INT_ARRAY, "MyIntArray",
+                         (int[]){ 1, 1, 2, 3, 5, 8, 13, 21, 34, 55 }, 10);
+    nbt_t * li = nbt_new(NBT_LIST,  "MyList", 5,
+                         nbt_new(NBT_INT, NULL, 1),
+                         nbt_new(NBT_INT, NULL, 2),
+                         nbt_new(NBT_INT, NULL, 3),
+                         nbt_new(NBT_INT, NULL, 4),
+                         nbt_new(NBT_INT, NULL, 5));
+    nbt_t * co = nbt_new(NBT_COMPOUND, "MyCompound", 10,
+                         b, s, i, l, f, d, ba, st, ia, li);
 
     nbt_dump(b);
     nbt_dump(s);
@@ -477,6 +500,8 @@ int main(int ac, char **av) {
     nbt_dump(ba);
     nbt_dump(st);
     nbt_dump(ia);
+    nbt_dump(li);
+    nbt_dump(co);
 
     nbt_free(b);
     nbt_free(s);
@@ -487,6 +512,8 @@ int main(int ac, char **av) {
     nbt_free(ba);
     nbt_free(st);
     nbt_free(ia);
+    nbt_free(li);
+    nbt_free(co);
 }
 
 #endif
