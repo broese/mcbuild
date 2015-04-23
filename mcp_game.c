@@ -339,6 +339,61 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Duping attempt
+
+#define GODSLOT 40
+
+void godmode(MCPacketQueue *sq, MCPacketQueue *cq) {
+    slot_t *a = &gs.inv.slots[GODSLOT];
+
+    if (a->item<=0 || !a->nbt) {
+        chat_message("Check your godslot", cq, "red", 2);
+        return;
+    }
+
+    nbt_t * ench  = nbt_hget(a->nbt, "ench");
+    nbt_t * fench = nbt_aget(ench, 0);
+    nbt_t * nench = nbt_clone(fench);
+
+    ench->count++;
+    lh_resize(ench->li, ench->count);
+    ench->li[ench->count-1] = nench;
+
+    nbt_t *lvl = nbt_hget(nench, "lvl");
+    lvl->s++;
+
+    nbt_dump(ench);
+
+    // Click on the first slot - pick up the item
+    NEWPACKET(CP_ClickWindow, pick);
+    tpick->wid = 0;
+    tpick->sid = GODSLOT;
+    tpick->button = 0; // Left-click, mode 0 - pick up all items
+    tpick->aid = 11000;
+    tpick->mode = 0;
+    clone_slot(a, &tpick->slot);
+    queue_packet(pick, sq);
+    gs_packet(pick);
+
+    // Click on the second slot - place it back
+    NEWPACKET(CP_ClickWindow, swap);
+    tswap->wid = 0;
+    tswap->sid = GODSLOT;
+    tswap->button = 0;
+    tswap->aid = 11001;
+    tswap->mode = 0;
+    clone_slot(a, &tswap->slot);
+    queue_packet(swap, sq);
+    gs_packet(swap);
+
+    // Close window
+    NEWPACKET(CP_CloseWindow, cwin);
+    tcwin->wid=0;
+    queue_packet(cwin, sq);
+    dump_packet(cwin);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Anti-AFK
 
 #define AFK_TIMEOUT 60*1000000LL
@@ -537,6 +592,9 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
     }
     else if (!strcmp(words[0],"build") || !strcmp(words[0],"bu")) {
         build_cmd(words, tq, bq);
+    }
+    else if (!strcmp(words[0],"god")) {
+        godmode(tq, bq);
     }
     else if (!strcmp(words[0],"hr") || !strcmp(words[0],"holeradar")) {
         opt.holeradar = !opt.holeradar;
