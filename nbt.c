@@ -360,6 +360,11 @@ nbt_t * nbt_hget(nbt_t *nbt, const char *name) {
     return NULL;
 }
 
+nbt_t * nbt_aget(nbt_t *nbt, int idx) {
+    if (nbt->type != NBT_LIST || idx>=nbt->count) return NULL;
+    return nbt->li[idx];
+}
+
 #if TEST
 
 int main(int ac, char **av) {
