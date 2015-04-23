@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include <lh_debug.h>
 #include <lh_buffers.h>
@@ -365,9 +366,64 @@ nbt_t * nbt_aget(nbt_t *nbt, int idx) {
     return nbt->li[idx];
 }
 
+nbt_t * nbt_new(int type, const char *name, ...) {
+    assert(type>NBT_END && type<=NBT_INT_ARRAY);
+
+    lh_create_obj(nbt_t, nbt);
+    nbt->type = type;
+    nbt->name = name ? strdup(name) : NULL;
+    nbt->count = 1;
+
+    va_list ap;
+    va_start(ap, name);
+
+    switch (type) {
+        case NBT_BYTE:
+            nbt->b = va_arg(ap, int32_t);
+            break;
+        case NBT_SHORT:
+            nbt->s = va_arg(ap, int32_t);
+            break;
+        case NBT_INT:
+            nbt->i = va_arg(ap, int32_t);
+            break;
+        case NBT_LONG:
+            nbt->l = va_arg(ap, int64_t);
+            break;
+        case NBT_FLOAT:
+            nbt->f = va_arg(ap, double);
+            break;
+        case NBT_DOUBLE:
+            nbt->d = va_arg(ap, double);
+            break;
+        case NBT_BYTE_ARRAY: {
+            int8_t *values = va_arg(ap, int8_t *);
+            nbt->count = va_arg(ap, int);
+            lh_alloc_buf(nbt->ba, nbt->count);
+            memmove(nbt->ba, values, nbt->count);
+            break;
+        }
+        case NBT_STRING:
+            nbt->st = strdup(va_arg(ap, const char *));
+            nbt->count = strlen(nbt->st);
+            break;
+        case NBT_INT_ARRAY: {
+            int32_t *values = va_arg(ap, int32_t *);
+            nbt->count = va_arg(ap, int);
+            lh_alloc_num(nbt->ia, nbt->count);
+            memmove(nbt->ia, values, nbt->count*sizeof(*values));
+            break;
+        }
+    }
+
+    va_end(ap);
+    return nbt;
+}
+
 #if TEST
 
 int main(int ac, char **av) {
+#if 0
     if (!av[1]) {
         printf("Usage: %s <file.nbt>\n",av[0]);
         exit(1);
@@ -398,6 +454,39 @@ int main(int ac, char **av) {
     nbt_free(newnbt);
 
     lh_free(buf);
+#endif
+
+    int intarr[] = { 1, 1, 2, 3, 5, 8, 13, 21, 34, 55 };
+
+    nbt_t * b = nbt_new(NBT_BYTE,   "MyByte",   12);
+    nbt_t * s = nbt_new(NBT_SHORT,  "MyShort",  1234);
+    nbt_t * i = nbt_new(NBT_INT,    "MyInt",    12345678);
+    nbt_t * l = nbt_new(NBT_LONG,   "MyLong",   123456789123456789L);
+    nbt_t * f = nbt_new(NBT_FLOAT,  "MyFloat",  1.234);
+    nbt_t * d = nbt_new(NBT_DOUBLE, "MyDouble", 1.234567890123456789);
+    nbt_t * ba = nbt_new(NBT_BYTE_ARRAY, "MyByteArray", "ABCDEFGH", 8);
+    nbt_t * st = nbt_new(NBT_STRING, "MyString", "This is a test string!");
+    nbt_t * ia = nbt_new(NBT_INT_ARRAY, "MyIntArray", intarr, 10);
+
+    nbt_dump(b);
+    nbt_dump(s);
+    nbt_dump(i);
+    nbt_dump(l);
+    nbt_dump(f);
+    nbt_dump(d);
+    nbt_dump(ba);
+    nbt_dump(st);
+    nbt_dump(ia);
+
+    nbt_free(b);
+    nbt_free(s);
+    nbt_free(i);
+    nbt_free(l);
+    nbt_free(f);
+    nbt_free(d);
+    nbt_free(ba);
+    nbt_free(st);
+    nbt_free(ia);
 }
 
 #endif
