@@ -426,6 +426,24 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Fullbright
+
+void chunk_bright(chunk_t * chunk, int bincr) {
+    int Y,i,level;
+    for(Y=0; Y<16; Y++) {
+        if (chunk->cubes[Y]) {
+            light_t *light = chunk->cubes[Y]->light;
+            for(i=0; i<2048; i++) {
+                level = (int)light[i].l + bincr;
+                light[i].l = (level<15) ? level : 15;
+                level = (int)light[i].h + bincr;
+                light[i].h = (level<15) ? level : 15;
+            }
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
 
 void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {
@@ -735,6 +753,25 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         }
 
         ////////////////////////////////////////////////////////////////
+        // Map data
+
+        GMP(SP_ChunkData) {
+            if (opt.bright) {
+                chunk_bright(&tpkt->chunk, opt.bright);
+                pkt->modified=1;
+            }
+            queue_packet(pkt, tq);
+        } _GMP;
+
+        GMP(SP_MapChunkBulk) {
+            if (opt.bright) {
+                int i;
+                for(i=0; i<tpkt->nchunks; i++)
+                    chunk_bright(&tpkt->chunk[i], opt.bright);
+                pkt->modified=1;
+            }
+            queue_packet(pkt, tq);
+        } _GMP;
 
         default:
             // by default - just forward the packet
@@ -774,6 +811,9 @@ void readbases() {
 
 void gm_reset() {
     lh_clear_obj(opt);
+
+    opt.bright = 8;
+
     build_clear();
     readbases();
 }
