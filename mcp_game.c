@@ -28,6 +28,7 @@ struct {
     int antiafk;
     int antispam;
     int autoshear;
+    int bright;
 } opt;
 
 // loaded base locations - for thunder protection
@@ -541,6 +542,27 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         opt.holeradar = !opt.holeradar;
         sprintf(reply,"Hole radar is %s",opt.holeradar?"ON":"OFF");
         rpos = 2;
+    }
+    else if (!strcmp(words[0],"br") || !strcmp(words[0],"bright")) {
+        int bright = -1;
+        if (words[1]) {
+            if (sscanf(words[1], "%u", &bright)!=1) {
+                bright = -1;
+            }
+        }
+        else {
+            bright = (opt.bright) ? 0 : 15;
+        }
+
+        if (bright<0) {
+            sprintf(reply, "Usage: #bright [increment]");
+        }
+        else {
+            if (bright > 15) bright=15;
+            sprintf(reply,"Brightness increment: %d", bright);
+            rpos = 2;
+            opt.bright = bright;
+        }
     }
     else if (!strcmp(words[0],"changeheld")) {
         if (!words[1] || !words[2]) {
