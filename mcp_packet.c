@@ -682,6 +682,23 @@ FREE_BEGIN(SP_SpawnPlayer) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x0d SP_CollectItem
+
+DECODE_BEGIN(SP_CollectItem,_1_8_1) {
+    Pvarint(eid);
+    Pvarint(collector);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_CollectItem,_1_8_1) {
+    Wvarint(eid);
+    Wvarint(collector);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_CollectItem) {
+    printf("eid=%08x, collector=%d", tpkt->eid, tpkt->collector);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x0e SP_SpawnObject
 
 DECODE_BEGIN(SP_SpawnObject,_1_8_1) {
@@ -1479,6 +1496,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),
         SUPPORT_DDF (SP_SpawnPlayer,_1_8_1),
+        SUPPORT_DE  (SP_CollectItem,_1_8_1),
         SUPPORT_D   (SP_SpawnObject,_1_8_1),
         SUPPORT_DF  (SP_SpawnMob,_1_8_1),
         SUPPORT_D   (SP_SpawnPainting,_1_8_1),

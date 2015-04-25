@@ -207,6 +207,12 @@ typedef struct {
     metadata *meta;
 } SP_SpawnPlayer_pkt;
 
+// 0x0d
+typedef struct {
+    uint32_t eid;
+    uint32_t collector;
+} SP_CollectItem_pkt;
+
 // 0x0e
 typedef struct {
     uint32_t eid;
@@ -565,6 +571,7 @@ typedef struct {
         PKT(SP_PlayerPositionLook);
         PKT(SP_HeldItemChange);
         PKT(SP_SpawnPlayer);
+        PKT(SP_CollectItem);
         PKT(SP_SpawnObject);
         PKT(SP_SpawnMob);
         PKT(SP_SpawnPainting);
