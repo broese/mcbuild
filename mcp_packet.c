@@ -1002,6 +1002,18 @@ DECODE_BEGIN(SP_MultiBlockChange,_1_8_1) {
     }
 } DECODE_END;
 
+ENCODE_BEGIN(SP_MultiBlockChange,_1_8_1) {
+    Wint(X);
+    Wint(Z);
+    Wvarint(count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        Wchar(blocks[i].pos);
+        Wchar(blocks[i].y);
+        Wvarint(blocks[i].bid.raw);
+    }
+} ENCODE_END;
+
 DUMP_BEGIN(SP_MultiBlockChange) {
     printf("chunk=%d:%d, count=%d",
            tpkt->X, tpkt->Z, tpkt->count);
@@ -1511,7 +1523,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_EntityMetadata,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
         SUPPORT_DEF (SP_ChunkData,_1_8_1),
-        SUPPORT_DF  (SP_MultiBlockChange,_1_8_1),
+        SUPPORT_DEF (SP_MultiBlockChange,_1_8_1),
         SUPPORT_DE  (SP_BlockChange,_1_8_1),
         SUPPORT_DEF (SP_MapChunkBulk,_1_8_1),
         SUPPORT_DF  (SP_Explosion,_1_8_1),
