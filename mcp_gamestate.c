@@ -1010,6 +1010,7 @@ void gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(SP_JoinGame) {
+            gs.own.eid = tpkt->eid;
             change_dimension(tpkt->dimension);
         } _GSP;
 
