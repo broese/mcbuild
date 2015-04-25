@@ -90,6 +90,21 @@ void mcpd_packet(MCPacket *pkt) {
             break;
         }
 #endif
+
+#if 0
+        case SP_MultiBlockChange: {
+            SP_MultiBlockChange_pkt *tpkt = (SP_MultiBlockChange_pkt *)&pkt->_SP_MultiBlockChange;
+            lh_save("pkt_original",pkt->raw, pkt->rawlen);
+            uint8_t buf[MAXPLEN];
+            ssize_t sz = encode_packet(pkt, buf);
+            lh_save("pkt_encoded",buf+1, sz-1); //skip the packet ID that encode_packet adds
+            pkt->modified = 1;
+            sz = encode_packet(pkt, buf);
+            lh_save("pkt_reencoded",buf+1, sz-1);
+            exit(0);
+            break;
+        }
+#endif
     }
 }
 
