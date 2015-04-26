@@ -2292,6 +2292,16 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         build_cancel();
         build.placemode=0;
     }
+    else if (!strcmp(words[1], "pause")) {
+        if (P(build.task)) {
+            build.active = !build.active;
+            sprintf(reply, "Buildtask is %s", build.active?"unpaused":"paused");
+        }
+        else {
+            sprintf(reply, "You need an existing buildtask to pause/unpause");
+        }
+        rpos=2;
+    }
     else if (!strcmp(words[1], "dumpplan")) {
         build_dump_plan();
     }
