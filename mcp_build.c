@@ -1613,6 +1613,14 @@ void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
         build.zmin = MIN(build.zmin, P(build.task)[i].z);
         build.zmax = MAX(build.zmax, P(build.task)[i].z);
     }
+
+    // store the coordinates and direction so they can be reused for 'place again'
+    build.px = px;
+    build.py = py;
+    build.pz = pz;
+    build.pd = dir;
+    build.pivotset = 1;
+
     printf("Buildtask boundary: X: %d - %d   Z: %d - %d   Y: %d - %d\n",
            build.xmin, build.xmax, build.zmin, build.zmax, build.ymin, build.ymax);
 
@@ -1669,6 +1677,17 @@ static void build_place(char **words, char *reply) {
                 build.placemode = 2; 
                 return;
             }
+            else if (mcparg_find(words, "again", NULL)) {
+                if (!build.pivotset) {
+                    sprintf(reply, "No pivot was set previously");
+                }
+                else {
+                    px = build.px;
+                    py = build.py;
+                    pz = build.pz;
+                    dir = build.pd;
+                }
+            }
             else {
                 sprintf(reply, "Mark pivot position by placing a block - will be build once");
                 build.placemode = 1; // only once (gets cleared after first placement)
@@ -1676,7 +1695,8 @@ static void build_place(char **words, char *reply) {
             }
     }
 
-    dir = build_arg_dir(words, reply, 1);
+    if (dir<0)
+        dir = build_arg_dir(words, reply, 1);
     if (dir<0 || reply[0]) return;
 
     // abort current buildtask
