@@ -23,6 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
 
+// scan the commandline strings for an option with the matching format
 static int scan_opt(char **words, const char *fmt, ...) {
     int i;
     
@@ -43,6 +44,7 @@ static int scan_opt(char **words, const char *fmt, ...) {
     return 0;
 }
 
+// scan the commandline strings for a simple 'flag' option
 static int find_opt(char **words, const char *name) {
     int i;
     for(i=0; words[i]; i++)
@@ -51,6 +53,8 @@ static int find_opt(char **words, const char *name) {
     return 0;
 }
 
+// calculate the yaw and pitch values for the player looking at a specific
+// dot in space
 int calculate_yaw_pitch(fixp x, fixp z, fixp y, float *yaw, float *pitch) {
     // relative distance to the dot
     float dx = (float)(x-gs.own.x)/32.0;
@@ -100,24 +104,28 @@ int32_t NOFF[6][3] = {
     [DIR_WEST]  = { -1,  0,  0 },
 };
 
+// mask - all dots on the face
 uint16_t DOTS_ALL[15] = {
     0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff,
     0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff };
 
+// all dots in the lower half
 uint16_t DOTS_LOWER[15] = {
     0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0, 0,
     0, 0, 0, 0, 0, 0, 0 };
 
+// all dots in the upper half
 uint16_t DOTS_UPPER[15] = {
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff, 0x7fff };
 
+// no dots on this face can be used
 uint16_t DOTS_NONE[15] = {
     0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 0, 0, 0, 0, 0 };
 
 // this structure is used to define an absolute block placement
-// in the active building process
+// in the active building process - one block of the 'buildtask'
 typedef struct {
     int32_t     x,y,z;          // coordinates of the block to place
     bid_t       b;              // block type, including the meta
@@ -243,6 +251,7 @@ int matl=4, math=7;
 // timestamps when the material slots were last accessed - used to select evictable slots
 int64_t mat_last[9];
 
+// find a suitable slot in the quickbar where we can swap in materials from the main inventory
 static int find_evictable_slot() {
     int i;
     int best_s = matl;
@@ -287,6 +296,7 @@ int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
     return eslot;
 }
 
+// print a table of required materials for the buildplan (if plan=1) or buildtask
 void calculate_material(int plan) {
     int i;
 
@@ -369,6 +379,7 @@ void calculate_material(int plan) {
 #define MAXREACH SQ(4<<5)
 #define OFF(x,z,y) (((x)-xo)+((z)-zo)*(xsz)+((y)-yo)*(xsz*zsz))
 
+// block types that are considered 'empty' for the block placement
 static inline int ISEMPTY(int bid) {
     return ( bid==0x00 ||               // air
              bid==0x08 || bid==0x09 ||  // water
@@ -413,6 +424,8 @@ static dotpos_t DOTPOS[6] = {
     [DIR_WEST]  = { 32, 2, 2,  0,2,0,  0,0,2, }, // Z-Y
 };
 
+// from all the dots which can be used to place a block correctly,
+// remove those out of player's reach by updating the dot masks
 static void remove_distant_dots(blk *b) {
     // reset distance to the block
     // this will be now replaced with the max dot distance
@@ -483,6 +496,7 @@ static void remove_distant_dots(blk *b) {
     b->inreach = (b->dist > 0);
 }
 
+// cound how many active dots are in a row
 static inline int count_dots_row(uint16_t dots) {
     int i,c=0;
     for (i=0; i<15; dots>>=1,i++)
@@ -490,6 +504,7 @@ static inline int count_dots_row(uint16_t dots) {
     return c;
 }
 
+// count how many active dots are on all faces of the block
 static inline int count_dots(blk *b) {
     int f;
     int c=0;
@@ -503,6 +518,7 @@ static inline int count_dots(blk *b) {
     return c;
 }
 
+// predicate function to sort the blocks by their distance to the player
 static int sort_blocks(const void *a, const void *b) {
     int ia = *((int *)a);
     int ib = *((int *)b);
@@ -724,46 +740,15 @@ void build_update() {
 
     qsort(build.bq, build.nbq, sizeof(build.bq[0]), sort_blocks);
 
-    /* Further strategy:
-       - skip those neighbor faces looking away from you
-
-       - skip those neighbor faces unsuitable for the block orientation
-         you want to achieve - for now we can skip that for the plain
-         blocks - they can be placed on any neighbor. Later we'll need
-         to determine this properly for the stairs, slabs, etc.
-
-       + for each neighbor face, calculate which from 15x15 points can be
-         'clicked' to be able to place the block we want the way we want.
-         For now, we can just say "all of them" - this will work with plain
-         blocks. Later we can introduce support for slabs, stairs etc., e.g.
-         in order to place the upper slab we will have to choose only the
-         upper 15x7 block from the matrix.
-
-       - for each of the remaining points, calculate their direct visibility
-         this is optional for now, because it's obviously very difficult
-         to achieve and possibly not even checked properly.
-
-       + for each of the remaining points, calculate their exact distance,
-         skip those farther away than 4.0 blocks (this is now the proper
-         in-reach calculation)
-
-       + for each of the remaining points, store the one with the largest
-         distance in the blk - this will serve as the selector for the
-         build-the-most-distant-blocks-first strategy to avoid isolating blocks
-
-       + store the suitable dots (as a bit array in a 16xshorts?) in the
-         blk struct
-
-       + when building, select the first suitable block for building,
-         and choose a random dot from the stored set
-
-       + automatically fetch materials into a quickbar slot
-
+    /* Further things TODO:
+       - remove the dots obstructed by other blocks
+       - make the various obstruction checking options configurable
     */
 
     free(world);
 }
 
+// randomly choose which of the suitable dots we are going to use to place the block
 static void choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz) {
     int f,dr,dc;
     int i=random()%b->ndots;
@@ -793,6 +778,7 @@ static void choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz)
     assert(0);
 }
 
+// asynchronous building method - check the buildqueue and try to build up to maxbld blocks
 void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
     // time update - try to build any blocks from the placeable blocks list
     if (!build.active) return;
@@ -926,6 +912,8 @@ static void buildplan_updated() {
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers for parameter parsing
 
+// parse commandline to get the building material,
+// or use whatever the player is holding in the hand
 static bid_t build_arg_material(char **words, char *reply) {
     mcpopt opt_mat = {{"material","mat","m",NULL}, -1, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
 
@@ -976,6 +964,7 @@ static bid_t build_arg_material(char **words, char *reply) {
     return mat;
 }
 
+// parse commandline to get the offset parameter
 static void build_arg_offset(char **words, char *reply, int argpos, int *ox, int *oz, int *oy) {
     mcpopt opt_offset = {{"offset","off","o",NULL},    argpos, {"%d,%d,%d","%d,%d","%d",NULL}};
     mcpopt opt_dir    = {{"direction","dir","d",NULL}, argpos, {"%s",NULL}};
@@ -1006,6 +995,8 @@ static void build_arg_offset(char **words, char *reply, int argpos, int *ox, int
     }
 }
 
+// parse the commandline to get the direction parameter,
+// or assume the direction the player is facing
 static int build_arg_dir(char **words, char *reply, int argpos) {
     int dir;
     mcpopt opt_dir = {{"direction","dir","d",NULL}, 1, {"%s",NULL}};
@@ -1351,6 +1342,7 @@ static void build_wall(char **words, char *reply) {
     buildplan_updated();
 }
 
+// create a buildplan from existing map data by scanning a defined cuboid
 static void build_scan(char **words, char *reply) {
     build_clear();
 
@@ -1497,6 +1489,7 @@ static void build_extend(char **words, char *reply) {
     buildplan_updated();
 }
 
+// replace one material in the buildplan with another (including meta specification)
 static void build_replace(char **words, char *reply) {
     mcpopt opt_mat1  = {{"from","material1","mat1","m1",NULL}, 0, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
     mcpopt opt_mat2  = {{"to","material2","mat2","m2",NULL},   1, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
@@ -1530,6 +1523,8 @@ static void build_replace(char **words, char *reply) {
             mat2.bid, mat2.meta, get_bid_name(buf2, mat2));
 }
 
+// hollow out the structure by removing all blocks completely surrounded by other blocks.
+//TODO: do not count semi-transparent blocks like slabs, stairs, glass etc. as surrounding blocks
 static void build_hollow(char **words, char *reply) {
     int i,j,f;
     int removed=0;
@@ -1918,6 +1913,7 @@ static void brec_blockplace(MCPacket *pkt) {
 #define BUILDOPT_STDOUT 1
 #define BUILDOPT_CHAT   2
 
+// print out current settings in the chat
 void buildopt_print(int where, MCPacketQueue *cq) {
     char buf[4096];
     int i;
@@ -1930,6 +1926,7 @@ void buildopt_print(int where, MCPacketQueue *cq) {
     }
 }
 
+// reset build options to default values
 void buildopt_setdefault() {
     int i;
     for(i=0; OPTIONS[i].name; i++) {
@@ -1939,6 +1936,7 @@ void buildopt_setdefault() {
     buildopt_print(BUILDOPT_STDOUT, NULL);
 }
 
+// entry point for all command lines involving build options
 void buildopt(char **words, MCPacketQueue *cq) {
     if (!words[0] || !strcmp(words[0],"list")) {
         buildopt_print(BUILDOPT_STDOUT|BUILDOPT_CHAT, cq);
@@ -2133,6 +2131,7 @@ void build_loadappend(const char * name, char * reply, int ox, int oz, int oy) {
     buildplan_updated();
 }
 
+// load a buildplan from a .bplan file
 void build_load(const char * name, char * reply) {
     if (!name) {
         sprintf(reply, "Usage: #build load <name> (name w/o extension)");
@@ -2142,6 +2141,8 @@ void build_load(const char * name, char * reply) {
     build_loadappend(name, reply, 0, 0, 0);
 }
 
+// load a buildplan from a .bplan file and append to existing buildplan (with a given offset)
+// TODO: check for overlapping blocks and remove old ones
 void build_append(char ** words, char * reply) {
     mcpopt opt_name = {{"name","n",NULL}, 0, {"%s",NULL}};
     char name[256];
@@ -2159,6 +2160,7 @@ void build_append(char ** words, char * reply) {
 
 #define SCHEMATICS_DIR "schematic"
 
+// import a buildplan from a .schematic file
 void build_sload(const char *name, char *reply) {
     if (!name) {
         sprintf(reply, "Usage: #build sload <name> (name w/o extension and path)");
@@ -2237,6 +2239,7 @@ void build_sload(const char *name, char *reply) {
 ////////////////////////////////////////////////////////////////////////////////
 // Canceling Build
 
+// cancel building and completely erase the buildplan
 void build_clear() {
     build_cancel();
     lh_arr_free(BPLAN);
@@ -2247,6 +2250,7 @@ void build_clear() {
         buildopt_setdefault();
 }
 
+// cancel and delete the buildtask, leaving the buildplan
 void build_cancel() {
     build.active = 0;
     lh_arr_free(BTASK);
