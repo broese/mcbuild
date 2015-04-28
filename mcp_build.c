@@ -188,6 +188,7 @@ struct {
     int anyface;               // attempt to build on any faces, even those looking away from you
                                // this type of building will work on vanilla servers, but may be
                                // blocked on some, including 2b2t
+    int limit;                 // build height limit, disabled if zero
 
     lh_arr_declare(blk,task);  // current active building task
     lh_arr_declare(blkr,plan); // currently loaded/created buildplan
@@ -554,12 +555,11 @@ void build_update() {
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
 
-        if (build.wallmode) {
-            // in wallmode we don't build blocks higher than our own position
-            if (b->y > (gs.own.y>>5)-1) {
+        // avoid building blocks above the player in wall and limit mode
+        if ((build.wallmode && (b->y>(gs.own.y>>5)-1)) ||
+            (build.limit && (b->y>build.limit))) {
                 b->inreach = 0;
                 continue;
-            }
         }
 
         int32_t dx = gs.own.x-(b->x<<5)+16;
@@ -2363,6 +2363,23 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         build.wallmode = !build.wallmode;
         sprintf(reply, "Wallmode is %s",build.wallmode?"ON":"OFF");
         rpos = 2;
+    }
+    else if (!strcmp(words[1], "limit") || !strcmp(words[1], "li")) {
+        if (!words[2]) {
+            // set the limit to player's current y position
+            build.limit = gs.own.y>>5;
+        }
+        else {
+            if (!strcmp(words[2],"none") || !strcmp(words[2],"-")) {
+                build.limit = 0;
+            }
+            else {
+                if (sscanf(words[2], "%d", &build.limit)!=1) {
+                    sprintf(reply, "Usage: #build limit [y|-]");
+                    build.limit = 0;
+                }
+            }
+        }
     }
     else if (!strcmp(words[1], "anyface") || !strcmp(words[1], "af")) {
         build.anyface = !build.anyface;
