@@ -2294,6 +2294,8 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     if (!words[1]) {
         sprintf(reply, "Usage: build <type> [ parameters ... ] or build cancel");
     }
+
+    // Parametric builds
     else if (!strcmp(words[1], "floor")) {
         build_floor(words+2, reply);
     }
@@ -2309,35 +2311,19 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     else if (!strcmp(words[1], "stairs")) {
         build_stairs(words+2, reply);
     }
-    else if (!strcmp(words[1], "place")) {
-        build_place(words+2, reply);
+
+    // Buildplan manipulation
+    else if (!strcmp(words[1], "ext") || !strcmp(words[1], "extend")) {
+        build_extend(words+2, reply);
     }
-    else if (!strcmp(words[1], "cancel")) {
-        build_cancel();
-        build.placemode=0;
+    else if (!strcmp(words[1], "hollow")) {
+        build_hollow(words+2, reply);
     }
-    else if (!strcmp(words[1], "pause")) {
-        if (P(build.task)) {
-            build.active = !build.active;
-            sprintf(reply, "Buildtask is %s", build.active?"unpaused":"paused");
-        }
-        else {
-            sprintf(reply, "You need an existing buildtask to pause/unpause");
-        }
-        rpos=2;
+    else if (!strcmp(words[1], "replace")) {
+        build_replace(words+2, reply);
     }
-    else if (!strcmp(words[1], "dumpplan")) {
-        build_dump_plan();
-    }
-    else if (!strcmp(words[1], "dumptask")) {
-        build_dump_task();
-    }
-    else if (!strcmp(words[1], "dumpqueue")) {
-        build_dump_queue();
-    }
-    else if (!strcmp(words[1], "dumpmat")) {
-        calculate_material(find_opt(words+2, "plan"));
-    }
+
+    // Save/load/import
     else if (!strcmp(words[1], "save")) {
         build_save(words[2], reply);
     }
@@ -2356,9 +2342,41 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     else if (!strcmp(words[1], "scan")) {
         build_scan(words+2, reply);
     }
-    else if (!strcmp(words[1], "ext") || !strcmp(words[1], "extend")) {
-        build_extend(words+2, reply);
+
+    // Build control
+    else if (!strcmp(words[1], "place")) {
+        build_place(words+2, reply);
     }
+    else if (!strcmp(words[1], "cancel")) {
+        build_cancel();
+        build.placemode=0;
+    }
+    else if (!strcmp(words[1], "pause")) {
+        if (P(build.task)) {
+            build.active = !build.active;
+            sprintf(reply, "Buildtask is %s", build.active?"unpaused":"paused");
+        }
+        else {
+            sprintf(reply, "You need an existing buildtask to pause/unpause");
+        }
+        rpos=2;
+    }
+
+    // Debug
+    else if (!strcmp(words[1], "dumpplan")) {
+        build_dump_plan();
+    }
+    else if (!strcmp(words[1], "dumptask")) {
+        build_dump_task();
+    }
+    else if (!strcmp(words[1], "dumpqueue")) {
+        build_dump_queue();
+    }
+    else if (!strcmp(words[1], "dumpmat")) {
+        calculate_material(find_opt(words+2, "plan"));
+    }
+
+    // Build options
     else if (!strcmp(words[1], "wallmode") || !strcmp(words[1], "wm")) {
         build.wallmode = !build.wallmode;
         sprintf(reply, "Wallmode is %s",build.wallmode?"ON":"OFF");
@@ -2388,12 +2406,6 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "opt") || !strcmp(words[1], "set")) {
         buildopt(words+2, cq);
-    }
-    else if (!strcmp(words[1], "replace")) {
-        build_replace(words+2, reply);
-    }
-    else if (!strcmp(words[1], "hollow")) {
-        build_hollow(words+2, reply);
     }
 
     if (reply[0]) chat_message(reply, cq, "green", rpos);
