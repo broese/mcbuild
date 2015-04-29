@@ -174,6 +174,13 @@ typedef struct {
     uint64_t time;
 } SP_TimeUpdate_pkt;
 
+// 0x06
+typedef struct {
+    float    health;
+    int32_t  food;
+    float    saturation;
+} SP_UpdateHealth_pkt;
+
 // 0x07
 typedef struct {
     int32_t dimension;
@@ -567,6 +574,7 @@ typedef struct {
         PKT(SP_JoinGame);
         PKT(SP_ChatMessage);
         PKT(SP_TimeUpdate);
+        PKT(SP_UpdateHealth);
         PKT(SP_Respawn);
         PKT(SP_PlayerPositionLook);
         PKT(SP_HeldItemChange);
