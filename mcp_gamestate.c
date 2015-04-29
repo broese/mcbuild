@@ -968,7 +968,7 @@ void gs_packet(MCPacket *pkt) {
         } _GSP;
 
         ////////////////////////////////////////////////////////////////
-        // Player coordinates
+        // Player
 
         GSP(SP_PlayerPositionLook) {
             if (tpkt->flags != 0) {
@@ -1016,6 +1016,11 @@ void gs_packet(MCPacket *pkt) {
 
         GSP(SP_Respawn) {
             change_dimension(tpkt->dimension);
+        } _GSP;
+
+        GSP(SP_UpdateHealth) {
+            gs.own.health = tpkt->health;
+            gs.own.food   = tpkt->food;
         } _GSP;
 
         ////////////////////////////////////////////////////////////////

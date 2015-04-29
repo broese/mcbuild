@@ -85,6 +85,9 @@ typedef struct _gamestate {
         // position change tracking for functions like holeradar
         int32_t     lx,ly,lz,lo;
         int         pos_change;
+
+        float       health;
+        int32_t     food;
     } own;
 
     struct {
