@@ -2403,6 +2403,13 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
 // dispatch for the building-relevant packets we get from mcp_game
 int build_packet(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
+    if (pkt->pid == SP_UpdateHealth && gs.own.health < 20) {
+        if (build.active) {
+            build.active = 0;
+            chat_message("INJURY!!! Buildtask paused!", cq, "green", 2);
+        }
+    }
+
     if (build.recording) {
         if (pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange) {
             brec_blockupdate(pkt);

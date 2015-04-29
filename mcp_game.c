@@ -719,6 +719,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         case CP_PlayerPositionLook:
         case CP_PlayerPosition:
         case CP_PlayerLook:
+        case SP_UpdateHealth:
         case SP_MultiBlockChange:
         case SP_BlockChange:
         case CP_PlayerBlockPlacement:
