@@ -593,6 +593,20 @@ DUMP_BEGIN(SP_TimeUpdate) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x06 SP_UpdateHealth
+
+DECODE_BEGIN(SP_UpdateHealth,_1_8_1) {
+    Pfloat(health);
+    Pvarint(food);
+    Pfloat(saturation);
+} DECODE_END;
+
+DUMP_BEGIN(SP_UpdateHealth) {
+    printf("health=%.1f, food=%d, saturation=%.1f",
+           tpkt->health, tpkt->food, tpkt->saturation);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x07 SP_Respawn
 
 DECODE_BEGIN(SP_Respawn,_1_8_1) {
@@ -1504,6 +1518,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (SP_JoinGame,_1_8_1),
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
+        SUPPORT_D   (SP_UpdateHealth,_1_8_1),
         SUPPORT_DD  (SP_Respawn,_1_8_1),
         SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),
