@@ -2083,6 +2083,62 @@ void build_dump_queue() {
 
 
 
+////////////////////////////////////////////////////////////////////////////////
+// In-game preview
+
+#define PREVIEW_BLOCK BLOCKTYPE(0x98,0)
+
+void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq) {
+    int npackets=0;
+    MCPacket *packets[1000];
+    lh_clear_obj(packets);
+
+    int i,j;
+    for(i=0; i<C(build.task); i++) {
+        blk *b = &P(build.task)[i];
+        if (b->placed) continue;
+
+        int32_t X=b->x>>4;
+        int32_t Z=b->z>>4;
+
+        // see if we already have a packet for this chunk prepared
+        SP_MultiBlockChange_pkt *tpkt=NULL;
+        for(j=0; j<npackets; j++) {
+            if (packets[j]->_SP_MultiBlockChange.X==X &&
+                packets[j]->_SP_MultiBlockChange.Z==Z) {
+                tpkt = &packets[j]->_SP_MultiBlockChange;
+                break;
+            }
+        }
+
+        // no such packet - make new
+        if (!tpkt) {
+            if (npackets >= 1000) continue; // too many packets already - skip it
+            NEWPACKET(SP_MultiBlockChange, mbc);
+            packets[npackets++] = mbc;
+            tpkt = tmbc;
+            tmbc->X = X;
+            tmbc->Z = Z;
+        }
+
+        // add new block to the packet
+        lh_resize(tpkt->blocks, tpkt->count+1);
+        tpkt->blocks[tpkt->count].x = b->x&15;
+        tpkt->blocks[tpkt->count].z = b->z&15;
+        tpkt->blocks[tpkt->count].y = b->y;
+        tpkt->blocks[tpkt->count].bid = PREVIEW_BLOCK;
+        tpkt->count++;
+    }
+
+    for(i=0; i<npackets; i++)
+        queue_packet(packets[i], cq);
+
+    printf("Created %d packets\n",npackets);
+}
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Save/Load
@@ -2360,6 +2416,11 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
             sprintf(reply, "You need an existing buildtask to pause/unpause");
         }
         rpos=2;
+    }
+
+    // Preview
+    else if (!strcmp(words[1], "preview")) {
+        build_show_preview(sq, cq);
     }
 
     // Debug
