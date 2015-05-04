@@ -222,6 +222,8 @@ struct {
     int blkint;            // interval (in microseconds) between attempting to place same block
     int bldint;            // interval between placing any block
     int blkmax;            // maximum number of blocks to be places at once
+    int placemode;         // automatically enter this placement mode once a buildplan is
+                           // created, loaded or modified
 } buildopts = { 0 };
 
 typedef struct {
@@ -239,6 +241,7 @@ bopt_t OPTIONS[] = {
     { "blkint", "interval (us) between attempting to place same block", &buildopts.blkint, BUILD_BLKINT},
     { "bldint", "interval (us) between attempting to place any block",  &buildopts.bldint, BUILD_BLDINT},
     { "blkmax", "max number of blocks to place at once",                &buildopts.blkmax, BUILD_BLKMAX},
+    { "placemode", "default placement behavior",                        &buildopts.placemode, 1},
     { NULL, NULL, NULL, 0 }, //list terminator
 };
 
@@ -937,6 +940,18 @@ static void buildplan_updated() {
     build.bpsz=zx-zn+1;
 }
 
+// invoked by various functions when a buildplan is crated, so it can be placed immediately
+static void buildplan_place(char *reply) {
+    switch (buildopts.placemode) {
+        case 1:
+            sprintf(reply, "Mark pivot position by placing a block - will be build once");
+            break;
+        case 2:
+            sprintf(reply, "Mark pivot positions by placing block, disable with #build place cancel");
+            break;
+    }
+    build.placemode = buildopts.placemode;
+}
 
 
 
@@ -1118,6 +1133,7 @@ static void build_floor(char **words, char *reply) {
                       hollow?"border only":"", xsize, zsize, get_bid_name(buf, mat));
 
     buildplan_updated();
+    buildplan_place(reply);
 }
 
 // add a single block to the buildplan
@@ -1205,6 +1221,7 @@ static void build_ring(char **words, char *reply) {
                       diam, get_bid_name(buf, mat));
 
     buildplan_updated();
+    buildplan_place(reply);
 }
 
 static int SCAFF_STAIR[5][2] = { { 1, -1}, { 2, -1 }, { 2, 0 }, { 3, 0 }, { 3, 1 } };
@@ -1270,6 +1287,7 @@ static void build_scaffolding(char **words, char *reply) {
     sprintf(reply, "Created scaffolding: %d floors, %d blocks wide, material=%s",
             hg, wd, get_bid_name(buf, mat));
     buildplan_updated();
+    buildplan_place(reply);
 }
 
 static void build_stairs(char **words, char *reply) {
@@ -1330,6 +1348,7 @@ static void build_stairs(char **words, char *reply) {
     sprintf(reply, "Created stairs: %d floors, %d blocks wide, base=%s",
             hg, wd, base ? ( (base==1) ? "minimal" : "full" ) : "none");
     buildplan_updated();
+    buildplan_place(reply);
 }
 
 static void build_wall(char **words, char *reply) {
@@ -1374,6 +1393,7 @@ static void build_wall(char **words, char *reply) {
                       height, width, get_bid_name(buf, mat));
 
     buildplan_updated();
+    buildplan_place(reply);
 }
 
 // create a buildplan from existing map data by scanning a defined cuboid
@@ -1480,6 +1500,7 @@ static void build_scan(char **words, char *reply) {
 
     sprintf(reply, "Scanned %zd blocks from a %dx%dx%d area\n", C(build.plan), maxx-minx+1, maxz-minz+1, ysz);
     buildplan_updated();
+    buildplan_place(reply);
 }
 
 
@@ -1521,6 +1542,7 @@ static void build_extend(char **words, char *reply) {
     sprintf(reply, "Extended buildplan %d times, offset=%d,%d,%d",
             count, ox,oz,oy);
     buildplan_updated();
+    buildplan_place(reply);
 }
 
 // replace one material in the buildplan with another (including meta specification)
@@ -1555,6 +1577,9 @@ static void build_replace(char **words, char *reply) {
     sprintf(reply, "Replaced %d blocks %d:%d (%s) to %d:%d (%s)", count,
             mat1.bid, mat1.meta, get_bid_name(buf1, mat1),
             mat2.bid, mat2.meta, get_bid_name(buf2, mat2));
+
+    buildplan_updated();
+    buildplan_place(reply);
 }
 
 // hollow out the structure by removing all blocks completely surrounded by other blocks.
@@ -1597,6 +1622,9 @@ static void build_hollow(char **words, char *reply) {
     P(build.plan) = P(keep);
 
     sprintf(reply, "Removed %d blocks, kept %zd", removed, C(build.plan));
+
+    buildplan_updated();
+    buildplan_place(reply);
 }
 
 
@@ -1803,6 +1831,8 @@ static void build_rec(char **words, char *reply) {
     else if (!strcmp(words[0],"stop")) {
         build.recording = 0;
         sprintf(reply, "BREC stopped");
+        buildplan_updated();
+        buildplan_place(reply);
     }
     else if (!strcmp(words[0],"add") || !strcmp(words[0],"cont") || !strcmp(words[0],"continue")) {
         build.recording = 1;
@@ -2260,6 +2290,7 @@ void build_loadappend(const char * name, char * reply, int ox, int oz, int oy) {
 
     lh_free(buf);
     buildplan_updated();
+    buildplan_place(reply);
 }
 
 // load a buildplan from a .bplan file
@@ -2365,6 +2396,7 @@ void build_sload(const char *name, char *reply) {
     lh_free(buf);
 
     buildplan_updated();
+    buildplan_place(reply);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
