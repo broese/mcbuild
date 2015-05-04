@@ -475,7 +475,7 @@ int main(int ac, char **av) {
     nbt_t * b = nbt_new(NBT_BYTE,   "MyByte",   12);
     nbt_t * s = nbt_new(NBT_SHORT,  "MyShort",  1234);
     nbt_t * i = nbt_new(NBT_INT,    "MyInt",    12345678);
-    nbt_t * l = nbt_new(NBT_LONG,   "MyLong",   123456789123456789L);
+    nbt_t * l = nbt_new(NBT_LONG,   "MyLong",   123456789123456789LL);
     nbt_t * f = nbt_new(NBT_FLOAT,  "MyFloat",  1.234);
     nbt_t * d = nbt_new(NBT_DOUBLE, "MyDouble", 1.234567890123456789);
     nbt_t * ba = nbt_new(NBT_BYTE_ARRAY, "MyByteArray", "ABCDEFGH", 8);
@@ -503,6 +503,7 @@ int main(int ac, char **av) {
     nbt_dump(li);
     nbt_dump(co);
 
+#if 0
     nbt_free(b);
     nbt_free(s);
     nbt_free(i);
@@ -513,6 +514,7 @@ int main(int ac, char **av) {
     nbt_free(st);
     nbt_free(ia);
     nbt_free(li);
+#endif
     nbt_free(co);
 }
 
