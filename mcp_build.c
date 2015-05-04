@@ -231,8 +231,8 @@ typedef struct {
     int defvalue;
 } bopt_t;
 
-#define BUILD_BLKINT 2000000
-#define BUILD_BLDINT  500000
+#define BUILD_BLKINT 1000000
+#define BUILD_BLDINT  150000
 #define BUILD_BLKMAX       1
 
 bopt_t OPTIONS[] = {
