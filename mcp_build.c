@@ -541,6 +541,36 @@ static inline void setdots(blk *b, uint16_t *u, uint16_t *d,
     if (b->n_zn) memcpy(b->dots[DIR_NORTH], n, sizeof(DOTS_ALL));
 }
 
+// update placed/empty flags of a buildtask only -
+// used to update state for preview or material calculation
+static void build_update_placed() {
+    if (C(build.task)<=0) return;
+
+    // offset coords of the cuboid
+    int32_t Xo = (build.xmin-1)>>4;
+    int32_t Zo = (build.zmin-1)>>4;
+    int32_t xo = Xo<<4;
+    int32_t zo = Zo<<4;
+    int32_t yo = build.ymin-1;
+
+    // cuboid size
+    int32_t Xsz = ((build.xmax+1)>>4)-Xo+1;
+    int32_t Zsz = ((build.zmax+1)>>4)-Zo+1;
+    int32_t xsz = Xsz<<4;
+    int32_t zsz = Zsz<<4;
+    int32_t ysz = build.ymax-build.ymin+3;
+
+    bid_t * world = export_cuboid(Xo, Xsz, Zo, Zsz, yo, ysz, NULL);
+
+    int i;
+    for(i=0; i<C(build.task); i++) {
+        blk *b = P(build.task)+i;
+        bid_t bl = world[OFF(b->x,b->z,b->y)];
+        b->placed = (bl.raw == b->b.raw);
+        b->empty  = ISEMPTY(bl.bid) && !b->placed;
+    }
+}
+
 // called when player position or look have changed - update our placeable blocks list
 void build_update() {
     if (!build.active) return;
@@ -2089,6 +2119,9 @@ void build_dump_queue() {
 #define PREVIEW_BLOCK BLOCKTYPE(0x98,0)
 
 void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq) {
+    if (C(build.task)<=0) return;
+    build_update_placed();
+
     int npackets=0;
     MCPacket *packets[1000];
     lh_clear_obj(packets);
