@@ -1099,10 +1099,12 @@ static void build_floor(char **words, char *reply) {
     bid_t mat = build_arg_material(words, reply);
     if (reply[0]) return;
 
+    int hollow = mcparg_find(words, "hollow", "rect", "empty", "e", NULL);
 
     int x,z;
     for(x=0; x<xsize; x++) {
         for(z=0; z<zsize; z++) {
+            if (hollow && z!=0 && z!=zsize-1) continue;
             blkr *b = lh_arr_new(BPLAN);
             b->b = mat;
             b->x = x;
@@ -1112,8 +1114,8 @@ static void build_floor(char **words, char *reply) {
     }
 
     char buf[256];
-    int off = sprintf(reply, "Created floor %dx%d material=%s",
-                      xsize, zsize, get_bid_name(buf, mat));
+    int off = sprintf(reply, "Created floor %s%dx%d material=%s",
+                      hollow?"border only":"", xsize, zsize, get_bid_name(buf, mat));
 
     buildplan_updated();
 }
