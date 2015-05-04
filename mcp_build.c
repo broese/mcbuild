@@ -129,6 +129,7 @@ uint16_t DOTS_NONE[15] = {
 typedef struct {
     int32_t     x,y,z;          // coordinates of the block to place
     bid_t       b;              // block type, including the meta
+    bid_t       current;        // block that is currently in the world at this position
 
     int         rdir;           // required placement direction
                                 // one of the DIR_* constants, -1 if doesn't matter
@@ -568,6 +569,7 @@ static void build_update_placed() {
         bid_t bl = world[OFF(b->x,b->z,b->y)];
         b->placed = (bl.raw == b->b.raw);
         b->empty  = ISEMPTY(bl.bid) && !b->placed;
+        b->current = bl;
     }
 }
 
@@ -2118,7 +2120,11 @@ void build_dump_queue() {
 
 #define PREVIEW_BLOCK BLOCKTYPE(0x98,0)
 
-void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq) {
+#define PREVIEW_REMOVE  0
+#define PREVIEW_MISSING 1
+#define PREVIEW_TRUE    2
+
+void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq, int mode) {
     if (C(build.task)<=0) return;
     build_update_placed();
 
@@ -2154,12 +2160,26 @@ void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq) {
             tmbc->Z = Z;
         }
 
+        // depending on the preview mode, select which block will be shown
+        bid_t bid;
+        switch (mode) {
+            case PREVIEW_REMOVE:
+                bid = b->current;
+                break;
+            case PREVIEW_MISSING:
+                bid = PREVIEW_BLOCK;
+                break;
+            case PREVIEW_TRUE:
+                bid = b->b;
+                break;
+        }
+
         // add new block to the packet
         lh_resize(tpkt->blocks, tpkt->count+1);
         tpkt->blocks[tpkt->count].x = b->x&15;
         tpkt->blocks[tpkt->count].z = b->z&15;
         tpkt->blocks[tpkt->count].y = b->y;
-        tpkt->blocks[tpkt->count].bid = PREVIEW_BLOCK;
+        tpkt->blocks[tpkt->count].bid = bid;
         tpkt->count++;
     }
 
@@ -2453,7 +2473,15 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     // Preview
     else if (!strcmp(words[1], "preview")) {
-        build_show_preview(sq, cq);
+        int mode = PREVIEW_MISSING;
+
+        if (words[2]) {
+            if (!strcmp(words[2], "true") || !strcmp(words[2], "t"))
+                mode = PREVIEW_TRUE;
+            else if (!strcmp(words[2], "remove") || !strcmp(words[2], "-"))
+                mode = PREVIEW_REMOVE;
+        }
+        build_show_preview(sq, cq, mode);
     }
 
     // Debug
