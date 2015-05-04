@@ -1017,8 +1017,8 @@ static void build_arg_offset(char **words, char *reply, int argpos, int *ox, int
                 case 'd': *ox=0; *oz=0; *oy=-build.bpsy; break;
                 case 'r': *ox=build.bpsx; *oz=0; *oy=0; break;
                 case 'l': *ox=-build.bpsx; *oz=0; *oy=0; break;
-                case 'f': *ox=0; *oz=build.bpsz; *oy=0; break;
-                case 'b': *ox=0; *oz=-build.bpsz; *oy=0; break;
+                case 'f': *ox=0; *oz=-build.bpsz; *oy=0; break;
+                case 'b': *ox=0; *oz=build.bpsz; *oy=0; break;
                 default:
                     sprintf(reply, "Usage: offset=x[,z[,y]]|u|d|r|l|f|b");
                     return;
