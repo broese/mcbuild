@@ -691,8 +691,10 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             }
 
             // block annoying sounds
-            if (strcmp(tpkt->name,"mob.sheep.say") &&
-                strcmp(tpkt->name,"mob.sheep.step") &&
+            if (strncmp(tpkt->name,"mob.sheep.",10) &&
+                strncmp(tpkt->name,"mob.cow.",8) &&
+                strncmp(tpkt->name,"mob.pig.",8) &&
+                strncmp(tpkt->name,"mob.chicken.",12) &&
                 strncmp(tpkt->name,"note.",5) ) {
                 queue_packet(pkt, tq);
             }
