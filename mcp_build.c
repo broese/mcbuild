@@ -942,6 +942,7 @@ static void buildplan_updated() {
 
 // invoked by various functions when a buildplan is crated, so it can be placed immediately
 static void buildplan_place(char *reply) {
+#if 0
     switch (buildopts.placemode) {
         case 1:
             sprintf(reply, "Mark pivot position by placing a block - will be build once");
@@ -950,6 +951,7 @@ static void buildplan_place(char *reply) {
             sprintf(reply, "Mark pivot positions by placing block, disable with #build place cancel");
             break;
     }
+#endif
     build.placemode = buildopts.placemode;
 }
 
