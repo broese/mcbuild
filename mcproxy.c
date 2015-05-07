@@ -367,10 +367,8 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define MAXPLEN (4*1024*1024)
-
-uint8_t ubuf[MAXPLEN];
-uint8_t cbuf[MAXPLEN];
+uint8_t ubuf[MCP_MAXPLEN];
+uint8_t cbuf[MCP_MAXPLEN];
 #define LIM64(len) ((len)>64?64:(len))
 #define LIM128(len) ((len)>128?128:(len))
 

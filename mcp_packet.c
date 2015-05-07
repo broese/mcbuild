@@ -36,8 +36,15 @@ static inline int count_bits(uint16_t bitmask) {
 ////////////////////////////////////////////////////////////////////////////////
 // String
 
+/*
+  MCP string format:
+  varint length
+  char[length] string, no terminator
+*/
+
 static uint8_t * read_string(uint8_t *p, char *s) {
     uint32_t len = lh_read_varint(p);
+    assert(len<MCP_MAXSTR);
     memmove(s, p, len);
     s[len] = 0;
     return p+len;

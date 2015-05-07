@@ -8,7 +8,14 @@
 
 #include "nbt.h"
 
-// special data types used in the MC packets
+////////////////////////////////////////////////////////////////////////////////
+// various constants
+
+#define MCP_MAXSTR 256
+#define MCP_MAXPLEN (4*1024*1024)
+
+////////////////////////////////////////////////////////////////////////////////
+// coordinate data types
 
 typedef uint8_t uuid_t[16];
 typedef int32_t fixp;
@@ -55,7 +62,7 @@ typedef struct {
         int16_t s;
         int32_t i;
         float   f;
-        char    str[256];
+        char    str[MCP_MAXSTR];
         slot_t  slot;
         struct {
             int32_t x;
