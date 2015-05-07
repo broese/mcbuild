@@ -10,7 +10,10 @@
 
 #include "nbt.h"
 
-void nbt_dump_ind(nbt_t *nbt, int indent) {
+////////////////////////////////////////////////////////////////////////////////
+// dumping
+
+static void nbt_dump_ind(nbt_t *nbt, int indent) {
     char ind[4096];
     memset(ind, ' ', indent);
     ind[indent] = 0;
@@ -79,12 +82,19 @@ void nbt_dump_ind(nbt_t *nbt, int indent) {
     }
 }
 
+// print NBT contents - entry point into recursive indentation
 void nbt_dump(nbt_t *nbt) {
     if (!nbt) return;
     nbt_dump_ind(nbt, 0);
 }
 
-nbt_t * nbt_parse_type(uint8_t **p, uint8_t type, int named) {
+////////////////////////////////////////////////////////////////////////////////
+// serialization
+
+// parse the payload of a known NBT token type
+// we need this separation of functions to be able to parse
+// the "headless" tokens in the arrays
+static nbt_t * nbt_parse_type(uint8_t **p, uint8_t type, int named) {
     assert(type);
     int i;
 
@@ -174,108 +184,19 @@ nbt_t * nbt_parse_type(uint8_t **p, uint8_t type, int named) {
     return nbt;
 }
 
+// parse NBT object from serialized data
 nbt_t * nbt_parse(uint8_t **p) {
     uint8_t type = lh_read_char(*p);
     if (type == NBT_END) return NULL;
     return nbt_parse_type(p, type, 1);
 }
 
-void nbt_free(nbt_t *nbt) {
-    if (!nbt) return;
-
-    int i;
-
-    switch (nbt->type) {
-        case NBT_BYTE_ARRAY: lh_free(nbt->ba); break;
-        case NBT_INT_ARRAY:  lh_free(nbt->ia); break;
-        case NBT_STRING:     lh_free(nbt->st); break;
-        case NBT_LIST:
-            for(i=0; i<nbt->count; i++)
-                nbt_free(nbt->li[i]);
-            lh_free(nbt->li);
-            break;
-        case NBT_COMPOUND:
-            for(i=0; i<nbt->count; i++)
-                nbt_free(nbt->co[i]);
-            lh_free(nbt->co);
-            break;
-    }
-    lh_free(nbt->name);
-    lh_free(nbt);
-}
-
-nbt_t * nbt_clone(nbt_t *src) {
-    if (!src) return NULL;
-
-    // allocate NBT object
-    lh_create_obj(nbt_t,dst);
-
-    // copy static elements
-    dst->type = src->type;
-    dst->count = src->count;
-    if (src->name) dst->name = strdup(src->name);
-
-    int i;
-
-    // copy data
-    switch (src->type) {
-        case NBT_BYTE:
-            dst->b = src->b;
-            break;
-
-        case NBT_SHORT:
-            dst->s = src->s;
-            break;
-
-        case NBT_INT:
-            dst->i = src->i;
-            break;
-
-        case NBT_LONG:
-            dst->l = src->l;
-            break;
-
-        case NBT_FLOAT:
-            dst->f = src->f;
-            break;
-
-        case NBT_DOUBLE:
-            dst->d = src->d;
-            break;
-
-        case NBT_BYTE_ARRAY:
-            lh_alloc_num(dst->ba, dst->count);
-            memmove(dst->ba, src->ba, dst->count);
-            break;
-
-        case NBT_INT_ARRAY:
-            lh_alloc_num(dst->ia, dst->count);
-            memmove(dst->ia, src->ia, dst->count*sizeof(*dst->ia));
-            break;
-
-        case NBT_STRING:
-            dst->st = strdup(src->st);
-            break;
-
-        case NBT_LIST:
-            lh_alloc_num(dst->li, dst->count);
-            for(i=0; i<dst->count; i++)
-                dst->li[i] = nbt_clone(src->li[i]);
-            break;
-
-        case NBT_COMPOUND:
-            lh_alloc_num(dst->co, dst->count);
-            for(i=0; i<dst->count; i++)
-                dst->co[i] = nbt_clone(src->co[i]);
-            break;
-    }
-
-    return dst;
-}
-
+// serialize NBT object to a buffer
+//FIXME: this function assumes the output buffer has sufficient size
+//(typically, it will be the MAXPLEN (4MiB) buffer in mcproxy used for packet encoding)
 void nbt_write(uint8_t **w, nbt_t *nbt) {
     if (!nbt) {
-        lh_write_char(*w, 0);
+        lh_write_char(*w, NBT_END); // write terminating token
         return;
     }
 
@@ -352,6 +273,109 @@ void nbt_write(uint8_t **w, nbt_t *nbt) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// management
+
+// properly deallocate NBT objects
+void nbt_free(nbt_t *nbt) {
+    if (!nbt) return;
+
+    int i;
+
+    switch (nbt->type) {
+        case NBT_BYTE_ARRAY: lh_free(nbt->ba); break;
+        case NBT_INT_ARRAY:  lh_free(nbt->ia); break;
+        case NBT_STRING:     lh_free(nbt->st); break;
+        case NBT_LIST:
+            for(i=0; i<nbt->count; i++)
+                nbt_free(nbt->li[i]);
+            lh_free(nbt->li);
+            break;
+        case NBT_COMPOUND:
+            for(i=0; i<nbt->count; i++)
+                nbt_free(nbt->co[i]);
+            lh_free(nbt->co);
+            break;
+    }
+    lh_free(nbt->name);
+    lh_free(nbt);
+}
+
+// deep-copy clone of NBT objects
+nbt_t * nbt_clone(nbt_t *src) {
+    if (!src) return NULL;
+
+    // allocate NBT object
+    lh_create_obj(nbt_t,dst);
+
+    // copy static elements
+    dst->type = src->type;
+    dst->count = src->count;
+    if (src->name) dst->name = strdup(src->name);
+
+    int i;
+
+    // copy data
+    switch (src->type) {
+        case NBT_BYTE:
+            dst->b = src->b;
+            break;
+
+        case NBT_SHORT:
+            dst->s = src->s;
+            break;
+
+        case NBT_INT:
+            dst->i = src->i;
+            break;
+
+        case NBT_LONG:
+            dst->l = src->l;
+            break;
+
+        case NBT_FLOAT:
+            dst->f = src->f;
+            break;
+
+        case NBT_DOUBLE:
+            dst->d = src->d;
+            break;
+
+        case NBT_BYTE_ARRAY:
+            lh_alloc_num(dst->ba, dst->count);
+            memmove(dst->ba, src->ba, dst->count);
+            break;
+
+        case NBT_INT_ARRAY:
+            lh_alloc_num(dst->ia, dst->count);
+            memmove(dst->ia, src->ia, dst->count*sizeof(*dst->ia));
+            break;
+
+        case NBT_STRING:
+            dst->st = strdup(src->st);
+            break;
+
+        case NBT_LIST:
+            lh_alloc_num(dst->li, dst->count);
+            for(i=0; i<dst->count; i++)
+                dst->li[i] = nbt_clone(src->li[i]);
+            break;
+
+        case NBT_COMPOUND:
+            lh_alloc_num(dst->co, dst->count);
+            for(i=0; i<dst->count; i++)
+                dst->co[i] = nbt_clone(src->co[i]);
+            break;
+    }
+
+    return dst;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// element access
+
+// access an element in the compound by name
 nbt_t * nbt_hget(nbt_t *nbt, const char *name) {
     if (!nbt) return NULL;
     if (nbt->type != NBT_COMPOUND) return NULL;
@@ -365,12 +389,27 @@ nbt_t * nbt_hget(nbt_t *nbt, const char *name) {
     return NULL;
 }
 
+// access an element in an array by index
 nbt_t * nbt_aget(nbt_t *nbt, int idx) {
     if (!nbt) return NULL;
     if (nbt->type != NBT_LIST || idx>=nbt->count) return NULL;
     return nbt->li[idx];
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// construction
+
+// create a new NBT object of given type and name
+// name can be set to NULL to create an unnamed object
+// values are specified in the variable argument list depending on type:
+// all basic types : value
+// byte/int array  : type *, count
+//   - the data will be copied
+// list            : count, obj0, obj1, obj2, ...
+//   - first object defines the list type
+//   - named objects will retain their name
+// compoiund       : count, obj0, obj1, obj2, ...
+//   - element names are taken from inserted objects
 nbt_t * nbt_new(int type, const char *name, ...) {
     assert(type>NBT_END && type<=NBT_INT_ARRAY);
 
@@ -440,6 +479,9 @@ nbt_t * nbt_new(int type, const char *name, ...) {
     va_end(ap);
     return nbt;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// test routines
 
 #if TEST
 
