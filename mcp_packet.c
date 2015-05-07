@@ -162,8 +162,8 @@ metadata * clone_metadata(metadata *meta) {
     memmove(newmeta, meta, 32*sizeof(metadata));
     int i;
     for(i=0; i<32; i++)
-        if (newmeta[i].type == META_SLOT && newmeta[i].slot.nbt)
-            newmeta[i].slot.nbt = nbt_clone(newmeta[i].slot.nbt);
+        if (newmeta[i].type == META_SLOT)
+            clone_slot(&meta[i].slot, &newmeta[i].slot);
     return newmeta;
 }
 
@@ -171,8 +171,8 @@ void free_metadata(metadata *meta) {
     if (!meta) return;
     int i;
     for(i=0; i<32; i++)
-        if (meta[i].type == META_SLOT && meta[i].slot.nbt)
-            nbt_free(meta[i].slot.nbt);
+        if (meta[i].type == META_SLOT)
+            clear_slot(&meta[i].slot);
     free(meta);
 }
 
