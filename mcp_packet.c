@@ -934,9 +934,7 @@ DECODE_BEGIN(SP_EntityMetadata,_1_8_1) {
 } DECODE_END;
 
 DUMP_BEGIN(SP_EntityMetadata) {
-    char buf[256];
     printf("eid=%08x", tpkt->eid);
-
     // unfortunately we don't have access to proper entity type here
     dump_metadata(tpkt->meta, Entity);
 } DUMP_END;

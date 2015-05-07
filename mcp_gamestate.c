@@ -958,10 +958,14 @@ void gs_packet(MCPacket *pkt) {
                 int i;
                 for(i=0; i<32; i++) {
                     if (tpkt->meta[i].h != 0x7f) {
-                        if (e->type == META_SLOT && e->mdata[i].slot.nbt)
-                            nbt_free(e->mdata[i].slot.nbt);
+                        // replace stored metadata with the one from the packet
+                        if (e->mdata[i].type == META_SLOT)
+                            clear_slot(&e->mdata[i].slot);
                         e->mdata[i] = tpkt->meta[i];
-                        e->mdata[i].slot.nbt = nbt_clone(tpkt->meta[i].slot.nbt);
+
+                        // for slot-type metadata we need to propely clone the slot
+                        if (tpkt->meta[i].type == META_SLOT)
+                            clone_slot(&tpkt->meta[i].slot, &e->mdata[i].slot);
                     }
                 }
             }
