@@ -80,6 +80,7 @@ void nbt_dump_ind(nbt_t *nbt, int indent) {
 }
 
 void nbt_dump(nbt_t *nbt) {
+    if (!nbt) return;
     nbt_dump_ind(nbt, 0);
 }
 
@@ -180,6 +181,8 @@ nbt_t * nbt_parse(uint8_t **p) {
 }
 
 void nbt_free(nbt_t *nbt) {
+    if (!nbt) return;
+
     int i;
 
     switch (nbt->type) {
@@ -350,6 +353,7 @@ void nbt_write(uint8_t **w, nbt_t *nbt) {
 }
 
 nbt_t * nbt_hget(nbt_t *nbt, const char *name) {
+    if (!nbt) return NULL;
     if (nbt->type != NBT_COMPOUND) return NULL;
 
     int i;
@@ -362,6 +366,7 @@ nbt_t * nbt_hget(nbt_t *nbt, const char *name) {
 }
 
 nbt_t * nbt_aget(nbt_t *nbt, int idx) {
+    if (!nbt) return NULL;
     if (nbt->type != NBT_LIST || idx>=nbt->count) return NULL;
     return nbt->li[idx];
 }
