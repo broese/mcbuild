@@ -1226,6 +1226,62 @@ static void build_ring(char **words, char *reply) {
     buildplan_place(reply);
 }
 
+static void build_ball(char **words, char *reply) {
+    build_clear();
+
+    // ball diameter
+    int diam;
+    mcpopt opt_diam = {{"size","sz","s","diameter","diam","D","d",NULL}, 0, {"%d",NULL}};
+    if (mcparg_parse(words, &opt_diam, &diam)!=0) {
+        sprintf(reply, "Usage: #build ball size=<diameter>");
+        return;
+    }
+    if (diam<=0) {
+        sprintf(reply, "Usage: illegal ball size %d",diam);
+        return;
+    }
+
+    bid_t mat = build_arg_material(words, reply);
+    if (reply[0]) return;
+
+    int x,y,z,min,max;
+    blkr *b;
+    float c;
+
+    if (diam&1) { // odd diameter - a block in the center
+        max = diam/2;
+        min = -max;
+        c=0.0;
+    }
+    else {
+        max = diam/2-1;
+        min = -max-1;
+        c=-0.5;
+    }
+
+    for(y=min; y<=max; y++) {
+        for(x=min; x<=max; x++) {
+            for(z=min; z<=max; z++) {
+                float sqdist = SQ((float)x-c)+SQ((float)y-c)+SQ((float)z-c);
+                if (sqdist < SQ(((float)diam)/2)) {
+                    b = lh_arr_new(BPLAN);
+                    b->b = mat;
+                    b->y = y;
+                    b->x = x;
+                    b->z = z;
+                }
+            }
+        }
+    }
+
+    char buf[256];
+    int off = sprintf(reply, "Created ball diam=%d material=%s",
+                      diam, get_bid_name(buf, mat));
+
+    buildplan_updated();
+    buildplan_place(reply);
+}
+
 static int SCAFF_STAIR[5][2] = { { 1, -1}, { 2, -1 }, { 2, 0 }, { 3, 0 }, { 3, 1 } };
 
 static void build_scaffolding(char **words, char *reply) {
@@ -2537,6 +2593,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "ring")) {
         build_ring(words+2, reply);
+    }
+    else if (!strcmp(words[1], "ball")) {
+        build_ball(words+2, reply);
     }
     else if (!strcmp(words[1], "scaf") || !strcmp(words[1], "scaffolding")) {
         build_scaffolding(words+2, reply);
