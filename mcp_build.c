@@ -1629,6 +1629,94 @@ static void build_hollow(char **words, char *reply) {
     buildplan_place(reply);
 }
 
+#define TRIM_UNK -1
+#define TRIM_EQ   0
+#define TRIM_L    1
+#define TRIM_LE   2
+#define TRIM_G    3
+#define TRIM_GE   4
+
+// trim the buildplan by erasing block not fitting the criteria
+static void build_trim(char **words, char *reply) {
+    int i,j,f;
+    int removed=0;
+
+    lh_arr_declare_i(blkr, keep);
+
+    int maxx=INT32_MAX, minx=INT32_MIN;
+    int maxy=INT32_MAX, miny=INT32_MIN;
+    int maxz=INT32_MAX, minz=INT32_MIN;
+
+    // parse the parameters to determine the desired trim setting
+    for(i=0; words[i]; i++) {
+        char *arg = words[i];
+
+        // parse the dimension
+        int *maxc,*minc;
+        char dim;
+        switch(*arg) {
+            case 'x': maxc=&maxx; minc=&minx; dim='x'; break;
+            case 'y': maxc=&maxy; minc=&miny; dim='y'; break;
+            case 'z': maxc=&maxz; minc=&minz; dim='z'; break;
+            default :
+                sprintf(reply, "Cannot parse parameter '%s'",arg);
+                return;
+        }
+        arg++;
+
+        // parse the operator
+        int op=TRIM_UNK;
+        switch(*arg) {
+            case '=': op=TRIM_EQ; break;
+            case '<': if (arg[1]=='=') { op=TRIM_LE; arg++; } else op=TRIM_L; break;
+            case '>': if (arg[1]=='=') { op=TRIM_GE; arg++; } else op=TRIM_G; break;
+            default :
+                sprintf(reply, "Cannot parse parameter2 '%s'",arg);
+                return;
+        }
+        arg++;
+
+        // parse the value
+        int val;
+        if (sscanf(arg,"%d",&val)!=1) {
+            sprintf(reply, "Cannot parse value '%s'",arg);
+            return;
+        }
+
+        switch (op) {
+            case TRIM_EQ: *maxc=val; *minc=val; break;
+            case TRIM_L:  *maxc=val-1; break;
+            case TRIM_LE: *maxc=val; break;
+            case TRIM_G:  *minc=val-1; break;
+            case TRIM_GE: *minc=val; break;
+        }
+    }
+
+    // select blocks matching the trim criteria
+    for(i=0; i<C(build.plan); i++) {
+        blkr *b = P(build.plan)+i;
+
+        if (b->x>=minx && b->x<=maxx &&
+            b->y>=miny && b->y<=maxy &&
+            b->z>=minz && b->z<=maxz) {
+
+            // this block is within boundaries and should be kept
+            blkr *k = lh_arr_new(GAR(keep));
+            *k = *b;
+        }
+        else
+            removed++;
+    }
+
+    lh_arr_free(BPLAN);
+    C(build.plan) = C(keep);
+    P(build.plan) = P(keep);
+
+    sprintf(reply, "Removed %d blocks, kept %zd", removed, C(build.plan));
+
+    buildplan_updated();
+    buildplan_place(reply);
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2466,6 +2554,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "replace")) {
         build_replace(words+2, reply);
+    }
+    else if (!strcmp(words[1], "trim")) {
+        build_trim(words+2, reply);
     }
 
     // Save/load/import
