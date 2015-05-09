@@ -1121,7 +1121,7 @@ static void build_floor(char **words, char *reply) {
     int x,z;
     for(x=0; x<xsize; x++) {
         for(z=0; z<zsize; z++) {
-            if (hollow && z!=0 && z!=zsize-1) continue;
+            if (hollow && x!=0 && x!=xsize-1 && z!=0 && z!=zsize-1) continue;
             blkr *b = lh_arr_new(BPLAN);
             b->b = mat;
             b->x = x;
@@ -1132,7 +1132,7 @@ static void build_floor(char **words, char *reply) {
 
     char buf[256];
     int off = sprintf(reply, "Created floor %s%dx%d material=%s",
-                      hollow?"border only":"", xsize, zsize, get_bid_name(buf, mat));
+                      hollow?"(border only) ":"", xsize, zsize, get_bid_name(buf, mat));
 
     buildplan_updated();
     buildplan_place(reply);
