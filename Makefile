@@ -35,9 +35,6 @@ argtest: mcp_arg.c
 varint: varint.c
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -o $@ $^ $(LIBS)
 
-tmap: thundermap.c
-	$(CC) $(CFLAGS) $(INC) $(DEFS) -o $@ $^ $(LIBS)
-
 .c.o:
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -o $@ -c $<
 
