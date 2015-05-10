@@ -206,7 +206,7 @@ static void autoshear(MCPacketQueue *sq) {
 #define HR_DISTC 2
 #define HR_DISTB (HR_DISTC<<4)
 
-static void hole_radar(MCPacketQueue *sq) {
+static void hole_radar(MCPacketQueue *cq) {
     int x = gs.own.lx;
     int y = gs.own.ly-1;
     int z = gs.own.lz;
@@ -259,7 +259,7 @@ static void hole_radar(MCPacketQueue *sq) {
             char reply[32768];
             sprintf(reply, "*** HOLE *** : %d,%d y=%d d=%d",
                     x+lx*i,z+lz*i,y,i);
-            chat_message(reply, sq, "gold", 2);
+            chat_message(reply, cq, "gold", 2);
             break;
         }
     }
