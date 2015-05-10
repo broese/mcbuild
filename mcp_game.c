@@ -42,6 +42,22 @@ typedef struct {
 wcoord_t bases[MAXBASES];
 int nbases=0;
 
+// friend/foe recognition
+#define MAXUUIDS 256
+#define UUIDSFILE "players.txt"
+#define UUID_NEUTRAL 0
+#define UUID_FRIEND  1
+#define UUID_ENEMY   2
+#define UUID_DANGER  3
+
+typedef struct {
+    uuid_t uuid;
+    int    status;
+    char   name[256];
+} puuid;
+puuid uuids[MAXUUIDS];
+int nuuids = 0;
+
 ////////////////////////////////////////////////////////////////////////////////
 // helpers
 
@@ -776,6 +792,37 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             queue_packet(pkt, tq);
         } _GMP;
 
+        ////////////////////////////////////////////////////////////////
+        // Other players
+
+        GMP(SP_SpawnPlayer) {
+            char buf[256];
+            int i;
+
+            puuid * pu = NULL;
+            for(i=0; i<nuuids; i++) {
+                if (!memcmp(tpkt->uuid, uuids[i].uuid, 16)) {
+                    pu = &uuids[i];
+                    break;
+                }
+            }
+
+            if (!pu)
+                sprintf(buf, "Player %02x%02x%02x%02x%02x%02x... at %d,%d/%d",
+                        tpkt->uuid[0],tpkt->uuid[1],tpkt->uuid[2],
+                        tpkt->uuid[3],tpkt->uuid[4],tpkt->uuid[5],
+                        tpkt->x>>5,tpkt->z>>5,tpkt->y>>5);
+            else
+                sprintf(buf, "Player %s at %d,%d/%d",
+                        pu->name, tpkt->x>>5, tpkt->z>>5, tpkt->y>>5);
+
+            chat_message(buf, tq, "red", 0);
+            queue_packet(pkt, tq);
+
+            if (pu && pu->status==UUID_DANGER)
+                drop_connection();
+        } _GMP;
+
         default:
             // by default - just forward the packet
             queue_packet(pkt, tq);
@@ -812,6 +859,46 @@ void readbases() {
     }
 }
 
+// load friend/foe UUIDs
+void read_uuids() {
+    int i;
+
+    FILE *fp = fopen(UUIDSFILE, "r");
+    if (!fp) {
+        printf("Cannot open file %s for reading: %s\n",UUIDSFILE,strerror(errno));
+        return;
+    }
+
+    nuuids=0;
+    while (!feof(fp) && nuuids<MAXUUIDS) {
+        char buf[1024];
+        if (!fgets(buf, sizeof(buf), fp)) break;
+        if (buf[0]=='#' || buf[0]==0x0d || buf[0]==0x0a) continue;
+
+        char ubuf[256];
+        int status;
+        char name[256];
+
+        if (sscanf(buf, "%[^,],%d,%s", ubuf,&status,name)!=3) {
+            printf("Error parsing line '%s' in %s\n",buf,UUIDSFILE);
+            continue;
+        }
+
+        if (hex_import(ubuf, uuids[nuuids].uuid, 16)!=16) {
+            printf("Error parsing UUID '%s' in %s\n",ubuf,UUIDSFILE);
+            continue;
+        }
+        uuids[nuuids].status = status;
+        strcpy(uuids[nuuids].name, name);
+        nuuids++;
+    }
+
+    for(i=0; i<nuuids; i++) {
+        printf("%3d : %d %-40s ",i,uuids[i].status,uuids[i].name);
+        hexprint(uuids[i].uuid, 16);
+    }
+}
+
 void gm_reset() {
     lh_clear_obj(opt);
 
@@ -819,6 +906,7 @@ void gm_reset() {
 
     build_clear();
     readbases();
+    read_uuids();
 }
 
 void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
