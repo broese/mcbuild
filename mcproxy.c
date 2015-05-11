@@ -1094,6 +1094,17 @@ void test_stuff(int ac, char **av) {
 }
 
 int main(int ac, char **av) {
+#if 0
+    MCPacketQueue tq = {NULL,0}, bq = {NULL,0};
+    build_clear();
+    handle_command("bu ball 73 mat=49",&tq,&bq);
+    handle_command("bu trim y>=-1",&tq,&bq);
+    handle_command("bu hollow",&tq,&bq);
+    handle_command("bu trim y>=0",&tq,&bq);
+    handle_command("bu save dome73",&tq,&bq);
+#endif
+
+#if 1
     //test_stuff(ac, av); return 0;
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -1114,6 +1125,7 @@ int main(int ac, char **av) {
     ERR_remove_state(getpid());
     ERR_free_strings();
     curl_global_cleanup();
+#endif
 
     return 0;
 }

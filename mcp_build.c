@@ -1645,10 +1645,12 @@ static void build_replace(char **words, char *reply) {
 static void build_hollow(char **words, char *reply) {
     int i,j,f;
     int removed=0;
+    //printf("To go: %d\n",C(build.plan));
 
     lh_arr_declare_i(blkr, keep);
 
     for(i=0; i<C(build.plan); i++) {
+        if (i%1000==0) printf("hollow: %d\n",i);
         blkr *b = P(build.plan)+i;
         int nn=0; //number of adjacent blocks
         for(f=0; f<6; f++) {
