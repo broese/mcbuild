@@ -1776,6 +1776,31 @@ static void build_trim(char **words, char *reply) {
     buildplan_place(reply);
 }
 
+// trim the buildplan by erasing block not fitting the criteria
+static void build_flip(char **words, char *reply) {
+    int i;
+    char mode = 'x';
+    if (words[0]) {
+        switch(words[0][0]) {
+            case 'x':
+            case 'y':
+            case 'z':
+                mode=words[0][0]; break;
+            default:
+                sprintf(reply, "Usage: #build flip [x|y|z]");
+                return;
+        }
+    }
+
+    for(i=0; i<C(build.plan); i++) {
+        blkr *b = P(build.plan)+i;
+        switch (mode) {
+            case 'x': b->x = -b->x; break;
+            case 'y': b->y = -b->y; break;
+            case 'z': b->z = -b->z; break;
+        }
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pivot placement
@@ -2618,6 +2643,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "trim")) {
         build_trim(words+2, reply);
+    }
+    else if (!strcmp(words[1], "flip")) {
+        build_flip(words+2, reply);
     }
 
     // Save/load/import
