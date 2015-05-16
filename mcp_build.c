@@ -1884,9 +1884,11 @@ static void build_place(char **words, char *reply) {
     mcpopt opt_coord = {{"coordinates","coords","coord","c",NULL}, 0, {"%d,%d,%d","%d,%d","%d",NULL}};
     switch(mcparg_parse(words, &opt_coord, &px, &pz, &py)) {
         case 0:
+            build.placemode = 0;
             break;
         case 1:
             py=gs.own.y>>5;
+            build.placemode = 0;
             break;
         case 2: {
             int dist=px;
@@ -1899,6 +1901,7 @@ static void build_place(char **words, char *reply) {
                 case DIR_EAST:  px+=dist; break;
                 case DIR_WEST:  px-=dist; break;
             }
+            build.placemode = 0;
             break;
         }
         default:
@@ -1906,6 +1909,7 @@ static void build_place(char **words, char *reply) {
                 px = gs.own.x>>5;
                 py = gs.own.y>>5;
                 pz = gs.own.z>>5;
+                build.placemode = 0;
             }
             else if (mcparg_find(words, "many", NULL)) {
                 sprintf(reply, "Mark pivot positions by placing block, disable with #build place cancel");
@@ -1924,7 +1928,7 @@ static void build_place(char **words, char *reply) {
                 }
             }
             else {
-                sprintf(reply, "Mark pivot position by placing a block - will be build once");
+                sprintf(reply, "Mark pivot position by placing a block - will be built once");
                 build.placemode = 1; // only once (gets cleared after first placement)
                 return;
             }
