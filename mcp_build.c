@@ -247,7 +247,9 @@ bopt_t OPTIONS[] = {
     { NULL, NULL, NULL, 0 }, //list terminator
 };
 
+////////////////////////////////////////////////////////////////////////////////
 
+static void build_update_placed();
 
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory
@@ -312,7 +314,7 @@ void calculate_material(int plan) {
     }
     else {
         printf("=== Material Demand for the Buildtask ===\n");
-        build_update();
+        build_update_placed();
     }
 
     // buildplan/task count per material type
