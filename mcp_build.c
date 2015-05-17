@@ -1643,35 +1643,61 @@ static void build_replace(char **words, char *reply) {
 }
 
 // hollow out the structure by removing all blocks completely surrounded by other blocks.
-//TODO: do not count semi-transparent blocks like slabs, stairs, glass etc. as surrounding blocks
 static void build_hollow(char **words, char *reply) {
-    int i,j,f;
-    int removed=0;
-    //printf("To go: %d\n",C(build.plan));
+    int i,j;
 
-    lh_arr_declare_i(blkr, keep);
+    int32_t size_xz = (build.bpsx+2)*(build.bpsz+2);
 
+    // this array will hold the entire buildplan as a "voxel set"
+    // with values set to 0 for empty blocks, 1 for occupied and -1 for removed
+    // note - we leave an additional empty block for border on each side
+    lh_create_num(int8_t,bp,size_xz*(build.bpsy+2));
+
+    // initialize the voxel set from the buildplan
     for(i=0; i<C(build.plan); i++) {
-        if (i%1000==0) printf("hollow: %d\n",i);
         blkr *b = P(build.plan)+i;
-        int nn=0; //number of adjacent blocks
-        for(f=0; f<6; f++) {
-            int32_t x = b->x + NOFF[f][0];
-            int32_t z = b->z + NOFF[f][1];
-            int32_t y = b->y + NOFF[f][2];
 
-            // check the list again to see if we have this neighbor in the plan
-            for(j=0; j<C(build.plan); j++) {
-                blkr *n = P(build.plan)+j;
-                if (x==n->x && z==n->z && y==n->y) {
-                    nn++;
-                    break;
-                }
+        // offset of this block in the array
+        int32_t off_x = b->x-build.bpxn+1;
+        int32_t off_y = b->y-build.bpyn+1;
+        int32_t off_z = b->z-build.bpzn+1;
+        int32_t off   = off_x+off_z*(build.bpsx+2)+off_y*size_xz;
+
+        // TODO: set the blocks not occupying the whole block (like slabs,
+        //       stairs, torches, etc) as empty as they don't seal the surface
+        bp[off] = b->b.bid ? 1 : 0;
+    }
+
+    // mark blocks completely surrounded by other blocks for removal
+    int x,y,z;
+    for(y=1; y<build.bpsy+1; y++) {
+        int32_t off_y = size_xz*y;
+        for(z=1; z<build.bpsz+1; z++) {
+            for(x=1; x<build.bpsx+1; x++) {
+                int32_t off = off_y + x + z*(build.bpsx+2);
+                if (bp[off] &&
+                    bp[off-1] && bp[off+1] &&
+                    bp[off-(build.bpsx+2)] && bp[off+(build.bpsx+2)] &&
+                    bp[off-size_xz] && bp[off+size_xz])
+                    bp[off] = -1;
             }
         }
+    }
 
-        if (nn<6) {
-            // this block is not completely surrounded and should be kept
+    // new list for the build plan to hold only the blocks we keep after removal
+    lh_arr_declare_i(blkr, keep);
+    int removed=0;
+
+    for(i=0; i<C(build.plan); i++) {
+        blkr *b = P(build.plan)+i;
+
+        // offset of this block in the array
+        int32_t off_x = b->x-build.bpxn+1;
+        int32_t off_y = b->y-build.bpyn+1;
+        int32_t off_z = b->z-build.bpzn+1;
+        int32_t off   = off_x+off_z*(build.bpsx+2)+off_y*size_xz;
+
+        if (bp[off] == 1) {
             blkr *k = lh_arr_new(GAR(keep));
             *k = *b;
         }
@@ -1679,6 +1705,10 @@ static void build_hollow(char **words, char *reply) {
             removed++;
     }
 
+    // free our voxel set
+    lh_free(bp);
+
+    // replace the builödplan with the reduced list
     lh_arr_free(BPLAN);
     C(build.plan) = C(keep);
     P(build.plan) = P(keep);
