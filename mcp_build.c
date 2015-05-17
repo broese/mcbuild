@@ -208,7 +208,9 @@ struct {
 
     int32_t     xmin,xmax,ymin,ymax,zmin,zmax;
 
-    int32_t bpsx,bpsy,bpsz;
+    int32_t bpxx,bpyx,bpzx;    // max buildplan coordinate in each dimension
+    int32_t bpxn,bpyn,bpzn;    // min buildplan coordinate in each dimension
+    int32_t bpsx,bpsy,bpsz;    // buildplan size in each dimension
 
 } build;
 
@@ -919,25 +921,23 @@ static void buildplan_updated() {
         return;
     }
 
-    int32_t xn,xx,yn,yx,zn,zx;
-
-    xn=xx=P(build.plan)[0].x;
-    yn=yx=P(build.plan)[0].y;
-    zn=zx=P(build.plan)[0].z;
+    build.bpxn=build.bpxx=P(build.plan)[0].x;
+    build.bpyn=build.bpyx=P(build.plan)[0].y;
+    build.bpzn=build.bpzx=P(build.plan)[0].z;
 
     int i;
     for(i=0; i<C(build.plan); i++) {
-        xn = MIN(P(build.plan)[i].x, xn);
-        xx = MAX(P(build.plan)[i].x, xx);
-        yn = MIN(P(build.plan)[i].y, yn);
-        yx = MAX(P(build.plan)[i].y, yx);
-        zn = MIN(P(build.plan)[i].z, zn);
-        zx = MAX(P(build.plan)[i].z, zx);
+        build.bpxn = MIN(P(build.plan)[i].x, build.bpxn);
+        build.bpxx = MAX(P(build.plan)[i].x, build.bpxx);
+        build.bpyn = MIN(P(build.plan)[i].y, build.bpyn);
+        build.bpyx = MAX(P(build.plan)[i].y, build.bpyx);
+        build.bpzn = MIN(P(build.plan)[i].z, build.bpzn);
+        build.bpzx = MAX(P(build.plan)[i].z, build.bpzx);
     }
 
-    build.bpsx=xx-xn+1;
-    build.bpsy=yx-yn+1;
-    build.bpsz=zx-zn+1;
+    build.bpsx=build.bpxx-build.bpxn+1;
+    build.bpsy=build.bpyx-build.bpyn+1;
+    build.bpsz=build.bpzx-build.bpzn+1;
 }
 
 // invoked by various functions when a buildplan is crated, so it can be placed immediately
