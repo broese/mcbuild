@@ -181,6 +181,13 @@ typedef struct {
     uint64_t time;
 } SP_TimeUpdate_pkt;
 
+// 0x04
+typedef struct {
+    uint32_t eid;
+    int16_t  sid;
+    slot_t   item;
+} SP_EntityEquipment_pkt;
+
 // 0x06
 typedef struct {
     float    health;
@@ -581,6 +588,7 @@ typedef struct {
         PKT(SP_JoinGame);
         PKT(SP_ChatMessage);
         PKT(SP_TimeUpdate);
+        PKT(SP_EntityEquipment);
         PKT(SP_UpdateHealth);
         PKT(SP_Respawn);
         PKT(SP_PlayerPositionLook);

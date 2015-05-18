@@ -600,6 +600,24 @@ DUMP_BEGIN(SP_TimeUpdate) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x04 SP_EntityEquipment
+
+DECODE_BEGIN(SP_EntityEquipment,_1_8_1) {
+    Pvarint(eid);
+    Pshort(sid);
+    p = read_slot(p, &tpkt->item);
+} DECODE_END;
+
+DUMP_BEGIN(SP_EntityEquipment) {
+    printf("eid=%08x, sid=%d, item:", tpkt->eid, tpkt->sid);
+    dump_slot(&tpkt->item);
+} DUMP_END;
+
+FREE_BEGIN(SP_EntityEquipment) {
+    clear_slot(&tpkt->item);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x06 SP_UpdateHealth
 
 DECODE_BEGIN(SP_UpdateHealth,_1_8_1) {
@@ -1523,6 +1541,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (SP_JoinGame,_1_8_1),
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
+        SUPPORT_DF  (SP_EntityEquipment,_1_8_1),
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),
         SUPPORT_DD  (SP_Respawn,_1_8_1),
         SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
