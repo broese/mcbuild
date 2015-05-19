@@ -95,20 +95,22 @@ bid_t mcparg_parse_material(char **words, char *reply, int pos) {
     bid_t mat;
     // try to parse material specified explicitly
     mcpopt opt_mat = {{"material","mat","m",NULL}, pos,
-                      {"%d:%d","%3$[^:]:%d","%3$[^:]:%4$s","%d","%3$s",NULL}};
+                      {"0x%x:%d","%d:%d","%3$[^:]:%2$d","%3$[^:]:%4$s","0x%x","%d","%3$s",NULL}};
     int bid=-1, meta=0;
     char sbid[4096], smeta[4096]; sbid[0]=0; smeta[0]=0;
 
     switch(mcparg_parse(words, &opt_mat, &bid, &meta, sbid, smeta)) {
         case 0:
-        case 3:
-            break;
         case 1:
         case 4:
+        case 5:
+            break;
+        case 2:
+        case 6:
             bid = find_bid_name(sbid);
             if (bid<0) sprintf(reply, "Could not find material name \"%s\"", sbid);
             break;
-        case 2:
+        case 3:
             bid = find_bid_name(sbid);
             if (bid<0) { sprintf(reply, "Could not find material name \"%s\"", sbid); break; }
             meta = find_meta_name(bid, smeta);
