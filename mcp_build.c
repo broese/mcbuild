@@ -963,58 +963,6 @@ static void buildplan_place(char *reply) {
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers for parameter parsing
 
-// parse commandline to get the building material,
-// or use whatever the player is holding in the hand
-static bid_t build_arg_material(char **words, char *reply) {
-    mcpopt opt_mat = {{"material","mat","m",NULL}, -1, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
-
-    bid_t mat;
-
-    // determine the building material
-    int bid=-1, meta=0;
-    switch(mcparg_parse(words, &opt_mat, &bid, &meta)) {
-        case 0:
-        case 1:
-        case 2:
-            // bid+meta specified explicitly
-            break;
-        case 3:
-            // no meta specified - assume 0
-            meta=0;
-            break;
-        default: {
-            // nothing specified, take the same material the player is currently holding
-            slot_t *s = &gs.inv.slots[gs.inv.held+36];
-            if (s->item > 0 && !(ITEMS[s->item].flags&I_ITEM)) {
-                bid = s->item;
-                meta = s->damage;
-            }
-            else {
-                bid = -1;
-            }
-        }
-    }
-
-    mat.bid = bid;
-    mat.meta = meta;
-
-    if (bid<0) {
-        sprintf(reply, "You must specify material - either explicitly with "
-                "mat=<bid>[,<meta>] or by holding a placeable block");
-        return mat;
-    }
-
-    if (ITEMS[mat.bid].flags&I_SLAB) {
-        // for slab blocks additionally parse the upper/lower placement
-        if (mcparg_find(words,"upper","up","u","high","h",NULL))
-            mat.meta |= 8;
-        else
-            mat.meta &= 7;
-    }
-
-    return mat;
-}
-
 // parse commandline to get the offset parameter
 static void build_arg_offset(char **words, char *reply, int argpos, int *ox, int *oz, int *oy) {
     mcpopt opt_offset = {{"offset","off","o",NULL},    argpos, {"%d,%d,%d","%d,%d","%d",NULL}};
@@ -1115,7 +1063,7 @@ static void build_floor(char **words, char *reply) {
         return;
     }
 
-    bid_t mat = build_arg_material(words, reply);
+    bid_t mat = mcparg_parse_material(words, reply, 1);
     if (reply[0]) return;
 
     int hollow = mcparg_find(words, "hollow", "rect", "empty", "e", NULL);
@@ -1160,7 +1108,7 @@ static void build_ring(char **words, char *reply) {
         return;
     }
 
-    bid_t mat = build_arg_material(words, reply);
+    bid_t mat = mcparg_parse_material(words, reply, 1);
     if (reply[0]) return;
 
     int x,z,o;
@@ -1243,7 +1191,7 @@ static void build_ball(char **words, char *reply) {
         return;
     }
 
-    bid_t mat = build_arg_material(words, reply);
+    bid_t mat = mcparg_parse_material(words, reply, 1);
     if (reply[0]) return;
 
     int x,y,z,min,max;
@@ -1304,11 +1252,10 @@ static void build_scaffolding(char **words, char *reply) {
     if (hg==1 && wd<4) wd=4;
     if (hg>1 && wd<7) wd=7;
 
-    bid_t mat = build_arg_material(words, reply);
+    bid_t mat = mcparg_parse_material(words, reply, 1);
     if (reply[0]) {
         reply[0]=0;
-        mat.bid = 0x03;
-        mat.meta = 0;
+        mat = BLOCKTYPE(3,0);
     }
 
     //TODO: use a secondary material to build stairs, set meta=0 for stair-type blocks
@@ -1364,7 +1311,7 @@ static void build_stairs(char **words, char *reply) {
         return;
     }
 
-    bid_t mat = build_arg_material(words, reply);
+    bid_t mat = mcparg_parse_material(words, reply, 1);
     if (reply[0]) return;
 
     // make stairs-type block face player
@@ -1434,7 +1381,7 @@ static void build_wall(char **words, char *reply) {
         return;
     }
 
-    bid_t mat = build_arg_material(words, reply);
+    bid_t mat = mcparg_parse_material(words, reply, 1);
     if (reply[0]) return;
 
     int x,y;
@@ -1455,6 +1402,8 @@ static void build_wall(char **words, char *reply) {
     buildplan_updated();
     buildplan_place(reply);
 }
+
+////////////////////////////////////////////////////////////////////////////////
 
 // create a buildplan from existing map data by scanning a defined cuboid
 static void build_scan(char **words, char *reply) {

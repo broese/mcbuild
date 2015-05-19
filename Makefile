@@ -16,7 +16,7 @@ ifeq ($(UNAME),Linux)
 endif
 
 
-all: mcproxy mcpdump nbttest argtest tmap
+all: mcproxy mcpdump nbttest argtest
 
 
 

@@ -91,6 +91,7 @@ int mcparg_find(char **words, ...) {
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers for other modules
 
+// Building material
 bid_t mcparg_parse_material(char **words, char *reply, int pos) {
     bid_t mat;
     // try to parse material specified explicitly
@@ -148,6 +149,9 @@ bid_t mcparg_parse_material(char **words, char *reply, int pos) {
 
     return mat;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// Test function
 
 #if TEST
 
