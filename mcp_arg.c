@@ -109,13 +109,13 @@ bid_t mcparg_parse_material(char **words, char *reply, int pos) {
         case 2:
         case 6:
             bid = find_bid_name(sbid);
-            if (bid<0) sprintf(reply, "Could not find material name \"%s\"", sbid);
+            if (bid<0) sprintf(reply, "Could not find material name %s", sbid);
             break;
         case 3:
             bid = find_bid_name(sbid);
-            if (bid<0) { sprintf(reply, "Could not find material name \"%s\"", sbid); break; }
+            if (bid<0) { sprintf(reply, "Could not find material name %s", sbid); break; }
             meta = find_meta_name(bid, smeta);
-            if (meta<0) sprintf(reply, "Could not find meta name \"%s\"", smeta);
+            if (meta<0) sprintf(reply, "Could not find meta name %s", smeta);
             break;
         default: {
             // nothing specified, take the same material the player is currently holding
@@ -129,11 +129,12 @@ bid_t mcparg_parse_material(char **words, char *reply, int pos) {
             }
         }
     }
+    if (reply[0]) return BLOCKTYPE(0,0);
 
-    if (bid<0 && !reply[0]) {
+    if (bid<0) {
         sprintf(reply, "You must specify material - either explicitly with "
                 "mat=<bid>[,<meta>] or by holding a placeable block");
-        return mat;
+        return BLOCKTYPE(0,0);
     }
 
     mat.bid = bid;
