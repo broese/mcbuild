@@ -541,6 +541,37 @@ const char * get_item_name(char *buf, slot_t *s) {
     return get_mat_name(buf, s->item, s->damage);
 }
 
+int find_bid_name(const char *name) {
+    int i;
+    char n[256];
+    for(i=0; i<sizeof(n)-1; i++)
+        n[i] = (name[i]=='_') ? ' ' : name[i];
+
+    int id;
+    for(id=0; id<0x100; id++)
+        if (ITEMS[id].name && !strcasecmp(ITEMS[id].name, n))
+            return id;
+    return -1;
+}
+
+int find_meta_name(int bid, const char *name) {
+    int i;
+    char n[256];
+    for(i=0; i<sizeof(n)-1; i++)
+        n[i] = (name[i]=='_') ? ' ' : name[i];
+
+    const item_id *it = &ITEMS[bid];
+    assert(it->name);
+
+    int meta;
+    for(meta=0; meta<16; meta++)
+        if (it->mname[meta] && !strcasecmp(it->mname[meta], n))
+            return meta;
+    return -1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 uint8_t get_state_mask(int bid) {
     assert (bid>=0 && bid<0x100);
 

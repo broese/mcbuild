@@ -345,6 +345,10 @@ extern const char * ANSI_BLOCK[];
 
 const char * get_item_name(char *buf, slot_t *s);
 const char * get_bid_name(char *buf, bid_t b);
+
+int find_bid_name(const char *name);
+int find_meta_name(int bid, const char *name);
+
 bid_t get_base_material(bid_t mat);
 uint8_t get_state_mask(int bid);
 
