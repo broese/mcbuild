@@ -29,8 +29,8 @@ mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o mcp_ids.o nbt.o
 nbttest: nbt.c
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS_LIBHELPER)
 
-argtest: mcp_arg.c
-	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS_LIBHELPER)
+argtest: mcp_arg.c mcp_ids.o mcp_gamestate.o mcp_packet.o nbt.o
+	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
 
 varint: varint.c
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -o $@ $^ $(LIBS)

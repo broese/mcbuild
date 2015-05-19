@@ -1,5 +1,7 @@
 #pragma once
 
+#include "mcp_packet.h"
+
 // error codes
 #define MCPARG_NOT_FOUND  (-1)
 #define MCPARG_NOT_PARSED (-2)
@@ -15,3 +17,7 @@ typedef struct {
 
 int mcparg_parse(char **words, mcpopt *opt, ...);
 int mcparg_find(char **words, ...);
+
+////////////////////////////////////////////////////////////////////////////////
+
+bid_t mcparg_parse_material(char **words, char *reply, int pos);
