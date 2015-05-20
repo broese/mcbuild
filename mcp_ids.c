@@ -633,6 +633,80 @@ uint8_t get_state_mask(int bid) {
 static const char * _DIRNAME[] = { "any", "up", "down", "south", "north", "east", "west" };
 const char ** DIRNAME = _DIRNAME+1;
 
+// Meta mappings for the rotation-dependent blocks
+/*
+  How to interpret:
+
+  The array is selected by the functions responsible for meta rotation/flipping,
+  according to the block's flags (i.e. I_STAIR)
+
+  The array is a 4*16 int8_t elements. The outer index defines block's original
+  meta value (0..15). The inner index defines the 4 meta values corresponding
+  to the orientations South, North, East, West, in this order (this index can be
+  determined using the standard direction constant DIR_* and substracting 2).
+  The int8_t value determines the meta value of this block in this orientation.
+
+  1. Take the current meta of the block and look up the 4-element row.
+  This defines a "group" of meta values related to the original value, with
+  different azimuth orientations, but sharing all other orientation or type.
+  E.g. a meta value corresponding to an upside-down stairs block pointing north
+  will reference a group of values for all upside-down stair blocks, pointing
+  in the 4 worlds directions.
+  If the row pointer is NULL - this meta does not exist or does not specify
+  rotational position. E.g. meta value 5 for torches corresponds to "on ground"
+  position which is not rotable.
+
+  2. Locate the original meta value in the row.
+  The obtained index will tell you the current azimuth orientation of the block.
+  E.g. a stairs block with a meta value 5 can be found on index 3 - i.e. it is
+  "west-oriented"
+
+  3. Select the desired rotation of the block.
+  E.g. if we want to rotate the block counter-clockwise, west should become south.
+
+  4. Look up the meta value at the index corresponding to the new selected direction
+  in the same group row.
+  E.g. the direction "south" corresponds to the index 0 in the row. Therefore,
+  the meta value for the new orientation will be 6
+*/
+
+typedef int8_t metao[4];
+typedef metao* metamap[16];
+
+//          S  N  E  W
+
+// I_STAIR
+static metamap MM_STAIR = {
+    [0] = { 2, 3, 0, 1 },
+    [1] = { 2, 3, 0, 1 },
+    [2] = { 2, 3, 0, 1 },
+    [3] = { 2, 3, 0, 1 },
+    [4] = { 6, 7, 4, 5 },
+    [5] = { 6, 7, 4, 5 },
+    [6] = { 6, 7, 4, 5 },
+    [7] = { 6, 7, 4, 5 },
+};
+
+// I_TORCH
+static metamap MM_TORCH = {
+    [1] = { 3, 4, 1, 2 },
+    [2] = { 3, 4, 1, 2 },
+    [3] = { 3, 4, 1, 2 },
+    [4] = { 3, 4, 1, 2 },
+};
+
+static metamap MM_ONWALL = {
+    [2] = { 3, 2, 5, 4 },
+    [3] = { 3, 2, 5, 4 },
+    [4] = { 3, 2, 5, 4 },
+    [5] = { 3, 2, 5, 4 },
+};
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+
 #define BITS_4ADD(a,b,c,d,n) ((a)+(n)),((b)+(n)),((c)+(n)),((d)+(n))
 #define ROT_BITS01(a,b,c,d) a,b,c,d,BITS_4ADD(a,b,c,d,4),BITS_4ADD(a,b,c,d,8),BITS_4ADD(a,b,c,d,12)
 
