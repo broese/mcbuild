@@ -670,40 +670,82 @@ const char ** DIRNAME = _DIRNAME+1;
   the meta value for the new orientation will be 6
 */
 
-typedef int8_t metao[4];
-typedef metao* metamap[16];
+// meta value group - orientation mapping
+typedef struct {
+    int inuse;
+    int8_t meta[4];
+} metagroup;
 
-//          S  N  E  W
+#define METAO(m,s,n,e,w) [m] = {1,{s,n,e,w}}
+
+//          S N E W
 
 // I_STAIR
-static metamap MM_STAIR = {
-    [0] = { 2, 3, 0, 1 },
-    [1] = { 2, 3, 0, 1 },
-    [2] = { 2, 3, 0, 1 },
-    [3] = { 2, 3, 0, 1 },
-    [4] = { 6, 7, 4, 5 },
-    [5] = { 6, 7, 4, 5 },
-    [6] = { 6, 7, 4, 5 },
-    [7] = { 6, 7, 4, 5 },
+static metagroup MM_STAIR[16] = {
+    METAO(0,2,3,0,1),
+    METAO(1,2,3,0,1),
+    METAO(2,2,3,0,1),
+    METAO(3,2,3,0,1),
+    METAO(4,6,7,4,5),
+    METAO(5,6,7,4,5),
+    METAO(6,6,7,4,5),
+    METAO(7,6,7,4,5),
 };
 
 // I_TORCH
-static metamap MM_TORCH = {
-    [1] = { 3, 4, 1, 2 },
-    [2] = { 3, 4, 1, 2 },
-    [3] = { 3, 4, 1, 2 },
-    [4] = { 3, 4, 1, 2 },
+static metagroup MM_TORCH[16] = {
+    METAO(1,3,4,1,2),
+    METAO(2,3,4,1,2),
+    METAO(3,3,4,1,2),
+    METAO(4,3,4,1,2),
 };
 
-static metamap MM_ONWALL = {
-    [2] = { 3, 2, 5, 4 },
-    [3] = { 3, 2, 5, 4 },
-    [4] = { 3, 2, 5, 4 },
-    [5] = { 3, 2, 5, 4 },
+// I_LOG
+// Wood/Wood2 logs - N/S,N/S,E/W,E/W orientation
+static metagroup MM_LOG[16] = {
+    // Oak/Acacia
+    METAO(4,8,8,4,4),
+    METAO(8,8,8,4,4),
+    // Spruce/Dark Oak
+    METAO(5,9,9,5,5),
+    METAO(9,9,9,5,5),
+    // Birch
+    METAO(6,10,10,6,6),
+    METAO(10,10,10,6,6),
+    //Jungle
+    METAO(7,11,11,7,7),
+    METAO(11,11,11,7,7),
 };
 
+// I_ONWALL (ladders/banners/signs)
+static metagroup MM_ONWALL[16] = {
+    METAO(2,3,2,5,4),
+    METAO(3,3,2,5,4),
+    METAO(4,3,2,5,4),
+    METAO(5,3,2,5,4),
+};
 
+#define GETMETAGROUP(mmname) mmname[b.meta].inuse ? mmname[b.meta].meta : NULL
+static inline int8_t *get_metagroup(bid_t b) {
+    uint64_t flags = ITEMS[b.bid].flags;
+    if (flags&I_STAIR)  return GETMETAGROUP(MM_STAIR);
+    if (flags&I_TORCH)  return GETMETAGROUP(MM_TORCH);
+    if (flags&I_LOG)    return GETMETAGROUP(MM_LOG);
+    if (flags&I_ONWALL) return GETMETAGROUP(MM_ONWALL);
+    return NULL; // default - no orientation mapping
+}
 
+// get the orientation of the block by its meta - as one of the DIR_xxx constants
+static inline int get_orientation(bid_t b) {
+    int8_t *group = get_metagroup(b);
+    if (!group) return DIR_ANY;
+
+    int i;
+    for(i=0; i<4; i++)
+        if (group[i] == b.meta)
+            return i+2;
+    assert(0);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
