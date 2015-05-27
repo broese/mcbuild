@@ -82,6 +82,8 @@ void track_spawners(SP_UpdateBlockEntity_pkt *ube) {
     s->type = type;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 #define MAXPLEN (4*1024*1024)
 
 void mcpd_packet(MCPacket *pkt) {
@@ -197,8 +199,8 @@ void parse_mcp(uint8_t *data, ssize_t size) {
             MCPacket *pkt = decode_packet(is_client, p, plen);
             pkt->ts.tv_sec = sec;
             pkt->ts.tv_usec = usec;
-            dump_packet(pkt);
-            gs_packet(pkt);
+            //dump_packet(pkt);
+            //gs_packet(pkt);
             mcpd_packet(pkt);
             free_packet(pkt);
         }
@@ -268,8 +270,28 @@ void extract_cuboid(int X, int Z, int y) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-static void find_spawners() {
+#define MAXDIST 31.0
+#define SQ(x) ((x)*(x))
 
+static void find_spawners() {
+    int i,j;
+    for(i=0; i<C(spawners); i++) {
+        for(j=i+1; j<C(spawners); j++) {
+            spawner_t *a = P(spawners)+i;
+            spawner_t *b = P(spawners)+j;
+            int32_t dx = a->loc.x-b->loc.x;
+            int32_t dy = a->loc.y-b->loc.y;
+            int32_t dz = a->loc.z-b->loc.z;
+            float dist = sqrtf((float)SQ(dx)+(float)SQ(dy)+(float)SQ(dz));
+            if (dist < MAXDIST)
+                printf("%c:%5d,%2d,%5d %c:%5d,%2d,%5d dist=%.1f\n",
+                       (a->type==SPAWNER_ZOMBIE)?'Z':'S',
+                       a->loc.x,a->loc.z,a->loc.y,
+                       (b->type==SPAWNER_ZOMBIE)?'Z':'S',
+                       b->loc.x,b->loc.z,b->loc.y,
+                       dist);
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -299,10 +321,13 @@ int main(int ac, char **av) {
         }
     }
 
+#if 0
     for(i=0; i<C(spawners); i++) {
         spawner_t *s = P(spawners)+i;
         printf("%c %5d,%2d,%5d\n",s->type==SPAWNER_ZOMBIE?'Z':'S',
                s->loc.x,s->loc.y,s->loc.z);
     }
+#endif
 
+    find_spawners();
 }
