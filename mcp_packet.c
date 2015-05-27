@@ -1257,6 +1257,27 @@ DUMP_BEGIN(SP_ConfirmTransaction) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x35 SP_UpdateBlockEntity
+
+DECODE_BEGIN(SP_UpdateBlockEntity,_1_8_1) {
+    Plong(loc.p);
+    Pchar(action);
+    tpkt->nbt = nbt_parse(&p);
+} DECODE_END;
+
+DUMP_BEGIN(SP_UpdateBlockEntity) {
+    printf("pos=%d,%d,%d action=%d nbt=%s\n", tpkt->loc.x, tpkt->loc.z, tpkt->loc.y,
+           tpkt->action, tpkt->nbt ? "present" : "none");
+    if (tpkt->nbt)
+        nbt_dump(tpkt->nbt);
+} DUMP_END;
+
+FREE_BEGIN(SP_UpdateBlockEntity) {
+    nbt_free(tpkt->nbt);
+    tpkt->nbt = NULL;
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x46 SP_SetCompression
 
 DECODE_BEGIN(SP_SetCompression,_1_8_1) {
@@ -1570,6 +1591,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DEF (SP_SetSlot,_1_8_1),
         SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
+        SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
     {

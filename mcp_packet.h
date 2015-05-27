@@ -418,6 +418,13 @@ typedef struct {
     uint8_t  accepted;
 } SP_ConfirmTransaction_pkt;
 
+// 0x35
+typedef struct {
+    pos_t    loc;
+    uint8_t  action;
+    nbt_t    *nbt;
+} SP_UpdateBlockEntity_pkt;
+
 // 0x46
 typedef struct {
     int32_t     threshold;
@@ -617,6 +624,7 @@ typedef struct {
         PKT(SP_SoundEffect);
         PKT(SP_SetSlot);
         PKT(SP_ConfirmTransaction);
+        PKT(SP_UpdateBlockEntity);
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);
