@@ -43,10 +43,50 @@ void track_remote_sounds(int32_t x, int32_t z, struct timeval tv) {
     printf("thunder: %ld,%d,%d,%d,%d\n",tv.tv_sec,gs.own.x>>5,gs.own.z>>5,rx>>5,rz>>5);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+#define SPAWNER_OTHER      0
+#define SPAWNER_SKELETON   1
+#define SPAWNER_ZOMBIE     2
+
+typedef struct {
+    int32_t x,y,z;
+    int type;
+} spawner_t;
+
+lh_arr_declare_i(spawner_t, spawners);
+
+void track_spawners(SP_UpdateBlockEntity_pkt *ube) {
+    if (ube->action != 1) return; // only process SpawnPotentials updates
+    assert(ube->nbt);
+
+    // determine the type of the spawner
+    int type = SPAWNER_OTHER;
+    nbt_t * sType = nbt_hget(ube->nbt, "EntityId");
+    assert(sType && sType->type==NBT_STRING);
+
+    if (!strcmp(sType->st, "Zombie"))   type = SPAWNER_ZOMBIE;
+    if (!strcmp(sType->st, "Skeleton")) type = SPAWNER_SKELETON;
+
+    if (type == SPAWNER_OTHER) return;
+
+    // store the spawner in the list for later processing
+    spawner_t *s = lh_arr_new(GAR(spawners));
+    s->x = ube->loc.x;
+    s->y = ube->loc.y;
+    s->z = ube->loc.z;
+    s->type = type;
+}
+
 #define MAXPLEN (4*1024*1024)
 
 void mcpd_packet(MCPacket *pkt) {
     switch (pkt->pid) {
+        case SP_UpdateBlockEntity: {
+            track_spawners(&pkt->_SP_UpdateBlockEntity);
+            break;
+        }
+
 #if 0
         case SP_SoundEffect: {
             SP_SoundEffect_pkt *tpkt = (SP_SoundEffect_pkt *)&pkt->_SP_SoundEffect;
@@ -155,7 +195,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
             pkt->ts.tv_usec = usec;
             dump_packet(pkt);
             gs_packet(pkt);
-            //mcpd_packet(pkt);
+            mcpd_packet(pkt);
             free_packet(pkt);
         }
 
@@ -224,6 +264,12 @@ void extract_cuboid(int X, int Z, int y) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+static void find_spawners() {
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 int main(int ac, char **av) {
     if (!av[1]) LH_ERROR(-1, "Usage: %s <file.mcs>", av[0]);
 
@@ -243,7 +289,13 @@ int main(int ac, char **av) {
             parse_mcp(data, size);
             //dump_inventory();
             //dump_entities();
-            //extract_cuboid(918,3048,64);
+
+            int i;
+            for(i=0; i<C(spawners); i++) {
+                spawner_t *s = P(spawners)+i;
+                printf("%c %5d,%2d,%5d\n",s->type==SPAWNER_ZOMBIE?'Z':'S',
+                       s->x,s->y,s->z);
+            }
 
             free(data);
             gs_destroy();
