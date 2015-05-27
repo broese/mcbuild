@@ -50,8 +50,8 @@ void track_remote_sounds(int32_t x, int32_t z, struct timeval tv) {
 #define SPAWNER_ZOMBIE     2
 
 typedef struct {
-    int32_t x,y,z;
-    int type;
+    pos_t loc;
+    int   type;
 } spawner_t;
 
 lh_arr_declare_i(spawner_t, spawners);
@@ -70,11 +70,15 @@ void track_spawners(SP_UpdateBlockEntity_pkt *ube) {
 
     if (type == SPAWNER_OTHER) return;
 
+    // check if this spawner was already recorded in the list
+    int i;
+    for (i=0; i<C(spawners); i++)
+        if (P(spawners)[i].loc.p == ube->loc.p)
+            return;
+
     // store the spawner in the list for later processing
     spawner_t *s = lh_arr_new(GAR(spawners));
-    s->x = ube->loc.x;
-    s->y = ube->loc.y;
-    s->z = ube->loc.z;
+    s->loc = ube->loc;
     s->type = type;
 }
 
@@ -290,15 +294,15 @@ int main(int ac, char **av) {
             //dump_inventory();
             //dump_entities();
 
-            int i;
-            for(i=0; i<C(spawners); i++) {
-                spawner_t *s = P(spawners)+i;
-                printf("%c %5d,%2d,%5d\n",s->type==SPAWNER_ZOMBIE?'Z':'S',
-                       s->x,s->y,s->z);
-            }
-
             free(data);
             gs_destroy();
         }
     }
+
+    for(i=0; i<C(spawners); i++) {
+        spawner_t *s = P(spawners)+i;
+        printf("%c %5d,%2d,%5d\n",s->type==SPAWNER_ZOMBIE?'Z':'S',
+               s->loc.x,s->loc.y,s->loc.z);
+    }
+
 }
