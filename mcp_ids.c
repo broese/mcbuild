@@ -763,7 +763,7 @@ bid_t rotate_meta(bid_t b, int times) {
     if (!mg) return b;
 
     int mo = get_orientation(b);
-    int rmo = ROT_MAP[mo][times];
+    int rmo = ROT_MAP[mo][times&3];
     b.meta = mg[rmo-2];
     return b;
 }
