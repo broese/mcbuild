@@ -747,6 +747,27 @@ static inline int get_orientation(bid_t b) {
     assert(0);
 }
 
+// generic rotation map to calculate clockwise rotation for a direction
+int ROT_MAP[][4] = {
+    [DIR_UP]    = { DIR_UP,    DIR_UP,    DIR_UP,    DIR_UP,    },
+    [DIR_DOWN]  = { DIR_DOWN,  DIR_DOWN,  DIR_DOWN,  DIR_DOWN,  },
+    [DIR_NORTH] = { DIR_NORTH, DIR_EAST,  DIR_SOUTH, DIR_WEST,  },
+    [DIR_EAST]  = { DIR_EAST,  DIR_SOUTH, DIR_WEST,  DIR_NORTH, },
+    [DIR_SOUTH] = { DIR_SOUTH, DIR_WEST,  DIR_NORTH, DIR_EAST,  },
+    [DIR_WEST]  = { DIR_WEST,  DIR_NORTH, DIR_EAST,  DIR_SOUTH, },
+};
+
+// rotate a block's meta clockwise given number of times
+bid_t rotate_meta(bid_t b, int times) {
+    int8_t * mg = get_metagroup(b);
+    if (!mg) return b;
+
+    int mo = get_orientation(b);
+    int rmo = ROT_MAP[mo][times];
+    b.meta = mg[rmo-2];
+    return b;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #define BITS_4ADD(a,b,c,d,n) ((a)+(n)),((b)+(n)),((c)+(n)),((d)+(n))

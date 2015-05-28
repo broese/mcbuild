@@ -354,3 +354,5 @@ uint8_t get_state_mask(int bid);
 
 bid_t meta_n2d(bid_t b, int dir);
 bid_t meta_d2n(bid_t b, int dir);
+
+bid_t rotate_meta(bid_t b, int times);

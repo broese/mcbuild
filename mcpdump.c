@@ -297,6 +297,20 @@ static void find_spawners() {
 ////////////////////////////////////////////////////////////////////////////////
 
 int main(int ac, char **av) {
+
+#if 0
+    int bid  = atoi(av[1]);
+    int meta = atoi(av[2]);
+    int rot  = atoi(av[3]);
+
+    bid_t b  = BLOCKTYPE(bid,meta);
+    bid_t bb = rotate_meta(b,rot);
+
+    printf("rot=%d, %d:%d => %d:%d\n",
+           rot, b.bid, b.meta, bb.bid, bb.meta);
+#endif
+
+#if 1
     if (!av[1]) LH_ERROR(-1, "Usage: %s <file.mcs>", av[0]);
 
     int i;
@@ -330,4 +344,5 @@ int main(int ac, char **av) {
 #endif
 
     find_spawners();
+#endif
 }
