@@ -1482,25 +1482,28 @@ static void build_scan(char **words, char *reply) {
                 if (NOSCAN(bl.bid)) continue;
 
                 blkr *b = lh_arr_new(BPLAN);
-                b->b = meta_d2n(bl,dir);
                 b->y = y-py;
 
                 switch (dir) {
                     case DIR_NORTH:
                         b->x = x-px;
                         b->z = z-pz;
+                        b->b = rotate_meta(bl, 0);
                         break;
                     case DIR_SOUTH:
                         b->x = px-x;
                         b->z = pz-z;
+                        b->b = rotate_meta(bl, -2);
                         break;
                     case DIR_EAST:
                         b->x = z-pz;
                         b->z = px-x;
+                        b->b = rotate_meta(bl, -1);
                         break;
                     case DIR_WEST:
                         b->x = pz-z;
                         b->z = x-px;
+                        b->b = rotate_meta(bl, -3);
                         break;
                 }
             }
@@ -1798,22 +1801,25 @@ void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
             case DIR_SOUTH:
                 bt->x = px-bp->x;
                 bt->z = pz-bp->z;
+                bt->b = rotate_meta(bp->b, 2);
                 break;
             case DIR_NORTH:
                 bt->x = px+bp->x;
                 bt->z = pz+bp->z;
+                bt->b = rotate_meta(bp->b, 0);
                 break;
             case DIR_EAST:
                 bt->x = px-bp->z;
                 bt->z = pz+bp->x;
+                bt->b = rotate_meta(bp->b, 1);
                 break;
             case DIR_WEST:
                 bt->x = px+bp->z;
                 bt->z = pz-bp->x;
+                bt->b = rotate_meta(bp->b, 3);
                 break;
         }
         bt->y = py+bp->y;
-        bt->b = meta_n2d(bp->b, dir);
     }
     build.active = 1;
 
@@ -2049,22 +2055,25 @@ static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
                 case DIR_SOUTH:
                     bp->x = build.px-x;
                     bp->z = build.pz-z;
+                    bp->b = rotate_meta(block, -2);
                     break;
                 case DIR_NORTH:
                     bp->x = x-build.px;
                     bp->z = z-build.pz;
+                    bp->b = rotate_meta(block, 0);
                     break;
                 case DIR_EAST:
                     bp->x = z-build.pz;
                     bp->z = build.px-x;
+                    bp->b = rotate_meta(block, -1);
                     break;
                 case DIR_WEST:
                     bp->x = build.pz-z;
                     bp->z = x-build.px;
+                    bp->b = rotate_meta(block, -3);
                     break;
             }
             bp->y = y-build.py;
-            bp->b = meta_d2n(block,build.pd);
 
             //dump_brec_pending();
             return;

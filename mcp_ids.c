@@ -769,63 +769,6 @@ bid_t rotate_meta(bid_t b, int times) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-#define BITS_4ADD(a,b,c,d,n) ((a)+(n)),((b)+(n)),((c)+(n)),((d)+(n))
-#define ROT_BITS01(a,b,c,d) a,b,c,d,BITS_4ADD(a,b,c,d,4),BITS_4ADD(a,b,c,d,8),BITS_4ADD(a,b,c,d,12)
-
-// rotation mapping for the stairs-type blocks (2 low bits in the meta)
-static uint8_t ROT_STAIR[][16] = {
-    [DIR_NORTH] = { ROT_BITS01(0,1,2,3) },
-    [DIR_SOUTH] = { ROT_BITS01(1,0,3,2) },
-    [DIR_EAST]  = { ROT_BITS01(2,3,1,0) },
-    [DIR_WEST]  = { ROT_BITS01(3,2,0,1) },
-};
-
-static uint8_t ROT_TORCH[][16] = {
-    [DIR_NORTH] = { 0, 1, 2, 3, 4, 5 },
-    [DIR_SOUTH] = { 0, 2, 1, 4, 3, 5 },
-    [DIR_EAST]  = { 0, 3, 4, 2, 1, 5 },
-    [DIR_WEST]  = { 0, 4, 3, 1, 2, 5 },
-};
-
-static uint8_t ROT_ONWALL[][16] = {
-    [DIR_NORTH] = { 0, 0, 2, 3, 4, 5 },
-    [DIR_SOUTH] = { 0, 0, 3, 2, 5, 4 },
-    [DIR_EAST]  = { 0, 0, 5, 4, 2, 3 },
-    [DIR_WEST]  = { 0, 0, 4, 5, 3, 2 },
-};
-
-// rotate block meta from north-orientation to dir-orientation
-bid_t meta_n2d(bid_t b, int dir) {
-    const item_id *it = &ITEMS[b.bid];
-
-    if (it->flags&I_STAIR) { //stair-type blocks
-        b.meta = ROT_STAIR[dir][b.meta];
-    }
-    else if (it->flags&I_LOG) { // wooden logs
-        if (dir==DIR_EAST || dir==DIR_WEST) {
-            b.meta ^= 12; // translate 10xx <=> 01xx
-        }
-    }
-    else if (it->flags&I_TORCH) { // torches
-        b.meta = ROT_TORCH[dir][b.meta];
-    }
-    else if (it->flags&I_ONWALL) { // ladders/signs/banners on walls
-        b.meta = ROT_ONWALL[dir][b.meta];
-    }
-
-    //TODO: support for other I_MPOS blocks
-    return b;
-}
-
-// rotate block meta from dir-orientation to north-orientation
-bid_t meta_d2n(bid_t b, int dir) {
-    int rdir = (dir==DIR_EAST || dir==DIR_WEST) ? (dir^1) : dir; //flip EAST<->WEST
-    return meta_n2d(b, rdir);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
 
 const char * METANAME[][32] = {
