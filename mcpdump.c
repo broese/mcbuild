@@ -49,12 +49,22 @@ void track_remote_sounds(int32_t x, int32_t z, struct timeval tv) {
 #define SPAWNER_SKELETON   1
 #define SPAWNER_ZOMBIE     2
 
+#define MAXDIST 31.0
+#define SQ(x) ((x)*(x))
+
 typedef struct {
     pos_t loc;
     int   type;
 } spawner_t;
 
 lh_arr_declare_i(spawner_t, spawners);
+
+static inline float pos_dist(pos_t a, pos_t b) {
+    int32_t dx = a.x-b.x;
+    int32_t dy = a.y-b.y;
+    int32_t dz = a.z-b.z;
+    return sqrtf((float)SQ(dx)+(float)SQ(dy)+(float)SQ(dz));
+}
 
 void track_spawners(SP_UpdateBlockEntity_pkt *ube) {
     if (ube->action != 1) return; // only process SpawnPotentials updates
@@ -80,6 +90,54 @@ void track_spawners(SP_UpdateBlockEntity_pkt *ube) {
     spawner_t *s = lh_arr_new(GAR(spawners));
     s->loc = ube->loc;
     s->type = type;
+}
+
+static void find_spawners() {
+    int i,j,k;
+    int ts[4096][3], mts=0;
+
+    for(i=0; i<C(spawners); i++) {
+        for(j=i+1; j<C(spawners); j++) {
+            spawner_t *a = P(spawners)+i;
+            spawner_t *b = P(spawners)+j;
+            float dist = pos_dist(a->loc, b->loc);
+            if (dist < MAXDIST) {
+                printf("DBL  %c:%5d,%2d,%5d %c:%5d,%2d,%5d dist=%.1f\n",
+                       (a->type==SPAWNER_ZOMBIE)?'Z':'S',
+                       a->loc.x,a->loc.y,a->loc.z,
+                       (b->type==SPAWNER_ZOMBIE)?'Z':'S',
+                       b->loc.x,b->loc.y,b->loc.z,
+                       dist);
+
+                // try to find triple-spawners
+                for(k=0; k<C(spawners); k++) {
+                    if (k==i || k==j) continue;
+
+                    spawner_t *c = P(spawners)+k;
+                    if (pos_dist(a->loc, c->loc) < MAXDIST &&
+                        pos_dist(b->loc, c->loc) < MAXDIST) {
+
+                        pos_t center;
+                        center.x = (a->loc.x+b->loc.x+c->loc.x)/3;
+                        center.y = (a->loc.y+b->loc.y+c->loc.y)/3;
+                        center.z = (a->loc.z+b->loc.z+c->loc.z)/3;
+                        float da = pos_dist(a->loc, center);
+                        float db = pos_dist(b->loc, center);
+                        float dc = pos_dist(c->loc, center);
+
+                        printf("TRP  %c:%5d,%2d,%5d %c:%5d,%2d,%5d %c:%5d,%2d,%5d dist=%.1f,%.1f,%.1f\n",
+                               (a->type==SPAWNER_ZOMBIE)?'Z':'S',
+                               a->loc.x,a->loc.y,a->loc.z,
+                               (b->type==SPAWNER_ZOMBIE)?'Z':'S',
+                               b->loc.x,b->loc.y,b->loc.z,
+                               (c->type==SPAWNER_ZOMBIE)?'Z':'S',
+                               c->loc.x,c->loc.y,c->loc.z,
+                               da,db,dc);
+                    }
+                }                
+            }
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -266,32 +324,6 @@ void extract_cuboid(int X, int Z, int y) {
     printf("Slice y=%d\n",y);
     print_slice(map,Xs,Zs);
     free(map);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-#define MAXDIST 31.0
-#define SQ(x) ((x)*(x))
-
-static void find_spawners() {
-    int i,j;
-    for(i=0; i<C(spawners); i++) {
-        for(j=i+1; j<C(spawners); j++) {
-            spawner_t *a = P(spawners)+i;
-            spawner_t *b = P(spawners)+j;
-            int32_t dx = a->loc.x-b->loc.x;
-            int32_t dy = a->loc.y-b->loc.y;
-            int32_t dz = a->loc.z-b->loc.z;
-            float dist = sqrtf((float)SQ(dx)+(float)SQ(dy)+(float)SQ(dz));
-            if (dist < MAXDIST)
-                printf("%c:%5d,%2d,%5d %c:%5d,%2d,%5d dist=%.1f\n",
-                       (a->type==SPAWNER_ZOMBIE)?'Z':'S',
-                       a->loc.x,a->loc.z,a->loc.y,
-                       (b->type==SPAWNER_ZOMBIE)?'Z':'S',
-                       b->loc.x,b->loc.z,b->loc.y,
-                       dist);
-        }
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
