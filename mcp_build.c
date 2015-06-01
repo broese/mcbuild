@@ -1577,18 +1577,37 @@ static void build_replace(char **words, char *reply) {
     bid_t mat1 = BLOCKTYPE(b1,m1);
     bid_t mat2 = BLOCKTYPE(b2,m2);
 
+    lh_arr_declare_i(blkr, keep);
+    int removed = 0;
+
     int i, count=0;
     for(i=0; i<C(build.plan); i++) {
         if (P(build.plan)[i].b.raw == mat1.raw) {
-            P(build.plan)[i].b = mat2;
-            count++;
+            if (mat2.raw != 0) {
+                blkr *k = lh_arr_new(GAR(keep));
+                *k = P(build.plan)[i];
+                k->b = mat2;
+                count++;
+            }
+            else {
+                removed++;
+            }
+        }
+        else {
+            blkr *k = lh_arr_new(GAR(keep));
+            *k = P(build.plan)[i];
         }
     }
 
+    // replace the buildplan with the reduced list
+    lh_arr_free(BPLAN);
+    C(build.plan) = C(keep);
+    P(build.plan) = P(keep);
+
     char buf1[256], buf2[256];
-    sprintf(reply, "Replaced %d blocks %d:%d (%s) to %d:%d (%s)", count,
+    sprintf(reply, "Replaced %d blocks %d:%d (%s) to %d:%d (%s), removed %d", count,
             mat1.bid, mat1.meta, get_bid_name(buf1, mat1),
-            mat2.bid, mat2.meta, get_bid_name(buf2, mat2));
+            mat2.bid, mat2.meta, get_bid_name(buf2, mat2), removed);
 
     buildplan_updated();
     buildplan_place(reply);
@@ -1660,7 +1679,7 @@ static void build_hollow(char **words, char *reply) {
     // free our voxel set
     lh_free(bp);
 
-    // replace the builödplan with the reduced list
+    // replace the buildplan with the reduced list
     lh_arr_free(BPLAN);
     C(build.plan) = C(keep);
     P(build.plan) = P(keep);
