@@ -1036,7 +1036,6 @@ static int build_arg_dir(char **words, char *reply, int argpos) {
 }
 
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // Parametric structures
 

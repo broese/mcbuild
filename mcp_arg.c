@@ -93,7 +93,6 @@ int mcparg_find(char **words, ...) {
 
 // Building material
 bid_t mcparg_parse_material(char **words, char *reply, int pos) {
-    bid_t mat;
     // try to parse material specified explicitly
     mcpopt opt_mat = {{"material","mat","m",NULL}, pos,
                       {"0x%x:%d","%d:%d","%3$[^:]:%2$d","%3$[^:]:%4$s","0x%x","%d","%3$s",NULL}};
@@ -137,18 +136,15 @@ bid_t mcparg_parse_material(char **words, char *reply, int pos) {
         return BLOCKTYPE(0,0);
     }
 
-    mat.bid = bid;
-    mat.meta = meta;
-
-    if (ITEMS[mat.bid].flags&I_SLAB) {
+    if (ITEMS[bid].flags&I_SLAB) {
         // for slab blocks additionally parse the upper/lower placement
         if (mcparg_find(words,"upper","up","u","high","h",NULL))
-            mat.meta |= 8;
+            meta |= 8;
         else
-            mat.meta &= 7;
+            meta &= 7;
     }
 
-    return mat;
+    return BLOCKTYPE(bid,meta);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -156,62 +152,13 @@ bid_t mcparg_parse_material(char **words, char *reply, int pos) {
 
 #if TEST
 
-#if 0
-mcpopt OPT_OFFSET = {
-    { "offset", "off", "o", NULL },
-    0,
-    { "%d,%d,%d", "%d,%d", "%d", NULL },
-};
-
-mcpopt OPT_DIR = {
-    { "direction", "dir", "d", NULL },
-    0,
-    { "%s", NULL },
-};
-#endif
-
-
 int main(int ac, char **av) {
     char **words = av+1;
-
-
-#if 0
-    int ox=-333,oy=-333,oz=-333;
-
-    switch(mcparg_parse(words, &OPT_OFFSET, &ox, &oz, &oy)) {
-        case 0: break;
-        case 1: oy=0; break;
-        case 2: oz=0; oy=0; break;
-        default: {
-            char dir[256];
-            if (mcparg_parse(words, &OPT_DIR, dir)<0) {
-                printf("Usage: #build extend offset=x[,z[,y]]|u|d|r|l|f|b\n");
-                return 1;
-            }
-
-            switch(dir[0]) {
-                case 'u': ox=0;   oz=0;   oy=33;  break;
-                case 'd': ox=0;   oz=0;   oy=-33; break;
-                case 'r': ox=11;  oz=0;   oy=0;   break;
-                case 'l': ox=-11; oz=0;   oy=0;   break;
-                case 'f': ox=0;   oz=22;  oy=0;   break;
-                case 'b': ox=0;   oz=-22; oy=0;   break;
-                default:
-                    printf("Usage: #build extend offset=x[,z[,y]]|u|d|r|l|f|b\n");
-                    return 1;
-            }
-        }
-    }
-
-    int upper=mcparg_find(words,"upper","up","u","high","h",NULL);
-
-    printf("Offset: %d,%d,%d Upper:%d\n",ox,oz,oy,upper);
-#endif
 
     char reply[4096]; reply[0] = 0;
     char buf[256];
 
-    bid_t mat = mcparg_parse_material(words, reply, 1);
+    bid_t mat = mcparg_parse_material(words, reply, 0);
 
     if (reply[0])
         printf("Error: %s\n", reply);
