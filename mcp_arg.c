@@ -102,36 +102,51 @@ int mcparg_find(char **words, ...) {
 bid_t mcparg_parse_material(char **words, char *reply, int pos) {
     // try to parse material specified explicitly
     mcpopt opt_mat = {{"material","mat","m",NULL}, pos,
-                      {  "0x%x:%d",         // 0: expl. hex BID+meta        0x2c:9
-                         "%d:%d",           // 1: BID+meta                  44:9
-                         "%3$[^:]:%2$d",    // 2: block name + meta         stone_slab:9
-                         "%3$[^:]:%4$s",    // 3: block name + meta name    stone_slab:sandstone
-                         "0x%x",            // 4: hex BID                   0x2c
-                         "%d",              // 5: BID                       44
-                         "%3$s",            // 6: block name                stone_slab
+                      {  "0x%x:%d%5$[^0-9]",        //  0: expl. hex BID+meta+opt    0x2c:1u
+                         "0x%x:%d",                 //  1: expl. hex BID+meta        0x2c:9
+                         "%d:%d%5$[^0-9]",          //  2: BID+meta+opt              44:1u
+                         "%d:%d",                   //  3: BID+meta                  44:9
+                         "0x%x:%5$[^0-9]",          //  4: hex BID                   0x2c:u
+                         "0x%x",                    //  5: hex BID                   0x2c
+                         "%d%5$[^0-9]",             //  6: BID                       44u
+                         "%d",                      //  7: BID                       44
+                         "%3$[^:]:%2$d%5$[^0-9]",   //  8: bname+meta+opt            stone_slab:1u
+                         "%3$[^:]:%2$d",            //  9: bname+meta                stone_slab:9
+                         "%3$[^:]:%4$[^:]:%5$s",    // 10: bname+mname+opt           stone_slab:sandstone:u
+                         "%3$[^:]:%4$[^:]",         // 11: bname+mname               stone_slab:sandstone
+                         "%3$[^:]::%5$[^0-9:]",     // 12: bname+opt                 stone_slab::u
+                         "%3$s",                    // 13: bname                     stone_slab
                          NULL}};
 
     int bid=-1, meta=0;
-    char sbid[4096], smeta[4096]; sbid[0]=0; smeta[0]=0;
+    char sbid[4096], smeta[4096], sopt[4096];
+    sbid[0]=0; smeta[0]=0; sopt[0]=0;
 
-    switch(mcparg_parse(words, &opt_mat, &bid, &meta, sbid, smeta)) {
+    switch(mcparg_parse(words, &opt_mat, &bid, &meta, sbid, smeta, sopt)) {
         case 0:
         case 1:
+        case 2:
+        case 3:
         case 4:
         case 5:
-            break;
-        case 2:
         case 6:
+        case 7:
+            break;
+        case 8:
+        case 9:
+        case 12:
+        case 13:
             bid = find_bid_name(sbid);
             if (bid<0) sprintf(reply, "Could not find material name %s", sbid);
             break;
-        case 3:
+        case 10:
+        case 11:
             bid = find_bid_name(sbid);
             if (bid<0) { sprintf(reply, "Could not find material name %s", sbid); break; }
             meta = find_meta_name(bid, smeta);
             if (meta<0) sprintf(reply, "Could not find meta name %s", smeta);
             break;
-        default: {
+        case MCPARG_NOT_FOUND: {
             // nothing specified, take the same material the player is currently holding
             slot_t *s = &gs.inv.slots[gs.inv.held+36];
             if (s->item > 0 && !(ITEMS[s->item].flags&I_ITEM)) {
@@ -141,6 +156,11 @@ bid_t mcparg_parse_material(char **words, char *reply, int pos) {
             else {
                 bid = -1;
             }
+            break;
+        }
+        case MCPARG_NOT_PARSED: {
+            sprintf(reply, "Incorrect option format for materian specification\n");
+            break;
         }
     }
     if (reply[0]) return BLOCKTYPE(0,0);
@@ -151,12 +171,14 @@ bid_t mcparg_parse_material(char **words, char *reply, int pos) {
         return BLOCKTYPE(0,0);
     }
 
-    if (ITEMS[bid].flags&I_SLAB) {
-        // for slab blocks additionally parse the upper/lower placement
-        if (mcparg_find(words,"upper","up","u","high","h",NULL))
-            meta |= 8;
-        else
-            meta &= 7;
+    if (sopt[0]) {
+        // additional option specified
+        if (ITEMS[bid].flags&I_SLAB) {
+            if (sopt[0]=='u' || sopt[0]=='h')
+                meta |= 8;
+            else if (sopt[0]=='l')
+                meta &= 7;
+        }
     }
 
     return BLOCKTYPE(bid,meta);
