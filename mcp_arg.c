@@ -9,6 +9,8 @@
 #include "mcp_gamestate.h"
 
 // count the number of format specs in a string
+// this is needed by mcparg_parse to check if the format string
+// was correctly matched by sscanf with all arguments
 static inline int count_fmt(const char *fmt) {
     int i, c=0;
     for(i=0; fmt[i] && fmt[i+1]; i++)
@@ -18,6 +20,7 @@ static inline int count_fmt(const char *fmt) {
     return c;
 }
 
+// parse the arguments using the provided options spec
 int mcparg_parse(char **words, mcpopt *opt, ...) {
     int i,ui=0;
     int lasterr=0;
@@ -50,6 +53,7 @@ int mcparg_parse(char **words, mcpopt *opt, ...) {
         }
     }
 
+    // named option was not found and no unnamed option with this index located
     if (!value) return MCPARG_NOT_FOUND;
 
     va_list args;
@@ -59,15 +63,18 @@ int mcparg_parse(char **words, mcpopt *opt, ...) {
         int nf = count_fmt(opt->forms[i]);
         va_start (args, opt);
         if (vsscanf(value, opt->forms[i], args) == nf) {
+            // scanf could correctly parse all arguments in this spec
             va_end (args);
             return i;
         }
         va_end (args);
     }
 
+    // none of the format specs matched - likely incorrect formatting
     return MCPARG_NOT_PARSED;
 }
 
+// find a single flag-like option
 int mcparg_find(char **words, ...) {
     va_list args;
     va_start (args, words);
@@ -95,7 +102,15 @@ int mcparg_find(char **words, ...) {
 bid_t mcparg_parse_material(char **words, char *reply, int pos) {
     // try to parse material specified explicitly
     mcpopt opt_mat = {{"material","mat","m",NULL}, pos,
-                      {"0x%x:%d","%d:%d","%3$[^:]:%2$d","%3$[^:]:%4$s","0x%x","%d","%3$s",NULL}};
+                      {  "0x%x:%d",         // 0: expl. hex BID+meta        0x2c:9
+                         "%d:%d",           // 1: BID+meta                  44:9
+                         "%3$[^:]:%2$d",    // 2: block name + meta         stone_slab:9
+                         "%3$[^:]:%4$s",    // 3: block name + meta name    stone_slab:sandstone
+                         "0x%x",            // 4: hex BID                   0x2c
+                         "%d",              // 5: BID                       44
+                         "%3$s",            // 6: block name                stone_slab
+                         NULL}};
+
     int bid=-1, meta=0;
     char sbid[4096], smeta[4096]; sbid[0]=0; smeta[0]=0;
 
