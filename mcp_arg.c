@@ -6,7 +6,6 @@
 
 #include "mcp_arg.h"
 #include "mcp_ids.h"
-#include "mcp_gamestate.h"
 
 // count the number of format specs in a string
 // this is needed by mcparg_parse to check if the format string
@@ -99,9 +98,9 @@ int mcparg_find(char **words, ...) {
 // Helpers for other modules
 
 // Building material
-bid_t mcparg_parse_material(char **words, char *reply, int pos) {
+int mcparg_parse_material(char **words, int argpos, char *reply, bid_t *mat) {
     // try to parse material specified explicitly
-    mcpopt opt_mat = {{"material","mat","m",NULL}, pos,
+    mcpopt opt_mat = {{"material","mat","m",NULL}, argpos,
                       {  "0x%x:%d%5$[^0-9]",        //  0: expl. hex BID+meta+opt    0x2c:1u
                          "0x%x:%d",                 //  1: expl. hex BID+meta        0x2c:9
                          "%d:%d%5$[^0-9]",          //  2: BID+meta+opt              44:1u
@@ -146,29 +145,18 @@ bid_t mcparg_parse_material(char **words, char *reply, int pos) {
             meta = find_meta_name(bid, smeta);
             if (meta<0) sprintf(reply, "Could not find meta name %s", smeta);
             break;
-        case MCPARG_NOT_FOUND: {
-            // nothing specified, take the same material the player is currently holding
-            slot_t *s = &gs.inv.slots[gs.inv.held+36];
-            if (s->item > 0 && !(ITEMS[s->item].flags&I_ITEM)) {
-                bid = s->item;
-                meta = s->damage;
-            }
-            else {
-                bid = -1;
-            }
+        case MCPARG_NOT_FOUND:
+            *mat = BLOCKTYPE(0,0);
+            return 0;
+        case MCPARG_NOT_PARSED:
+            sprintf(reply, "Could not parse material specification");
             break;
-        }
-        case MCPARG_NOT_PARSED: {
-            sprintf(reply, "Incorrect option format for materian specification\n");
-            break;
-        }
     }
-    if (reply[0]) return BLOCKTYPE(0,0);
 
-    if (bid<0) {
-        sprintf(reply, "You must specify material - either explicitly with "
-                "mat=<bid>[,<meta>] or by holding a placeable block");
-        return BLOCKTYPE(0,0);
+    if (reply[0]) {
+        // material spec was found but parsing failed for any reason
+        *mat = BLOCKTYPE(0,0);
+        return 0;
     }
 
     if (sopt[0]) {
@@ -179,9 +167,11 @@ bid_t mcparg_parse_material(char **words, char *reply, int pos) {
             else if (sopt[0]=='l')
                 meta &= 7;
         }
+        //TODO: add options for other block types
     }
 
-    return BLOCKTYPE(bid,meta);
+    *mat = BLOCKTYPE(bid,meta);
+    return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -195,10 +185,14 @@ int main(int ac, char **av) {
     char reply[4096]; reply[0] = 0;
     char buf[256];
 
-    bid_t mat = mcparg_parse_material(words, reply, 0);
+    bid_t mat;
 
-    if (reply[0])
-        printf("Error: %s\n", reply);
+    if (mcparg_parse_material(words, 0, reply, &mat)==0) {
+        if (reply[0])
+            printf("Error: %s\n", reply);
+        else
+            printf("Material not specified\n");
+    }
     else
         printf("Material=%d:%d (%s)\n",mat.bid,mat.meta,get_bid_name(buf, mat));
 

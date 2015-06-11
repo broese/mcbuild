@@ -20,4 +20,4 @@ int mcparg_find(char **words, ...);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bid_t mcparg_parse_material(char **words, char *reply, int pos);
+int mcparg_parse_material(char **words, int argpos, char *reply, bid_t *mat);

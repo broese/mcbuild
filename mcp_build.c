@@ -963,6 +963,30 @@ static void buildplan_place(char *reply) {
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers for parameter parsing
 
+static bid_t build_parse_material(char **words, int argpos, char *reply) {
+    bid_t mat;
+
+    if (mcparg_parse_material(words, argpos, reply, &mat)==0) {
+        if (reply[0]) return BLOCKTYPE(0,0); // parsing failed
+
+        // no material was specified on command line, so use what
+        // the player is currently holding in hand
+        slot_t *s = &gs.inv.slots[gs.inv.held+36];
+        if (s->item > 0 && !(ITEMS[s->item].flags&I_ITEM)) {
+            mat = BLOCKTYPE(s->item, s->damage);
+        }
+        else {
+            // player holding nothing or a non-placeable item
+            mat = BLOCKTYPE(0,0);
+            sprintf(reply,
+                    "You must specify material - either explicitly with "
+                    "mat=<bid>[,<meta>] or by holding a placeable block");
+        }
+    }
+
+    return mat;
+}
+
 // parse commandline to get the offset parameter
 static void build_arg_offset(char **words, char *reply, int argpos, int *ox, int *oz, int *oy) {
     mcpopt opt_offset = {{"offset","off","o",NULL},    argpos, {"%d,%d,%d","%d,%d","%d",NULL}};
@@ -1062,7 +1086,7 @@ static void build_floor(char **words, char *reply) {
         return;
     }
 
-    bid_t mat = mcparg_parse_material(words, reply, 1);
+    bid_t mat = build_parse_material(words, 1, reply);
     if (reply[0]) return;
 
     int hollow = mcparg_find(words, "hollow", "rect", "empty", "e", NULL);
@@ -1107,7 +1131,7 @@ static void build_ring(char **words, char *reply) {
         return;
     }
 
-    bid_t mat = mcparg_parse_material(words, reply, 1);
+    bid_t mat = build_parse_material(words, 1, reply);
     if (reply[0]) return;
 
     int x,z,o;
@@ -1190,7 +1214,7 @@ static void build_ball(char **words, char *reply) {
         return;
     }
 
-    bid_t mat = mcparg_parse_material(words, reply, 1);
+    bid_t mat = build_parse_material(words, 1, reply);
     if (reply[0]) return;
 
     int x,y,z,min,max;
@@ -1251,7 +1275,7 @@ static void build_scaffolding(char **words, char *reply) {
     if (hg==1 && wd<4) wd=4;
     if (hg>1 && wd<7) wd=7;
 
-    bid_t mat = mcparg_parse_material(words, reply, 1);
+    bid_t mat = build_parse_material(words, 1, reply);
     if (reply[0]) {
         reply[0]=0;
         mat = BLOCKTYPE(3,0);
@@ -1310,7 +1334,7 @@ static void build_stairs(char **words, char *reply) {
         return;
     }
 
-    bid_t mat = mcparg_parse_material(words, reply, 1);
+    bid_t mat = build_parse_material(words, 1, reply);
     if (reply[0]) return;
 
     // make stairs-type block face player
@@ -1380,7 +1404,7 @@ static void build_wall(char **words, char *reply) {
         return;
     }
 
-    bid_t mat = mcparg_parse_material(words, reply, 1);
+    bid_t mat = build_parse_material(words, 1, reply);
     if (reply[0]) return;
 
     int x,y;
