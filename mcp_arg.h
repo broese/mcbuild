@@ -7,12 +7,18 @@
 #define MCPARG_NOT_PARSED (-2)
 
 #define MCPARG_MAXNAMES 256
+#define MCPARG_MAXNLEN  256
 #define MCPARG_MAXFORMS 256
 
 typedef struct {
-    const char *names[MCPARG_MAXNAMES]; // NULL-terminated list of possible names of the option
-    int unidx;                          // unnamed index (-1 if no unnamed form allowed)
-    const char *forms[MCPARG_MAXFORMS]; // possible scanf-format strings suitable for the value parsing
+    char names[MCPARG_MAXNAMES][MCPARG_MAXNLEN];
+    // NULL-terminated list of possible names of the option
+
+    int unidx;
+    // unnamed index (-1 if no unnamed form allowed)
+
+    const char *forms[MCPARG_MAXFORMS];
+    // possible scanf-format strings suitable for the value parsing
 } mcpopt;
 
 int mcparg_parse(char **words, mcpopt *opt, ...);

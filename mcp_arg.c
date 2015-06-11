@@ -41,7 +41,7 @@ int mcparg_parse(char **words, mcpopt *opt, ...) {
         else {
             // named option
             int j;
-            for(j=0; opt->names[j]; j++) {
+            for(j=0; opt->names[j][0]; j++) {
                 int nlen = eq-words[i];
                 if (!strncmp(words[i],opt->names[j],nlen)) {
                     // we have a matching name
@@ -100,7 +100,7 @@ int mcparg_find(char **words, ...) {
 // Building material
 int mcparg_parse_material(char **words, int argpos, char *reply, bid_t *mat) {
     // try to parse material specified explicitly
-    mcpopt opt_mat = {{"material","mat","m",NULL}, argpos,
+    mcpopt opt_mat = {{"material","mat","m"}, argpos,
                       {  "0x%x:%d%5$[^0-9]",        //  0: expl. hex BID+meta+opt    0x2c:1u
                          "0x%x:%d",                 //  1: expl. hex BID+meta        0x2c:9
                          "%d:%d%5$[^0-9]",          //  2: BID+meta+opt              44:1u
