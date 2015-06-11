@@ -98,7 +98,7 @@ int mcparg_find(char **words, ...) {
 // Helpers for other modules
 
 // Building material
-int mcparg_parse_material(char **words, int argpos, char *reply, bid_t *mat) {
+int mcparg_parse_material(char **words, int argpos, char *reply, bid_t *mat, const char *suffix) {
     // try to parse material specified explicitly
     mcpopt opt_mat = {{"material","mat","m"}, argpos,
                       {  "0x%x:%d%5$[^0-9]",        //  0: expl. hex BID+meta+opt    0x2c:1u
@@ -116,7 +116,17 @@ int mcparg_parse_material(char **words, int argpos, char *reply, bid_t *mat) {
                          "%3$[^:]::%5$[^0-9:]",     // 12: bname+opt                 stone_slab::u
                          "%3$s",                    // 13: bname                     stone_slab
                          NULL}};
+    // add suffix to the option names if the user specified it
+    if (suffix) {
+        int i;
+        char buf[256];
+        for (i=0; opt_mat.names[i][0]; i++) {
+            //printf("%s : %zd\n", opt_mat.names[i], strlen(opt_mat.names[i]));
+            sprintf(opt_mat.names[i]+strlen(opt_mat.names[i]), "%s", suffix);
+        }
+    }
 
+    // try to locate and parse one of the formats for material spec
     int bid=-1, meta=0;
     char sbid[4096], smeta[4096], sopt[4096];
     sbid[0]=0; smeta[0]=0; sopt[0]=0;

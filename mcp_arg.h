@@ -26,4 +26,4 @@ int mcparg_find(char **words, ...);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int mcparg_parse_material(char **words, int argpos, char *reply, bid_t *mat);
+int mcparg_parse_material(char **words, int argpos, char *reply, bid_t *mat, const char *suffix);
