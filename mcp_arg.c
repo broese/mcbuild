@@ -193,18 +193,31 @@ int main(int ac, char **av) {
     char **words = av+1;
 
     char reply[4096]; reply[0] = 0;
-    char buf[256];
+    char buf1[256],buf2[256];
 
-    bid_t mat;
+    bid_t mat1,mat2;
 
-    if (mcparg_parse_material(words, 0, reply, &mat)==0) {
+    if (mcparg_parse_material(words, 0, reply, &mat1, "1")==0) {
         if (reply[0])
-            printf("Error: %s\n", reply);
+            printf("Error parsing material 1: %s\n", reply);
         else
-            printf("Material not specified\n");
+            printf("Material1 not specified\n");
+
+        return 1;
     }
-    else
-        printf("Material=%d:%d (%s)\n",mat.bid,mat.meta,get_bid_name(buf, mat));
+
+    if (mcparg_parse_material(words, 1, reply, &mat2, "2")==0) {
+        if (reply[0])
+            printf("Error parsing material 2: %s\n", reply);
+        else
+            printf("Material2 not specified\n");
+
+        return 2;
+    }
+
+    printf("Material1=%d:%d (%s) Material2=%d:%d (%s)\n",
+           mat1.bid,mat1.meta,get_bid_name(buf1, mat1),
+           mat2.bid,mat2.meta,get_bid_name(buf2, mat2));
 
     return 0;
 }
