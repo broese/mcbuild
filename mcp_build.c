@@ -988,34 +988,15 @@ static bid_t build_parse_material(char **words, int argpos, char *reply) {
 }
 
 // parse commandline to get the offset parameter
-static void build_arg_offset(char **words, char *reply, int argpos, int *ox, int *oz, int *oy) {
-    mcpopt opt_offset = {{"offset","off","o"},    argpos, {"%d,%d,%d","%d,%d","%d",NULL}};
-    mcpopt opt_dir    = {{"direction","dir","d"}, argpos, {"%s",NULL}};
+static boff_t build_arg_offset(char **words, char *reply, int argpos) {
+    boff_t off = { .dx = build.bpsx, .dy = build.bpsy, .dz = build.bpsz };
 
-    switch(mcparg_parse(words, &opt_offset, ox, oz, oy)) {
-        case 0: break;
-        case 1: *oy=0; break;
-        case 2: *oz=0; *oy=0; break;
-        default: {
-            char dir[256];
-            if (mcparg_parse(words, &opt_dir, dir)<0) {
-                sprintf(reply, "Usage: offset=x[,z[,y]]|u|d|r|l|f|b");
-                return;
-            }
-
-            switch(dir[0]) {
-                case 'u': *ox=0; *oz=0; *oy=build.bpsy; break;
-                case 'd': *ox=0; *oz=0; *oy=-build.bpsy; break;
-                case 'r': *ox=build.bpsx; *oz=0; *oy=0; break;
-                case 'l': *ox=-build.bpsx; *oz=0; *oy=0; break;
-                case 'f': *ox=0; *oz=-build.bpsz; *oy=0; break;
-                case 'b': *ox=0; *oz=build.bpsz; *oy=0; break;
-                default:
-                    sprintf(reply, "Usage: offset=x[,z[,y]]|u|d|r|l|f|b");
-                    return;
-            }
-        }
+    if (mcparg_parse_offset(words, argpos, reply, &off)) {
+        if (!reply[0]) sprintf(reply, "You must specify offset as offset=<x>[,<z>[,<y>]]|<direction>");
+        return (boff_t) { 0, 0, 0 };
     }
+
+    return off;
 }
 
 // parse the commandline to get the direction parameter,
@@ -1546,14 +1527,13 @@ static void build_scan(char **words, char *reply) {
 /*
 Extend the buildplan by replicating it a given number of times.
 
-#build extend <offset|direction> [<count>]
-<offset>    := [offset=]<dx>[,<dz>[,<dy>]]      # explicit offset, default=0
-<direction> := [direction=](u|d|r|l|f|b)        # offset by buildplan size
-<count>     := [count=]<count>                  # how many times, default=1
+#build extend <offset> [<count>]
+<offset>    := [offset=]<x>[,<z>[,<y>]]|<direction> # explicit offset, or direction
+<direction> := [distance](u|d|r|l|f|b)              # offset by buildplan size in that direction or by explicit number
+<count>     := [count=]<count>                      # how many times, default=1
 */
 static void build_extend(char **words, char *reply) {
-    int ox,oy,oz;
-    build_arg_offset(words, reply, 0, &ox, &oz, &oy);
+    boff_t o = build_arg_offset(words, reply, 0);
     if (reply[0]) return;
 
     mcpopt opt_count  = {{"count","cnt","c"},     1, {"%d",NULL}};
@@ -1567,15 +1547,15 @@ static void build_extend(char **words, char *reply) {
         for(j=0; j<bc; j++) {
             blkr *bn = lh_arr_new(BPLAN);
             blkr *bo = P(build.plan)+j;
-            bn->x = bo->x+ox*i;
-            bn->y = bo->y+oy*i;
-            bn->z = bo->z+oz*i;
+            bn->x = bo->x+o.dx*i;
+            bn->y = bo->y+o.dy*i;
+            bn->z = bo->z+o.dz*i;
             bn->b = bo->b;
         }
     }
 
     sprintf(reply, "Extended buildplan %d times, offset=%d,%d,%d",
-            count, ox,oz,oy);
+            count, o.dx, o.dz, o.dy);
     buildplan_updated();
     buildplan_place(reply);
 }
@@ -2522,11 +2502,10 @@ void build_append(char ** words, char * reply) {
         return;
     }
 
-    int ox,oy,oz;
-    build_arg_offset(words, reply, 1, &ox, &oz, &oy);
+    boff_t o = build_arg_offset(words, reply, 1);
     if (reply[0]) return;
 
-    build_loadappend(name, reply, ox, oz, oy);
+    build_loadappend(name, reply, o.dx, o.dz, o.dy);
 }
 
 #define SCHEMATICS_DIR "schematic"
