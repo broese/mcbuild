@@ -966,7 +966,7 @@ static void buildplan_place(char *reply) {
 static bid_t build_parse_material(char **words, int argpos, char *reply) {
     bid_t mat;
 
-    if (mcparg_parse_material(words, argpos, reply, &mat)==0) {
+    if (mcparg_parse_material(words, argpos, reply, &mat, NULL)==0) {
         if (reply[0]) return BLOCKTYPE(0,0); // parsing failed
 
         // no material was specified on command line, so use what
@@ -989,8 +989,8 @@ static bid_t build_parse_material(char **words, int argpos, char *reply) {
 
 // parse commandline to get the offset parameter
 static void build_arg_offset(char **words, char *reply, int argpos, int *ox, int *oz, int *oy) {
-    mcpopt opt_offset = {{"offset","off","o",NULL},    argpos, {"%d,%d,%d","%d,%d","%d",NULL}};
-    mcpopt opt_dir    = {{"direction","dir","d",NULL}, argpos, {"%s",NULL}};
+    mcpopt opt_offset = {{"offset","off","o"},    argpos, {"%d,%d,%d","%d,%d","%d",NULL}};
+    mcpopt opt_dir    = {{"direction","dir","d"}, argpos, {"%s",NULL}};
 
     switch(mcparg_parse(words, &opt_offset, ox, oz, oy)) {
         case 0: break;
@@ -1022,7 +1022,7 @@ static void build_arg_offset(char **words, char *reply, int argpos, int *ox, int
 // or assume the direction the player is facing
 static int build_arg_dir(char **words, char *reply, int argpos) {
     int dir;
-    mcpopt opt_dir = {{"direction","dir","d",NULL}, 1, {"%s",NULL}};
+    mcpopt opt_dir = {{"direction","dir","d"}, 1, {"%s",NULL}};
     char direction[256];
     switch(mcparg_parse(words, &opt_dir, direction)) {
         case 0: {
@@ -1068,7 +1068,7 @@ static void build_floor(char **words, char *reply) {
 
     // floor size
     int xsize,zsize;
-    mcpopt opt_size = {{"size","sz","s",NULL}, 0, {"%d,%d","%dx%d","%d",NULL}};
+    mcpopt opt_size = {{"size","sz","s"}, 0, {"%d,%d","%dx%d","%d",NULL}};
     switch(mcparg_parse(words, &opt_size, &xsize, &zsize)) {
         case 0:
         case 1:
@@ -1121,7 +1121,7 @@ static void build_ring(char **words, char *reply) {
 
     // ring diameter
     int diam;
-    mcpopt opt_diam = {{"size","sz","s","diameter","diam","D","d",NULL}, 0, {"%d",NULL}};
+    mcpopt opt_diam = {{"size","sz","s","diameter","diam","D","d"}, 0, {"%d",NULL}};
     if (mcparg_parse(words, &opt_diam, &diam)!=0) {
         sprintf(reply, "Usage: #build ring size=<diameter>");
         return;
@@ -1204,7 +1204,7 @@ static void build_ball(char **words, char *reply) {
 
     // ball diameter
     int diam;
-    mcpopt opt_diam = {{"size","sz","s","diameter","diam","D","d",NULL}, 0, {"%d",NULL}};
+    mcpopt opt_diam = {{"size","sz","s","diameter","diam","D","d"}, 0, {"%d",NULL}};
     if (mcparg_parse(words, &opt_diam, &diam)!=0) {
         sprintf(reply, "Usage: #build ball size=<diameter>");
         return;
@@ -1261,7 +1261,7 @@ static void build_scaffolding(char **words, char *reply) {
     build_clear();
 
     int wd,hg;
-    mcpopt opt_size = {{"size","sz","s",NULL}, 0, {"%d,%d","%dx%d",NULL}};
+    mcpopt opt_size = {{"size","sz","s"}, 0, {"%d,%d","%dx%d",NULL}};
     if (mcparg_parse(words, &opt_size, &wd, &hg)<0) {
         sprintf(reply, "Usage: build scaffolding size=<width>,<height>");
         return;
@@ -1324,7 +1324,7 @@ static void build_stairs(char **words, char *reply) {
     build_clear();
 
     int wd,hg;
-    mcpopt opt_size = {{"size","sz","s",NULL}, 0, {"%d,%d","%dx%d",NULL}};
+    mcpopt opt_size = {{"size","sz","s"}, 0, {"%d,%d","%dx%d",NULL}};
     if (mcparg_parse(words, &opt_size, &wd, &hg)<0) {
         sprintf(reply, "Usage: build stairs size=<width>,<height>");
         return;
@@ -1386,7 +1386,7 @@ static void build_wall(char **words, char *reply) {
 
     // wall size
     int width,height;
-    mcpopt opt_size = {{"size","sz","s",NULL}, 0, {"%d,%d","%dx%d","%d",NULL}};
+    mcpopt opt_size = {{"size","sz","s"}, 0, {"%d,%d","%dx%d","%d",NULL}};
     switch(mcparg_parse(words, &opt_size, &width, &height)) {
         case 0:
         case 1:
@@ -1434,7 +1434,7 @@ static void build_scan(char **words, char *reply) {
 
     // pivot block position
     int px,py,pz;
-    mcpopt opt_from = {{"from","pivot","f",NULL}, 0, {"%d,%d,%d",NULL}};
+    mcpopt opt_from = {{"from","pivot","f"}, 0, {"%d,%d,%d",NULL}};
     if (mcparg_parse(words, &opt_from, &px, &pz, &py)<0) {
         if (mcparg_find(words, "here", "h", "player", "p", NULL)) {
             px = gs.own.x>>5;
@@ -1453,11 +1453,11 @@ static void build_scan(char **words, char *reply) {
 
     // opposize point
     int tx,ty,tz;
-    mcpopt opt_to = {{"to","t",NULL}, 0, {"%d,%d,%d",NULL}};
+    mcpopt opt_to = {{"to","t"}, 0, {"%d,%d,%d",NULL}};
     if (mcparg_parse(words, &opt_to, &tx, &tz, &ty)<0) {
         // alternatively the user can specify the size
         int wd,hg,dp;
-        mcpopt opt_size = {{"size","sz","s",NULL}, -1, {"%d,%d,%d",NULL}};
+        mcpopt opt_size = {{"size","sz","s"}, -1, {"%d,%d,%d",NULL}};
         if (mcparg_parse(words, &opt_size, &wd, &dp, &hg)<0) {
             sprintf(reply, "Usage: specify the extent of the scan either with 'to=<x,z,y>' or with 'size=<width,depth,height>'");
             return;
@@ -1556,7 +1556,7 @@ static void build_extend(char **words, char *reply) {
     build_arg_offset(words, reply, 0, &ox, &oz, &oy);
     if (reply[0]) return;
 
-    mcpopt opt_count  = {{"count","cnt","c",NULL},     1, {"%d",NULL}};
+    mcpopt opt_count  = {{"count","cnt","c"},     1, {"%d",NULL}};
     int count;
     if (mcparg_parse(words, &opt_count, &count)<0)
         count=1;
@@ -1582,8 +1582,8 @@ static void build_extend(char **words, char *reply) {
 
 // replace one material in the buildplan with another (including meta specification)
 static void build_replace(char **words, char *reply) {
-    mcpopt opt_mat1  = {{"from","material1","mat1","m1",NULL}, 0, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
-    mcpopt opt_mat2  = {{"to","material2","mat2","m2",NULL},   1, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
+    mcpopt opt_mat1  = {{"from","material1","mat1","m1"}, 0, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
+    mcpopt opt_mat2  = {{"to","material2","mat2","m2"},   1, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
 
     int b1,m1,b2,m2;
     int res1 = mcparg_parse(words, &opt_mat1, &b1, &m1);
@@ -1910,7 +1910,7 @@ static void build_place(char **words, char *reply) {
     int dir = -1;
 
     // parse coords
-    mcpopt opt_coord = {{"coordinates","coords","coord","c",NULL}, 0, {"%d,%d,%d","%d,%d","%d",NULL}};
+    mcpopt opt_coord = {{"coordinates","coords","coord","c"}, 0, {"%d,%d,%d","%d,%d","%d",NULL}};
     switch(mcparg_parse(words, &opt_coord, &px, &pz, &py)) {
         case 0:
             build.placemode = 0;
@@ -2515,7 +2515,7 @@ void build_load(const char * name, char * reply) {
 // load a buildplan from a .bplan file and append to existing buildplan (with a given offset)
 // TODO: check for overlapping blocks and remove old ones
 void build_append(char ** words, char * reply) {
-    mcpopt opt_name = {{"name","n",NULL}, 0, {"%s",NULL}};
+    mcpopt opt_name = {{"name","n"}, 0, {"%s",NULL}};
     char name[256];
     if (mcparg_parse(words, &opt_name, name)!=0) {
         sprintf(reply, "Usage: #build append <name> [offset=ox,oz,oy] (name w/o extension)");
