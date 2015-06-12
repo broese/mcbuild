@@ -184,6 +184,68 @@ int mcparg_parse_material(char **words, int argpos, char *reply, bid_t *mat, con
     return 1;
 }
 
+int mcparg_parse_offset(char **words, int argpos, char *reply, boff_t *off) {
+    mcpopt opt_off = {{"offset","off","o"}, argpos,
+                      {  "%d,%d,%d",            // 0, x,z,y
+                         "%d,%d",               // 1, x,z
+                         "%d%4$[rlfbud]",       // 2, offset + direction
+                         "%d",                  // 3, x
+                         "%4$[rlfbud]",         // 4, direction
+                         NULL}};
+
+    // try to locate and parse one of the formats for material spec
+    int32_t x,y,z;
+    char dir[4096]; dir[0] = 0;
+
+    int match = mcparg_parse(words, &opt_off, &x, &z, &y, dir);
+    switch(match) {
+        case 0:
+            break;
+        case 1:
+            y=0;
+            break;
+        case 2:
+            switch (tolower(dir[0])) {
+                case 'u': y=x;  x=0; z=0; break;
+                case 'd': y=-x; x=0; z=0; break;
+                case 'r': x=x;  z=0; y=0; break;
+                case 'l': x=-x; z=0; y=0; break;
+                case 'f': z=-x; x=0; y=0; break;
+                case 'b': z=x;  x=0; y=0; break;
+                default:
+                    sprintf(reply, "unrecognized direction %s", dir);
+                    return 0;
+            }
+            break;
+        case 3:
+            z=y=0;
+            break;
+        case 4:
+            switch (tolower(dir[0])) {
+                case 'u': x=0; z=0; y=off->dy; break;
+                case 'd': x=0; z=0; y=-off->dy; break;
+                case 'r': x=off->dx; z=0; y=0; break;
+                case 'l': x=-off->dx; z=0; y=0; break;
+                case 'f': x=0; z=-off->dz; y=0; break;
+                case 'b': x=0; z=off->dz; y=0; break;
+                default:
+                    sprintf(reply, "unrecognized direction %s", dir);
+                    return 0;
+            }
+            break;
+        case MCPARG_NOT_FOUND:
+            return 0;
+        case MCPARG_NOT_PARSED:
+            sprintf(reply, "could not parse offset specification");
+            return 0;
+    }
+
+    off->dx = x;
+    off->dy = y;
+    off->dz = z;
+    return 1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Test function
 
@@ -195,6 +257,7 @@ int main(int ac, char **av) {
     char reply[4096]; reply[0] = 0;
     char buf1[256],buf2[256];
 
+#if 0
     bid_t mat1,mat2;
 
     if (mcparg_parse_material(words, 0, reply, &mat1, "1")==0) {
@@ -218,6 +281,19 @@ int main(int ac, char **av) {
     printf("Material1=%d:%d (%s) Material2=%d:%d (%s)\n",
            mat1.bid,mat1.meta,get_bid_name(buf1, mat1),
            mat2.bid,mat2.meta,get_bid_name(buf2, mat2));
+#endif
+
+    boff_t off = { .dx = 50, .dy = 15, .dz = 40 };
+    if (mcparg_parse_offset(words, 0, reply, &off)==0) {
+        if (reply[0])
+            printf("Error parsing offset: %s\n", reply);
+        else
+            printf("Offset not specified\n");
+
+        return 1;
+    }
+
+    printf("Offset: %d,%d,%d\n",off.dx,off.dz,off.dy);
 
     return 0;
 }

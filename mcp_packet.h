@@ -138,7 +138,7 @@ typedef struct {
 } blkrec;
 
 typedef struct {
-    int8_t dx,dy,dz;
+    int32_t dx,dy,dz;
 } boff_t;
 
 ////////////////////////////////////////////////////////////////////////////////
