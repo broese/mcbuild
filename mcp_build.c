@@ -991,7 +991,7 @@ static bid_t build_parse_material(char **words, int argpos, char *reply) {
 static boff_t build_arg_offset(char **words, char *reply, int argpos) {
     boff_t off = { .dx = build.bpsx, .dy = build.bpsy, .dz = build.bpsz };
 
-    if (mcparg_parse_offset(words, argpos, reply, &off)) {
+    if (mcparg_parse_offset(words, argpos, reply, &off)==0) {
         if (!reply[0]) sprintf(reply, "You must specify offset as offset=<x>[,<z>[,<y>]]|<direction>");
         return (boff_t) { 0, 0, 0 };
     }
