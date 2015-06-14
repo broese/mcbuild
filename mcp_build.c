@@ -1914,6 +1914,30 @@ static void build_tilt(char **words, char *reply) {
     buildplan_updated();
     buildplan_place(reply);
 }
+
+// make sure that the pivot block is at the bottm level of the buildplan
+static void build_normalize(char **words, char *reply) {
+    int i,
+        minx=P(build.plan)[0].x,
+        miny=P(build.plan)[0].y,
+        maxz=P(build.plan)[0].z;
+
+    for(i=0; i<C(build.plan); i++) {
+        blkr *b = P(build.plan)+i;
+        if (b->x < minx) minx = b->x;
+        if (b->y < miny) miny = b->y;
+        if (b->z > maxz) maxz = b->z;
+    }
+
+    for(i=0; i<C(build.plan); i++) {
+        blkr *b = P(build.plan)+i;
+        b->x += -minx;
+        b->y += -miny;
+        b->z -= maxz;
+    }
+
+    buildplan_updated();
+    buildplan_place(reply);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2775,6 +2799,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "tilt")) {
         build_tilt(words+2, reply);
+    }
+    else if (!strcmp(words[1], "normalize") || !strcmp(words[1], "norm")) {
+        build_normalize(words+2, reply);
     }
 
     // Save/load/import
