@@ -1862,6 +1862,58 @@ static void build_flip(char **words, char *reply) {
             case 'z': b->z = -b->z; break;
         }
     }
+    buildplan_updated();
+    buildplan_place(reply);
+}
+
+// tilt the buildplan by 90 degrees
+// the plan is rotated clockwise around specified axis (default: x),
+// as when looking from the positive axis direction
+static void build_tilt(char **words, char *reply) {
+    int i;
+
+    char mode = 'x';
+    if (words[0]) {
+        switch(words[0][0]) {
+            case 'x':
+            case 'y':
+            case 'z':
+                mode=words[0][0]; break;
+            default:
+                sprintf(reply, "Usage: #build tilt [x|y|z]");
+                return;
+        }
+    }
+    // TODO: rotation parameter
+
+    int x,y,z;
+    for(i=0; i<C(build.plan); i++) {
+        blkr *b = P(build.plan)+i;
+        switch (mode) {
+            case 'x':
+                y = b->z;
+                z = -b->y;
+                b->y = y;
+                b->z = z;
+                break;
+            case 'y':
+                x = -b->z;
+                z = b->x;
+                b->x = x;
+                b->z = z;
+                break;
+            case 'z':
+                x = b->y;
+                y = -b->x;
+                b->x = x;
+                b->y = y;
+                break;
+        }
+    }
+
+    buildplan_updated();
+    buildplan_place(reply);
+}
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2720,6 +2772,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "flip")) {
         build_flip(words+2, reply);
+    }
+    else if (!strcmp(words[1], "tilt")) {
+        build_tilt(words+2, reply);
     }
 
     // Save/load/import
