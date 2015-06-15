@@ -1940,6 +1940,83 @@ static void build_normalize(char **words, char *reply) {
     buildplan_place(reply);
 }
 
+// shrink the buildplan 2x2
+static void build_shrink(char **words, char *reply) {
+    int i,j;
+
+    int32_t size_xz = build.bpsx*build.bpsz;
+    lh_create_num(bid_t,bp,size_xz*build.bpsy);
+
+    // initialize the voxel set from the buildplan
+    for(i=0; i<C(build.plan); i++) {
+        blkr *b = P(build.plan)+i;
+
+        // offset of this block in the array
+        int32_t off_x = b->x-build.bpxn;
+        int32_t off_y = b->y-build.bpyn;
+        int32_t off_z = b->z-build.bpzn;
+        int32_t off   = off_x+off_z*build.bpsx+off_y*size_xz;
+        bp[off] = b->b;
+    }
+
+    // new list for the build plan to hold the blocks from the shrinked model
+    lh_arr_declare_i(blkr, keep);
+
+    int x,y,z;
+    for(y=build.bpyn; y<build.bpyx-1; y+=2) {
+        for(x=build.bpxn; x<build.bpxx-1; x+=2) {
+            for(z=build.bpzn; z<build.bpzx-1; z+=2) {
+                int32_t off_x = x-build.bpxn;
+                int32_t off_y = y-build.bpyn;
+                int32_t off_z = z-build.bpzn;
+
+                int32_t off = off_x+off_z*build.bpsx+off_y*size_xz;
+                int32_t offs[8] = {
+                    off,
+                    off+1,
+                    off+build.bpsx,
+                    off+1+build.bpsx,
+                    off+size_xz,
+                    off+1+size_xz,
+                    off+build.bpsx+size_xz,
+                    off+1+build.bpsx+size_xz
+                };
+
+                int blk[256]; lh_clear_obj(blk);
+                for (i=0; i<8; i++) {
+                    int bid = bp[offs[i]].bid;
+                    blk[bid]++;
+                }
+                bid_t mat = BLOCKTYPE(0,0);
+                for(i=1; i<256; i++)
+                    if (blk[i]>4)
+                        mat = BLOCKTYPE(i,0);
+
+                if (mat.bid) {
+                    blkr *k = lh_arr_new(GAR(keep));
+                    k->b = mat;
+                    k->x = build.bpxn + (x-build.bpxn)/2;
+                    k->y = build.bpyn + (y-build.bpyn)/2;
+                    k->z = build.bpzn + (z-build.bpzn)/2;
+                }
+            }
+        }
+    }
+
+    // free our voxel set
+    lh_free(bp);
+
+    // replace the buildplan with the reduced list
+    lh_arr_free(BPLAN);
+    C(build.plan) = C(keep);
+    P(build.plan) = P(keep);
+
+    sprintf(reply, "Shrinked to %zd blocks", C(build.plan));
+
+    buildplan_updated();
+    buildplan_place(reply);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Pivot placement
 
@@ -2802,6 +2879,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (!strcmp(words[1], "normalize") || !strcmp(words[1], "norm")) {
         build_normalize(words+2, reply);
+    }
+    else if (!strcmp(words[1], "shrink") || !strcmp(words[1], "sh")) {
+        build_shrink(words+2, reply);
     }
 
     // Save/load/import
