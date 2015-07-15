@@ -1,75 +1,65 @@
-This is an ad-hoc document to collect the next components to implement
+= meta manipulations =
 
-legend:
-= Section
-+ already implemented
-* already implemented but needs improvements or testing
-- not implemented
-! not implemented, has high priority
-~ not implemented, has low priority
-@ dependence on another component
+- support more meta-oriented blocks
+- meta value rotation (was this completed?)
+- meta value flipping
+- meta value tilting
+- orientation-meta mapping in #replace
+- find a base material from stairs/slab etc. blocks
 
-= Inventory
-  = Inventory Tracking - track changes in player's inventory based on SP_SetSlot, CP_WindowClick and SP_ConfirmTransaction
-    + SP_SetSlot handling
-    + Mode 0 (simple click)
-    + Mode 1 (shift-click)
-    ~ Mode 2 (numeric selection)
-    ~ Mode 3
-    + Mode 4 (throwing)
-    + Mode 5 (painting)
-    ~ Mode 6 (?)
-    - Explicit update request 
-  = Inventory Switching
-    ! held item switching
-    - quickbar item switching
-    - inventory slots swapping
-    ~ interaction with slotted blocks (e.g. chests, furnaces)
+= build process =
 
-= Misc
-  - Autoeat
-  - Autotool
-  - Autoenchant/anvil
-  - Autoshear
-  - Autodig
+- placement of double-slabs
+- add delay between single slab placements to avoid accidental double-slab placement
+- better way to handle block repeated placements
+  - verify if the block placement is confirmed
+- option to place blocks with less restrictions (e.g. for creative mode and w/o NoCheat)
+  - no turning to target
+  - extended reach
+  - no need for supporting blocks
+- auto-supports for disconnected blocks
 
-= Autobuilding
-  = In-world preview
-    - selection masks
-    - building preview masks
-    - building placement
-  = Generic Building
-    - placement of blocks
-    - checking of acessibility
-    - building strategy
-    - checking of visibility
-    - placement of meta-dependent blocks (e.g. stairs)
-    - diff-checking and rebuild
-    - 
-  = Parametric building
-    - floors
-    - walls
-    - stairs
-    - scaffolding
-    - bridges
-  = Build Recording
-  = Build scanning
-  = Pixel art
+= inventory handling =
 
-=======================================================
+- fix inventory transfers for lava/water buckets
+- fix inventory transfers for the named blocks
+- handle failed transactions
+- autojunk/autostorage
 
+= in-world preview =
 
-The model (brec) is always saved as if it is build to the North direction.
-  - block coordinates are saved as difference to the pivot
-  - the X axis goes to the Right
-  - the Z axis goes to the Back (toward the player)
-    - this way most blocks are likely to have negative Z coords
+- optimize build preview for large builds
+- fix removal of the preview (maybe - refresh world by sending chunks)
+- mask/selection with preview
 
-The block values are simply bid_t
-- If some blocks have an orientation-dependent meta values, the values will be as that block would have if the model was build to the north direction
-- If the model is rotated to a different direction, we need to map the meta vasues from the North to the respective direction.
-  - This means, for each supported I_MPOS block type we need a mapping table: 4 rows, 16 cols
+= other functions =
 
-Invent
+- map marker (using a beacon beam for example)
+- export to schematic
+- turn to target when attacking
+- import PNG for pixel art, or convert to bplan with an external tool
+  - allow for different block sets
+- autowalking to specific coordinates
+- autoenchant
+- search for blocks
+- safewalking
+- mcp replay
+- mapper
+- tunnel detection
+- autocrafting
+
+= arguments parsing =
+
+- option parsing
+- materials by name in #replace
+
+= parametric builds =
+
+- better ring/circle algorithm, ellipse, ellipsoid
+- spiral
+- checkerboard
+- arch
+- generic radial pattern (i.e. spiral-like)
+- generic orthogonal pattern (e.g. parabola)
 
 
