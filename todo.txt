@@ -1,3 +1,11 @@
+= general organization =
+
+- make a buildplan a separate struct
+- manage multiple buildplans instead of one global
+- move functions to create and manipulate buildplans to a separate module w/o any access to the global data or gamestate
+- reorganize argument parsing
+- introduce asynchronous packet queue
+
 = meta manipulations =
 
 - support more meta-oriented blocks
@@ -31,6 +39,7 @@
 - optimize build preview for large builds
 - fix removal of the preview (maybe - refresh world by sending chunks)
 - mask/selection with preview
+- mask from the buildplan/buildtask
 
 = other functions =
 
