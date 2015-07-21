@@ -1002,41 +1002,10 @@ static boff_t build_arg_offset(char **words, char *reply, int argpos) {
 // parse the commandline to get the direction parameter,
 // or assume the direction the player is facing
 static int build_arg_dir(char **words, char *reply, int argpos) {
-    int dir;
-    mcpopt opt_dir = {{"direction","dir","d"}, 1, {"%s",NULL}};
-    char direction[256];
-    switch(mcparg_parse(words, &opt_dir, direction)) {
-        case 0: {
-            switch(direction[0]) {
-                case 's':
-                case '2':
-                    dir = DIR_SOUTH;
-                    break;
-                case 'n':
-                case '3':
-                    dir = DIR_NORTH;
-                    break;
-                case 'e':
-                case '4':
-                    dir = DIR_EAST;
-                    break;
-                case 'w':
-                case '5':
-                    dir = DIR_WEST;
-                    break;
-                default:
-                    sprintf(reply, "Usage: dir=<south|north|east|west>");
-                    return -1;
-            }
-            break;
-        }
-        case MCPARG_NOT_PARSED:
-            sprintf(reply, "Usage: dir=<south|north|east|west>");
-            return -1;
-        default:
-            dir= player_direction();
-            break;
-    }
+    int dir = player_direction();
+    if (mcparg_parse_direction(words, argpos, reply, &dir)==0) return DIR_ANY;
+
+    reply[0] = 0;
     return dir;
 }
 
