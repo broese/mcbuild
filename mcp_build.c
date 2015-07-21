@@ -1017,22 +1017,9 @@ static void build_floor(char **words, char *reply) {
     build_clear();
 
     // floor size
-    int xsize,zsize;
-    mcpopt opt_size = {{"size","sz","s"}, 0, {"%d,%d","%dx%d","%d",NULL}};
-    switch(mcparg_parse(words, &opt_size, &xsize, &zsize)) {
-        case 0:
-        case 1:
-            break;
-        case 2:
-            zsize=xsize; // square floor
-            break;
-        default:
-            sprintf(reply, "Usage: build floor size=<xsize>,<zsize>");
-            return;
-    }
-
-    if (xsize<=0 || zsize<=0) {
-        sprintf(reply, "Usage: illegal floor size %d,%d",xsize,zsize);
+    int wd,hg;
+    if (!mcparg_parse_size(words, 0, reply, &wd, &hg, NULL)) {
+        sprintf(reply, "Usage: build floor size=<width>[,<depth>]");
         return;
     }
 
@@ -1042,9 +1029,9 @@ static void build_floor(char **words, char *reply) {
     int hollow = mcparg_find(words, "hollow", "rect", "empty", "e", NULL);
 
     int x,z;
-    for(x=0; x<xsize; x++) {
-        for(z=0; z<zsize; z++) {
-            if (hollow && x!=0 && x!=xsize-1 && z!=0 && z!=zsize-1) continue;
+    for(x=0; x<wd; x++) {
+        for(z=0; z<hg; z++) {
+            if (hollow && x!=0 && x!=wd-1 && z!=0 && z!=hg-1) continue;
             blkr *b = lh_arr_new(BPLAN);
             b->b = mat;
             b->x = x;
@@ -1055,7 +1042,7 @@ static void build_floor(char **words, char *reply) {
 
     char buf[256];
     int off = sprintf(reply, "Created floor %s%dx%d material=%s",
-                      hollow?"(border only) ":"", xsize, zsize, get_bid_name(buf, mat));
+                      hollow?"(border only) ":"", wd, hg, get_bid_name(buf, mat));
 
     buildplan_updated();
     buildplan_place(reply);
@@ -1070,14 +1057,10 @@ static void build_ring(char **words, char *reply) {
     build_clear();
 
     // ring diameter
+    //TODO: move to the disc implementation + 2D hollow to generate rings
     int diam;
-    mcpopt opt_diam = {{"size","sz","s","diameter","diam","D","d"}, 0, {"%d",NULL}};
-    if (mcparg_parse(words, &opt_diam, &diam)!=0) {
-        sprintf(reply, "Usage: #build ring size=<diameter>");
-        return;
-    }
-    if (diam<=0) {
-        sprintf(reply, "Usage: illegal ring size %d",diam);
+    if (!mcparg_parse_size(words, 0, reply, &diam, NULL, NULL)) {
+        sprintf(reply, "Usage: build ring size=<diameter>");
         return;
     }
 
@@ -1153,14 +1136,10 @@ static void build_ball(char **words, char *reply) {
     build_clear();
 
     // ball diameter
+    //TODO: ellipsoid
     int diam;
-    mcpopt opt_diam = {{"size","sz","s","diameter","diam","D","d"}, 0, {"%d",NULL}};
-    if (mcparg_parse(words, &opt_diam, &diam)!=0) {
-        sprintf(reply, "Usage: #build ball size=<diameter>");
-        return;
-    }
-    if (diam<=0) {
-        sprintf(reply, "Usage: illegal ball size %d",diam);
+    if (!mcparg_parse_size(words, 0, reply, &diam, NULL, NULL)) {
+        sprintf(reply, "Usage: build ball size=<diameter>");
         return;
     }
 
@@ -1209,14 +1188,10 @@ static void build_disk(char **words, char *reply) {
     build_clear();
 
     // disc diameter
+    //TODO: ellipse, ring/disk
     int diam;
-    mcpopt opt_diam = {{"size","sz","s","diameter","diam","D","d"}, 0, {"%d",NULL}};
-    if (mcparg_parse(words, &opt_diam, &diam)!=0) {
-        sprintf(reply, "Usage: #build disk size=<diameter>");
-        return;
-    }
-    if (diam<=0) {
-        sprintf(reply, "Usage: illegal disk size %d",diam);
+    if (!mcparg_parse_size(words, 0, reply, &diam, NULL, NULL)) {
+        sprintf(reply, "Usage: build disk size=<diameter>");
         return;
     }
 
@@ -1267,13 +1242,8 @@ static void build_scaffolding(char **words, char *reply) {
     build_clear();
 
     int wd,hg;
-    mcpopt opt_size = {{"size","sz","s"}, 0, {"%d,%d","%dx%d",NULL}};
-    if (mcparg_parse(words, &opt_size, &wd, &hg)<0) {
-        sprintf(reply, "Usage: build scaffolding size=<width>,<height>");
-        return;
-    }
-    if (wd<=0 || hg<=0) {
-        sprintf(reply, "Usage: illegal scaffolding size %d,%d",wd,hg);
+    if (!mcparg_parse_size(words, 0, reply, &wd, &hg, NULL)) {
+        sprintf(reply, "Usage: build stairs size=<width>[,<floors>]");
         return;
     }
 
@@ -1329,14 +1299,10 @@ static void build_scaffolding(char **words, char *reply) {
 static void build_stairs(char **words, char *reply) {
     build_clear();
 
+    // stairs size
     int wd,hg;
-    mcpopt opt_size = {{"size","sz","s"}, 0, {"%d,%d","%dx%d",NULL}};
-    if (mcparg_parse(words, &opt_size, &wd, &hg)<0) {
-        sprintf(reply, "Usage: build stairs size=<width>,<height>");
-        return;
-    }
-    if (wd<=0 || hg<=0) {
-        sprintf(reply, "Usage: illegal stairs size %d,%d",wd,hg);
+    if (!mcparg_parse_size(words, 0, reply, &wd, &hg, NULL)) {
+        sprintf(reply, "Usage: build stairs size=<width>[,<height>]");
         return;
     }
 
@@ -1391,22 +1357,9 @@ static void build_wall(char **words, char *reply) {
     build_clear();
 
     // wall size
-    int width,height;
-    mcpopt opt_size = {{"size","sz","s"}, 0, {"%d,%d","%dx%d","%d",NULL}};
-    switch(mcparg_parse(words, &opt_size, &width, &height)) {
-        case 0:
-        case 1:
-            break;
-        case 2:
-            height=width; // square wall
-            break;
-        default:
-            sprintf(reply, "Usage: build wall size=<width>,<height>");
-            return;
-    }
-
-    if (width<=0 || height<=0) {
-        sprintf(reply, "Usage: illegal wall size %d,%d",width,height);
+    int wd,hg;
+    if (!mcparg_parse_size(words, 0, reply, &wd, &hg, NULL)) {
+        sprintf(reply, "Usage: build wall size=<width>[,<height>]");
         return;
     }
 
@@ -1414,8 +1367,8 @@ static void build_wall(char **words, char *reply) {
     if (reply[0]) return;
 
     int x,y;
-    for(y=0; y<height; y++) {
-        for(x=0; x<width; x++) {
+    for(y=0; y<hg; y++) {
+        for(x=0; x<wd; x++) {
             blkr *b = lh_arr_new(BPLAN);
             b->b = mat;
             b->x = x;
@@ -1426,7 +1379,7 @@ static void build_wall(char **words, char *reply) {
 
     char buf[256];
     int off = sprintf(reply, "Created wall %dx%d material=%s",
-                      height, width, get_bid_name(buf, mat));
+                      wd, hg, get_bid_name(buf, mat));
 
     buildplan_updated();
     buildplan_place(reply);
