@@ -294,6 +294,40 @@ int mcparg_parse_direction(char **words, int argpos, char *reply, int *dir) {
     return 1;
 }
 
+int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, int *sy) {
+    mcpopt opt_size = {{"size","sz","s"}, argpos,
+                       { "%d,%d,%d",
+                         "%d,%d",
+                         "%d",
+                         NULL }};
+
+    int x,z,y;
+    int match = mcparg_parse(words, &opt_size, &x, &z, &y);
+    switch (match) {
+        case 0:
+            break;
+        case 1:
+            y=1;
+            break;
+        case 2:
+            y=1;
+            z=x;
+            break;
+        case MCPARG_NOT_PARSED:
+            sprintf(reply, "Usage: size=sx[,sz[,sy]]");
+            return 0;
+        case MCPARG_NOT_FOUND:
+            return 0;
+    }
+
+    *sx = x;
+    if (sz) *sz = z;
+    if (sy) *sy = y;
+
+    return 1;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Test function
 
@@ -345,6 +379,7 @@ int main(int ac, char **av) {
     printf("Offset: %d,%d,%d\n",off.dx,off.dz,off.dy);
 #endif
 
+#if 0
     int dir = -1;
     if (mcparg_parse_direction(words, 0, reply, &dir)==0) {
         if (reply[0])
@@ -356,6 +391,18 @@ int main(int ac, char **av) {
     }
 
     printf("Dir: %d %s\n",dir,DIRNAME[dir]);
+#endif
+
+    int sx,sz,sy=-1;
+    if (mcparg_parse_size(words, 0, reply, &sx, &sz, &sy)==0) {
+        if (reply[0])
+            printf("Error parsing size: %s\n", reply);
+        else
+            printf("Size not specified\n");
+        return 1;
+    }
+
+    printf("Size: %d x %d x %d\n",sx,sz,sy);
 
     return 0;
 }

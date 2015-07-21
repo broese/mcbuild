@@ -29,3 +29,4 @@ int mcparg_find(char **words, ...);
 int mcparg_parse_material(char **words, int argpos, char *reply, bid_t *mat, const char *suffix);
 int mcparg_parse_offset(char **words, int argpos, char *reply, boff_t *off);
 int mcparg_parse_direction(char **words, int argpos, char *reply, int *dir);
+int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, int *sy);
