@@ -184,6 +184,7 @@ int mcparg_parse_material(char **words, int argpos, char *reply, bid_t *mat, con
     return 1;
 }
 
+// Block offset
 int mcparg_parse_offset(char **words, int argpos, char *reply, boff_t *off) {
     mcpopt opt_off = {{"offset","off","o"}, argpos,
                       {  "%d,%d,%d",            // 0, x,z,y
@@ -246,6 +247,53 @@ int mcparg_parse_offset(char **words, int argpos, char *reply, boff_t *off) {
     return 1;
 }
 
+// Direction
+int mcparg_parse_direction(char **words, int argpos, char *reply, int *dir) {
+    mcpopt opt_dir = {{"direction","dir","d"}, argpos,
+                      { "%s",                   // name
+                        NULL }};
+
+    char direction[256];
+    int match = mcparg_parse(words, &opt_dir, direction);
+    switch (match) {
+        case 0: {
+            switch(direction[0]) {
+                case 's':
+                case '2':
+                    *dir = DIR_SOUTH;
+                    break;
+                case 'n':
+                case '3':
+                    *dir = DIR_NORTH;
+                    break;
+                case 'e':
+                case '4':
+                    *dir = DIR_EAST;
+                    break;
+                case 'w':
+                case '5':
+                    *dir = DIR_WEST;
+                    break;
+                default:
+                    sprintf(reply, "Usage: dir=<south|north|east|west>");
+                    return 0;
+            }
+            break;
+        }
+        case MCPARG_NOT_PARSED:
+            sprintf(reply, "Usage: dir=<south|north|east|west>");
+            return 0;
+        case MCPARG_NOT_FOUND:
+            if (*dir != DIR_SOUTH && *dir != DIR_NORTH &&
+                *dir != DIR_EAST && *dir != DIR_WEST) {
+                sprintf(reply, "Usage: dir=<south|north|east|west>");
+                return 0;
+            }
+            return 1;
+    }
+    return 1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Test function
 
@@ -283,6 +331,7 @@ int main(int ac, char **av) {
            mat2.bid,mat2.meta,get_bid_name(buf2, mat2));
 #endif
 
+#if 0
     boff_t off = { .dx = 50, .dy = 15, .dz = 40 };
     if (mcparg_parse_offset(words, 0, reply, &off)==0) {
         if (reply[0])
@@ -294,6 +343,19 @@ int main(int ac, char **av) {
     }
 
     printf("Offset: %d,%d,%d\n",off.dx,off.dz,off.dy);
+#endif
+
+    int dir = -1;
+    if (mcparg_parse_direction(words, 0, reply, &dir)==0) {
+        if (reply[0])
+            printf("Error parsing direction: %s\n", reply);
+        else
+            printf("Direction not specified\n");
+
+        return 1;
+    }
+
+    printf("Dir: %d %s\n",dir,DIRNAME[dir]);
 
     return 0;
 }
