@@ -3,17 +3,16 @@
 - make a buildplan a separate struct
 - manage multiple buildplans instead of one global
 - move functions to create and manipulate buildplans to a separate module w/o any access to the global data or gamestate
-- reorganize argument parsing
 - introduce asynchronous packet queue
 
 = meta manipulations =
 
 - support more meta-oriented blocks
-- meta value rotation (was this completed?)
-- meta value flipping
-- meta value tilting
-- orientation-meta mapping in #replace
+- meta value mapping for rotation (for all blocks)
+- meta value mapping when flipping
+- meta value mapping when tilting
 - find a base material from stairs/slab etc. blocks
+- replace should correctly handle material replacement for orientation-dependent blocks
 
 = build process =
 
@@ -25,7 +24,11 @@
   - no turning to target
   - extended reach
   - no need for supporting blocks
+
+= buildplan manipulation =
+
 - auto-supports for disconnected blocks
+- export to schematic
 
 = inventory handling =
 
@@ -44,7 +47,6 @@
 = other functions =
 
 - map marker (using a beacon beam for example)
-- export to schematic
 - turn to target when attacking
 - import PNG for pixel art, or convert to bplan with an external tool
   - allow for different block sets
@@ -59,12 +61,13 @@
 
 = arguments parsing =
 
-- option parsing
-- materials by name in #replace
++ option parsing
++ materials by name in #replace
 
 = parametric builds =
 
-- better ring/circle algorithm, ellipse, ellipsoid
+- better ring/circle algorithm
+- ellipse, ellipsoid
 - spiral
 - checkerboard
 - arch
