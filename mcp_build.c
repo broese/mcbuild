@@ -1540,24 +1540,23 @@ static void build_extend(char **words, char *reply) {
 
 // replace one material in the buildplan with another (including meta specification)
 static void build_replace(char **words, char *reply) {
-    mcpopt opt_mat1  = {{"from","material1","mat1","m1"}, 0, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
-    mcpopt opt_mat2  = {{"to","material2","mat2","m2"},   1, {"%d:%d","%d/%d","%d,%d","%d",NULL}};
+    bid_t mat1,mat2;
+    int specified = 0;
 
-    int b1,m1,b2,m2;
-    int res1 = mcparg_parse(words, &opt_mat1, &b1, &m1);
-    int res2 = mcparg_parse(words, &opt_mat2, &b2, &m2);
-    if (res1<0 || res2<0) {
-        sprintf(reply, "Usage: #build replace mat1=<bid>[:<meta>] mat2=<bid>[:<meta>]");
+    if ( mcparg_parse_material(words, 0, reply, &mat1, "1")==0 ) {
+        if (reply[0]) return;
+        sprintf(reply, "Usage: #build replace mat1=<mat1> mat2=<mat2>");
         return;
     }
+    if ( mcparg_parse_material(words, 1, reply, &mat2, "2")==0 ) {
+        if (reply[0]) return;
+        sprintf(reply, "Usage: #build replace mat1=<mat1> mat2=<mat2>");
+        return;
+    }
+    // TODO: handle material replacement for the orientation-dependent metas
 
-    //TODO: handle replacing material with same meta makeup, e.g. replacing stairs material
-    if (res1==3) m1=0;
-    if (res2==3) m2=0;
-
-    bid_t mat1 = BLOCKTYPE(b1,m1);
-    bid_t mat2 = BLOCKTYPE(b2,m2);
-
+    // if mat2=Air, blocks will be removed.
+    // this array will store all blocks we keep
     lh_arr_declare_i(blkr, keep);
     int removed = 0;
 
