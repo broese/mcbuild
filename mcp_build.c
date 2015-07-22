@@ -1597,11 +1597,12 @@ static void build_replace(char **words, char *reply) {
 static void build_hollow(char **words, char *reply) {
     int i,j;
 
+    // size of a single "slice" with additional 1-block border
     int32_t size_xz = (build.bpsx+2)*(build.bpsz+2);
 
     // this array will hold the entire buildplan as a "voxel set"
     // with values set to 0 for empty blocks, 1 for occupied and -1 for removed
-    // note - we leave an additional empty block for border on each side
+    // note - we leave an additional empty block for the border on each side
     lh_create_num(int8_t,bp,size_xz*(build.bpsy+2));
 
     // initialize the voxel set from the buildplan
@@ -1749,6 +1750,7 @@ static void build_trim(char **words, char *reply) {
             removed++;
     }
 
+    // replace the buildplan with the list of blocks that matched trim criteria
     lh_arr_free(BPLAN);
     C(build.plan) = C(keep);
     P(build.plan) = P(keep);
@@ -1759,7 +1761,7 @@ static void build_trim(char **words, char *reply) {
     buildplan_place(reply);
 }
 
-// trim the buildplan by erasing block not fitting the criteria
+// flip the buildplan along the specified axis
 static void build_flip(char **words, char *reply) {
     int i;
     char mode = 'x';
@@ -1775,6 +1777,7 @@ static void build_flip(char **words, char *reply) {
         }
     }
 
+    // TODO: handle meta-values
     for(i=0; i<C(build.plan); i++) {
         blkr *b = P(build.plan)+i;
         switch (mode) {
@@ -1805,8 +1808,8 @@ static void build_tilt(char **words, char *reply) {
                 return;
         }
     }
-    // TODO: rotation parameter
 
+    //TODO: rotate meta-values as far as possible
     int x,y,z;
     for(i=0; i<C(build.plan); i++) {
         blkr *b = P(build.plan)+i;
@@ -1836,7 +1839,7 @@ static void build_tilt(char **words, char *reply) {
     buildplan_place(reply);
 }
 
-// make sure that the pivot block is at the bottm level of the buildplan
+// make sure that the pivot block is at the bottom level of the buildplan
 static void build_normalize(char **words, char *reply) {
     int i,
         minx=P(build.plan)[0].x,
@@ -1861,7 +1864,7 @@ static void build_normalize(char **words, char *reply) {
     buildplan_place(reply);
 }
 
-// shrink the buildplan 2x2
+// shrink the buildplan to half size in each dimension
 static void build_shrink(char **words, char *reply) {
     int i,j;
 
