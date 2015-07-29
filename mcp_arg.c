@@ -321,7 +321,7 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
     }
 
     if (x<=0 || z<=0 || y<=0) {
-        sprintf(reply, "Illegal size %d,%d,%d specified",sx,sz,sy);
+        sprintf(reply, "Illegal size %d,%d,%d specified",x,z,y);
         return 0;
     }
 

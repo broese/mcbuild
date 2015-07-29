@@ -1302,7 +1302,7 @@ static void build_stairs(char **words, char *reply) {
     // stairs size
     int wd,hg;
     if (!mcparg_parse_size(words, 0, reply, &wd, &hg, NULL)) {
-        sprintf(reply, "Usage: build stairs size=<width>[,<height>]");
+        sprintf(reply, "Usage: build stairs size=<width>[,<height>] mat=<material> [m|n|f]");
         return;
     }
 
