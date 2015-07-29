@@ -16,7 +16,7 @@ ifeq ($(UNAME),Linux)
 endif
 
 
-all: mcproxy mcpdump nbttest argtest
+all: mcproxy mcpdump nbttest argtest spiral
 
 
 
@@ -24,6 +24,9 @@ mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o mcp_ids.o nbt.o mcp_b
 	$(CC) -o $@ $^ $(LIBS)
 
 mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o mcp_ids.o nbt.o
+	$(CC) -o $@ $^ $(LIBS)
+
+spiral: spiral.o
 	$(CC) -o $@ $^ $(LIBS)
 
 nbttest: nbt.c
