@@ -14,6 +14,7 @@
 #include "mcp_gamestate.h"
 #include "mcp_game.h"
 #include "mcp_build.h"
+#include "mcp_arg.h"
 
 // from mcproxy.c
 void drop_connection();
@@ -442,6 +443,50 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Autowalk (work in progress)
+
+#define DEFAULT_PITCH 20
+
+void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, int dir) {
+    printf("Facing to %d\n", dir);
+
+    float yaw = 0;
+    switch(dir) {
+        case DIR_NORTH: yaw = 180; break;
+        case DIR_SOUTH: yaw = 0;   break;
+        case DIR_EAST:  yaw = 270; break;
+        case DIR_WEST:  yaw = 90;  break;
+    }
+
+    // coordinates are adjusted so we stand exactly in the middle of the block
+    int x=gs.own.x&0xfffffff0; x|=0x00000010;
+    int z=gs.own.z&0xfffffff0; z|=0x00000010;
+
+    // packet to the server
+    NEWPACKET(CP_PlayerPositionLook, s);
+    ts->x = (double)x/32.0;
+    ts->z = (double)z/32.0;
+    ts->y = (double)(gs.own.y>>5);
+    ts->yaw = yaw;
+    ts->pitch = DEFAULT_PITCH;
+    ts->onground = gs.own.onground;
+    printf("--> "); dump_packet(s);
+    queue_packet(s, sq);
+
+    // packet to the server
+    NEWPACKET(SP_PlayerPositionLook, c);
+    tc->x = (double)x/32.0;
+    tc->z = (double)z/32.0;
+    tc->y = (double)(gs.own.y>>5);
+    tc->yaw = yaw;
+    tc->pitch = DEFAULT_PITCH;
+    tc->flags = 0;
+    printf("--> "); dump_packet(c);
+    printf("%.1f,%.1f,%.1f\n",tc->x,tc->z,tc->y);
+    queue_packet(c, cq);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Fullbright
 
 void chunk_bright(chunk_t * chunk, int bincr) {
@@ -576,6 +621,11 @@ static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         opt.holeradar = !opt.holeradar;
         sprintf(reply,"Hole radar is %s",opt.holeradar?"ON":"OFF");
         rpos = 2;
+    }
+    else if (!strcmp(words[0],"face") || !strcmp(words[0],"turn")) {
+        int dir = player_direction();
+        if (mcparg_parse_direction(words+1, 0, reply, &dir))
+            face_direction(tq, bq, dir);
     }
     else if (!strcmp(words[0],"br") || !strcmp(words[0],"bright")) {
         int bright = -1;
