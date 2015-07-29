@@ -1401,6 +1401,15 @@ DECODE_BEGIN(CP_PlayerPositionLook,_1_8_1) {
     Pchar(onground);
 } DECODE_END;
 
+ENCODE_BEGIN(CP_PlayerPositionLook,_1_8_1) {
+    Wdouble(x);
+    Wdouble(y);
+    Wdouble(z);
+    Wfloat(yaw);
+    Wfloat(pitch);
+    Wchar(onground);
+} ENCODE_END;
+
 DUMP_BEGIN(CP_PlayerPositionLook) {
     printf("coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",
            tpkt->x,tpkt->y,tpkt->z,tpkt->yaw,tpkt->pitch,tpkt->onground);
@@ -1600,7 +1609,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (CP_Player,_1_8_1),
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),
         SUPPORT_DE  (CP_PlayerLook,_1_8_1),
-        SUPPORT_D   (CP_PlayerPositionLook,_1_8_1),
+        SUPPORT_DE  (CP_PlayerPositionLook,_1_8_1),
         SUPPORT_DE  (CP_PlayerDigging,_1_8_1),
         SUPPORT_DEF (CP_PlayerBlockPlacement,_1_8_1),
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
