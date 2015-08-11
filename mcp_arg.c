@@ -398,6 +398,7 @@ int main(int ac, char **av) {
     printf("Dir: %d %s\n",dir,DIRNAME[dir]);
 #endif
 
+#if 0
     int sx,sz,sy=-1;
     if (mcparg_parse_size(words, 0, reply, &sx, &sz, &sy)==0) {
         if (reply[0])
@@ -408,6 +409,20 @@ int main(int ac, char **av) {
     }
 
     printf("Size: %d x %d x %d\n",sx,sz,sy);
+#endif
+
+#if 0
+    const char **wl = WORDLIST("material", "mat", "m");
+    int i;
+    for(i=0; wl[i]; i++)
+        printf("%d : %s\n",i,wl[i]);
+
+    wl[1] = wl[2];
+    wl[2] = NULL;
+    for(i=0; wl[i]; i++)
+        printf("%d : %s\n",i,wl[i]);
+#endif
+
 
     return 0;
 }
