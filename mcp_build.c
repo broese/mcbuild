@@ -186,6 +186,7 @@ struct {
     int recording;             // if nonzero - build recording active
     int placemode;             // 0-disabled, 1-once, 2-multiple
     int wallmode;              // if nonzero - do not build blocks higher than your own position
+    int sealmode;              // if nonzero - only build blocks behind your back
     int anyface;               // attempt to build on any faces, even those looking away from you
                                // this type of building will work on vanilla servers, but may be
                                // blocked on some, including 2b2t
@@ -593,12 +594,24 @@ void build_update() {
     int num_inreach = 0;
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
+        b->inreach = 1;
 
         // avoid building blocks above the player in wall and limit mode
         if ((build.wallmode && (b->y>(gs.own.y>>5)-1)) ||
             (build.limit && (b->y>build.limit))) {
                 b->inreach = 0;
                 continue;
+        }
+
+        // if the "seal mode" is active, only build blocks located in front of you
+        if (build.sealmode) {
+            switch (player_direction()) {
+                case DIR_NORTH: if (b->z >= (gs.own.z>>5)) b->inreach=0; break;
+                case DIR_SOUTH: if (b->z <= (gs.own.z>>5)) b->inreach=0; break;
+                case DIR_WEST:  if (b->x >= (gs.own.x>>5)) b->inreach=0; break;
+                case DIR_EAST:  if (b->x <= (gs.own.x>>5)) b->inreach=0; break;
+            }
+            if (b->inreach==0) continue;
         }
 
         int32_t dx = gs.own.x-(b->x<<5)+16;
@@ -2877,7 +2890,12 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     // Build options
     else if (!strcmp(words[1], "wallmode") || !strcmp(words[1], "wm")) {
         build.wallmode = !build.wallmode;
-        sprintf(reply, "Wallmode is %s",build.wallmode?"ON":"OFF");
+        sprintf(reply, "Wall mode is %s",build.wallmode?"ON":"OFF");
+        rpos = 2;
+    }
+    else if (!strcmp(words[1], "sealmode") || !strcmp(words[1], "sm")) {
+        build.sealmode = !build.sealmode;
+        sprintf(reply, "Seal mode is %s",build.sealmode?"ON":"OFF");
         rpos = 2;
     }
     else if (!strcmp(words[1], "limit") || !strcmp(words[1], "li")) {
