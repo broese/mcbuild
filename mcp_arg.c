@@ -332,6 +332,72 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
     return 1;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+// parse the arguments using the provided options spec
+// words : tokenized commandline
+// names : possible names for the option
+// fmt   : possible format strings for the option
+int argparse(char **words, char **names, char **fmt, ...) {
+    int i,j;
+    char *value = NULL; int ni;   // the pointer (to value) and the index of a named option
+    char *unvalue = NULL; int ui; // the pointer and the index of the first unnamed option
+
+    // locate the option in the words and extract the value
+    for(i=0; words[i] && !value; i++) {
+        char *eq = index(words[i], '=');
+        if (!eq && !unvalue) {
+            // this looks like an unnamed option
+            unvalue = words[i];
+            ui = i;
+        }
+        else {
+            // named option
+            for(j=0; names[j]; j++) {
+                int nlen = eq-words[i];
+                if (!strncmp(words[i],names[j],nlen)) {
+                    // we have a matching name
+                    value = eq+1;
+                    ni = i;
+                    break;
+                }
+            }
+        }
+    }
+
+    // check if we found the named option and if not if can use an unnamed one
+    if (!value) {
+        if (unvalue) {
+            value = unvalue;
+            ni = ui;
+        }
+        else
+            return MCPARG_NOT_FOUND;  // nothing found
+    }
+
+    va_list args;
+
+    // try to parse the value using all offered format options
+    for(i=0; fmt[i]; i++) {
+        int nf = count_fmt(fmt[i]);
+        va_start (args, fmt);
+        if (vsscanf(value, fmt[i], args) == nf) {
+            // scanf could correctly parse all arguments in this spec
+            va_end (args);
+
+            // remove the successfully parsed option from the list
+            for(j=i; words[j]; j++)
+                words[j] = words[j+1];
+
+            // return the index of the format that matched
+            return i;
+        }
+        va_end (args);
+    }
+
+    // none of the format specs matched - likely incorrect formatting
+    return MCPARG_NOT_PARSED;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Test function
