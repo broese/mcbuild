@@ -399,6 +399,43 @@ int argparse(char **words, char **names, char **fmt, ...) {
     return MCPARG_NOT_PARSED;
 }
 
+int argf_SIZE(arg_defaults *ad, char **words, char **names, size3_t *sz) {
+    if (!names)
+        names = WORDLIST("size","sz","s");
+    int i;
+
+    char ** fmt_size = WORDLIST("%d,%d,%d",
+                                "%d,%d",
+                                "%d");
+
+    int fi = argparse(words, names, fmt_size, &sz->x, &sz->z, &sz->y);
+    switch (fi) {
+        case 0:
+            break;
+        case 1:
+            sz->y=1;
+            break;
+        case 2:
+            sz->y=1;
+            sz->z=sz->x;
+            break;
+        case MCPARG_NOT_FOUND:
+            printf("size option not found\n");
+            return 0;
+        case MCPARG_NOT_PARSED:
+            printf("size option could not be correctly parsed\n");
+            return 0;
+    }
+    printf("Matched format >%s<, size=%d,%d,%d\n", fmt_size[fi], sz->x,sz->z,sz->y);
+
+    return 1;
+}
+
+
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Test function
 
