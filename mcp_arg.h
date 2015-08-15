@@ -35,4 +35,4 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
 
 // macro to produce a NULL-terminated char ** - compatible list of words
 //FIXME - possible to use a "const char **" everywhere?
-#define WORDLIST(...) (const char*[]) { __VA_ARGS__, NULL }
+#define WORDLIST(...) (char*[]) { __VA_ARGS__, NULL }
