@@ -36,8 +36,33 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
 // macro to produce a NULL-terminated char ** - compatible list of words
 #define WORDLIST(...) (char*[]) { __VA_ARGS__, NULL }
 
+/*
+  The ARG_ macros requre a correctly set scope and certain variables:
+  - arg_defaults argdefaults : must be initialized with values
+  - char ** words : contains the tokenized commandline
+  - var : must be defeined and of correct type required by the argf_XXX functions
+  - int ARG_NOTFOUND : must be defined in scope before calling ARG()
+  - char *reply must be defined
+*/
 
+#define ARGSTART                                                            \
+    arg_defaults argdefaults;                                               \
+    int ARG_NOTFOUND=0;
 
+#define ARG(func,names,var)                                                 \
+    switch(argf_##func(&argdefaults, words, names, &var)) {                 \
+        case MCPARG_NOT_FOUND: ARG_NOTFOUND = 1; break;                     \
+        case MCPARG_NOT_PARSED:                                             \
+            sprintf(reply, "Failed to parse %s option. Correct format: %s", \
+                    #func, argfmt_##func);                                  \
+            return;                                                         \
+    }
+
+#define ARGREQUIRE(func)                                \
+    if (ARG_NOTFOUND) {                                 \
+        sprintf(reply, "Option %s not found", #func);   \
+        return;                                         \
+    }
 
 // a struct containing all relevant values from gamestate that may be needed
 // as default values in the argument parsing. We are passing these values through
