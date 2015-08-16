@@ -386,7 +386,7 @@ int argparse(char **words, char **names, char **fmt, ...) {
             va_end (args);
 
             // remove the successfully parsed option from the list
-            for(j=i; words[j]; j++)
+            for(j=ni; words[j]; j++)
                 words[j] = words[j+1];
 
             // return the index of the format that matched
