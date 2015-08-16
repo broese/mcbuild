@@ -34,8 +34,10 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
 ////////////////////////////////////////////////////////////////////////////////
 
 // macro to produce a NULL-terminated char ** - compatible list of words
-//FIXME - possible to use a "const char **" everywhere?
 #define WORDLIST(...) (char*[]) { __VA_ARGS__, NULL }
+
+
+
 
 // a struct containing all relevant values from gamestate that may be needed
 // as default values in the argument parsing. We are passing these values through

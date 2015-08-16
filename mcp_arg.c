@@ -400,10 +400,10 @@ int argparse(char **words, char **names, char **fmt, ...) {
 }
 
 int argf_SIZE(arg_defaults *ad, char **words, char **names, size3_t *sz) {
-    if (!names)
-        names = WORDLIST("size","sz","s");
-    int i;
+    // default name list
+    if (!names) names = WORDLIST("size","sz","s");
 
+    // possible option formats
     char ** fmt_size = WORDLIST("%d,%d,%d",
                                 "%d,%d",
                                 "%d");
@@ -447,85 +447,11 @@ int main(int ac, char **av) {
     char reply[4096]; reply[0] = 0;
     char buf1[256],buf2[256];
 
-#if 0
-    bid_t mat1,mat2;
-
-    if (mcparg_parse_material(words, 0, reply, &mat1, "1")==0) {
-        if (reply[0])
-            printf("Error parsing material 1: %s\n", reply);
-        else
-            printf("Material1 not specified\n");
-
-        return 1;
-    }
-
-    if (mcparg_parse_material(words, 1, reply, &mat2, "2")==0) {
-        if (reply[0])
-            printf("Error parsing material 2: %s\n", reply);
-        else
-            printf("Material2 not specified\n");
-
-        return 2;
-    }
-
-    printf("Material1=%d:%d (%s) Material2=%d:%d (%s)\n",
-           mat1.bid,mat1.meta,get_bid_name(buf1, mat1),
-           mat2.bid,mat2.meta,get_bid_name(buf2, mat2));
+#if 1
+    size3_t sz;
+    int res = argf_SIZE(NULL, words, NULL, &sz);
+    printf("Result: %s\n",res?"success":"failure");
 #endif
-
-#if 0
-    boff_t off = { .dx = 50, .dy = 15, .dz = 40 };
-    if (mcparg_parse_offset(words, 0, reply, &off)==0) {
-        if (reply[0])
-            printf("Error parsing offset: %s\n", reply);
-        else
-            printf("Offset not specified\n");
-
-        return 1;
-    }
-
-    printf("Offset: %d,%d,%d\n",off.dx,off.dz,off.dy);
-#endif
-
-#if 0
-    int dir = -1;
-    if (mcparg_parse_direction(words, 0, reply, &dir)==0) {
-        if (reply[0])
-            printf("Error parsing direction: %s\n", reply);
-        else
-            printf("Direction not specified\n");
-
-        return 1;
-    }
-
-    printf("Dir: %d %s\n",dir,DIRNAME[dir]);
-#endif
-
-#if 0
-    int sx,sz,sy=-1;
-    if (mcparg_parse_size(words, 0, reply, &sx, &sz, &sy)==0) {
-        if (reply[0])
-            printf("Error parsing size: %s\n", reply);
-        else
-            printf("Size not specified\n");
-        return 1;
-    }
-
-    printf("Size: %d x %d x %d\n",sx,sz,sy);
-#endif
-
-#if 0
-    const char **wl = WORDLIST("material", "mat", "m");
-    int i;
-    for(i=0; wl[i]; i++)
-        printf("%d : %s\n",i,wl[i]);
-
-    wl[1] = wl[2];
-    wl[2] = NULL;
-    for(i=0; wl[i]; i++)
-        printf("%d : %s\n",i,wl[i]);
-#endif
-
 
     return 0;
 }
