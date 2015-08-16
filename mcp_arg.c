@@ -441,17 +441,42 @@ const char *argfmt_size = "size=x[,z[,y]]";
 
 #if TEST
 
+void test_arg(char *reply, char **words) {
+    ARGSTART;
+
+    size3_t sz;
+    ARG(size,NULL,sz);
+    ARGREQUIRE(size);
+}
+
 int main(int ac, char **av) {
     char **words = av+1;
 
     char reply[4096]; reply[0] = 0;
     char buf1[256],buf2[256];
+    int i;
 
-#if 1
+#if 0
     size3_t sz;
-    int res = argf_SIZE(NULL, words, NULL, &sz);
+    int res = argf_size(NULL, words, NULL, &sz);
     printf("Result: %s\n",res?"success":"failure");
 #endif
+
+    printf("------------------\n");
+    for(i=0; words[i]; i++)
+        printf("%d %s\n",i,words[i]);
+    printf("------------------\n");
+
+    test_arg(reply, words);
+    if (reply[0])
+        printf("Error: %s\n",reply);
+    else
+        printf("Success\n");
+
+    printf("------------------\n");
+    for(i=0; words[i]; i++)
+        printf("%d %s\n",i,words[i]);
+    printf("------------------\n");
 
     return 0;
 }
