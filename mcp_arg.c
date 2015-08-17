@@ -569,6 +569,96 @@ int argf_offset(arg_defaults *ad, char **words, char **names, off3_t *offset) {
 
 const char *argfmt_offset = "offset=x[,z[,y]] or offset=[n]direction";
 
+////////////////////
+
+int argf_mat(arg_defaults *ad, char **words, char **names, bid_t *mat) {
+    // default name list
+    if (!names) names = WORDLIST("material","mat","m");
+
+    // possible option formats
+    char ** fmt_mat = WORDLIST("0x%x:%d%5$[^0-9]",        //  0: expl. hex BID+meta+opt    0x2c:1u
+                               "0x%x:%d",                 //  1: expl. hex BID+meta        0x2c:9
+                               "%d:%d%5$[^0-9]",          //  2: BID+meta+opt              44:1u
+                               "%d:%d",                   //  3: BID+meta                  44:9
+                               "0x%x:%5$[^0-9]",          //  4: hex BID                   0x2c:u
+                               "0x%x",                    //  5: hex BID                   0x2c
+                               "%d%5$[^0-9]",             //  6: BID                       44u
+                               "%d",                      //  7: BID                       44
+                               "%3$[^:]:%2$d%5$[^0-9]",   //  8: bname+meta+opt            stone_slab:1u
+                               "%3$[^:]:%2$d",            //  9: bname+meta                stone_slab:9
+                               "%3$[^:]:%4$[^:]:%5$s",    // 10: bname+mname+opt           stone_slab:sandstone:u
+                               "%3$[^:]:%4$[^:]",         // 11: bname+mname               stone_slab:sandstone
+                               "%3$[^:]::%5$[^0-9:]",     // 12: bname+opt                 stone_slab::u
+                               "%3$s");                   // 13: bname                     stone_slab
+
+    // try to locate and parse one of the formats for material spec
+    int bid=-1, meta=0;
+    char sbid[4096], smeta[4096], sopt[4096];
+    sbid[0]=0; smeta[0]=0; sopt[0]=0;
+
+    int fi = argparse(words, names, fmt_mat, &bid, &meta, sbid, smeta, sopt);
+    switch (fi) {
+        case 0:
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+            break;
+        case 8:
+        case 9:
+        case 12:
+        case 13:
+            bid = find_bid_name(sbid);
+            if (bid<0) {
+                printf("Could not find material name %s\n", sbid);
+                return MCPARG_LOOKUP_FAILED;
+            }
+            break;
+        case 10:
+        case 11:
+            bid = find_bid_name(sbid);
+            if (bid<0) {
+                printf("Could not find material name %s\n", sbid);
+                return MCPARG_LOOKUP_FAILED;
+            }
+            meta = find_meta_name(bid, smeta);
+            if (meta<0) {
+                printf("Could not find meta name %s\n", smeta);
+                return MCPARG_LOOKUP_FAILED;
+            }
+            break;
+        case MCPARG_NOT_FOUND:
+        case MCPARG_NOT_PARSED:
+            return fi;
+        default:
+            assert(0);
+    }
+
+    if (sopt[0]) {
+        // additional option specified
+        if (ITEMS[bid].flags&I_SLAB) {
+            if (sopt[0]=='u' || sopt[0]=='h')
+                meta |= 8;
+            else if (sopt[0]=='l')
+                meta &= 7;
+        }
+        //TODO: add options for other block types
+    }
+
+    *mat = BLOCKTYPE(bid, meta);
+
+    char buf[256];
+    printf("Matched format >%s<, material=%d:%d (%s)\n", fmt_mat[fi], 
+           bid, meta, get_bid_name(buf, *mat));
+
+    return 0;
+}
+
+const char *argfmt_mat = "mat=material[:meta][upper]";
+
 ////////////////////////////////////////////////////////////////////////////////
 // Test function
 
@@ -590,9 +680,16 @@ void test_arg(char *reply, char **words) {
         printf("Set pivot by placing any block\n");
 #endif
 
+#if 0
     off3_t off;
     ARG(offset,NULL,off);
     ARGREQUIRE(offset);
+#endif
+
+    bid_t mat;
+    ARG(mat,NULL,mat);
+    if (ARG_NOTFOUND)
+        printf("Using material held by the player\n");
 }
 
 int main(int ac, char **av) {
