@@ -504,6 +504,71 @@ int argf_pivot(arg_defaults *ad, char **words, char **names, pivot_t *pivot) {
 
 const char *argfmt_pivot = "pivot=distance or pivot=x,z[,y[,dir]]";
 
+////////////////////
+
+int argf_offset(arg_defaults *ad, char **words, char **names, off3_t *offset) {
+    // default name list
+    if (!names) names = WORDLIST("offset","off","o");
+
+    // possible option formats
+    char ** fmt_offset = WORDLIST("%d,%d,%d",
+                                  "%d,%d",
+                                  "%4$d%5$[RLFBUDrlfbud]",
+                                  "%d",
+                                  "%5$[RLFBUDrlfbud]");
+
+    int32_t x,y,z,o;
+    char dir[4096]; dir[0] = 0;
+
+    int fi = argparse(words, names, fmt_offset, &offset->x, &offset->z, &offset->y, &o, dir);
+    switch (fi) {
+        case 0: // explicitly specified offset
+            break;
+        case 1: // x,z offset - assume y=0
+            offset->y = 0;
+            break;
+        case 2: // explicit offset and direction
+            switch(tolower(dir[0])) {
+                case 'u': x=0;  z=0;  y=o;  break;
+                case 'd': x=0;  z=0;  y=-o; break;
+                case 'r': x=o;  z=0;  y=0; break;
+                case 'l': x=-o; z=0;  y=0; break;
+                case 'f': x=0;  z=-o; y=0; break;
+                case 'b': x=0;  z=o;  y=0; break;
+            }
+            break;
+        case 3: // x-only offset - assume z=y=0
+            offset->y = 0;
+            offset->z = 0;
+            break;
+        case 4: // direction only - calculate offset from the buildplan size
+            switch(tolower(dir[0])) {
+                case 'u': x=0;  z=0;  y=ad->bpsy;  break;
+                case 'd': x=0;  z=0;  y=-ad->bpsy; break;
+                case 'r': x=ad->bpsx;  z=0;  y=0; break;
+                case 'l': x=-ad->bpsx; z=0;  y=0; break;
+                case 'f': x=0;  z=-ad->bpsz; y=0; break;
+                case 'b': x=0;  z=ad->bpsz;  y=0; break;
+            }
+            break;
+        case MCPARG_NOT_FOUND:
+        case MCPARG_NOT_PARSED:
+            return fi;
+        default:
+            assert(0);
+    }
+    offset->x = x;
+    offset->y = y;
+    offset->z = z;
+
+    printf("Matched format >%s<, offset=%d,%d,%d\n", fmt_offset[fi], 
+           offset->x, offset->z, offset->y );
+
+    return 0;
+}
+
+const char *argfmt_offset = "offset=x[,z[,y]] or offset=[n]direction";
+
 ////////////////////////////////////////////////////////////////////////////////
 // Test function
 
@@ -518,10 +583,16 @@ void test_arg(char *reply, char **words) {
     ARGREQUIRE(size);
 #endif
 
+#if 0
     pivot_t pv;
     ARG(pivot,NULL,pv);
     if (ARG_NOTFOUND)
         printf("Set pivot by placing any block\n");
+#endif
+
+    off3_t off;
+    ARG(offset,NULL,off);
+    ARGREQUIRE(offset);
 }
 
 int main(int ac, char **av) {
