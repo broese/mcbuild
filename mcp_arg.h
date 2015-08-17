@@ -46,7 +46,7 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
 */
 
 #define ARGSTART                                                            \
-    arg_defaults argdefaults;                                               \
+    arg_defaults argdefaults = { 1, 2, 3, DIR_NORTH, BLOCKTYPE(49,0), BLOCKTYPE(5,2) }; \
     int ARG_NOTFOUND=0;
 
 #define ARG(func,names,var)                                                 \
