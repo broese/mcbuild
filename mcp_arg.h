@@ -46,7 +46,7 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
 */
 
 #define ARGSTART                                                            \
-    arg_defaults argdefaults = { 1, 2, 3, DIR_NORTH, BLOCKTYPE(49,0), BLOCKTYPE(5,2) }; \
+    arg_defaults argdefaults = { 1, 2, 3, DIR_NORTH, BLOCKTYPE(49,0), BLOCKTYPE(5,2), 50, 30, 20 }; \
     int ARG_NOTFOUND=0;
 
 #define ARG(func,names,var)                                                 \
@@ -73,6 +73,7 @@ typedef struct {
     bid_t   mat;        // material currently held by the player
     bid_t   mat2;       // material in the next slot than what player currently holds
     //TODO: current mask
+    int32_t bpsx, bpsz, bpsy;   // buildplan size
 } arg_defaults;
 
 typedef struct {
