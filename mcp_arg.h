@@ -3,8 +3,10 @@
 #include "mcp_packet.h"
 
 // error codes
-#define MCPARG_NOT_FOUND  (-1)
-#define MCPARG_NOT_PARSED (-2)
+#define MCPARG_NOT_FOUND     (-1)   // option not found
+#define MCPARG_NOT_PARSED    (-2)   // option found but has wrong format
+#define MCPARG_LOOKUP_FAILED (-3)   // option found and has correct format, but the 
+                                    // specified ID (e.g. material name) is incorrect
 
 #define MCPARG_MAXNAMES 256
 #define MCPARG_MAXNLEN  256
@@ -55,6 +57,10 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
         case MCPARG_NOT_PARSED:                                             \
             sprintf(reply, "Failed to parse %s option. Correct format: %s", \
                     #func, argfmt_##func);                                  \
+            break;                                                          \
+        case MCPARG_LOOKUP_FAILED:                                          \
+            sprintf(reply, "Failed to parse %s option. Name lookup failed", \
+                    #func);                                                 \
             return;                                                         \
     }
 
