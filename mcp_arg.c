@@ -659,6 +659,42 @@ int argf_mat(arg_defaults *ad, char **words, char **names, bid_t *mat) {
 
 const char *argfmt_mat = "mat=material[:meta][upper]";
 
+////////////////////
+
+int argf_dir(arg_defaults *ad, char **words, char **names, int *dir) {
+    // default name list
+    if (!names) names = WORDLIST("direction","dir","d");
+
+    // possible option formats
+    char ** fmt_dir = WORDLIST("%[NEWSnews]");
+
+    char dirs[4096]; dirs[0] = 0;
+
+    int fi = argparse(words, names, fmt_dir, dirs);
+    switch (fi) {
+        case 0: {
+            switch(tolower(dirs[0])) {
+                case 'n': *dir=DIR_NORTH; break;
+                case 's': *dir=DIR_SOUTH; break;
+                case 'w': *dir=DIR_WEST; break;
+                case 'e': *dir=DIR_EAST; break;
+                default : assert(0);
+            }
+            break;
+        }
+        case MCPARG_NOT_FOUND:
+        case MCPARG_NOT_PARSED:
+            return fi;
+    }
+
+    printf("Matched format >%s<, direction=%d (%s)\n", fmt_dir[fi],
+           *dir, DIRNAME[*dir]);
+
+    return 0;
+}
+
+const char *argfmt_dir = "dir=<n|s|w|e>";
+
 ////////////////////////////////////////////////////////////////////////////////
 // Test function
 
@@ -686,10 +722,17 @@ void test_arg(char *reply, char **words) {
     ARGREQUIRE(offset);
 #endif
 
+#if 0
     bid_t mat;
     ARG(mat,NULL,mat);
     if (ARG_NOTFOUND)
         printf("Using material held by the player\n");
+#endif
+
+    int dir;
+    ARG(dir,NULL,dir);
+    if (ARG_NOTFOUND)
+        printf("Using the direction player is facing\n");
 }
 
 int main(int ac, char **av) {
