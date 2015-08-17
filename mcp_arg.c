@@ -399,6 +399,8 @@ int argparse(char **words, char **names, char **fmt, ...) {
     return MCPARG_NOT_PARSED;
 }
 
+////////////////////
+
 int argf_size(arg_defaults *ad, char **words, char **names, size3_t *sz) {
     // default name list
     if (!names) names = WORDLIST("size","sz","s");
@@ -433,8 +435,74 @@ int argf_size(arg_defaults *ad, char **words, char **names, size3_t *sz) {
 
 const char *argfmt_size = "size=x[,z[,y]]";
 
+////////////////////
 
+int argf_pivot(arg_defaults *ad, char **words, char **names, pivot_t *pivot) {
+    // default name list
+    if (!names) names = WORDLIST("pivot","pv","p","from","pos","at");
 
+    // possible option formats
+    char ** fmt_pivot = WORDLIST("%d,%d,%d,%4$[NEWSnews]",
+                                 "%d,%d,%d",
+                                 "%d,%d,%4$[NEWSnews]",
+                                 "%d,%d",
+                                 "%5$d");
+
+    char dir[256];
+    int32_t x,z,y,dist;
+
+    int fi = argparse(words, names, fmt_pivot, &pivot->pos.x, &pivot->pos.z, &pivot->pos.y, dir, &dist);
+    switch (fi) {
+        case 0: // explicitly specified coordinates and direction
+            pivot->dir = ltodir(dir[0]);
+            break;
+        case 1: // only coordinates specified - use player's direction as pivot direction
+            pivot->dir = ad->pd;
+            break;
+        case 2: // x,z coordinate and direction - use player's y coordinate
+            pivot->dir = ltodir(dir[0]);
+            pivot->pos.y = ad->py;
+            break;
+        case 3: // x,z coordinate only - use player's y and direction
+            pivot->pos.y = ad->py;
+            pivot->dir = ad->pd;
+            break;
+        case 4: // only single number specified - assume it's a distance from player's position
+            pivot->pos.y = ad->py;
+            pivot->dir = ad->pd;
+            switch(pivot->dir) {
+                case DIR_NORTH:
+                    pivot->pos.x = ad->px;
+                    pivot->pos.z = ad->pz-dist;
+                    break;
+                case DIR_SOUTH:
+                    pivot->pos.x = ad->px;
+                    pivot->pos.z = ad->pz+dist;
+                    break;
+                case DIR_EAST:
+                    pivot->pos.x = ad->px+dist;
+                    pivot->pos.z = ad->pz;
+                    break;
+                case DIR_WEST:
+                    pivot->pos.x = ad->px-dist;
+                    pivot->pos.z = ad->pz;
+                    break;
+            }
+            break;
+
+        case MCPARG_NOT_FOUND:
+        case MCPARG_NOT_PARSED:
+            return fi;
+        default:
+            assert(0);
+    }
+    printf("Matched format >%s<, coords=%d,%d,%d dir=%d (%s)\n", fmt_pivot[fi], 
+           pivot->pos.x, pivot->pos.z, pivot->pos.y, pivot->dir, DIRNAME[pivot->dir] );
+
+    return 0;
+}
+
+const char *argfmt_pivot = "pivot=distance or pivot=x,z[,y[,dir]]";
 
 ////////////////////////////////////////////////////////////////////////////////
 // Test function
@@ -444,9 +512,16 @@ const char *argfmt_size = "size=x[,z[,y]]";
 void test_arg(char *reply, char **words) {
     ARGSTART;
 
+#if 0
     size3_t sz;
     ARG(size,NULL,sz);
     ARGREQUIRE(size);
+#endif
+
+    pivot_t pv;
+    ARG(pivot,NULL,pv);
+    if (ARG_NOTFOUND)
+        printf("Set pivot by placing any block\n");
 }
 
 int main(int ac, char **av) {
