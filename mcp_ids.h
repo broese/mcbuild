@@ -232,6 +232,24 @@ extern const item_id ITEMS[];
 
 extern const char ** DIRNAME;
 
+static inline int ltodir(char c) {
+    switch (c) {
+        case 'n':
+        case 'N': return DIR_NORTH;
+        case 's':
+        case 'S': return DIR_SOUTH;
+        case 'w':
+        case 'W': return DIR_WEST;
+        case 'e':
+        case 'E': return DIR_EAST;
+        case 'u':
+        case 'U': return DIR_UP;
+        case 'd':
+        case 'D': return DIR_DOWN;
+    }
+    return DIR_ANY;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
 
