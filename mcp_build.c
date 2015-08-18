@@ -2740,6 +2740,8 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     size3_t sz;
     bid_t mat;
 
+    char buf[256];
+
     if (!cmd) {
         sprintf(reply, "Usage: build <type> [ parameters ... ] or build cancel");
     }
@@ -2754,11 +2756,22 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
         build.bp = bplan_floor(sz.x, sz.z, mat);
         bplan_update(build.bp);
+
+        sprintf(reply, "Floor size=%dx%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
+    }
+    else if (!strcmp(cmd, "wall")) {
+        ARG(size,NULL,sz);
+        ARGREQUIRE(size);
+
+        ARG(mat,NULL,mat);
+        ARGREQUIRE(mat);
+
+        build.bp = bplan_wall(sz.x, sz.z, mat);
+        bplan_update(build.bp);
+
+        sprintf(reply, "Wall size=%dx%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
     }
 #if 0
-    else if (!strcmp(cmd, "wall")) {
-        build_wall(words, reply);
-    }
     else if (!strcmp(cmd, "ring")) {
         build_ring(words, reply);
     }
