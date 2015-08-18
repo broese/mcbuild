@@ -1,17 +1,18 @@
 #include <assert.h>
 
 #include "mcp_bplan.h"
+#include "mcp_ids.h"
 
-#define BPP   P(bp->plan)
-#define BPC   C(bp->plan)
-#define BPLAN GAR(bp->plan)
+#define BPP P(bp->plan)
+#define BPC C(bp->plan)
+#define BP  GAR(bp->plan)
 
 #define MAX(x,y) (((x)>(y))?(x):(y))
 #define MIN(x,y) (((x)<(y))?(x):(y))
 
 void bplan_free(bplan * bp) {
     if (!bp) return;
-    lh_arr_free(BPLAN);
+    lh_arr_free(BP);
 }
 
 void bplan_update(bplan * bp) {
