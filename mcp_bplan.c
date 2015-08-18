@@ -62,3 +62,22 @@ void bplan_dump(bplan *bp) {
                get_bid_name(buf, get_base_material(b->b)));
     }
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+bplan * bplan_floor(int32_t wd, int32_t dp, bid_t mat) {
+    lh_create_obj(bplan, bp);
+    int x,z;
+    for(z=0; z<dp; z++) {
+        for(x=0; x<wd; x++) {
+            blkr *b = lh_arr_new(BP);
+            b->b = mat;
+            b->x = x;
+            b->z = -z;
+            b->y = 0;
+        }
+    }
+
+    return bp;
+}
+

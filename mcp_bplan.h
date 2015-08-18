@@ -32,3 +32,8 @@ void bplan_update(bplan * bp);
 
 // dump the contents of the buildplan
 void bplan_dump(bplan *bp);
+
+////////////////////////////////////////////////////////////////////////////////
+// Parametric builds
+
+bplan * bplan_floor(int32_t wd, int32_t dp, bid_t mat);
