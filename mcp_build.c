@@ -2698,6 +2698,38 @@ void build_cancel() {
 ////////////////////////////////////////////////////////////////////////////////
 // Main build command dispatch
 
+// fill the argdefaults struct with values that can be used as default parameters
+static void get_argdefaults(arg_defaults *ad) {
+    lh_clear_ptr(ad);
+
+    ad->px = gs.own.x>>5;
+    ad->pz = gs.own.z>>5;
+    ad->py = gs.own.y>>5;
+    ad->pd = player_direction();
+
+    ad->mat = BLOCKTYPE(0,0);
+    ad->mat2 = BLOCKTYPE(0,0);
+
+    slot_t *s1 = &gs.inv.slots[gs.inv.held+36];
+    slot_t *s2 = &gs.inv.slots[(gs.inv.held+1)%9+36];
+    if (s1->item > 0 && !(ITEMS[s1->item].flags&I_ITEM))
+        ad->mat = BLOCKTYPE(s1->item, s1->damage);
+    if (s2->item > 0 && !(ITEMS[s2->item].flags&I_ITEM))
+        ad->mat2 = BLOCKTYPE(s2->item, s2->damage);
+
+    if (build.bp) {
+        ad->bpsx = build.bp->sx;
+        ad->bpsz = build.bp->sz;
+        ad->bpsy = build.bp->sy;
+    }
+}
+
+// initialize argument parsing
+#define ARGSTART                                                        \
+    arg_defaults argdefaults;                                           \
+    get_argdefaults(&argdefaults);                                      \
+    int ARG_NOTFOUND=0;
+
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     char reply[32768];
     reply[0]=0;

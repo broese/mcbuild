@@ -700,6 +700,11 @@ const char *argfmt_dir = "dir=<n|s|w|e>";
 
 #if TEST
 
+#define ARGSTART                                                        \
+    arg_defaults argdefaults = { 1, 2, 3, DIR_NORTH, BLOCKTYPE(49,0),   \
+                                 BLOCKTYPE(5,2), 50, 30, 20 };          \
+    int ARG_NOTFOUND=0;
+
 void test_arg(char *reply, char **words) {
     ARGSTART;
 
