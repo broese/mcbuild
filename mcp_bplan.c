@@ -44,3 +44,21 @@ void bplan_update(bplan * bp) {
     bp->sy = bp->maxy-bp->miny+1;
     bp->sz = bp->maxz-bp->minz+1;
 }
+
+void bplan_dump(bplan *bp) {
+    if (!bp || BPC==0) {
+        printf("Buildplan is empty\n");
+        return;
+    }
+
+    printf("Buildplan: %zd blocks, W:%d D:%d H:%d\n",
+           BPC, bp->sx, bp->sz, bp->sy);
+    int i;
+    for(i=0; i<BPC; i++) {
+        blkr *b = BPP+i;
+        char buf[256];
+        printf("%3d %+4d,%+4d,%3d %3x/%02x (%s)\n",
+               i, b->x, b->z, b->y, b->b.bid, b->b.meta,
+               get_bid_name(buf, get_base_material(b->b)));
+    }
+}

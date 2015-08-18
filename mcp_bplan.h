@@ -29,3 +29,6 @@ void bplan_free(bplan * bp);
 
 // recalculate buildplan extents - called when the buildplan was modified
 void bplan_update(bplan * bp);
+
+// dump the contents of the buildplan
+void bplan_dump(bplan *bp);
