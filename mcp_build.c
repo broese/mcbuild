@@ -2724,18 +2724,19 @@ static void get_argdefaults(arg_defaults *ad) {
     }
 }
 
-// initialize argument parsing
-#define ARGSTART                                                        \
-    arg_defaults argdefaults;                                           \
-    get_argdefaults(&argdefaults);                                      \
-    int ARG_NOTFOUND=0;
-
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     char reply[32768];
     reply[0]=0;
     int rpos = 0;
 
-    if (!words[1]) {
+    char *cmd = words[1];
+    words+=2;
+
+    arg_defaults argdefaults;                                           \
+    get_argdefaults(&argdefaults);                                      \
+    int ARG_NOTFOUND=0;
+
+    if (!cmd) {
         sprintf(reply, "Usage: build <type> [ parameters ... ] or build cancel");
     }
 
@@ -2744,81 +2745,81 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     else if (!strcmp(words[1], "floor")) {
         build_floor(words+2, reply);
     }
-    else if (!strcmp(words[1], "wall")) {
-        build_wall(words+2, reply);
+    else if (!strcmp(cmd, "wall")) {
+        build_wall(words, reply);
     }
-    else if (!strcmp(words[1], "ring")) {
-        build_ring(words+2, reply);
+    else if (!strcmp(cmd, "ring")) {
+        build_ring(words, reply);
     }
-    else if (!strcmp(words[1], "ball")) {
-        build_ball(words+2, reply);
+    else if (!strcmp(cmd, "ball")) {
+        build_ball(words, reply);
     }
-    else if (!strcmp(words[1], "disk")) {
-        build_disk(words+2, reply);
+    else if (!strcmp(cmd, "disk")) {
+        build_disk(words, reply);
     }
-    else if (!strcmp(words[1], "scaf") || !strcmp(words[1], "scaffolding")) {
-        build_scaffolding(words+2, reply);
+    else if (!strcmp(cmd, "scaf") || !strcmp(cmd, "scaffolding")) {
+        build_scaffolding(words, reply);
     }
-    else if (!strcmp(words[1], "stairs")) {
-        build_stairs(words+2, reply);
+    else if (!strcmp(cmd, "stairs")) {
+        build_stairs(words, reply);
     }
 
     // Buildplan manipulation
-    else if (!strcmp(words[1], "ext") || !strcmp(words[1], "extend")) {
-        build_extend(words+2, reply);
+    else if (!strcmp(cmd, "ext") || !strcmp(cmd, "extend")) {
+        build_extend(words, reply);
     }
-    else if (!strcmp(words[1], "hollow")) {
-        build_hollow(words+2, reply);
+    else if (!strcmp(cmd, "hollow")) {
+        build_hollow(words, reply);
     }
-    else if (!strcmp(words[1], "replace")) {
-        build_replace(words+2, reply);
+    else if (!strcmp(cmd, "replace")) {
+        build_replace(words, reply);
     }
-    else if (!strcmp(words[1], "trim")) {
-        build_trim(words+2, reply);
+    else if (!strcmp(cmd, "trim")) {
+        build_trim(words, reply);
     }
-    else if (!strcmp(words[1], "flip")) {
-        build_flip(words+2, reply);
+    else if (!strcmp(cmd, "flip")) {
+        build_flip(words, reply);
     }
-    else if (!strcmp(words[1], "tilt")) {
-        build_tilt(words+2, reply);
+    else if (!strcmp(cmd, "tilt")) {
+        build_tilt(words, reply);
     }
-    else if (!strcmp(words[1], "normalize") || !strcmp(words[1], "norm")) {
-        build_normalize(words+2, reply);
+    else if (!strcmp(cmd, "normalize") || !strcmp(cmd, "norm")) {
+        build_normalize(words, reply);
     }
-    else if (!strcmp(words[1], "shrink") || !strcmp(words[1], "sh")) {
-        build_shrink(words+2, reply);
+    else if (!strcmp(cmd, "shrink") || !strcmp(cmd, "sh")) {
+        build_shrink(words, reply);
     }
 
     // Save/load/import
-    else if (!strcmp(words[1], "save")) {
-        build_save(words[2], reply);
+    else if (!strcmp(cmd, "save")) {
+        build_save(words[0], reply);
     }
-    else if (!strcmp(words[1], "load")) {
-        build_load(words[2], reply);
+    else if (!strcmp(cmd, "load")) {
+        build_load(words[0], reply);
     }
-    else if (!strcmp(words[1], "sload")) {
-        build_sload(words[2], reply);
+    else if (!strcmp(cmd, "sload")) {
+        build_sload(words[0], reply);
     }
-    else if (!strcmp(words[1], "append")) {
-        build_append(words+2, reply);
+    else if (!strcmp(cmd, "append")) {
+        build_append(words, reply);
     }
-    else if (!strcmp(words[1], "rec")) {
-        build_rec(words+2, reply);
+    else if (!strcmp(cmd, "rec")) {
+        build_rec(words, reply);
     }
-    else if (!strcmp(words[1], "scan")) {
-        build_scan(words+2, reply);
+    else if (!strcmp(cmd, "scan")) {
+        build_scan(words, reply);
     }
 #endif
 
     // Build control
-    else if (!strcmp(words[1], "place")) {
-        build_place(words+2, reply);
+    else if (!strcmp(cmd, "place")) {
+        build_place(words, reply);
     }
-    else if (!strcmp(words[1], "cancel")) {
+    else if (!strcmp(cmd, "cancel")) {
         build_cancel();
         build.placemode=0;
     }
-    else if (!strcmp(words[1], "pause")) {
+    else if (!strcmp(cmd, "pause")) {
         if (P(build.task)) {
             build.active = !build.active;
             sprintf(reply, "Buildtask is %s", build.active?"unpaused":"paused");
@@ -2830,69 +2831,69 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
     // Preview
-    else if (!strcmp(words[1], "preview")) {
+    else if (!strcmp(cmd, "preview")) {
         int mode = PREVIEW_MISSING;
 
-        if (words[2]) {
-            if (!strcmp(words[2], "true") || !strcmp(words[2], "t"))
+        if (words[0]) {
+            if (!strcmp(words[0], "true") || !strcmp(words[0], "t"))
                 mode = PREVIEW_TRUE;
-            else if (!strcmp(words[2], "remove") || !strcmp(words[2], "-"))
+            else if (!strcmp(words[0], "remove") || !strcmp(words[0], "-"))
                 mode = PREVIEW_REMOVE;
         }
         build_show_preview(sq, cq, mode);
     }
 
     // Debug
-    else if (!strcmp(words[1], "dumpplan")) {
+    else if (!strcmp(cmd, "dumpplan")) {
         bplan_dump(build.bp);
     }
-    else if (!strcmp(words[1], "dumptask")) {
+    else if (!strcmp(cmd, "dumptask")) {
         build_dump_task();
     }
-    else if (!strcmp(words[1], "dumpqueue")) {
+    else if (!strcmp(cmd, "dumpqueue")) {
         build_dump_queue();
     }
 #if 0
-    else if (!strcmp(words[1], "dumpmat")) {
-        calculate_material(words[2] && !strcmp(words[2], "plan"));
+    else if (!strcmp(cmd, "dumpmat")) {
+        calculate_material(words[0] && !strcmp(words[0], "plan"));
     }
 #endif
 
     // Build options
-    else if (!strcmp(words[1], "wallmode") || !strcmp(words[1], "wm")) {
+    else if (!strcmp(cmd, "wallmode") || !strcmp(cmd, "wm")) {
         build.wallmode = !build.wallmode;
         sprintf(reply, "Wall mode is %s",build.wallmode?"ON":"OFF");
         rpos = 2;
     }
-    else if (!strcmp(words[1], "sealmode") || !strcmp(words[1], "sm")) {
+    else if (!strcmp(cmd, "sealmode") || !strcmp(cmd, "sm")) {
         build.sealmode = !build.sealmode;
         sprintf(reply, "Seal mode is %s",build.sealmode?"ON":"OFF");
         rpos = 2;
     }
-    else if (!strcmp(words[1], "limit") || !strcmp(words[1], "li")) {
-        if (!words[2]) {
+    else if (!strcmp(cmd, "limit") || !strcmp(cmd, "li")) {
+        if (!words[0]) {
             // set the limit to player's current y position
             build.limit = gs.own.y>>5;
         }
         else {
-            if (!strcmp(words[2],"none") || !strcmp(words[2],"-")) {
+            if (!strcmp(words[0],"none") || !strcmp(words[0],"-")) {
                 build.limit = 0;
             }
             else {
-                if (sscanf(words[2], "%d", &build.limit)!=1) {
+                if (sscanf(words[0], "%d", &build.limit)!=1) {
                     sprintf(reply, "Usage: #build limit [y|-]");
                     build.limit = 0;
                 }
             }
         }
     }
-    else if (!strcmp(words[1], "anyface") || !strcmp(words[1], "af")) {
+    else if (!strcmp(cmd, "anyface") || !strcmp(cmd, "af")) {
         build.anyface = !build.anyface;
         sprintf(reply, "Anyface buildng is %s",build.anyface?"ON":"OFF");
         rpos = 2;
     }
-    else if (!strcmp(words[1], "opt") || !strcmp(words[1], "set")) {
-        buildopt(words+2, cq);
+    else if (!strcmp(cmd, "opt") || !strcmp(cmd, "set")) {
+        buildopt(words, cq);
     }
 
     if (reply[0]) chat_message(reply, cq, "green", rpos);
