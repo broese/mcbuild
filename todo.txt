@@ -1,8 +1,8 @@
 = general organization =
 
-- make a buildplan a separate struct
-- manage multiple buildplans instead of one global
-- move functions to create and manipulate buildplans to a separate module w/o any access to the global data or gamestate
+* make a buildplan a separate struct
+* manage multiple buildplans instead of one global
+* move functions to create and manipulate buildplans to a separate module w/o any access to the global data or gamestate
 - introduce asynchronous packet queue
 
 = meta manipulations =
@@ -29,6 +29,8 @@
 
 - auto-supports for disconnected blocks
 - export to schematic
+- fix trim issue - does not handle x/z correctly
+- hollow-2D
 
 = inventory handling =
 
@@ -73,5 +75,4 @@
 - arch
 - generic radial pattern (i.e. spiral-like)
 - generic orthogonal pattern (e.g. parabola)
-
-
+- cone
