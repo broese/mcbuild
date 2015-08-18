@@ -12,6 +12,7 @@
 
 #include "mcp_ids.h"
 #include "mcp_build.h"
+#include "mcp_bplan.h"
 #include "mcp_gamestate.h"
 #include "mcp_game.h"
 #include "mcp_arg.h"
@@ -138,13 +139,6 @@ typedef struct {
 
     uint64_t last;              // last timestamp when we attempted to place this block
 } blk;
-
-// this structure defines a relative block placement in a buildplan
-typedef struct {
-    int32_t     x,y,z;  // coordinates of the block to place (relative to pivot)
-    bid_t       b;      // block type, including the meta
-                        // positional meta is north-oriented
-} blkr;
 
 // maximum number of blocks in the buildable list
 #define MAXBUILDABLE 1024
