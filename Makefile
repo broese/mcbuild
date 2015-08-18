@@ -20,7 +20,7 @@ all: mcproxy mcpdump nbttest argtest spiral
 
 
 
-mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o mcp_ids.o nbt.o mcp_build.o mcp_arg.o
+mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o mcp_ids.o nbt.o mcp_build.o mcp_arg.o mcp_bplan.o
 	$(CC) -o $@ $^ $(LIBS)
 
 mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o mcp_ids.o nbt.o
@@ -53,6 +53,9 @@ mcp_ids.o: mcp_ids.h
 
 mcp_packet.o: nbt.h
 
+mcp_build.o: mcp_ids.h mcp_build.h mcp_bplan.h mcp_gamestate.h mcp_game.h mcp_arg.h
+
+mcp_bplan.o: mcp_bplan.h mcp_packet.h
 
 
 
