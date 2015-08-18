@@ -2736,15 +2736,26 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     get_argdefaults(&argdefaults);                                      \
     int ARG_NOTFOUND=0;
 
+    // possible arguments for the commands
+    size3_t sz;
+    bid_t mat;
+
     if (!cmd) {
         sprintf(reply, "Usage: build <type> [ parameters ... ] or build cancel");
     }
 
-#if 0
     // Parametric builds
-    else if (!strcmp(words[1], "floor")) {
-        build_floor(words+2, reply);
+    else if (!strcmp(cmd, "floor")) {
+        ARG(size,NULL,sz);
+        ARGREQUIRE(size);
+
+        ARG(mat,NULL,mat);
+        ARGREQUIRE(mat);
+
+        build.bp = bplan_floor(sz.x, sz.z, mat);
+        bplan_update(build.bp);
     }
+#if 0
     else if (!strcmp(cmd, "wall")) {
         build_wall(words, reply);
     }
