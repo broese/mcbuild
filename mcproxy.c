@@ -1081,6 +1081,7 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     return 0;
 }
 
+#if 0
 void test_stuff(int ac, char **av) {
     char reply[32768];
     reply[0] = 0;
@@ -1092,6 +1093,7 @@ void test_stuff(int ac, char **av) {
     build_dump_plan();
     calculate_material(1);
 }
+#endif
 
 int main(int ac, char **av) {
 #if 0

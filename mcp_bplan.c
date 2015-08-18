@@ -77,7 +77,6 @@ bplan * bplan_floor(int32_t wd, int32_t dp, bid_t mat) {
             b->y = 0;
         }
     }
-
     return bp;
 }
 

@@ -157,7 +157,7 @@ struct {
     int limit;                 // build height limit, disabled if zero
 
     lh_arr_declare(blk,task);  // current active building task
-    lh_arr_declare(blkr,plan); // currently loaded/created buildplan
+    bplan *bp;                 // currently loaded/created buildplan
 
     blkr brp[MAXBUILDABLE];    // records the 'pending' blocks from the build recorder
     ssize_t nbrp;              // we add blocks as we place them (CP_PlayerBlockPlacement)
@@ -173,14 +173,9 @@ struct {
 
     int32_t     xmin,xmax,ymin,ymax,zmin,zmax;
 
-    int32_t bpxx,bpyx,bpzx;    // max buildplan coordinate in each dimension
-    int32_t bpxn,bpyn,bpzn;    // min buildplan coordinate in each dimension
-    int32_t bpsx,bpsy,bpsz;    // buildplan size in each dimension
-
 } build;
 
 #define BTASK GAR(build.task)
-#define BPLAN GAR(build.plan)
 
 // Options
 
@@ -270,6 +265,7 @@ int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
     return eslot;
 }
 
+#if 0
 // print a table of required materials for the buildplan (if plan=1) or buildtask
 void calculate_material(int plan) {
     int i;
@@ -334,7 +330,7 @@ void calculate_material(int plan) {
 
     printf("=========================================\n");
 }
-
+#endif
 
 
 
@@ -892,33 +888,6 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 ////////////////////////////////////////////////////////////////////////////////
 // Buildplan updates/calculations
 
-// recalculate the size of the buildplan
-static void buildplan_updated() {
-    if (C(build.plan)==0) {
-        // we have no buildplan
-        build.bpsx=build.bpsy=build.bpsz=0;
-        return;
-    }
-
-    build.bpxn=build.bpxx=P(build.plan)[0].x;
-    build.bpyn=build.bpyx=P(build.plan)[0].y;
-    build.bpzn=build.bpzx=P(build.plan)[0].z;
-
-    int i;
-    for(i=0; i<C(build.plan); i++) {
-        build.bpxn = MIN(P(build.plan)[i].x, build.bpxn);
-        build.bpxx = MAX(P(build.plan)[i].x, build.bpxx);
-        build.bpyn = MIN(P(build.plan)[i].y, build.bpyn);
-        build.bpyx = MAX(P(build.plan)[i].y, build.bpyx);
-        build.bpzn = MIN(P(build.plan)[i].z, build.bpzn);
-        build.bpzx = MAX(P(build.plan)[i].z, build.bpzx);
-    }
-
-    build.bpsx=build.bpxx-build.bpxn+1;
-    build.bpsy=build.bpyx-build.bpyn+1;
-    build.bpsz=build.bpzx-build.bpzn+1;
-}
-
 // invoked by various functions when a buildplan is crated, so it can be placed immediately
 static void buildplan_place(char *reply) {
 #if 0
@@ -940,6 +909,7 @@ static void buildplan_place(char *reply) {
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers for parameter parsing
 
+#if 0
 static bid_t build_parse_material(char **words, int argpos, char *reply) {
     bid_t mat;
 
@@ -975,6 +945,7 @@ static boff_t build_arg_offset(char **words, char *reply, int argpos) {
 
     return off;
 }
+#endif
 
 // parse the commandline to get the direction parameter,
 // or assume the direction the player is facing
@@ -986,7 +957,7 @@ static int build_arg_dir(char **words, char *reply, int argpos) {
     return dir;
 }
 
-
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Parametric structures
 
@@ -1918,15 +1889,19 @@ static void build_shrink(char **words, char *reply) {
     buildplan_place(reply);
 }
 
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // Pivot placement
 
 // a pivot block has been placed (using whatever method)
 void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
+    assert(build.bp);
+
     // create a new buildtask from our buildplan
     int i;
-    for(i=0; i<C(build.plan); i++) {
-        blkr *bp = P(build.plan)+i;
+    for(i=0; i<C(build.bp->plan); i++) {
+        blkr *bp = P(build.bp->plan)+i;
         blk  *bt = lh_arr_new_c(BTASK); // new element in the buildtask
 
         switch (dir) {
@@ -1990,7 +1965,7 @@ static void build_place(char **words, char *reply) {
     }
 
     // check if we have a plan
-    if (!C(build.plan)) {
+    if (!build.bp) {
         sprintf(reply, "You have no active buildplan!\n");
         return;
     }
@@ -2110,7 +2085,7 @@ void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
 
 
 
-
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Build Recorder
 
@@ -2288,6 +2263,7 @@ static void brec_blockplace(MCPacket *pkt) {
 
     dump_brec_pending();
 }
+#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2379,19 +2355,6 @@ void buildopt(char **words, MCPacketQueue *cq) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Debugging
-
-// dump our buildplan to console
-void build_dump_plan() {
-    int i;
-    char buf[256];
-    for(i=0; i<C(build.plan); i++) {
-        blkr *b = &P(build.plan)[i];
-        printf("%3d %+4d,%+4d,%3d %3x/%02x (%s)\n",
-               i, b->x, b->z, b->y, b->b.bid, b->b.meta,
-               get_bid_name(buf, get_base_material(b->b)));
-    }
-    printf("Buildplan size: W:%d D:%d H:%d\n",build.bpsx,build.bpsz,build.bpsy);
-}
 
 // dump our buildtask to console
 void build_dump_task() {
@@ -2523,7 +2486,7 @@ void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq, int mode) {
 
 
 
-
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Save/Load
 
@@ -2704,15 +2667,16 @@ void build_sload(const char *name, char *reply) {
     buildplan_place(reply);
 }
 
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // Canceling Build
 
 // cancel building and completely erase the buildplan
 void build_clear() {
     build_cancel();
-    lh_arr_free(BPLAN);
+    bplan_free(build.bp);
     lh_clear_obj(build);
-    buildplan_updated();
 
     if (!buildopts.init)
         buildopt_setdefault();
@@ -2743,6 +2707,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         sprintf(reply, "Usage: build <type> [ parameters ... ] or build cancel");
     }
 
+#if 0
     // Parametric builds
     else if (!strcmp(words[1], "floor")) {
         build_floor(words+2, reply);
@@ -2811,6 +2776,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     else if (!strcmp(words[1], "scan")) {
         build_scan(words+2, reply);
     }
+#endif
 
     // Build control
     else if (!strcmp(words[1], "place")) {
@@ -2846,7 +2812,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     // Debug
     else if (!strcmp(words[1], "dumpplan")) {
-        build_dump_plan();
+        bplan_dump(build.bp);
     }
     else if (!strcmp(words[1], "dumptask")) {
         build_dump_task();
@@ -2854,9 +2820,11 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     else if (!strcmp(words[1], "dumpqueue")) {
         build_dump_queue();
     }
+#if 0
     else if (!strcmp(words[1], "dumpmat")) {
         calculate_material(words[2] && !strcmp(words[2], "plan"));
     }
+#endif
 
     // Build options
     else if (!strcmp(words[1], "wallmode") || !strcmp(words[1], "wm")) {
@@ -2910,12 +2878,14 @@ int build_packet(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
     if (build.recording) {
+#if 0
         if (pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange) {
             brec_blockupdate(pkt);
         }
         else if (pkt->pid == CP_PlayerBlockPlacement) {
             brec_blockplace(pkt);
         }
+#endif
         return 1;
     }
     else if (build.placemode && pkt->pid == CP_PlayerBlockPlacement) {
