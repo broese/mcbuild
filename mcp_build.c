@@ -2622,6 +2622,7 @@ void build_append(char ** words, char * reply) {
 
 // import a buildplan from a .schematic file
 void build_sload(const char *name, char *reply) {
+    // generate filename
     if (!name) {
         sprintf(reply, "Usage: #build sload <name> (name w/o extension and path)");
         return;
@@ -2630,6 +2631,7 @@ void build_sload(const char *name, char *reply) {
     char fname[256];
     sprintf(fname, "%s/%s.schematic", SCHEMATICS_DIR,name);
 
+    // load the compressed .schematic file
     uint8_t *buf;
     ssize_t sz = lh_load_alloc(fname, &buf);
 
@@ -2638,6 +2640,7 @@ void build_sload(const char *name, char *reply) {
         return;
     }
 
+    // uncompress
     ssize_t dlen;
     uint8_t *dbuf = lh_gzip_decode(buf, sz, &dlen);
 
@@ -2646,6 +2649,7 @@ void build_sload(const char *name, char *reply) {
         return;
     }
 
+    // parse the NBT structure
     uint8_t *p = dbuf;
     nbt_t *n = nbt_parse(&p);
     if (!n || (p-dbuf)!=dlen) {
@@ -2655,6 +2659,7 @@ void build_sload(const char *name, char *reply) {
 
     //nbt_dump(n);
 
+    // extract the NBT elements relevant for us
     nbt_t *Blocks = nbt_hget(n,"Blocks");
     nbt_t *Metas  = nbt_hget(n,"Data");
     nbt_t *Height = nbt_hget(n,"Height");
@@ -2667,6 +2672,7 @@ void build_sload(const char *name, char *reply) {
     int wd = Width->s;
     int ln = Length->s;
 
+    // scan the Blocks data for solid blocks
     build_clear();
 
     int x,y,z,i=0;
@@ -2689,6 +2695,7 @@ void build_sload(const char *name, char *reply) {
     sprintf(reply, "Loaded schematic %s with %zd blocks, size=%dx%dx%d\n",
             fname, C(build.plan), wd, ln, hg);
 
+    // cleanup
     nbt_free(n);
     lh_free(dbuf);
     lh_free(buf);
