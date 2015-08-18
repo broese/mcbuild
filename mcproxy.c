@@ -1095,18 +1095,24 @@ void test_stuff(int ac, char **av) {
 }
 #endif
 
+void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq);
+
 int main(int ac, char **av) {
-#if 0
+#if 1
     MCPacketQueue tq = {NULL,0}, bq = {NULL,0};
     build_clear();
+    handle_command("bu floor 5,2 wool:yellow",&tq,&bq);
+    handle_command("bu dumpplan",&tq,&bq);
+#if 0
     handle_command("bu ball 73 mat=49",&tq,&bq);
     handle_command("bu trim y>=-1",&tq,&bq);
     handle_command("bu hollow",&tq,&bq);
     handle_command("bu trim y>=0",&tq,&bq);
     handle_command("bu save dome73",&tq,&bq);
 #endif
+#endif
 
-#if 1
+#if 0
     //test_stuff(ac, av); return 0;
 
     curl_global_init(CURL_GLOBAL_DEFAULT);

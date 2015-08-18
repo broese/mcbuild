@@ -531,7 +531,7 @@ void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos)
     queue_packet(pkt,q);
 }
 
-static void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
+void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
     // tokenize
     char *words[256];
     CLEAR(words);
