@@ -47,10 +47,12 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
   - char *reply must be defined
 */
 
+// initialize argument parsing
 #define ARGSTART                                                            \
     arg_defaults argdefaults = { 1, 2, 3, DIR_NORTH, BLOCKTYPE(49,0), BLOCKTYPE(5,2), 50, 30, 20 }; \
     int ARG_NOTFOUND=0;
 
+// parse next option
 #define ARG(func,names,var)                                                 \
     switch(argf_##func(&argdefaults, words, names, &var)) {                 \
         case MCPARG_NOT_FOUND: ARG_NOTFOUND = 1; break;                     \
@@ -64,10 +66,18 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
             return;                                                         \
     }
 
+// require that the option is found, otherwise abort
 #define ARGREQUIRE(func)                                \
     if (ARG_NOTFOUND) {                                 \
         sprintf(reply, "Option %s not found", #func);   \
         return;                                         \
+    }
+
+// use a default value for an option if nothing is found
+#define ARGDEFAULT(var,val)                     \
+    if (ARG_NOTFOUND) {                         \
+        var = val;                              \
+        ARG_NOTFOUND = 0;                       \
     }
 
 // a struct containing all relevant values from gamestate that may be needed

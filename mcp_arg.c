@@ -725,14 +725,15 @@ void test_arg(char *reply, char **words) {
 #if 0
     bid_t mat;
     ARG(mat,NULL,mat);
-    if (ARG_NOTFOUND)
-        printf("Using material held by the player\n");
+    ARGDEFAULT(mat,argdefaults.mat);
 #endif
 
+#if 1
     int dir;
     ARG(dir,NULL,dir);
-    if (ARG_NOTFOUND)
-        printf("Using the direction player is facing\n");
+    ARGDEFAULT(dir, argdefaults.pd);
+#endif
+
 }
 
 int main(int ac, char **av) {
