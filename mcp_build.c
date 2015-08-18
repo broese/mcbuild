@@ -23,36 +23,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
 
-// scan the commandline strings for an option with the matching format
-static int scan_opt(char **words, const char *fmt, ...) {
-    int i;
-    
-    const char * fmt_opts = index(fmt, '=');
-    assert(fmt_opts);
-    ssize_t optlen = fmt_opts+1-fmt; // the size of the option name with '='
-
-    for(i=0; words[i]; i++) {
-        if (!strncmp(words[i],fmt,optlen)) {
-            va_list ap;
-            va_start(ap,fmt);
-            int res = vsscanf(words[i]+optlen,fmt+optlen,ap);
-            va_end(ap);
-            return res;
-        }
-    }
-
-    return 0;
-}
-
-// scan the commandline strings for a simple 'flag' option
-static int find_opt(char **words, const char *name) {
-    int i;
-    for(i=0; words[i]; i++)
-        if (!strcmp(words[i], name))
-            return 1;
-    return 0;
-}
-
 // calculate the yaw and pitch values for the player looking at a specific
 // dot in space
 int calculate_yaw_pitch(fixp x, fixp z, fixp y, float *yaw, float *pitch) {
@@ -2884,7 +2854,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         build_dump_queue();
     }
     else if (!strcmp(words[1], "dumpmat")) {
-        calculate_material(find_opt(words+2, "plan"));
+        calculate_material(words[2] && !strcmp(words[2], "plan"));
     }
 
     // Build options
