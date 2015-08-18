@@ -37,3 +37,4 @@ void bplan_dump(bplan *bp);
 // Parametric builds
 
 bplan * bplan_floor(int32_t wd, int32_t dp, bid_t mat);
+bplan * bplan_wall(int32_t wd, int32_t hg, bid_t mat);

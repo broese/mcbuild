@@ -80,6 +80,21 @@ bplan * bplan_floor(int32_t wd, int32_t dp, bid_t mat) {
     return bp;
 }
 
+bplan * bplan_wall(int32_t wd, int32_t hg, bid_t mat) {
+    lh_create_obj(bplan, bp);
+    int x,y;
+    for(x=0; x<wd; x++) {
+        for(y=0; y<hg; y++) {
+            blkr *b = lh_arr_new(BP);
+            b->b = mat;
+            b->x = x;
+            b->z = 0;
+            b->y = y;
+        }
+    }
+    return bp;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #if TEST
