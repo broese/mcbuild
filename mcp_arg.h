@@ -99,3 +99,20 @@ typedef struct {
     off3_t  pos;
     int     dir;
 } pivot_t;              // data type - pivot position and orientation
+
+////////////////////////////////////////////////////////////////////////////////
+
+int argf_size(arg_defaults *ad, char **words, char **names, size3_t *sz);
+extern const char *argfmt_size;
+
+int argf_pivot(arg_defaults *ad, char **words, char **names, pivot_t *pivot);
+extern const char *argfmt_pivot;
+
+int argf_offset(arg_defaults *ad, char **words, char **names, off3_t *offset);
+extern const char *argfmt_offset;
+
+int argf_mat(arg_defaults *ad, char **words, char **names, bid_t *mat);
+extern const char *argfmt_mat;
+
+int argf_dir(arg_defaults *ad, char **words, char **names, int *dir);
+extern const char *argfmt_dir;
