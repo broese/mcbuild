@@ -2801,6 +2801,25 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
+    CMD2(scaffolding,scaf) {
+        bid_t dirt = BLOCKTYPE(3,0);
+        ARGREQ(size, NULL, sz);
+        ARGMAT(NULL, mat, dirt);
+        build_clear();
+        if (argflag(words, WORDLIST("ladder","l","2"))) {
+            build.bp = bplan_scaffolding(sz.x, sz.z, mat,1);
+            sprintf(reply, "Scaffolding (ladder) width=%d floors=%d material=%s",
+                    sz.x,sz.z,get_bid_name(buf, mat));
+        }
+        else {
+            if (sz.z==1 && sz.x<4) sz.x = 4;
+            if (sz.z>1  && sz.x<7) sz.x = 7;
+            build.bp = bplan_scaffolding(sz.x, sz.z, mat,0);
+            sprintf(reply, "Scaffolding width=%d floors=%d material=%s",
+                    sz.x,sz.z,get_bid_name(buf, mat));
+        }
+    }
+
 #if 0
     else if (!strcmp(cmd, "scaf") || !strcmp(cmd, "scaffolding")) {
         build_scaffolding(words, reply);

@@ -168,6 +168,60 @@ bplan * bplan_ball(int32_t diam, bid_t mat) {
     return bp;
 }
 
+bplan * bplan_scaffolding(int wd, int hg, bid_t mat, int ladder) {
+    int SCAFF_STAIR[5][2] = { { 1, -1}, { 2, -1 }, { 2, 0 }, { 3, 0 }, { 3, 1 } };
+
+    lh_create_obj(bplan, bp);
+
+    int floor;
+    for(floor=0; floor<hg; floor++) {
+        int i;
+        blkr *b;
+        // bridge
+        for(i=0; i<wd; i++) {
+            b = lh_arr_new(BP);
+            b->b = mat;
+            b->x = i;
+            b->z = 0;
+            b->y = 2+3*floor;
+        }
+        // column
+        for(i=0; i<2; i++) {
+            b = lh_arr_new(BP);
+            b->b = mat;
+            b->x = 0;
+            b->z = 0;
+            b->y = i+3*floor;
+        }
+        // stairs
+        if (ladder) {
+            for(i=0; i<3; i++) {
+                b = lh_arr_new(BP);
+                b->b = BLOCKTYPE(65,3);
+                b->x = 0;
+                b->z = 1;
+                b->y = i+3*floor;
+            }
+            b = lh_arr_new(BP);
+            b->b = mat;
+            b->x = 1;
+            b->z = 1;
+            b->y = 2+3*floor;
+        }
+        else {
+            for(i=0; i<5; i++) {
+                b = lh_arr_new(BP);
+                b->b = mat;
+                b->x = SCAFF_STAIR[i][0]+3*(floor&1);
+                b->z = 1;
+                b->y = SCAFF_STAIR[i][1]+3*floor;
+            }
+        }
+    }
+
+    return bp;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Buildplan manipulation
 
