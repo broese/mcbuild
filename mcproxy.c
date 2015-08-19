@@ -1081,38 +1081,20 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     return 0;
 }
 
-#if 0
 void test_stuff(int ac, char **av) {
-    char reply[32768];
-    reply[0] = 0;
-    build_sload(av[1], reply);
-
-    if (reply[0]) {
-        printf("Reply: %s\n",reply);
-    }
-    build_dump_plan();
-    calculate_material(1);
-}
-#endif
-
-void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq);
-
-int main(int ac, char **av) {
-#if 0
     MCPacketQueue tq = {NULL,0}, bq = {NULL,0};
     build_clear();
     handle_command("bu floor 5,2 wool:yellow",&tq,&bq);
     handle_command("bu dumpplan",&tq,&bq);
-#if 0
     handle_command("bu ball 73 mat=49",&tq,&bq);
     handle_command("bu trim y>=-1",&tq,&bq);
     handle_command("bu hollow",&tq,&bq);
     handle_command("bu trim y>=0",&tq,&bq);
     handle_command("bu save dome73",&tq,&bq);
-#endif
-#endif
+}
 
-#if 1
+int main(int ac, char **av) {
+
     //test_stuff(ac, av); return 0;
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
@@ -1133,7 +1115,6 @@ int main(int ac, char **av) {
     ERR_remove_state(getpid());
     ERR_free_strings();
     curl_global_cleanup();
-#endif
 
     return 0;
 }
