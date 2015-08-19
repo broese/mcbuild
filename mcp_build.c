@@ -2702,6 +2702,11 @@ static void get_argdefaults(arg_defaults *ad) {
 #define CMD(name) if (!strcmp(cmd, #name))
 #define CMD2(name1,name2) if (!strcmp(cmd, #name1) || !strcmp(cmd, #name2))
 
+#define NEEDBP if (!build.bp || !C(build.bp->plan)) {                       \
+        sprintf(reply, "You need a non-empty buildplan for this command");  \
+        goto Error;                                                         \
+    }
+
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     char reply[32768];
     reply[0]=0;
@@ -2782,11 +2787,10 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 #endif
 
     CMD(hollow) {
-        if (build.bp) {
-            int removed = bplan_hollow(build.bp);
-            sprintf(reply, "Removed %d blocks, kept %zd",removed,C(build.bp->plan));
-            goto Place;
-        }
+        NEEDBP;
+        int removed = bplan_hollow(build.bp);
+        sprintf(reply, "Removed %d blocks, kept %zd",removed,C(build.bp->plan));
+        goto Place;
     }
 
 #if 0
