@@ -2837,10 +2837,12 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     // Build control
     else if (!strcmp(cmd, "place")) {
         build_place(words, reply);
+        goto Error;
     }
     else if (!strcmp(cmd, "cancel")) {
         build_cancel();
         build.placemode=0;
+        goto Error;
     }
     else if (!strcmp(cmd, "pause")) {
         if (P(build.task)) {
@@ -2851,6 +2853,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
             sprintf(reply, "You need an existing buildtask to pause/unpause");
         }
         rpos=2;
+        goto Error;
     }
 
     // Preview
@@ -2864,18 +2867,23 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
                 mode = PREVIEW_REMOVE;
         }
         build_show_preview(sq, cq, mode);
+        goto Error;
     }
 
     // Debug
     else if (!strcmp(cmd, "dumpplan")) {
         bplan_dump(build.bp);
+        goto Error;
     }
     else if (!strcmp(cmd, "dumptask")) {
         build_dump_task();
+        goto Error;
     }
     else if (!strcmp(cmd, "dumpqueue")) {
         build_dump_queue();
+        goto Error;
     }
+
 #if 0
     else if (!strcmp(cmd, "dumpmat")) {
         calculate_material(words[0] && !strcmp(words[0], "plan"));
@@ -2887,11 +2895,13 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         build.wallmode = !build.wallmode;
         sprintf(reply, "Wall mode is %s",build.wallmode?"ON":"OFF");
         rpos = 2;
+        goto Error;
     }
     else if (!strcmp(cmd, "sealmode") || !strcmp(cmd, "sm")) {
         build.sealmode = !build.sealmode;
         sprintf(reply, "Seal mode is %s",build.sealmode?"ON":"OFF");
         rpos = 2;
+        goto Error;
     }
     else if (!strcmp(cmd, "limit") || !strcmp(cmd, "li")) {
         if (!words[0]) {
@@ -2909,14 +2919,17 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
                 }
             }
         }
+        goto Error;
     }
     else if (!strcmp(cmd, "anyface") || !strcmp(cmd, "af")) {
         build.anyface = !build.anyface;
         sprintf(reply, "Anyface buildng is %s",build.anyface?"ON":"OFF");
         rpos = 2;
+        goto Error;
     }
     else if (!strcmp(cmd, "opt") || !strcmp(cmd, "set")) {
         buildopt(words, cq);
+        goto Error;
     }
 
  Place:
