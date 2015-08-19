@@ -48,31 +48,42 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
 */
 
 // parse next option
-#define ARG(func,names,var)                                                 \
-    switch(argf_##func(&argdefaults, words, names, &var)) {                 \
-        case MCPARG_NOT_FOUND: ARG_NOTFOUND = 1; break;                     \
-        case MCPARG_NOT_PARSED:                                             \
-            sprintf(reply, "Failed to parse %s option. Correct format: %s", \
-                    #func, argfmt_##func);                                  \
-            break;                                                          \
-        case MCPARG_LOOKUP_FAILED:                                          \
-            sprintf(reply, "Failed to parse %s option. Name lookup failed", \
-                    #func);                                                 \
-            return;                                                         \
+#define ARG(func,names,var)                                             \
+    switch(argf_##func(&ad, words, names, &var)) {                      \
+        case MCPARG_NOT_FOUND:                                          \
+            ARG_NOTFOUND = 1;                                           \
+            break;                                                      \
+        case MCPARG_NOT_PARSED:                                         \
+            sprintf(reply, "Failed to parse %s option. Correct format: %s",  #func, argfmt_##func); \
+            break;                                                      \
+        case MCPARG_LOOKUP_FAILED:                                      \
+            sprintf(reply, "Failed to parse %s option. Name lookup failed", #func); \
+            break;                                                      \
     }
 
 // require that the option is found, otherwise abort
-#define ARGREQUIRE(func)                                \
+#define ARGREQ(func,names,var)                          \
+    ARG(func,names,var);                                \
+    if (reply[0]) goto Error;                           \
     if (ARG_NOTFOUND) {                                 \
         sprintf(reply, "Option %s not found", #func);   \
-        return;                                         \
+        goto Error;                                     \
     }
 
 // use a default value for an option if nothing is found
-#define ARGDEFAULT(var,val)                     \
-    if (ARG_NOTFOUND) {                         \
-        var = val;                              \
-        ARG_NOTFOUND = 0;                       \
+#define ARGDEF(func,names,var,val)                      \
+    ARG(func,names,var);                                \
+    if (reply[0]) goto Error;                           \
+    if (ARG_NOTFOUND) {                                 \
+        var = val;                                      \
+    }
+
+// special case for the material parsing
+#define ARGMAT(names,var,val)                                           \
+    ARGDEF(mat,names,var,val);                                          \
+    if (var.bid==0 || var.bid==0xfff) {                                 \
+        sprintf(reply, "Specify material - either explicitly or by holding a buildable block"); \
+        goto Error;                                                     \
     }
 
 // a struct containing all relevant values from gamestate that may be needed

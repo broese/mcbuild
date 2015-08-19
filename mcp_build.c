@@ -881,31 +881,6 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 }
 
 
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-// Buildplan updates/calculations
-
-// invoked by various functions when a buildplan is crated, so it can be placed immediately
-static void buildplan_place(char *reply) {
-#if 0
-    switch (buildopts.placemode) {
-        case 1:
-            sprintf(reply, "Mark pivot position by placing a block - will be build once");
-            break;
-        case 2:
-            sprintf(reply, "Mark pivot positions by placing block, disable with #build place cancel");
-            break;
-    }
-#endif
-    build.placemode = buildopts.placemode;
-}
-
-
-
-
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers for parameter parsing
 
@@ -2724,16 +2699,19 @@ static void get_argdefaults(arg_defaults *ad) {
     }
 }
 
+#define CMD(name) if (!strcmp(cmd, #name))
+#define CMD2(name1,name2) if (!strcmp(cmd, #name1) || !strcmp(cmd, #name2))
+
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     char reply[32768];
     reply[0]=0;
-    int rpos = 0;
+    int rpos = 0; // reply position - 0:chat 2:pop-up
 
     char *cmd = words[1];
     words+=2;
 
-    arg_defaults argdefaults;                                           \
-    get_argdefaults(&argdefaults);                                      \
+    arg_defaults ad;
+    get_argdefaults(&ad);
     int ARG_NOTFOUND=0;
 
     // possible arguments for the commands
@@ -2744,33 +2722,28 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     if (!cmd) {
         sprintf(reply, "Usage: build <type> [ parameters ... ] or build cancel");
+        goto Error;
     }
 
     // Parametric builds
-    else if (!strcmp(cmd, "floor")) {
-        ARG(size,NULL,sz);
-        ARGREQUIRE(size);
-
-        ARG(mat,NULL,mat);
-        ARGREQUIRE(mat);
-
+    CMD(floor) {
+        ARGREQ(size, NULL, sz);
+        ARGMAT(NULL, mat, ad.mat);
+        build_clear();
         build.bp = bplan_floor(sz.x, sz.z, mat);
-        bplan_update(build.bp);
-
         sprintf(reply, "Floor size=%dx%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
+        goto Place;
     }
-    else if (!strcmp(cmd, "wall")) {
-        ARG(size,NULL,sz);
-        ARGREQUIRE(size);
 
-        ARG(mat,NULL,mat);
-        ARGREQUIRE(mat);
-
+    CMD(wall) {
+        ARGREQ(size, NULL, sz);
+        ARGMAT(NULL, mat, ad.mat);
+        build_clear();
         build.bp = bplan_wall(sz.x, sz.z, mat);
-        bplan_update(build.bp);
-
         sprintf(reply, "Wall size=%dx%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
+        goto Place;
     }
+
 #if 0
     else if (!strcmp(cmd, "ring")) {
         build_ring(words, reply);
@@ -2920,6 +2893,11 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         buildopt(words, cq);
     }
 
+ Place:
+    bplan_update(build.bp);
+    build.placemode = buildopts.placemode; // initiate placing
+
+ Error:
     if (reply[0]) chat_message(reply, cq, "green", rpos);
 }
 

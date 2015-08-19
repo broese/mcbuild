@@ -1098,7 +1098,7 @@ void test_stuff(int ac, char **av) {
 void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq);
 
 int main(int ac, char **av) {
-#if 1
+#if 0
     MCPacketQueue tq = {NULL,0}, bq = {NULL,0};
     build_clear();
     handle_command("bu floor 5,2 wool:yellow",&tq,&bq);
@@ -1112,7 +1112,7 @@ int main(int ac, char **av) {
 #endif
 #endif
 
-#if 0
+#if 1
     //test_stuff(ac, av); return 0;
 
     curl_global_init(CURL_GLOBAL_DEFAULT);

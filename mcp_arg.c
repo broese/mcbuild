@@ -701,8 +701,8 @@ const char *argfmt_dir = "dir=<n|s|w|e>";
 #if TEST
 
 #define ARGSTART                                                        \
-    arg_defaults argdefaults = { 1, 2, 3, DIR_NORTH, BLOCKTYPE(49,0),   \
-                                 BLOCKTYPE(5,2), 50, 30, 20 };          \
+    arg_defaults ad = { 1, 2, 3, DIR_NORTH, BLOCKTYPE(49,0),            \
+                        BLOCKTYPE(5,2), 50, 30, 20 };                   \
     int ARG_NOTFOUND=0;
 
 void test_arg(char *reply, char **words) {
@@ -733,7 +733,7 @@ void test_arg(char *reply, char **words) {
     ARGDEFAULT(mat,argdefaults.mat);
 #endif
 
-#if 1
+#if 0
     int dir;
     ARG(dir,NULL,dir);
     ARGDEFAULT(dir, argdefaults.pd);
