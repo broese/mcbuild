@@ -2769,10 +2769,39 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
-#if 0
-    else if (!strcmp(cmd, "ring")) {
-        build_ring(words, reply);
+    CMD(ring) {
+        char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
+        ARGREQ(size, dwords, sz);
+        ARGMAT(NULL, mat, ad.mat);
+        build_clear();
+        build.bp = bplan_disk(sz.x, mat);
+        bplan_hollow(build.bp, 1);
+        sprintf(reply, "Ring diam=%d material=%s",sz.x,get_bid_name(buf, mat));
+        goto Place;
     }
+
+    CMD(sphere) {
+        char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
+        ARGREQ(size, dwords, sz);
+        ARGMAT(NULL, mat, ad.mat);
+        build_clear();
+        build.bp = bplan_ball(sz.x, mat);
+        bplan_hollow(build.bp, 0);
+        sprintf(reply, "Ball diam=%d material=%s",sz.x,get_bid_name(buf, mat));
+        goto Place;
+    }
+
+    CMD(square) {
+        ARGREQ(size, NULL, sz);
+        ARGMAT(NULL, mat, ad.mat);
+        build_clear();
+        build.bp = bplan_floor(sz.x, sz.z, mat);
+        bplan_hollow(build.bp, 1);
+        sprintf(reply, "Square size=%dx%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
+        goto Place;
+    }
+
+#if 0
     else if (!strcmp(cmd, "scaf") || !strcmp(cmd, "scaffolding")) {
         build_scaffolding(words, reply);
     }

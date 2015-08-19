@@ -172,6 +172,9 @@ bplan * bplan_ball(int32_t diam, bid_t mat) {
 // Buildplan manipulation
 
 int bplan_hollow(bplan *bp, int flat) {
+    assert(bp);
+    bplan_update(bp);
+
     int i,j;
 
     // size of a single "slice" with additional 1-block border
