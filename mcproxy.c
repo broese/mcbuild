@@ -139,6 +139,7 @@ struct {
 char server_addr[1024]; // server address to connect to, dotted IP or domain name
 uint32_t server_ip;     // resolved server IP address
 uint16_t server_port;   // server port
+uint16_t bind_port;     // port to bind the proxy to locally
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1000,7 +1001,7 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     mitm.cs = mitm.ms = -1;
 
     // Minecraft proxy server
-    int ss = lh_listen_tcp4_any(port);
+    int ss = lh_listen_tcp4_any(bind_port);
     if (ss<0) return -1;
     lh_poll_add(&pa, ss, POLLIN, G_MCSERVER, NULL);
 
@@ -1099,10 +1100,29 @@ int main(int ac, char **av) {
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
-    // if an argument is specified - it's the server address we want to
-    // forward connections to, otherwise - 2b2t.org
-    sprintf(server_addr, "%s", av[1]?av[1]:SERVER_ADDR);
-    server_port = SERVER_PORT; //TODO: make possible to specify server port
+    // prepare default remote server address and port
+    sprintf(server_addr, "%s", SERVER_ADDR);
+    server_port = SERVER_PORT;
+
+    if (av[1]) {
+        // if an argument is defined - use custom address and port
+        char arg_addr[4096];
+        int  arg_port;
+
+        int res = sscanf(av[1],"%[^:]:%d",arg_addr,&arg_port);
+        if (res==2) server_port = arg_port;
+        if (res>=1) sprintf(server_addr, "%s", arg_addr);
+        if (res<1)
+            LH_ERROR(-1, "Failed to parse remote server address and port from %s",av[1]);
+    }
+
+    if (av[2]) {
+        int port;
+        if (sscanf(av[2], "%d", &port)!=1)
+            LH_ERROR(-1, "Failed to parse bind port from %s", av[2]);
+
+        bind_port = port;
+    }
 
     server_ip = lh_dns_addr_ipv4(server_addr);
     if (server_ip == 0xffffffff)
