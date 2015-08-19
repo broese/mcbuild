@@ -169,6 +169,84 @@ bplan * bplan_ball(int32_t diam, bid_t mat) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Buildplan manipulation
+
+int bplan_hollow(bplan *bp) {
+    int i,j;
+
+    // size of a single "slice" with additional 1-block border
+    int32_t size_xz = (bp->sx+2)*(bp->sz+2);
+
+    // this array will hold the entire buildplan as a "voxel set"
+    // with values set to 0 for empty blocks, 1 for occupied and -1 for removed
+    // note - we leave an additional empty block for the border on each side
+    lh_create_num(int8_t,v,size_xz*(bp->sy+2));
+
+    // initialize the voxel set from the buildplan
+    for(i=0; i<BPC; i++) {
+        blkr *b = BPP+i;
+
+        // offset of this block in the array
+        int32_t off_x = b->x-bp->minx+1;
+        int32_t off_y = b->y-bp->miny+1;
+        int32_t off_z = b->z-bp->minz+1;
+        int32_t off   = off_x+off_z*(bp->sx+2)+off_y*size_xz;
+
+        // TODO: set the blocks not occupying the whole block (like slabs,
+        //       stairs, torches, etc) as empty as they don't seal the surface
+        v[off] = b->b.bid ? 1 : 0;
+    }
+
+    // mark the blocks completely surrounded by other blocks for removal
+    int x,y,z;
+    for(y=1; y<bp->sy+1; y++) {
+        int32_t off_y = size_xz*y;
+        for(z=1; z<bp->sz+1; z++) {
+            for(x=1; x<bp->sx+1; x++) {
+                int32_t off = off_y + x + z*(bp->sx+2);
+                if (v[off] &&
+                    v[off-1] && v[off+1] &&
+                    v[off-(bp->sx+2)] && v[off+(bp->sx+2)] &&
+                    v[off-size_xz] && v[off+size_xz])
+                    v[off] = -1;
+            }
+        }
+    }
+
+    // new list for the build plan to hold only the blocks we keep after removal
+    lh_arr_declare_i(blkr, keep);
+    int removed=0;
+
+    for(i=0; i<BPC; i++) {
+        blkr *b = BPP+i;
+
+        // offset of this block in the array
+        int32_t off_x = b->x-bp->minx+1;
+        int32_t off_y = b->y-bp->miny+1;
+        int32_t off_z = b->z-bp->minz+1;
+        int32_t off   = off_x+off_z*(bp->sx+2)+off_y*size_xz;
+
+        if (v[off] == 1) {
+            blkr *k = lh_arr_new(GAR(keep));
+            *k = *b;
+        }
+        else
+            removed++;
+    }
+
+    // free our voxel set
+    lh_free(v);
+
+    // replace the buildplan with the reduced list
+    lh_arr_free(BP);
+    BPC = C(keep);
+    BPP = P(keep);
+
+    return removed;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 
 #if TEST
 

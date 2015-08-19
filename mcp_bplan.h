@@ -40,3 +40,8 @@ bplan * bplan_floor(int32_t wd, int32_t dp, bid_t mat);
 bplan * bplan_wall(int32_t wd, int32_t hg, bid_t mat);
 bplan * bplan_disk(int32_t diam, bid_t mat);
 bplan * bplan_ball(int32_t diam, bid_t mat);
+
+////////////////////////////////////////////////////////////////////////////////
+// Buildplan manipulations
+
+int bplan_hollow(bplan *bp);

@@ -2779,9 +2779,17 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     else if (!strcmp(cmd, "ext") || !strcmp(cmd, "extend")) {
         build_extend(words, reply);
     }
-    else if (!strcmp(cmd, "hollow")) {
-        build_hollow(words, reply);
+#endif
+
+    CMD(hollow) {
+        if (build.bp) {
+            int removed = bplan_hollow(build.bp);
+            sprintf(reply, "Removed %d blocks, kept %zd",removed,C(build.bp->plan));
+            goto Place;
+        }
     }
+
+#if 0
     else if (!strcmp(cmd, "replace")) {
         build_replace(words, reply);
     }
