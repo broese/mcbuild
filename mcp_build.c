@@ -2744,15 +2744,22 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
+    CMD(disk) {
+        char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
+        ARGREQ(size, dwords, sz);
+        ARGMAT(NULL, mat, ad.mat);
+        build_clear();
+        build.bp = bplan_disk(sz.x, mat);
+        sprintf(reply, "Disk diam=%d material=%s",sz.x,get_bid_name(buf, mat));
+        goto Place;
+    }
+
 #if 0
     else if (!strcmp(cmd, "ring")) {
         build_ring(words, reply);
     }
     else if (!strcmp(cmd, "ball")) {
         build_ball(words, reply);
-    }
-    else if (!strcmp(cmd, "disk")) {
-        build_disk(words, reply);
     }
     else if (!strcmp(cmd, "scaf") || !strcmp(cmd, "scaffolding")) {
         build_scaffolding(words, reply);

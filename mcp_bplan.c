@@ -9,6 +9,7 @@
 
 #define MAX(x,y) (((x)>(y))?(x):(y))
 #define MIN(x,y) (((x)<(y))?(x):(y))
+#define SQ(x)    ((x)*(x))
 
 void bplan_free(bplan * bp) {
     if (!bp) return;
@@ -90,6 +91,41 @@ bplan * bplan_wall(int32_t wd, int32_t hg, bid_t mat) {
             b->x = x;
             b->z = 0;
             b->y = y;
+        }
+    }
+    return bp;
+}
+
+bplan * bplan_disk(int32_t diam, bid_t mat) {
+    lh_create_obj(bplan, bp);
+
+    int x,z,min,max;
+    blkr *b;
+    float c;
+
+    if (diam&1) {
+        // odd diameter - pivot block is in the center
+        max = diam/2;
+        min = -max;
+        c=0.0;
+    }
+    else {
+        // even diameter - pivot is the SE block of the 4 in the center
+        max = diam/2-1;
+        min = -max-1;
+        c=-0.5;
+    }
+
+    for(x=min; x<=max; x++) {
+        for(z=min; z<=max; z++) {
+            float sqdist = SQ((float)x-c)+SQ((float)z-c);
+            if (sqdist < SQ(((float)diam)/2)) {
+                b = lh_arr_new(BP);
+                b->b = mat;
+                b->y = 0;
+                b->x = x;
+                b->z = z;
+            }
         }
     }
     return bp;
