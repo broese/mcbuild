@@ -44,4 +44,4 @@ bplan * bplan_ball(int32_t diam, bid_t mat);
 ////////////////////////////////////////////////////////////////////////////////
 // Buildplan manipulations
 
-int bplan_hollow(bplan *bp);
+int bplan_hollow(bplan *bp, int flat);

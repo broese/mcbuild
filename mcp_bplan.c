@@ -171,7 +171,7 @@ bplan * bplan_ball(int32_t diam, bid_t mat) {
 ////////////////////////////////////////////////////////////////////////////////
 // Buildplan manipulation
 
-int bplan_hollow(bplan *bp) {
+int bplan_hollow(bplan *bp, int flat) {
     int i,j;
 
     // size of a single "slice" with additional 1-block border
@@ -207,7 +207,7 @@ int bplan_hollow(bplan *bp) {
                 if (v[off] &&
                     v[off-1] && v[off+1] &&
                     v[off-(bp->sx+2)] && v[off+(bp->sx+2)] &&
-                    v[off-size_xz] && v[off+size_xz])
+                    ((v[off-size_xz] && v[off+size_xz]) || flat) )
                     v[off] = -1;
             }
         }

@@ -113,6 +113,8 @@ typedef struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+int argflag(char **words, char **names);
+
 int argf_size(arg_defaults *ad, char **words, char **names, size3_t *sz);
 extern const char *argfmt_size;
 

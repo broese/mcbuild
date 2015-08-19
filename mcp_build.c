@@ -2788,7 +2788,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     CMD(hollow) {
         NEEDBP;
-        int removed = bplan_hollow(build.bp);
+        int removed = bplan_hollow(build.bp, argflag(words, WORDLIST("flat","2d","2","f","xz")));
         sprintf(reply, "Removed %d blocks, kept %zd",removed,C(build.bp->plan));
         goto Place;
     }
