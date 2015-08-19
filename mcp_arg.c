@@ -399,6 +399,30 @@ int argparse(char **words, char **names, char **fmt, ...) {
     return MCPARG_NOT_PARSED;
 }
 
+// parse the arguments using the provided options spec
+// words : tokenized commandline
+// names : possible names for the option
+// fmt   : possible format strings for the option
+int argflag(char **words, char **names) {
+    int i,j;
+
+    // locate the option in the words and extract the value
+    for(i=0; words[i]; i++) {
+        if (words[i][0] == '-') {
+            char *name = words[i]+1;
+            for(j=0; names[j]; j++) {
+                if (!strcmp(names[j], name)) {
+                    // remove the successfully parsed option from the list
+                    for(; words[i]; i++)
+                        words[i] = words[i+1];
+                    return 1;
+                }
+            }
+        }
+    }
+    return 0;
+}
+
 ////////////////////
 
 int argf_size(arg_defaults *ad, char **words, char **names, size3_t *sz) {
@@ -700,45 +724,9 @@ const char *argfmt_dir = "dir=<n|s|w|e>";
 
 #if TEST
 
-#define ARGSTART                                                        \
-    arg_defaults ad = { 1, 2, 3, DIR_NORTH, BLOCKTYPE(49,0),            \
-                        BLOCKTYPE(5,2), 50, 30, 20 };                   \
-    int ARG_NOTFOUND=0;
-
 void test_arg(char *reply, char **words) {
-    ARGSTART;
-
-#if 0
-    size3_t sz;
-    ARG(size,NULL,sz);
-    ARGREQUIRE(size);
-#endif
-
-#if 0
-    pivot_t pv;
-    ARG(pivot,NULL,pv);
-    if (ARG_NOTFOUND)
-        printf("Set pivot by placing any block\n");
-#endif
-
-#if 0
-    off3_t off;
-    ARG(offset,NULL,off);
-    ARGREQUIRE(offset);
-#endif
-
-#if 0
-    bid_t mat;
-    ARG(mat,NULL,mat);
-    ARGDEFAULT(mat,argdefaults.mat);
-#endif
-
-#if 0
-    int dir;
-    ARG(dir,NULL,dir);
-    ARGDEFAULT(dir, argdefaults.pd);
-#endif
-
+    if (argflag(words, WORDLIST("hollow", "hole", "empty", "h")))
+        printf("hollow\n");
 }
 
 int main(int ac, char **av) {
@@ -748,11 +736,6 @@ int main(int ac, char **av) {
     char buf1[256],buf2[256];
     int i;
 
-#if 0
-    size3_t sz;
-    int res = argf_size(NULL, words, NULL, &sz);
-    printf("Result: %s\n",res?"success":"failure");
-#endif
 
     printf("------------------\n");
     for(i=0; words[i]; i++)
