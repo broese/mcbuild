@@ -345,6 +345,8 @@ int argparse(char **words, char **names, char **fmt, ...) {
 
     // locate the option in the words and extract the value
     for(i=0; words[i] && !value; i++) {
+        if (words[i][0] == '-') continue; // skip flag-like options
+
         char *eq = index(words[i], '=');
         if (!eq && !unvalue) {
             // this looks like an unnamed option
