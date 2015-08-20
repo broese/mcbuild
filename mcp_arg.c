@@ -721,14 +721,43 @@ int argf_dir(arg_defaults *ad, char **words, char **names, int *dir) {
 
 const char *argfmt_dir = "dir=<n|s|w|e>";
 
+////////////////////
+
+int argf_count(arg_defaults *ad, char **words, char **names, int *count) {
+    // default name list
+    if (!names) names = WORDLIST("count","cnt","c");
+
+    // possible option formats
+    char ** fmt_count = WORDLIST("%d");
+
+    int fi = argparse(words, names, fmt_count, count);
+    switch(fi) {
+        case 0:
+            break;
+        case MCPARG_NOT_FOUND:
+        case MCPARG_NOT_PARSED:
+            return fi;
+        default:
+            assert(0);
+    }
+    printf("Matched format >%s<, count=%d\n", fmt_count[fi], *count);
+
+    return 0;
+}
+
+const char *argfmt_count = "count=<n>";
+
 ////////////////////////////////////////////////////////////////////////////////
 // Test function
 
 #if TEST
 
 void test_arg(char *reply, char **words) {
-    if (argflag(words, WORDLIST("hollow", "hole", "empty", "h")))
-        printf("hollow\n");
+    int count;
+    if (!argf_count(NULL, words, NULL, &count))
+        printf("count=%d\n",count);
+    else
+        sprintf(reply, "Fail");
 }
 
 int main(int ac, char **av) {

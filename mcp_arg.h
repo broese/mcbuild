@@ -129,3 +129,6 @@ extern const char *argfmt_mat;
 
 int argf_dir(arg_defaults *ad, char **words, char **names, int *dir);
 extern const char *argfmt_dir;
+
+int argf_count(arg_defaults *ad, char **words, char **names, int *count);
+const char *argfmt_count;
