@@ -2720,8 +2720,10 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     int ARG_NOTFOUND=0;
 
     // possible arguments for the commands
-    size3_t sz;
-    bid_t mat;
+    off3_t      off;
+    size3_t     sz;
+    bid_t       mat;
+    int         count;
 
     char buf[256];
 
@@ -2836,12 +2838,15 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
-#if 0
-    // Buildplan manipulation
-    else if (!strcmp(cmd, "ext") || !strcmp(cmd, "extend")) {
-        build_extend(words, reply);
+    CMD2(extend,ext) {
+        NEEDBP;
+        ARGREQ(offset, NULL, off);
+        ARGDEF(count, NULL, count, 1);
+        bplan_extend(build.bp, off.x, off.z, off.y, count);
+        //TODO: clean up overlapping blocks
+        sprintf(reply, "Extend offset=%d,%d,%d count=%d", off.x, off.z, off.y, count);
+        goto Place;
     }
-#endif
 
     CMD(hollow) {
         NEEDBP;

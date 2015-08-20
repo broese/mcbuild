@@ -335,6 +335,20 @@ int bplan_hollow(bplan *bp, int flat) {
     return removed;
 }
 
+void bplan_extend(bplan *bp, int ox, int oz, int oy, int count) {
+    int i,j;
+    int bc=BPC;
+    for(i=1; i<=count; i++) {
+        for(j=0; j<bc; j++) {
+            blkr *bn = lh_arr_new(BP);
+            blkr *bo = BPP+j;
+            bn->x = bo->x+ox*i;
+            bn->y = bo->y+oy*i;
+            bn->z = bo->z+oz*i;
+            bn->b = bo->b;
+        }
+    }
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 
