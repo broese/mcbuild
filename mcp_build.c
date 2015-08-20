@@ -2722,7 +2722,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     // possible arguments for the commands
     off3_t      off;
     size3_t     sz;
-    bid_t       mat;
+    bid_t       mat,mat1,mat2;
     int         count;
 
     char buf[256];
@@ -2855,10 +2855,27 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
-#if 0
-    else if (!strcmp(cmd, "replace")) {
-        build_replace(words, reply);
+    CMD(replace) {
+        NEEDBP;
+        char **mw1 = WORDLIST("material1","mat1","m1");
+        char **mw2 = WORDLIST("material2","mat2","m2");
+        ARGREQ(mat, mw1, mat1);
+        ARGREQ(mat, mw2, mat2);
+        int count = bplan_replace(build.bp, mat1, mat2);
+        char buf2[256];
+        if (mat2.bid == 0) {
+            // blocks were removed
+            sprintf(reply, "Removed %d blocks of %s\n", count,
+                    get_bid_name(buf, mat1));
+        }
+        else {
+            // blocks were replaced
+            sprintf(reply, "Replaced %d blocks of %s with %s\n", count,
+                    get_bid_name(buf, mat1), get_bid_name(buf2, mat2));
+        }
     }
+
+#if 0
     else if (!strcmp(cmd, "trim")) {
         build_trim(words, reply);
     }

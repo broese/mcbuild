@@ -48,3 +48,4 @@ bplan * bplan_stairs(int32_t wd, int32_t hg, bid_t mat, int base);
 
 int bplan_hollow(bplan *bp, int flat);
 void bplan_extend(bplan *bp, int ox, int oz, int oy, int count);
+int bplan_replace(bplan *bp, bid_t mat1, bid_t mat2);
