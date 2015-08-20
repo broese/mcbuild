@@ -222,6 +222,39 @@ bplan * bplan_scaffolding(int wd, int hg, bid_t mat, int ladder) {
     return bp;
 }
 
+bplan * bplan_stairs(int32_t wd, int32_t hg, bid_t mat, int base) {
+    lh_create_obj(bplan, bp);
+
+    // make stairs-type blocks face player
+    if ((ITEMS[mat.bid].flags&I_STAIR)) mat.meta=3;
+
+    //TODO: different material for the stairs base,
+    //      or even automatically match material
+    //      (e.g. Sandstone stairs => Sandstone)
+
+    int floor;
+    for(floor=0; floor<hg; floor++) {
+        int x;
+        blkr *b;
+        for(x=0; x<wd; x++) {
+            b = lh_arr_new(BP);
+            b->b = mat;
+            b->x = x;
+            b->z = -floor;
+            b->y = floor;
+
+            if (floor!=(hg-1) && (base==2 || (base==1 && x==0))) {
+                b = lh_arr_new(BP);
+                b->b = mat;
+                b->x = x;
+                b->z = -floor-1;
+                b->y = floor;
+            }
+        }
+    }
+    return bp;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Buildplan manipulation
 

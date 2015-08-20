@@ -2818,16 +2818,25 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
             sprintf(reply, "Scaffolding width=%d floors=%d material=%s",
                     sz.x,sz.z,get_bid_name(buf, mat));
         }
+        goto Place;
+    }
+
+    CMD(stairs) {
+        ARGREQ(size, NULL, sz);
+        ARGMAT(NULL, mat, ad.mat);
+        build_clear();
+        int base = 1;
+        if (argflag(words, WORDLIST("none","n","bn"))) base=0;
+        if (argflag(words, WORDLIST("minimal","min","m","bm"))) base=1;
+        if (argflag(words, WORDLIST("full","f","bf"))) base=2;
+        build.bp = bplan_stairs(sz.x, sz.z, mat, base);
+        char **BASE = WORDLIST("none","minimal","full");
+        sprintf(reply, "Stairs width=%d floors=%d material=%s base=%s",
+                sz.x,sz.z,get_bid_name(buf, mat),BASE[base]);
+        goto Place;
     }
 
 #if 0
-    else if (!strcmp(cmd, "scaf") || !strcmp(cmd, "scaffolding")) {
-        build_scaffolding(words, reply);
-    }
-    else if (!strcmp(cmd, "stairs")) {
-        build_stairs(words, reply);
-    }
-
     // Buildplan manipulation
     else if (!strcmp(cmd, "ext") || !strcmp(cmd, "extend")) {
         build_extend(words, reply);
