@@ -2707,6 +2707,55 @@ static void get_argdefaults(arg_defaults *ad) {
         goto Error;                                                         \
     }
 
+static inline int arg_trim(char **words, int *value) {
+    if (!words[0]) return TRIM_END;
+
+    int type = 0;
+
+    // parse coordinate name
+    switch (words[0][0]) {
+        case 'X': case 'x': type=0; break;
+        case 'Y': case 'y': type=3; break;
+        case 'Z': case 'z': type=6; break;
+        default: return TRIM_UNK;
+    }
+
+    // parse comparison sign
+    int pos=2, off=0;
+    switch (words[0][1]) {
+        case '=':
+            type+=TRIM_XE;
+            break;
+        case '<':
+            type+=TRIM_XL;
+            if (words[0][2] == '=') {
+                pos++;
+                off=1;
+            }
+            break;
+        case '>':
+            type+=TRIM_XG;
+            if (words[0][2] == '=') {
+                pos++;
+                off=-1;
+            }
+            break;
+        default:
+            return TRIM_UNK;
+    }
+
+    // parse value
+    if (sscanf(words[0]+pos, "%d", value) != 1) return TRIM_UNK;
+
+    printf("type=%d value=%d\n", type, *value);
+
+    // remove the string from the wordlist if parsed successfully
+    int i;
+    for(i=0; words[i]; i++) words[i]=words[i+1];
+
+    return type;
+}
+
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     char reply[32768];
     reply[0]=0;
@@ -2873,12 +2922,30 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
             sprintf(reply, "Replaced %d blocks of %s with %s\n", count,
                     get_bid_name(buf, mat1), get_bid_name(buf2, mat2));
         }
+
+        goto Place;
     }
 
-#if 0
     else if (!strcmp(cmd, "trim")) {
-        build_trim(words, reply);
+        NEEDBP;
+        int32_t value;
+        int type;
+        int removed = 0;
+        while (type = arg_trim(words, &value)) {
+            if (type < 0) {
+                sprintf(reply, "Cannot parse trim constraint %s", words[0]);
+                goto Error;
+            }
+
+            removed += bplan_trim(build.bp, type, value);
+        }
+
+        sprintf(reply, "Trim: removed %d blocks, retained %zd",
+                removed, C(build.bp->plan));
+
+        goto Place;
     }
+#if 0
     else if (!strcmp(cmd, "flip")) {
         build_flip(words, reply);
     }

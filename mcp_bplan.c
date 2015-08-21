@@ -381,6 +381,43 @@ int bplan_replace(bplan *bp, bid_t mat1, bid_t mat2) {
     return count;
 }
 
+// trim the buildplan by erasing block not fitting the criteria
+int bplan_trim(bplan *bp, int type, int32_t value) {
+    lh_arr_declare_i(blkr, keep);
+
+    int i, count=0;
+    for(i=0; i<BPC; i++) {
+        int k=0;
+        int32_t x=BPP[i].x;
+        int32_t y=BPP[i].y;
+        int32_t z=BPP[i].z;
+        switch (type) {
+            case TRIM_XE: k=(x==value); break;
+            case TRIM_XL: k=(x<value); break;
+            case TRIM_XG: k=(x>value); break;
+            case TRIM_YE: k=(y==value); break;
+            case TRIM_YL: k=(y<value); break;
+            case TRIM_YG: k=(y>value); break;
+            case TRIM_ZE: k=(z==value); break;
+            case TRIM_ZL: k=(z<value); break;
+            case TRIM_ZG: k=(z>value); break;
+        }
+        if (k) {
+            blkr *k = lh_arr_new(GAR(keep));
+            *k = BPP[i];
+        }
+        else {
+            count++; // count removed blocks
+        }
+    }
+
+    lh_arr_free(BP);
+    BPC = C(keep);
+    BPP = P(keep);
+
+    return count;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #if TEST
