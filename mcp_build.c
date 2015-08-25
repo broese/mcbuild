@@ -2747,8 +2747,6 @@ static inline int arg_trim(char **words, int *value) {
     // parse value
     if (sscanf(words[0]+pos, "%d", value) != 1) return TRIM_UNK;
 
-    printf("type=%d value=%d\n", type, *value);
-
     // remove the string from the wordlist if parsed successfully
     int i;
     for(i=0; words[i]; i++) words[i]=words[i+1];
@@ -2926,7 +2924,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
-    else if (!strcmp(cmd, "trim")) {
+    CMD(trim) {
         NEEDBP;
         int32_t value;
         int type;
@@ -2945,6 +2943,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
         goto Place;
     }
+
 #if 0
     else if (!strcmp(cmd, "flip")) {
         build_flip(words, reply);
@@ -2981,16 +2980,19 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 #endif
 
     // Build control
-    else if (!strcmp(cmd, "place")) {
+    CMD(place) {
+        NEEDBP;
         build_place(words, reply);
         goto Error;
     }
-    else if (!strcmp(cmd, "cancel")) {
+
+    CMD(cancel) {
         build_cancel();
         build.placemode=0;
         goto Error;
     }
-    else if (!strcmp(cmd, "pause")) {
+
+    CMD(pause) {
         if (P(build.task)) {
             build.active = !build.active;
             sprintf(reply, "Buildtask is %s", build.active?"unpaused":"paused");
@@ -3003,53 +3005,53 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
     // Preview
-    else if (!strcmp(cmd, "preview")) {
+    CMD(preview) {
         int mode = PREVIEW_MISSING;
-
-        if (words[0]) {
-            if (!strcmp(words[0], "true") || !strcmp(words[0], "t"))
-                mode = PREVIEW_TRUE;
-            else if (!strcmp(words[0], "remove") || !strcmp(words[0], "-"))
-                mode = PREVIEW_REMOVE;
-        }
+        if (argflag(words, WORDLIST("true","t"))) mode=PREVIEW_TRUE;
+        if (argflag(words, WORDLIST("remove","r"))) mode=PREVIEW_REMOVE;
+        if (argflag(words, WORDLIST("missing","m"))) mode=PREVIEW_MISSING;
         build_show_preview(sq, cq, mode);
         goto Error;
     }
 
     // Debug
-    else if (!strcmp(cmd, "dumpplan")) {
+    CMD(dumpplan) {
         bplan_dump(build.bp);
         goto Error;
     }
-    else if (!strcmp(cmd, "dumptask")) {
+
+    CMD(dumptask) {
         build_dump_task();
         goto Error;
     }
-    else if (!strcmp(cmd, "dumpqueue")) {
+
+    CMD(dumpqueue) {
         build_dump_queue();
         goto Error;
     }
 
 #if 0
-    else if (!strcmp(cmd, "dumpmat")) {
+    CMD("dumpmat") {
         calculate_material(words[0] && !strcmp(words[0], "plan"));
     }
 #endif
 
     // Build options
-    else if (!strcmp(cmd, "wallmode") || !strcmp(cmd, "wm")) {
+    CMD2(wallmode,wm) {
         build.wallmode = !build.wallmode;
         sprintf(reply, "Wall mode is %s",build.wallmode?"ON":"OFF");
         rpos = 2;
         goto Error;
     }
-    else if (!strcmp(cmd, "sealmode") || !strcmp(cmd, "sm")) {
+
+    CMD2(sealmode,sm) {
         build.sealmode = !build.sealmode;
         sprintf(reply, "Seal mode is %s",build.sealmode?"ON":"OFF");
         rpos = 2;
         goto Error;
     }
-    else if (!strcmp(cmd, "limit") || !strcmp(cmd, "li")) {
+
+    CMD2(limit,li) {
         if (!words[0]) {
             // set the limit to player's current y position
             build.limit = gs.own.y>>5;
@@ -3067,13 +3069,15 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         }
         goto Error;
     }
-    else if (!strcmp(cmd, "anyface") || !strcmp(cmd, "af")) {
+
+    CMD2(anyface,af) {
         build.anyface = !build.anyface;
         sprintf(reply, "Anyface buildng is %s",build.anyface?"ON":"OFF");
         rpos = 2;
         goto Error;
     }
-    else if (!strcmp(cmd, "opt") || !strcmp(cmd, "set")) {
+
+    CMD2(opt,set) {
         buildopt(words, cq);
         goto Error;
     }
