@@ -149,11 +149,6 @@ struct {
     int active;                // if nonzero - buildtask is being built
     int recording;             // if nonzero - build recording active
     int placemode;             // 0-disabled, 1-once, 2-multiple
-    int wallmode;              // if nonzero - do not build blocks higher than your own position
-    int sealmode;              // if nonzero - only build blocks behind your back
-    int anyface;               // attempt to build on any faces, even those looking away from you
-                               // this type of building will work on vanilla servers, but may be
-                               // blocked on some, including 2b2t
     int limit;                 // build height limit, disabled if zero
 
     lh_arr_declare(blk,task);  // current active building task
@@ -186,6 +181,11 @@ struct {
     int blkmax;            // maximum number of blocks to be places at once
     int placemode;         // automatically enter this placement mode once a buildplan is
                            // created, loaded or modified
+    int wallmode;          // if nonzero - do not build blocks higher than your own position
+    int sealmode;          // if nonzero - only build blocks behind your back
+    int anyface;           // attempt to build on any faces, even those looking away from you
+                           // this type of building will work on vanilla servers, but may be
+                           // blocked on some, including 2b2t
 } buildopts = { 0 };
 
 typedef struct {
@@ -203,7 +203,10 @@ bopt_t OPTIONS[] = {
     { "blkint", "interval (us) between attempting to place same block", &buildopts.blkint, BUILD_BLKINT},
     { "bldint", "interval (us) between attempting to place any block",  &buildopts.bldint, BUILD_BLDINT},
     { "blkmax", "max number of blocks to place at once",                &buildopts.blkmax, BUILD_BLKMAX},
-    { "placemode", "default placement behavior",                        &buildopts.placemode, 1},
+    { "placemode", "behavior to activate placement: 0:don't 1:once 2:many", &buildopts.placemode, 1},
+    { "wm", "wall mode - limit placement to blocks beneath player",     &buildopts.wallmode, 0},
+    { "sm", "seal mode - limit placement to blocks in front of player", &buildopts.sealmode, 0},
+    { "anyface", "place on any faces even if they look away from player",   &buildopts.anyface, 0},
     { NULL, NULL, NULL, 0 }, //list terminator
 };
 
@@ -553,14 +556,14 @@ void build_update() {
         b->inreach = 1;
 
         // avoid building blocks above the player in wall and limit mode
-        if ((build.wallmode && (b->y>(gs.own.y>>5)-1)) ||
+        if ((buildopts.wallmode && (b->y>(gs.own.y>>5)-1)) ||
             (build.limit && (b->y>build.limit))) {
                 b->inreach = 0;
                 continue;
         }
 
         // if the "seal mode" is active, only build blocks located in front of you
-        if (build.sealmode) {
+        if (buildopts.sealmode) {
             switch (player_direction()) {
                 case DIR_NORTH: if (b->z >= (gs.own.z>>5)) b->inreach=0; break;
                 case DIR_SOUTH: if (b->z <= (gs.own.z>>5)) b->inreach=0; break;
@@ -728,7 +731,7 @@ void build_update() {
                 memset(b->dots[f], 0, sizeof(DOTS_ALL));
 
         // disable faces looking away from you
-        if (!build.anyface) {
+        if (!buildopts.anyface) {
             if (b->y < (gs.own.y>>5)+1) memset(b->dots[DIR_UP], 0, sizeof(DOTS_ALL));
             if (b->y > (gs.own.y>>5)+2) memset(b->dots[DIR_DOWN], 0, sizeof(DOTS_ALL));
             if (b->x < (gs.own.x>>5)) memset(b->dots[DIR_EAST], 0, sizeof(DOTS_ALL));
@@ -3031,21 +3034,6 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Error;
     }
 
-    // Build options
-    CMD2(wallmode,wm) {
-        build.wallmode = !build.wallmode;
-        sprintf(reply, "Wall mode is %s",build.wallmode?"ON":"OFF");
-        rpos = 2;
-        goto Error;
-    }
-
-    CMD2(sealmode,sm) {
-        build.sealmode = !build.sealmode;
-        sprintf(reply, "Seal mode is %s",build.sealmode?"ON":"OFF");
-        rpos = 2;
-        goto Error;
-    }
-
     CMD2(limit,li) {
         if (!words[0]) {
             // set the limit to player's current y position
@@ -3062,13 +3050,6 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
                 }
             }
         }
-        goto Error;
-    }
-
-    CMD2(anyface,af) {
-        build.anyface = !build.anyface;
-        sprintf(reply, "Anyface buildng is %s",build.anyface?"ON":"OFF");
-        rpos = 2;
         goto Error;
     }
 
