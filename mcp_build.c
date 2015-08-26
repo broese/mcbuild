@@ -265,7 +265,6 @@ int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
     return eslot;
 }
 
-#if 0
 // print a table of required materials for the buildplan (if plan=1) or buildtask
 void calculate_material(int plan) {
     int i;
@@ -283,8 +282,8 @@ void calculate_material(int plan) {
     lh_clear_obj(bc);
 
     if (plan) {
-        for (i=0; i<C(build.plan); i++) {
-            bid_t bmat = get_base_material(P(build.plan)[i].b);
+        for (i=0; i<C(build.bp->plan); i++) {
+            bid_t bmat = get_base_material(P(build.bp->plan)[i].b);
             bc[bmat.raw]++;
         }
     }
@@ -330,9 +329,6 @@ void calculate_material(int plan) {
 
     printf("=========================================\n");
 }
-#endif
-
-
 
 
 
@@ -3030,11 +3026,10 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Error;
     }
 
-#if 0
-    CMD("dumpmat") {
-        calculate_material(words[0] && !strcmp(words[0], "plan"));
+    CMD2(material,mat) {
+        calculate_material(argflag(words, WORDLIST("plan","p")));
+        goto Error;
     }
-#endif
 
     // Build options
     CMD2(wallmode,wm) {
