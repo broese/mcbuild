@@ -43,7 +43,6 @@
 int query_auth_server();
 
 #define SERVER_ADDR "2b2t.org"
-
 #define SERVER_PORT 25565
 #define WEBSERVER_PORT 8080
 
@@ -1103,6 +1102,7 @@ int main(int ac, char **av) {
     // prepare default remote server address and port
     sprintf(server_addr, "%s", SERVER_ADDR);
     server_port = SERVER_PORT;
+    bind_port = SERVER_PORT;
 
     if (av[1]) {
         // if an argument is defined - use custom address and port
