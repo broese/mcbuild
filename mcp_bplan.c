@@ -1,5 +1,8 @@
 #include <assert.h>
 
+#include <lh_bytes.h>
+#include <lh_files.h>
+
 #include "mcp_bplan.h"
 #include "mcp_ids.h"
 
@@ -417,6 +420,59 @@ int bplan_trim(bplan *bp, int type, int32_t value) {
 
     return count;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+int bplan_save(bplan *bp, const char *name) {
+    char fname[256];
+    sprintf(fname, "bplan/%s.bplan", name);
+
+    // write all encoded blocks from the buildplan to the buffer
+    lh_create_buf(buf, sizeof(blkr)*BPC);
+    int i;
+    uint8_t *w = buf;
+    for(i=0; i<BPC; i++) {
+        blkr *b = BPP+i;
+        lh_write_int_be(w, b->x);
+        lh_write_int_be(w, b->y);
+        lh_write_int_be(w, b->z);
+        lh_write_short_be(w, b->b.raw);
+    }
+
+    // write out to file
+    ssize_t sz = lh_save(fname, buf, w-buf);
+    lh_free(buf);
+
+    // return nonzero on success
+    return (sz>0) ? 1 : 0;
+}
+
+bplan * bplan_load(const char *name) {
+    char fname[256];
+    sprintf(fname, "bplan/%s.bplan", name);
+
+    // load the file into a buffer
+    uint8_t *buf;
+    ssize_t sz = lh_load_alloc(fname, &buf);
+    if (sz <= 0) return NULL; // error reading file
+
+    // create a new buildplan
+    lh_create_obj(bplan, bp);
+
+    // read the blocks and add them to the buildplan
+    uint8_t *p = buf;
+    while(p<buf+sz-13) {
+        blkr *b = lh_arr_new(BP);
+        b->x = lh_read_int_be(p);
+        b->y = lh_read_int_be(p);
+        b->z = lh_read_int_be(p);
+        b->b.raw = lh_read_short_be(p);
+    }
+
+    lh_free(buf);
+    return bp;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 

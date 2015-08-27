@@ -2956,14 +2956,45 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     else if (!strcmp(cmd, "shrink") || !strcmp(cmd, "sh")) {
         build_shrink(words, reply);
     }
+#endif
 
     // Save/load/import
-    else if (!strcmp(cmd, "save")) {
-        build_save(words[0], reply);
+    CMD(save) {
+        NEEDBP;
+        if (!words[0]) {
+            sprintf(reply, "You must specify a filename (w/o .bplan extension)");
+            goto Error;
+        }
+
+        if (!bplan_save(build.bp, words[0]))
+            sprintf(reply, "Error saving to %s.bplan",words[0]);
+        else
+            sprintf(reply, "Saved %zd blocks to %s.bplan\n",
+                    C(build.bp->plan),words[0]);
+
+        goto Error;
     }
-    else if (!strcmp(cmd, "load")) {
-        build_load(words[0], reply);
+
+    CMD(load) {
+        if (!words[0]) {
+            sprintf(reply, "You must specify a filename (w/o .bplan extension)");
+            goto Error;
+        }
+
+        bplan *bp = bplan_load(words[0]);
+
+        if (bp) {
+            build_clear();
+            build.bp = bp;
+            sprintf(reply, "Loaded %zd blocks from %s.bplan\n", C(bp->plan),words[0]);
+            goto Place;
+        }
+
+        sprintf(reply, "Failed to load %s.bplan\n",words[0]);
+        goto Error;
     }
+
+#if 0
     else if (!strcmp(cmd, "sload")) {
         build_sload(words[0], reply);
     }
