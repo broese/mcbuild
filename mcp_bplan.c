@@ -2,6 +2,7 @@
 
 #include <lh_bytes.h>
 #include <lh_files.h>
+#include <lh_compress.h>
 
 #include "mcp_bplan.h"
 #include "mcp_ids.h"
@@ -423,6 +424,23 @@ int bplan_trim(bplan *bp, int type, int32_t value) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// block types we should exclude from scanning
+static inline int NOSCAN(int bid) {
+    return ( bid==0x00 ||               // air
+             bid==0x08 || bid==0x09 ||  // water
+             bid==0x0a || bid==0x0b ||  // lava
+             bid==0x1f ||               // tallgrass
+             bid==0x22 ||               // piston head
+             bid==0x24 ||               // piston extension
+             bid==0x33 ||               // fire
+             bid==0x3b ||               // wheat
+             bid==0x4e ||               // snow layer
+             bid==0x5a ||               // portal field
+             //bid==0x63 || bid==0x64 || // giant mushrooms
+             bid==0x8d || bid==0x8e     // carrots, potatoes
+             );
+}
+
 int bplan_save(bplan *bp, const char *name) {
     char fname[256];
     sprintf(fname, "bplan/%s.bplan", name);
@@ -473,6 +491,72 @@ bplan * bplan_load(const char *name) {
     return bp;
 }
 
+bplan * bplan_sload(const char *name) {
+    char fname[256];
+    sprintf(fname, "schematic/%s.schematic", name);
+
+    // load the file into a buffer
+    uint8_t *buf;
+    ssize_t sz = lh_load_alloc(fname, &buf);
+    if (sz <= 0) return NULL; // error reading file
+
+    // uncompress
+    ssize_t dlen;
+    uint8_t *dbuf = lh_gzip_decode(buf, sz, &dlen);
+    if (!dbuf) {
+        printf("Failed to uncompress %s\n",fname);
+        return NULL;
+    }
+
+    // parse the NBT structure
+    uint8_t *p = dbuf;
+    nbt_t *n = nbt_parse(&p);
+    if (!n || (p-dbuf)!=dlen) {
+        printf("Error parsing NBT data from %s", fname);
+        return NULL;
+    }
+
+    // extract the NBT elements relevant for us
+    //nbt_dump(n);
+    nbt_t *Blocks = nbt_hget(n,"Blocks");
+    nbt_t *Metas  = nbt_hget(n,"Data");
+    nbt_t *Height = nbt_hget(n,"Height");
+    nbt_t *Length = nbt_hget(n,"Length");
+    nbt_t *Width  = nbt_hget(n,"Width");
+
+    uint8_t *blocks = (uint8_t *)Blocks->ba;
+    uint8_t *metas  = (uint8_t *)Metas->ba;
+    int hg = Height->s;
+    int wd = Width->s;
+    int ln = Length->s;
+
+    // create a new buildplan
+    lh_create_obj(bplan, bp);
+    // scan the Blocks data for solid blocks
+    int x,y,z,i=0;
+    for(y=0; y<hg; y++) {
+        for (z=0; z<ln; z++) {
+            for (x=0; x<wd; x++) {
+                if (!NOSCAN(blocks[i])) {
+                    blkr *b = lh_arr_new(BP);
+                    b->b.bid = blocks[i];
+                    b->b.meta = metas[i]&0xf;
+                    b->x = x;
+                    b->z = z-ln+1;
+                    b->y = y;
+                }
+                i++;
+            }
+        }
+    }
+
+    // cleanup
+    nbt_free(n);
+    lh_free(dbuf);
+    lh_free(buf);
+
+    return bp;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

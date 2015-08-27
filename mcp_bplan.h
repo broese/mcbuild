@@ -71,3 +71,4 @@ int  bplan_trim(bplan *bp, int type, int32_t value);
 
 int bplan_save(bplan *bp, const char *name);
 bplan * bplan_load(const char *name);
+bplan * bplan_sload(const char *name);
