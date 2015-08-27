@@ -2042,34 +2042,8 @@ void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
 
 
 
-#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Build Recorder
-
-// chat command "#build rec start|stop|add"
-static void build_rec(char **words, char *reply) {
-    build_cancel(); // stop current building process if there was any
-
-    if (!words[0] || !strcmp(words[0],"start")) {
-        build_clear();
-        build.recording = 1;
-        build.pivotset = 0;
-        sprintf(reply, "BREC started, buildplan cleared");
-    }
-    else if (!strcmp(words[0],"stop")) {
-        build.recording = 0;
-        sprintf(reply, "BREC stopped");
-        buildplan_updated();
-        buildplan_place(reply);
-    }
-    else if (!strcmp(words[0],"add") || !strcmp(words[0],"cont") || !strcmp(words[0],"continue")) {
-        build.recording = 1;
-        if (build.pivotset)
-            sprintf(reply, "BREC continued, pivot at %d,%d,%d",build.px,build.py,build.pz);
-        else
-            sprintf(reply, "BREC continued, pivot not set");
-    }
-}
 
 // dump BREC blocks that are pending block update from the server
 static void dump_brec_pending() {
@@ -2101,9 +2075,10 @@ static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
             lh_arr_delete(brp, build.nbrp, 1, i);
 
             // add block to the buildplan
+            //TODO: implement a common function for adding blocks to the buildplan
             int j;
-            for(j=0; j<C(build.plan); j++) {
-                blkr *bp = P(build.plan)+j;
+            for(j=0; j<C(build.bp->plan); j++) {
+                blkr *bp = P(build.bp->plan)+j;
                 if (bp->x==x && bp->y==y && bp->z==z) {
                     printf("Warning: block %d,%d,%d is already in the buildplan, updating bid  %02x/%02x => %02x/%02x\n",
                            x, y, z, bp->b.bid, bp->b.meta, block.bid, block.meta);
@@ -2113,8 +2088,9 @@ static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
             }
 
             // this block was not in the buildplan, add it
-            blkr *bp = lh_arr_new(BPLAN);
+            blkr *bp = lh_arr_new(GAR(build.bp->plan));
 
+            //TODO: implement a common function for rotating blocks
             switch (build.pd) {
                 case DIR_SOUTH:
                     bp->x = build.px-x;
@@ -2148,21 +2124,25 @@ static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
 // handler for the SP_BlockChange and SP_MultiBlockChange messages from the server
 // dispatch each updated block to brec_blockupdate_blk()
 static void brec_blockupdate(MCPacket *pkt) {
-    assert(pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange);
-
-    if (pkt->pid == SP_BlockChange) {
-        SP_BlockChange_pkt *tpkt = &pkt->_SP_BlockChange;
-        brec_blockupdate_blk(tpkt->pos.x,tpkt->pos.y,tpkt->pos.z,tpkt->block);
-    }
-    else if (pkt->pid == SP_MultiBlockChange) {
-        SP_MultiBlockChange_pkt *tpkt = &pkt->_SP_MultiBlockChange;
-        int i;
-        for(i=0; i<tpkt->count; i++) {
-            blkrec *br = tpkt->blocks+i;
-            brec_blockupdate_blk(((tpkt->X)<<4)+br->x,br->y,((tpkt->Z)<<4)+br->z,br->bid);
+    switch(pkt->pid) {
+        case SP_BlockChange:
+            if (pkt->pid == SP_BlockChange) {
+                SP_BlockChange_pkt *tpkt = &pkt->_SP_BlockChange;
+                brec_blockupdate_blk(tpkt->pos.x,tpkt->pos.y,tpkt->pos.z,tpkt->block);
+            }
+            bplan_update(build.bp);
+            break;
+        case SP_MultiBlockChange: {
+            SP_MultiBlockChange_pkt *tpkt = &pkt->_SP_MultiBlockChange;
+            int i;
+            for(i=0; i<tpkt->count; i++) {
+                blkrec *br = tpkt->blocks+i;
+                brec_blockupdate_blk(((tpkt->X)<<4)+br->x,br->y,((tpkt->Z)<<4)+br->z,br->bid);
+            }
+            bplan_update(build.bp);
+            break;
         }
     }
-    buildplan_updated();
 }
 
 // handler for the CP_PlayerBlockPlacement message from the client
@@ -2220,7 +2200,6 @@ static void brec_blockplace(MCPacket *pkt) {
 
     dump_brec_pending();
 }
-#endif
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -2996,16 +2975,34 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Error;
     }
 
+    CMD(rec) {
+        char *rcmd = words[0];
+        if (!rcmd || !strcmp(rcmd, "start")) {
+            build_clear();
+            lh_alloc_obj(build.bp);
+            build.recording = 1;
+            build.pivotset = 0;
+            sprintf(reply, "recording started, buildplan cleared");
+            goto Error;
+        }
+        if (!strcmp(words[0],"stop")) {
+            build.recording = 0;
+            sprintf(reply, "recording stopped");
+            goto Place;
+        }
+        if (!strcmp(words[0],"resume")) {
+            build.recording = 1;
+            if (build.pivotset)
+                sprintf(reply, "recording resumed, pivot at %d,%d,%d",
+                        build.px,build.py,build.pz);
+            else {
+                lh_alloc_obj(build.bp);
+                sprintf(reply, "recording resumed, pivot not set");
+            }
+        }
+    }
+
 #if 0
-    else if (!strcmp(cmd, "sload")) {
-        build_sload(words[0], reply);
-    }
-    else if (!strcmp(cmd, "append")) {
-        build_append(words, reply);
-    }
-    else if (!strcmp(cmd, "rec")) {
-        build_rec(words, reply);
-    }
     else if (!strcmp(cmd, "scan")) {
         build_scan(words, reply);
     }
@@ -3111,14 +3108,15 @@ int build_packet(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
     if (build.recording) {
-#if 0
-        if (pkt->pid == SP_BlockChange || pkt->pid == SP_MultiBlockChange) {
-            brec_blockupdate(pkt);
+        switch (pkt->pid) {
+            case SP_BlockChange:
+            case SP_MultiBlockChange:
+                brec_blockupdate(pkt);
+                break;
+            case CP_PlayerBlockPlacement:
+                brec_blockplace(pkt);
+                break;
         }
-        else if (pkt->pid == CP_PlayerBlockPlacement) {
-            brec_blockplace(pkt);
-        }
-#endif
         return 1;
     }
     else if (build.placemode && pkt->pid == CP_PlayerBlockPlacement) {
