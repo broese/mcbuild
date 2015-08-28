@@ -15,6 +15,7 @@
 #include "mcp_game.h"
 #include "mcp_build.h"
 #include "mcp_arg.h"
+#include "mcp_types.h"
 
 // from mcproxy.c
 void drop_connection();
@@ -69,10 +70,6 @@ uint64_t gettimestamp() {
     return ts;
 }
 
-#define MIN(a,b) ((a<b)?(a):(b))
-#define MAX(a,b) ((a>b)?(a):(b))
-#define SGN(x) (((x)>=0)?1:-1)
-#define SQ(x) ((x)*(x))
 #define HEADPOSY(y) ((y)+32*162/100)
 
 static inline int mydist(fixp x, fixp y, fixp z) {

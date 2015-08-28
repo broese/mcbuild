@@ -8,7 +8,16 @@
 
 #include "nbt.h"
 
-//// various constants
+////////////////////////////////////////////////////////////////////////////////
+// Useful macros
+
+#define MIN(a,b) ((a)<(b)?(a):(b))
+#define MAX(a,b) ((a)>(b)?(a):(b))
+#define SGN(x)   (((x)>=0)?1:-1)
+#define SQ(x)    ((x)*(x))
+
+////////////////////////////////////////////////////////////////////////////////
+// various constants
 
 #define MCP_MAXSTR 4096
 #define MCP_MAXPLEN (4*1024*1024)

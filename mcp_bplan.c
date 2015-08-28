@@ -11,10 +11,6 @@
 #define BPC C(bp->plan)
 #define BP  GAR(bp->plan)
 
-#define MAX(x,y) (((x)>(y))?(x):(y))
-#define MIN(x,y) (((x)<(y))?(x):(y))
-#define SQ(x)    ((x)*(x))
-
 void bplan_free(bplan * bp) {
     if (!bp) return;
     lh_arr_free(BP);

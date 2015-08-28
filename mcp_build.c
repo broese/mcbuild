@@ -339,10 +339,6 @@ void calculate_material(int plan) {
 ////////////////////////////////////////////////////////////////////////////////
 // Building process
 
-#define SQ(x) ((x)*(x))
-#define MIN(x,y) (((x)<(y))?(x):(y))
-#define MAX(x,y) (((x)>(y))?(x):(y))
-
 // maximum reach distance for building, squared, in fixp units (1/32 block)
 #define MAXREACH_COARSE SQ(5<<5)
 #define MAXREACH SQ(4<<5)
