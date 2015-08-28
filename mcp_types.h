@@ -56,6 +56,14 @@ typedef struct {
     int     dir;
 } pivot_t;              // pivot position and orientation
 
+typedef struct {
+    off3_t  min;        // minimum coordinates (lower NW corner)
+    off3_t  max;        // maximum coordinates (upper SE corner)
+} extent_t;             // extent/cuboid in the 3D coordinates
+
+// calculate an extent from a pivot and a size
+extent_t ps2extent(pivot_t pv, size3_t sz);
+
 ////////////////////////////////////////////////////////////////////////////////
 // Slots and inventory
 

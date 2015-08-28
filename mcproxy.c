@@ -1082,6 +1082,15 @@ int proxy_pump(uint32_t ip, uint16_t port) {
 }
 
 void test_stuff(int ac, char **av) {
+#if 0
+    pivot_t pv = { { 10, 70, 20 }, DIR_WEST };
+    size3_t  sz = { 100, 20, 50 };
+
+    extent_t ex = ps2extent(pv, sz);
+    printf("Extent from %d,%d,%d to %d,%d,%d\n",
+           ex.min.x,ex.min.y,ex.min.z,
+           ex.max.x,ex.max.y,ex.max.z);
+
     MCPacketQueue tq = {NULL,0}, bq = {NULL,0};
     build_clear();
     handle_command("bu floor 5,2 wool:yellow",&tq,&bq);
@@ -1091,6 +1100,7 @@ void test_stuff(int ac, char **av) {
     handle_command("bu hollow",&tq,&bq);
     handle_command("bu trim y>=0",&tq,&bq);
     handle_command("bu save dome73",&tq,&bq);
+#endif
 }
 
 int main(int ac, char **av) {

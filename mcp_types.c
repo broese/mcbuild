@@ -7,6 +7,34 @@
 #include "mcp_ids.h"
 
 ////////////////////////////////////////////////////////////////////////////////
+// Coordinates
+
+extent_t ps2extent(pivot_t pv, size3_t sz) {
+    int32_t tx,ty,tz;
+
+    // calculate the point opposite of the pivot based on specified size
+    switch (pv.dir) {
+        case DIR_NORTH: tx=pv.pos.x+(sz.x-1); tz=pv.pos.z-(sz.z-1); break;
+        case DIR_SOUTH: tx=pv.pos.x-(sz.x-1); tz=pv.pos.z+(sz.z-1); break;
+        case DIR_EAST:  tx=pv.pos.x+(sz.z-1); tz=pv.pos.z+(sz.x-1); break;
+        case DIR_WEST:  tx=pv.pos.x-(sz.z-1); tz=pv.pos.z-(sz.x-1); break;
+        default: assert(0); break;
+    }
+    ty = pv.pos.y+(sz.y-1);
+
+    // calculate the extent
+    extent_t ex;
+    ex.min.x = MIN(pv.pos.x,tx);
+    ex.min.y = MIN(pv.pos.y,ty);
+    ex.min.z = MIN(pv.pos.z,tz);
+    ex.max.x = MAX(pv.pos.x,tx);
+    ex.max.y = MAX(pv.pos.y,ty);
+    ex.max.z = MAX(pv.pos.z,tz);
+
+    return ex;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Window slots
 
 void dump_slot(slot_t *s) {
