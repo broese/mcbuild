@@ -124,6 +124,9 @@ extern const char *argfmt_pivot;
 int argf_offset(arg_defaults *ad, char **words, char **names, off3_t *offset);
 extern const char *argfmt_offset;
 
+int argf_pos(arg_defaults *ad, char **words, char **names, off3_t *pos);
+extern const char *argfmt_pos;
+
 int argf_mat(arg_defaults *ad, char **words, char **names, bid_t *mat);
 extern const char *argfmt_mat;
 

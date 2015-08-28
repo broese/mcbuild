@@ -595,6 +595,62 @@ int argf_offset(arg_defaults *ad, char **words, char **names, off3_t *offset) {
 
 const char *argfmt_offset = "offset=x[,z[,y]] or offset=[n]direction";
 
+////////////////////////////////////////////////////////////////////////////////
+
+int argf_pos(arg_defaults *ad, char **words, char **names, off3_t *pos) {
+    // default name list
+    if (!names) names = WORDLIST("position","pos","p");
+
+    // possible option formats
+    char ** fmt_pos = WORDLIST("%d,%d,%d",
+                               "%d,%d",
+                               "%4$d");
+
+    int32_t x,z,y,dist;
+
+    int fi = argparse(words, names, fmt_pos, &pos->x, &pos->z, &pos->y, &dist);
+    switch (fi) {
+        case 0: // explicit x,z,y coordinate
+            break;
+        case 1: // x,z coordinate - use player's y coordinate
+            pos->y = ad->py;
+            break;
+        case 2: // only single number specified - assume it's a distance from player's position
+            pos->y = ad->py;
+            switch(ad->pd) {
+                case DIR_NORTH:
+                    pos->x = ad->px;
+                    pos->z = ad->pz-dist;
+                    break;
+                case DIR_SOUTH:
+                    pos->x = ad->px;
+                    pos->z = ad->pz+dist;
+                    break;
+                case DIR_EAST:
+                    pos->x = ad->px+dist;
+                    pos->z = ad->pz;
+                    break;
+                case DIR_WEST:
+                    pos->x = ad->px-dist;
+                    pos->z = ad->pz;
+                    break;
+            }
+            break;
+
+        case MCPARG_NOT_FOUND:
+        case MCPARG_NOT_PARSED:
+            return fi;
+        default:
+            assert(0);
+    }
+    printf("Matched format >%s<, coords=%d,%d,%d\n", fmt_pos[fi],
+           pos->x, pos->z, pos->y);
+
+    return 0;
+}
+
+const char *argfmt_pos = "pos=distance or pos=x,z[,y]";
+
 ////////////////////
 
 int argf_mat(arg_defaults *ad, char **words, char **names, bid_t *mat) {
@@ -753,9 +809,16 @@ const char *argfmt_count = "count=<n>";
 #if TEST
 
 void test_arg(char *reply, char **words) {
-    int count;
-    if (!argf_count(NULL, words, NULL, &count))
-        printf("count=%d\n",count);
+    off3_t pos;
+    arg_defaults ad = {
+        10,20,70,
+        3,
+        BLOCKTYPE(44,3),
+        BLOCKTYPE(5,0),
+        100,50,30};
+
+    if (!argf_pos(&ad, words, NULL, &pos))
+        printf("pos=%d,%d,%d\n", pos.x, pos.z, pos.y);
     else
         sprintf(reply, "Fail");
 }
