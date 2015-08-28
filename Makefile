@@ -20,10 +20,10 @@ all: mcproxy mcpdump nbttest argtest spiral bptest
 
 
 
-mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o mcp_ids.o nbt.o mcp_build.o mcp_arg.o mcp_bplan.o
+mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o mcp_ids.o nbt.o mcp_build.o mcp_arg.o mcp_bplan.o mcp_types.o
 	$(CC) -o $@ $^ $(LIBS)
 
-mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o mcp_ids.o nbt.o
+mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o mcp_ids.o mcp_types.o nbt.o
 	$(CC) -o $@ $^ $(LIBS)
 
 spiral: spiral.o
@@ -32,10 +32,10 @@ spiral: spiral.o
 nbttest: nbt.c
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS_LIBHELPER)
 
-argtest: mcp_arg.c mcp_ids.o mcp_gamestate.o mcp_packet.o nbt.o
+argtest: mcp_arg.c mcp_ids.o mcp_gamestate.o nbt.o mcp_packet.o mcp_types.o
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
 
-bptest: mcp_bplan.c mcp_ids.o mcp_packet.o nbt.o
+bptest: mcp_bplan.c mcp_ids.o mcp_packet.o nbt.o mcp_types.o
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
 
 varint: varint.c
@@ -54,11 +54,13 @@ mcp_game.o: mcp_gamestate.h mcp_game.h mcp_ids.h mcp_packet.h mcp_build.h
 
 mcp_ids.o: mcp_ids.h
 
-mcp_packet.o: nbt.h
+mcp_types.o: mcp_types.h nbt.h
 
-mcp_build.o: mcp_ids.h mcp_build.h mcp_bplan.h mcp_gamestate.h mcp_game.h mcp_arg.h
+mcp_packet.o: nbt.h mcp_ids.h mcp_types.h
 
-mcp_bplan.o: mcp_bplan.h mcp_packet.h
+mcp_build.o: mcp_ids.h mcp_build.h mcp_bplan.h mcp_gamestate.h mcp_game.h mcp_arg.h mcp_types.h
+
+mcp_bplan.o: mcp_bplan.h mcp_packet.h mcp_types.h
 
 
 

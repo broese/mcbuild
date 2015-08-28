@@ -98,19 +98,6 @@ typedef struct {
     int32_t bpsx, bpsz, bpsy;   // buildplan size
 } arg_defaults;
 
-typedef struct {
-    int32_t x,y,z;
-} off3_t;               // data type - block offset/coordinate
-
-typedef struct {
-    int32_t x,y,z;
-} size3_t;              // data type - block size
-
-typedef struct {
-    off3_t  pos;
-    int     dir;
-} pivot_t;              // data type - pivot position and orientation
-
 ////////////////////////////////////////////////////////////////////////////////
 
 int argflag(char **words, char **names);

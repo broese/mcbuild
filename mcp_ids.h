@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 #include "mcp_packet.h"
+#include "mcp_types.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //// Protocol IDs
@@ -218,6 +219,12 @@ extern const item_id ITEMS[];
 
 #define STACKSIZE(item) \
     ( ITEMS[item].flags&I_NSTACK ? 1 : ( ITEMS[item].flags&I_S16 ? 16 : 64 ) )
+
+#ifdef BUG_UNNAMED_INITIALIZER
+#define BLOCKTYPE(b,m) (bid_t){ m, b }
+#else
+#define BLOCKTYPE(b,m) (bid_t){ .bid = b, .meta = m }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Directions
