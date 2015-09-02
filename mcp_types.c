@@ -34,6 +34,13 @@ extent_t ps2extent(pivot_t pv, size3_t sz) {
     return ex;
 }
 
+void free_cuboid(cuboid_t c) {
+    int y;
+    for(y=0; y<c.sa.y; y++)
+        if (c.data[y])
+            free(c.data[y]);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Window slots
 

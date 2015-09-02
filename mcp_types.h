@@ -168,3 +168,12 @@ typedef struct {
     int32_t dx,dy,dz;
 } boff_t;
 
+typedef struct {
+    bid_t * data[256];  // array of horizontal slices of size sx*sz
+    size3_t sr;    // size of the requested block
+    size3_t sa;    // actual size of the data (aligned to chunk size)
+    int32_t boff;  // block offset where the xmin-zmin corner of the requested block is located
+                   // access to a block 0,0,dy : cuboid.data[y][cuboid.boff];
+} cuboid_t;
+
+void free_cuboid(cuboid_t c);
