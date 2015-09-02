@@ -255,6 +255,55 @@ bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
     return data;
 }
 
+cuboid_t export_cuboid_extent(extent_t ex) {
+    int x,y,z;
+
+    // calculate extent sizes in chunks
+    int32_t Xl=ex.min.x>>4, Xh=ex.max.x>>4, Xs=Xh-Xl+1;
+    int32_t Zl=ex.min.z>>4, Zh=ex.max.z>>4, Zs=Zh-Zl+1;
+    int32_t yl=ex.min.y,    yh=ex.max.y,    ys=yh-yl+1;
+
+    // init cuboid_t
+    cuboid_t c;
+    lh_clear_obj(c);
+    c.sr = (size3_t) { ex.max.x-ex.min.x+1, ex.max.y-ex.min.y+1, ex.max.z-ex.min.z+1 };
+    c.sa = (size3_t) { Xs*16, Zs*16, ys };
+    c.boff = (ex.min.x-Xl*16) + (ex.min.z-Zl*16)*(Xs*16);
+
+    // allocate memory for the block slices
+    for(y=0; y<ys; y++) {
+        lh_alloc_num(c.data[y],Xs*Zs*256);
+    }
+
+    int X,Z,j,k;
+    for(X=Xl; X<=Xh; X++) {
+        for(Z=Zl; Z<=Zh; Z++) {
+            // get the chunk data
+            int idx = find_chunk(gs.world,X,Z);
+            gschunk *gc = gs.world->chunks[idx];
+            if (!gc) continue;
+
+            // offset of this chunk's data (in blocks)
+            // where it will be placed in the cuboid
+            int xoff = (X-Xl)*16;
+            int zoff = (Z-Zl)*16;
+
+            // block offset of the chunk's start in the cuboid buffer
+            int boff = xoff + zoff*c.sa.x;
+
+            for(y=0; y<ys; y++) {
+                int yoff = (y+yl)*256;
+                for(k=0; k<16; k++) {
+                    memcpy(c.data[y]+boff+k*c.sa.x, gc->blocks+yoff, 16*sizeof(bid_t));
+                    yoff += 16;
+                }
+            }
+        }
+    }
+
+    return c;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory tracking
 
