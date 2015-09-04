@@ -768,6 +768,15 @@ bid_t rotate_meta(bid_t b, int times) {
     return b;
 }
 
+// get the number of clockwise 90-degree rotations to get from one direction to another
+int numrot(int from_dir, int to_dir) {
+    int i;
+    for(i=0; i<4; i++)
+        if (ROT_MAP[from_dir][i] == to_dir)
+            return i;
+    return -1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
 

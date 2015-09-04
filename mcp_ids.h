@@ -378,3 +378,4 @@ bid_t get_base_material(bid_t mat);
 uint8_t get_state_mask(int bid);
 
 bid_t rotate_meta(bid_t b, int times);
+int numrot(int from_dir, int to_dir);
