@@ -1883,6 +1883,7 @@ void place_pivot(pivot_t pv) {
     build_update();
 }
 
+#if 0
 // chat command "#build place cancel|once|many|coord=<x,z,y> [dir=<d>]"
 static void build_place(char **words, char *reply) {
     if (mcparg_find(words, "cancel", NULL)) {
@@ -1962,10 +1963,12 @@ static void build_place(char **words, char *reply) {
     // abort current buildtask
     build_cancel();
 
-    sprintf(reply, "Place pivot at %d,%d (%d), dir=%d (%s)\n",px,pz,py,dir,DIRNAME[dir]);
+    sprintf(reply, "Placing pivot at %d,%d (%d), dir=%s\n",px,pz,py,DIRNAME[dir]);
+            pv.pos.x,pv.pos.z,pv.pos.y,DIRNAME[pv.dir]);
     pivot_t pv = { {px,py,pz}, dir};
     place_pivot(pv);
 }
+#endif
 
 // handler for placing the pivot block in-game ("place once" or "place many")
 void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
@@ -1987,7 +1990,7 @@ void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     place_pivot(pv);
 
     char reply[4096];
-    sprintf(reply, "Place pivot at %d,%d (%d), dir=%d\n",x,z,y,dir);
+    sprintf(reply, "Placing pivot at %d,%d (%d), dir=%s\n",x,z,y,DIRNAME[dir]);
     chat_message(reply, cq, "green", 0);
 
     //TODO: detect when player accesses chests/etc
@@ -2653,6 +2656,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     // possible arguments for the commands
     off3_t      off;
+    pivot_t     pv;
     size3_t     sz;
     bid_t       mat,mat1,mat2;
     int         count;
@@ -2935,7 +2939,44 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     // Build control
     CMD(place) {
         NEEDBP;
-        build_place(words, reply);
+        if (words[0]) {
+            if (!strcmp(words[0],"cancel")) {
+                sprintf(reply, "Placement canceled");
+                build.placemode = 0;
+                goto Error;
+            }
+            if (!strcmp(words[0],"many")) {
+                sprintf(reply, "Mark pivot positions by placing block, disable with #build place cancel");
+                build.placemode = 2;
+                goto Error;
+            }
+            if (!strcmp(words[0],"once")) {
+                sprintf(reply, "Mark pivot position by placing block, will build once");
+                build.placemode = 1;
+                goto Error;
+            }
+            if (!strcmp(words[0],"again")) {
+                if (!build.pv.dir)
+                    sprintf(reply, "No pivot was set previously");
+                else
+                    place_pivot(build.pv);
+                goto Error;
+            }
+        }
+        ARG(pivot, NULL, pv);
+        if (reply[0]) goto Error;
+        if (ARG_NOTFOUND) {
+            sprintf(reply, "Mark pivot position by placing block, will build once");
+            build.placemode = 1;
+            goto Error;
+        }
+
+        // abort current buildtask
+        build_cancel();
+
+        sprintf(reply, "Placing pivot at %d,%d (%d), dir=%s\n",
+                pv.pos.x,pv.pos.z,pv.pos.y,DIRNAME[pv.dir]);
+        place_pivot(pv);
         goto Error;
     }
 
@@ -3015,6 +3056,14 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
  Place:
     bplan_update(build.bp);
     build.placemode = buildopts.placemode; // initiate placing
+    switch(build.placemode) {
+        case 1:
+            sprintf(reply, "Mark pivot position by placing block, will place once");
+            break;
+        case 2:
+            sprintf(reply, "Mark pivot positions by placing blocks, disable with #build place cancel");
+            break;
+    }
 
  Error:
     if (reply[0]) chat_message(reply, cq, "green", rpos);
