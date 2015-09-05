@@ -3071,12 +3071,13 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
  Place:
     bplan_update(build.bp);
     build.placemode = buildopts.placemode; // initiate placing
+    size_t rlen = strlen(reply);
     switch(build.placemode) {
         case 1:
-            sprintf(reply, "Mark pivot position by placing block, will place once");
+            sprintf(reply+rlen, ",placing once");
             break;
         case 2:
-            sprintf(reply, "Mark pivot positions by placing blocks, disable with #build place cancel");
+            sprintf(reply+rlen, ",placing many");
             break;
     }
 
