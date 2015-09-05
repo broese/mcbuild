@@ -64,6 +64,26 @@ void bplan_dump(bplan *bp) {
     }
 }
 
+// add a new block to the buildplan. If a block with this coordinates
+// is already in the buildplan, it will be replaced
+// returns the index of the newly added block
+int bplan_add(bplan *bp, blkr block) {
+    assert(bp);
+
+    int i;
+    for(i=0; i<BPC; i++) {
+        blkr *ob = BPP+i;
+        if (ob->x==block.x && ob->y==block.y && ob->z==block.z) {
+            ob->b = block.b;
+            return i;
+        }
+    }
+
+    blkr *nb = lh_arr_new(BP);
+    *nb = block;
+    return BPC-1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
 

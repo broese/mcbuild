@@ -33,6 +33,9 @@ void bplan_update(bplan * bp);
 // dump the contents of the buildplan
 void bplan_dump(bplan *bp);
 
+// add a block to the buildplan
+int bplan_add(bplan *bp, blkr block);
+
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
 
