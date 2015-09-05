@@ -65,6 +65,72 @@ void bplan_dump(bplan *bp) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Helpers
+
+// translate and rotate the block between absolute and relative positions
+// around a pivot block
+
+blkr abs2rel(pivot_t pv, blkr b) {
+    blkr r;
+    switch(pv.dir) {
+        case DIR_SOUTH:
+            r.x=pv.pos.x-b.x;
+            r.z=pv.pos.z-b.z;
+            r.b=rotate_meta(b.b,-2);
+            break;
+        case DIR_NORTH:
+            r.x=b.x-pv.pos.x;
+            r.z=b.z-pv.pos.z;
+            r.b=rotate_meta(b.b,0);
+            break;
+        case DIR_EAST:
+            r.x=b.z-pv.pos.z;
+            r.z=pv.pos.x-b.x;
+            r.b=rotate_meta(b.b,-1);
+            break;
+        case DIR_WEST:
+            r.x=pv.pos.z-b.z;
+            r.z=b.x-pv.pos.x;
+            r.b=rotate_meta(b.b,-3);
+            break;
+        default: assert(0);
+    }
+    r.y = b.y-pv.pos.y;
+    return r;
+}
+
+blkr rel2abs(pivot_t pv, blkr b) {
+    blkr r;
+    switch(pv.dir) {
+        case DIR_SOUTH:
+            r.x=pv.pos.x-b.x;
+            r.z=pv.pos.z-b.z;
+            r.b=rotate_meta(b.b,2);
+            break;
+        case DIR_NORTH:
+            r.x=pv.pos.x+b.x;
+            r.z=pv.pos.z+b.z;
+            r.b=rotate_meta(b.b,0);
+            break;
+        case DIR_EAST:
+            r.x=pv.pos.x-b.z;
+            r.z=pv.pos.z+b.x;
+            r.b=rotate_meta(b.b,1);
+            break;
+        case DIR_WEST:
+            r.x=pv.pos.x+b.z;
+            r.z=pv.pos.z-b.x;
+            r.b=rotate_meta(b.b,3);
+            break;
+        default: assert(0);
+    }
+    r.y = pv.pos.y+b.y;
+    return r;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Parametric builds
 
 bplan * bplan_floor(int32_t wd, int32_t dp, bid_t mat) {
     lh_create_obj(bplan, bp);

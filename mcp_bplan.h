@@ -34,6 +34,12 @@ void bplan_update(bplan * bp);
 void bplan_dump(bplan *bp);
 
 ////////////////////////////////////////////////////////////////////////////////
+// Helpers
+
+blkr abs2rel(pivot_t pv, blkr b);
+blkr rel2abs(pivot_t pv, blkr b);
+
+////////////////////////////////////////////////////////////////////////////////
 // Parametric builds
 
 bplan * bplan_floor(int32_t wd, int32_t dp, bid_t mat);
