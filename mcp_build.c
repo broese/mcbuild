@@ -2919,11 +2919,37 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         }
     }
 
-#if 0
-    else if (!strcmp(cmd, "scan")) {
-        build_scan(words, reply);
+    CMD(scan) {
+        ARGREQ(pivot, NULL, pv);
+        ARGREQ(size, NULL,sz);
+        //TODO: scanning from mask
+        //TODO: specify the scan extend with to=<x,z,y>
+
+        extent_t ex = ps2extent(pv, sz);
+        cuboid_t c = export_cuboid_extent(ex);
+
+        build_clear();
+        lh_alloc_obj(build.bp);
+
+        int x,y,z;
+        for(y=0; y<c.sr.y; y++) {
+            bid_t *slice = c.data[y]+c.boff;
+            for(z=0; z<c.sr.z; z++) {
+                bid_t *row = slice+z*c.sa.x;
+                for(x=0; x<c.sr.x; x++) {
+                    if (NOSCAN(row[x].bid)) continue;
+                    blkr b = { x+ex.min.x, y+ex.min.y, z+ex.min.z, row[x] };
+                    bplan_add(build.bp, abs2rel(pv, b));
+                }
+            }
+        }
+        sprintf(reply, "Scanned %zd blocks from %dx%dx%d area\n",
+                C(build.bp->plan), sz.x, sz.z, sz.y);
+
+        free_cuboid(c);
+
+        goto Place;
     }
-#endif
 
     // Build control
     CMD(place) {
