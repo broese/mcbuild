@@ -159,9 +159,7 @@ struct {
                                // and remove them as we get the confirmation from the server
                                // (SP_BlockChange or SP_MultiBlockChange)
 
-    int32_t px,py,pz;          // BREC pivot block
-    int pd;                    // BREC pivot direction
-    int pivotset;              // nonzero if pivot block has been set
+    pivot_t pv;                // pivot
 
     int bq[MAXBUILDABLE];      // list of buildable blocks from the task
     int nbq;                   // number of buildable blocks
@@ -1877,11 +1875,7 @@ void place_pivot(pivot_t pv) {
     }
 
     // store the coordinates and direction so they can be reused for 'place again'
-    build.px = pv.pos.x;
-    build.py = pv.pos.y;
-    build.pz = pv.pos.z;
-    build.pd = pv.dir;
-    build.pivotset = 1;
+    build.pv = pv;
 
     printf("Buildtask boundary: X: %d - %d   Z: %d - %d   Y: %d - %d\n",
            build.xmin, build.xmax, build.zmin, build.zmax, build.ymin, build.ymax);
@@ -1944,14 +1938,14 @@ static void build_place(char **words, char *reply) {
                 return;
             }
             else if (mcparg_find(words, "again", NULL)) {
-                if (!build.pivotset) {
+                if (!build.pv.dir) {
                     sprintf(reply, "No pivot was set previously");
                 }
                 else {
-                    px = build.px;
-                    py = build.py;
-                    pz = build.pz;
-                    dir = build.pd;
+                    px = build.pv.pos.x;
+                    py = build.pv.pos.y;
+                    pz = build.pv.pos.z;
+                    dir = build.pv.dir;
                 }
             }
             else {
@@ -2038,62 +2032,21 @@ static void dump_brec_pending() {
 
 // received a block update from the server - check if we have this block in the
 // BREC pending queue and record it in the buildplan
-static void brec_blockupdate_blk(int32_t x, int32_t y, int32_t z, bid_t block) {
-    block.meta &= ~(get_state_mask(block.bid));
+static void brec_blockupdate_blk(blkr b) {
+    // keep only orientation and material-related meta bits
+    // clear the state-related bits
+    b.b.meta &= ~(get_state_mask(b.b.bid));
 
     int i;
     for(i=0; i<build.nbrp; i++) {
         blkr *bl = &build.brp[i];
-        if (bl->x==x && bl->y==y && bl->z==z) {
-            //printf("Found pending block idx=%d %d,%d,%d %02x/%02x => %02x/%02x\n",
-            //       i, x, y, z, bl->b.bid, bl->b.meta, block.bid, block.meta);
-
+        if (bl->x==b.x && bl->y==b.y && bl->z==b.z) {
             // remove block from the pending queue
             blkr *brp = build.brp;
             lh_arr_delete(brp, build.nbrp, 1, i);
 
-            // add block to the buildplan
-            //TODO: implement a common function for adding blocks to the buildplan
-            int j;
-            for(j=0; j<C(build.bp->plan); j++) {
-                blkr *bp = P(build.bp->plan)+j;
-                if (bp->x==x && bp->y==y && bp->z==z) {
-                    printf("Warning: block %d,%d,%d is already in the buildplan, updating bid  %02x/%02x => %02x/%02x\n",
-                           x, y, z, bp->b.bid, bp->b.meta, block.bid, block.meta);
-                    bp->b.raw = block.raw;
-                    return;
-                }
-            }
-
-            // this block was not in the buildplan, add it
-            blkr *bp = lh_arr_new(GAR(build.bp->plan));
-
-            //TODO: implement a common function for rotating blocks
-            switch (build.pd) {
-                case DIR_SOUTH:
-                    bp->x = build.px-x;
-                    bp->z = build.pz-z;
-                    bp->b = rotate_meta(block, -2);
-                    break;
-                case DIR_NORTH:
-                    bp->x = x-build.px;
-                    bp->z = z-build.pz;
-                    bp->b = rotate_meta(block, 0);
-                    break;
-                case DIR_EAST:
-                    bp->x = z-build.pz;
-                    bp->z = build.px-x;
-                    bp->b = rotate_meta(block, -1);
-                    break;
-                case DIR_WEST:
-                    bp->x = build.pz-z;
-                    bp->z = x-build.px;
-                    bp->b = rotate_meta(block, -3);
-                    break;
-            }
-            bp->y = y-build.py;
-
-            //dump_brec_pending();
+            // add the block to the buildplan
+            bplan_add(build.bp, abs2rel(build.pv, b));
             return;
         }
     }
@@ -2106,7 +2059,8 @@ static void brec_blockupdate(MCPacket *pkt) {
         case SP_BlockChange:
             if (pkt->pid == SP_BlockChange) {
                 SP_BlockChange_pkt *tpkt = &pkt->_SP_BlockChange;
-                brec_blockupdate_blk(tpkt->pos.x,tpkt->pos.y,tpkt->pos.z,tpkt->block);
+                blkr b = { tpkt->pos.x,tpkt->pos.y,tpkt->pos.z,tpkt->block };
+                brec_blockupdate_blk(b);
             }
             bplan_update(build.bp);
             break;
@@ -2115,7 +2069,8 @@ static void brec_blockupdate(MCPacket *pkt) {
             int i;
             for(i=0; i<tpkt->count; i++) {
                 blkrec *br = tpkt->blocks+i;
-                brec_blockupdate_blk(((tpkt->X)<<4)+br->x,br->y,((tpkt->Z)<<4)+br->z,br->bid);
+                blkr b = { ((tpkt->X)<<4)+br->x,br->y,((tpkt->Z)<<4)+br->z,br->bid };
+                brec_blockupdate_blk(b);
             }
             bplan_update(build.bp);
             break;
@@ -2158,22 +2113,13 @@ static void brec_blockplace(MCPacket *pkt) {
     // create a new record in the pending queue
     blkr *bl = &build.brp[build.nbrp];
     build.nbrp++;
-
-    bl->x = x;
-    bl->y = y;
-    bl->z = z;
-    bl->b = b;
+    *bl = (blkr) {x,y,z,b};
 
     // if this is the first block being recorded, set it as pivot
-    if (!build.pivotset) {
-        build.pivotset = 1;
-        build.px = x;
-        build.py = y;
-        build.pz = z;
-        build.pd = player_direction();
-
+    if (!build.pv.dir) {
+        build.pv = (pivot_t) { {x,y,z}, player_direction() };
         printf("Set pivot block at %d,%d,%d dir=%d\n",
-               build.px,build.py,build.pz,build.pd);
+               build.pv.pos.x,build.pv.pos.y,build.pv.pos.z,build.pv.dir);
     }
 
     dump_brec_pending();
@@ -2959,7 +2905,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
             build_clear();
             lh_alloc_obj(build.bp);
             build.recording = 1;
-            build.pivotset = 0;
+            lh_clear_obj(build.pv);
             sprintf(reply, "recording started, buildplan cleared");
             goto Error;
         }
@@ -2970,9 +2916,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         }
         if (!strcmp(words[0],"resume")) {
             build.recording = 1;
-            if (build.pivotset)
+            if (build.pv.dir)
                 sprintf(reply, "recording resumed, pivot at %d,%d,%d",
-                        build.px,build.py,build.pz);
+                        build.pv.pos.x,build.pv.pos.y,build.pv.pos.z);
             else {
                 lh_alloc_obj(build.bp);
                 sprintf(reply, "recording resumed, pivot not set");
