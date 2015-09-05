@@ -342,17 +342,6 @@ void calculate_material(int plan) {
 #define MAXREACH SQ(4<<5)
 #define OFF(x,z,y) (((x)-xo)+((z)-zo)*(xsz)+((y)-yo)*(xsz*zsz))
 
-// block types that are considered 'empty' for the block placement
-static inline int ISEMPTY(int bid) {
-    return ( bid==0x00 ||               // air
-             bid==0x08 || bid==0x09 ||  // water
-             bid==0x0a || bid==0x0b ||  // lava
-             bid==0x1f ||               // tallgrass
-             bid==0x33 ||               // fire
-             bid==0x4e                  // snow layer
-    );
-}
-
 typedef struct {
     fixp x,z,y;     // position of the dot 0,0
     fixp cx,cz,cy;  // deltas to the next dot in column

@@ -506,23 +506,6 @@ int bplan_trim(bplan *bp, int type, int32_t value) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// block types we should exclude from scanning
-static inline int NOSCAN(int bid) {
-    return ( bid==0x00 ||               // air
-             bid==0x08 || bid==0x09 ||  // water
-             bid==0x0a || bid==0x0b ||  // lava
-             bid==0x1f ||               // tallgrass
-             bid==0x22 ||               // piston head
-             bid==0x24 ||               // piston extension
-             bid==0x33 ||               // fire
-             bid==0x3b ||               // wheat
-             bid==0x4e ||               // snow layer
-             bid==0x5a ||               // portal field
-             //bid==0x63 || bid==0x64 || // giant mushrooms
-             bid==0x8d || bid==0x8e     // carrots, potatoes
-             );
-}
-
 int bplan_save(bplan *bp, const char *name) {
     char fname[256];
     sprintf(fname, "bplan/%s.bplan", name);
