@@ -1848,38 +1848,18 @@ static void build_shrink(char **words, char *reply) {
 // Pivot placement
 
 // a pivot block has been placed (using whatever method)
-void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
+void place_pivot(pivot_t pv) {
     assert(build.bp);
 
     // create a new buildtask from our buildplan
     int i;
     for(i=0; i<C(build.bp->plan); i++) {
-        blkr *bp = P(build.bp->plan)+i;
+        blkr bp=rel2abs(pv, P(build.bp->plan)[i]);
         blk  *bt = lh_arr_new_c(BTASK); // new element in the buildtask
-
-        switch (dir) {
-            case DIR_SOUTH:
-                bt->x = px-bp->x;
-                bt->z = pz-bp->z;
-                bt->b = rotate_meta(bp->b, 2);
-                break;
-            case DIR_NORTH:
-                bt->x = px+bp->x;
-                bt->z = pz+bp->z;
-                bt->b = rotate_meta(bp->b, 0);
-                break;
-            case DIR_EAST:
-                bt->x = px-bp->z;
-                bt->z = pz+bp->x;
-                bt->b = rotate_meta(bp->b, 1);
-                break;
-            case DIR_WEST:
-                bt->x = px+bp->z;
-                bt->z = pz-bp->x;
-                bt->b = rotate_meta(bp->b, 3);
-                break;
-        }
-        bt->y = py+bp->y;
+        bt->x = bp.x;
+        bt->y = bp.y;
+        bt->z = bp.z;
+        bt->b = bp.b;
     }
     build.active = 1;
 
@@ -1897,10 +1877,10 @@ void place_pivot(int32_t px, int32_t py, int32_t pz, int dir) {
     }
 
     // store the coordinates and direction so they can be reused for 'place again'
-    build.px = px;
-    build.py = py;
-    build.pz = pz;
-    build.pd = dir;
+    build.px = pv.pos.x;
+    build.py = pv.pos.y;
+    build.pz = pv.pos.z;
+    build.pd = pv.dir;
     build.pivotset = 1;
 
     printf("Buildtask boundary: X: %d - %d   Z: %d - %d   Y: %d - %d\n",
@@ -1989,7 +1969,8 @@ static void build_place(char **words, char *reply) {
     build_cancel();
 
     sprintf(reply, "Place pivot at %d,%d (%d), dir=%d (%s)\n",px,pz,py,dir,DIRNAME[dir]);
-    place_pivot(px,py,pz,dir);
+    pivot_t pv = { {px,py,pz}, dir};
+    place_pivot(pv);
 }
 
 // handler for placing the pivot block in-game ("place once" or "place many")
@@ -2008,7 +1989,8 @@ void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
         build_cancel(); // don't cancel the task in "multiple placement" mode
     }
 
-    place_pivot(x,y,z,dir);
+    pivot_t pv = { {x,y,z}, dir};
+    place_pivot(pv);
 
     char reply[4096];
     sprintf(reply, "Place pivot at %d,%d (%d), dir=%d\n",x,z,y,dir);
