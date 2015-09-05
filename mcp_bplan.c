@@ -504,6 +504,25 @@ int bplan_trim(bplan *bp, int type, int32_t value) {
     return count;
 }
 
+// flip the buildplan across one of the axis
+void bplan_flip(bplan *bp, char mode) {
+    int i;
+    for(i=0; i<BPC; i++) {
+        blkr *b = BPP+i;
+        switch (mode) {
+            case 'x':
+                b->x = -b->x;
+                break;
+            case 'y':
+                b->y = -b->y;
+                break;
+            case 'z':
+                b->z = -b->z;
+                break;
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 int bplan_save(bplan *bp, const char *name) {

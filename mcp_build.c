@@ -2822,6 +2822,26 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
+    CMD(flip) {
+        NEEDBP;
+        char mode='x';
+        if (words[0]) {
+            switch (words[0][0]) {
+                case 'x':
+                case 'y':
+                case 'z':
+                    mode = words[0][0];
+                    break;
+                default:
+                    sprintf(reply, "Usage: #build flip [x|y|z]");
+                    goto Error;
+            }
+        }
+        bplan_flip(build.bp, mode);
+        sprintf(reply, "Buildplan flipped about %c axis",mode);
+        goto Place;
+    }
+
 #if 0
     else if (!strcmp(cmd, "flip")) {
         build_flip(words, reply);

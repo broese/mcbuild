@@ -74,6 +74,7 @@ int  bplan_hollow(bplan *bp, int flat);
 void bplan_extend(bplan *bp, int ox, int oz, int oy, int count);
 int  bplan_replace(bplan *bp, bid_t mat1, bid_t mat2);
 int  bplan_trim(bplan *bp, int type, int32_t value);
+void bplan_flip(bplan *bp, char mode);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Save/load/import
