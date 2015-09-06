@@ -557,6 +557,20 @@ void bplan_tilt(bplan *bp, char mode) {
     }
 }
 
+// shift the buildplan so that the pivot is at the bottom leftmost near corner
+void bplan_normalize(bplan *bp) {
+    bplan_update(bp);
+    int i;
+    for(i=0; i<BPC; i++) {
+        blkr *b = BPP+i;
+        b->x += -bp->minx;
+        b->y += -bp->miny;
+        b->z -= bp->maxz;
+    }
+    bplan_update(bp);
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 
 int bplan_save(bplan *bp, const char *name) {

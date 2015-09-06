@@ -2838,8 +2838,8 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
             }
         }
         bplan_flip(build.bp, mode);
+        bplan_normalize(build.bp);
         sprintf(reply, "Buildplan flipped about %c axis",mode);
-        //TODO: normalize
         goto Place;
     }
 
@@ -2859,8 +2859,15 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
             }
         }
         bplan_tilt(build.bp, mode);
+        bplan_normalize(build.bp);
         sprintf(reply, "Buildplan tilted about %c axis",mode);
-        //TODO: normalize
+        goto Place;
+    }
+
+    CMD2(normalize,norm) {
+        NEEDBP;
+        bplan_normalize(build.bp);
+        sprintf(reply, "Buildplan normalized");
         goto Place;
     }
 
