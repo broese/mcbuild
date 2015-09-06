@@ -789,7 +789,7 @@ int FLIP_MAP[][2] = {
 };
 
 bid_t flip_meta(bid_t b, char mode) {
-    assert(mode != 'y'); //TODO: y-flipping
+    assert(mode=='x' || mode=='z');
 
     int8_t * mg = get_metagroup(b);
     if (!mg) return b;
@@ -800,6 +800,13 @@ bid_t flip_meta(bid_t b, char mode) {
     return b;
 }
 
+bid_t flip_meta_y(bid_t b) {
+    uint64_t flags = ITEMS[b.bid].flags;
+    if (flags&I_STAIR) b.meta^=4; // flip the up/down bit
+    if (flags&I_SLAB)  b.meta^=8; // flip the up/down bit
+    //TODO: support other blocks with up/down orientation, like Droppers
+    return b;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata

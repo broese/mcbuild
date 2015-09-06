@@ -516,6 +516,7 @@ void bplan_flip(bplan *bp, char mode) {
                 break;
             case 'y':
                 b->y = -b->y;
+                b->b = flip_meta_y(b->b);
                 break;
             case 'z':
                 b->z = -b->z;
