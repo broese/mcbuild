@@ -570,6 +570,83 @@ void bplan_normalize(bplan *bp) {
     bplan_update(bp);
 }
 
+// shrink the buildplan to half size in each dimension
+void bplan_shrink(bplan *bp) {
+    assert(bp);
+    bplan_update(bp);
+
+    int i,j;
+
+    // size of a single "slice" with additional 1-block border
+    int32_t size_xz = bp->sx*bp->sz;
+    lh_create_num(bid_t,v,size_xz*bp->sy);
+
+    // initialize the voxel set from the buildplan
+    for(i=0; i<BPC; i++) {
+        blkr *b = BPP+i;
+
+        // offset of this block in the array
+        int32_t off_x = b->x-bp->minx;
+        int32_t off_y = b->y-bp->miny;
+        int32_t off_z = b->z-bp->minz;
+        int32_t off   = off_x+off_z*bp->sx+off_y*size_xz;
+        v[off] = b->b;
+    }
+
+    // new list for the build plan to hold the blocks from the shrinked model
+    lh_arr_declare_i(blkr, keep);
+
+    int x,y,z;
+    for(y=bp->miny; y<bp->maxy-1; y+=2) {
+        for(x=bp->minx; x<bp->maxx-1; x+=2) {
+            for(z=bp->minz; z<bp->maxz-1; z+=2) {
+                int32_t off_x = x-bp->minx;
+                int32_t off_y = y-bp->miny;
+                int32_t off_z = z-bp->minz;
+                int32_t off   = off_x+off_z*bp->sx+off_y*size_xz;
+
+                int32_t offs[8] = {
+                    off,
+                    off+1,
+                    off+bp->sx,
+                    off+1+bp->sx,
+                    off+size_xz,
+                    off+1+size_xz,
+                    off+bp->sx+size_xz,
+                    off+1+bp->sx+size_xz
+                };
+
+                int blk[256]; lh_clear_obj(blk);
+                for (i=0; i<8; i++) {
+                    int bid = v[offs[i]].bid;
+                    blk[bid]++;
+                }
+                bid_t mat = BLOCKTYPE(0,0);
+                for(i=1; i<256; i++)
+                    if (blk[i]>4)
+                        mat = BLOCKTYPE(i,0);
+
+                if (mat.bid) {
+                    blkr *k = lh_arr_new(GAR(keep));
+                    k->b = mat;
+                    k->x = bp->minx + (x-bp->minx)/2;
+                    k->y = bp->miny + (y-bp->miny)/2;
+                    k->z = bp->minz + (z-bp->minz)/2;
+                }
+            }
+        }
+    }
+
+    // free our voxel set
+    lh_free(v);
+
+    // replace the buildplan with the reduced list
+    lh_arr_free(BP);
+    BPC = C(keep);
+    BPP = P(keep);
+
+    bplan_update(bp);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 

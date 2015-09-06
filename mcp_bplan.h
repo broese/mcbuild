@@ -77,6 +77,7 @@ int  bplan_trim(bplan *bp, int type, int32_t value);
 void bplan_flip(bplan *bp, char mode);
 void bplan_tilt(bplan *bp, char mode);
 void bplan_normalize(bplan *bp);
+void bplan_shrink(bplan *bp);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Save/load/import

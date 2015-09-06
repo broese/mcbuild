@@ -2871,6 +2871,14 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
+    CMD(shrink) {
+        NEEDBP;
+        bplan_shrink(build.bp);
+        sprintf(reply, "Shrunk to %zd blocks in a %dx%dx%d area\n",
+                C(build.bp->plan), build.bp->sx, build.bp->sz, build.bp->sy);
+        goto Place;
+    }
+
 #if 0
     else if (!strcmp(cmd, "flip")) {
         build_flip(words, reply);
