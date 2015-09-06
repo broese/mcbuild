@@ -84,4 +84,5 @@ void bplan_shrink(bplan *bp);
 
 int bplan_save(bplan *bp, const char *name);
 bplan * bplan_load(const char *name);
+int bplan_ssave(bplan *bp, const char *name);
 bplan * bplan_sload(const char *name);

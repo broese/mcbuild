@@ -700,7 +700,68 @@ bplan * bplan_load(const char *name) {
     }
 
     lh_free(buf);
+
+    bplan_update(bp);
     return bp;
+}
+
+int bplan_ssave(bplan *bp, const char *name) {
+    assert(bp);
+    bplan_update(bp);
+
+    char fname[256];
+    sprintf(fname, "schematic/%s.schematic", name);
+
+    int i,j;
+
+    // create Blocks and Data arrays from the buildplan
+    int32_t size_xz = bp->sx*bp->sz;
+    int32_t size = size_xz*bp->sy;
+    lh_create_num(uint8_t,blocks,size);
+    lh_create_num(uint8_t,data,size);
+
+    // initialize the voxel set from the buildplan
+    for(i=0; i<BPC; i++) {
+        blkr *b = BPP+i;
+
+        // offset of this block in the array
+        int32_t off_x = b->x-bp->minx;
+        int32_t off_y = b->y-bp->miny;
+        int32_t off_z = b->z-bp->minz;
+        int32_t off   = off_x+off_z*bp->sx+off_y*size_xz;
+
+        blocks[off] = b->b.bid;
+        data[off]   = b->b.meta;
+    }
+
+    // Construct the schematic NBT structure
+    nbt_t * Schematic = nbt_new(NBT_COMPOUND, "Schematic", 8,
+        nbt_new(NBT_SHORT, "Height", bp->sy),
+        nbt_new(NBT_SHORT, "Length", bp->sz),
+        nbt_new(NBT_SHORT, "Width", bp->sx),
+        nbt_new(NBT_STRING, "Materials", "Alpha"),
+        nbt_new(NBT_LIST, "Entities", 0),
+        nbt_new(NBT_LIST, "TileEntities", 0),
+        nbt_new(NBT_BYTE_ARRAY, "Blocks", blocks, size),
+        nbt_new(NBT_BYTE_ARRAY, "Data", data, size));
+
+    // Serialize the NBT data
+    ssize_t ssize = 2*size + 65536;
+    lh_create_num(uint8_t,sdata,ssize);
+    uint8_t *w = sdata;
+    nbt_write(&w, Schematic);
+    ssize_t ssize2 = w-sdata;
+    printf("Estimated %zd, serialized %zd\n",ssize,ssize2);
+
+    // Compress the data
+    ssize_t clen;
+    uint8_t * cdata = lh_gzip_encode(sdata, ssize2, &clen);
+    if (!cdata) return 0;
+    printf("Compressed: %zd\n",clen);
+
+    // Write to file
+    ssize_t wbytes = lh_save(fname, cdata, clen);
+    return wbytes>0;
 }
 
 bplan * bplan_sload(const char *name) {

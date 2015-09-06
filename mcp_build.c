@@ -1665,6 +1665,22 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Error;
     }
 
+    CMD(ssave) {
+        NEEDBP;
+        if (!words[0]) {
+            sprintf(reply, "You must specify a filename (w/o .schematic extension)");
+            goto Error;
+        }
+
+        if (!bplan_ssave(build.bp, words[0]))
+            sprintf(reply, "Error saving to %s.schematic",words[0]);
+        else
+            sprintf(reply, "Saved %zd blocks to %s.schematic\n",
+                    C(build.bp->plan),words[0]);
+
+        goto Error;
+    }
+
     CMD(sload) {
         if (!words[0]) {
             sprintf(reply, "You must specify a filename (w/o .schematic extension)");
