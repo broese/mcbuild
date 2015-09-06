@@ -509,6 +509,52 @@ bid_t get_base_material(bid_t mat) {
     return mat;
 }
 
+// select a block material that matches best a block derived from it,
+// e.g. Oak Woodplanks for Oak stairs or slabs
+bid_t get_base_block_material(bid_t mat) {
+    switch (mat.bid) {
+        case 0x2c: // Stone Slab
+        case 0x2b: // Double Slab
+            switch (mat.meta&0x7) {
+                case  0: return BLOCKTYPE(0x01,0); // Stone (plain)
+                case  1: return BLOCKTYPE(0x18,0); // Sandstone (plain)
+                case  2: return BLOCKTYPE(0x05,0); // Woodplanks (oak)
+                case  3: return BLOCKTYPE(0x04,0); // Cobblestone
+                case  4: return BLOCKTYPE(0x2d,0); // Brick
+                case  5: return BLOCKTYPE(0x62,0); // Stonebrick (plain)
+                case  6: return BLOCKTYPE(0x70,0); // Netherbrick
+                case  7: return BLOCKTYPE(0x9b,0); // Quartz block (plain)
+                default: assert(0);
+            }
+        case 0x7d: // Double Wooden Slab
+        case 0x7e: // Wooden Slab
+            return BLOCKTYPE(0x05,(mat.meta&0x7)); // Woodplanks of the same type
+
+        // wooden stairs
+        case 0x35: return BLOCKTYPE(0x05,0); // Woodplanks (oak)
+        case 0x86: return BLOCKTYPE(0x05,1); // Woodplanks (spruce)
+        case 0x87: return BLOCKTYPE(0x05,2); // Woodplanks (birch)
+        case 0x88: return BLOCKTYPE(0x05,3); // Woodplanks (jungle)
+        case 0xa3: return BLOCKTYPE(0x05,4); // Woodplanks (acacia)
+        case 0xa4: return BLOCKTYPE(0x05,5); // Woodplanks (dark oak)
+
+        // stone stairs
+        case 0x43: return BLOCKTYPE(0x04,0); // Cobblestone
+        case 0x6c: return BLOCKTYPE(0x2d,0); // Brick
+        case 0x6d: return BLOCKTYPE(0x62,0); // Stonebrick (plain)
+        case 0x72: return BLOCKTYPE(0x70,0); // Netherbrick
+        case 0x80: return BLOCKTYPE(0x18,0); // Sandstone (plain)
+        case 0x9c: return BLOCKTYPE(0x9b,0); // Quartz block (plain)
+
+        // red sandstone stairs, d-slabs, slabs
+        case 0xb4:
+        case 0xb5:
+        case 0xb6:
+            return BLOCKTYPE(0xb3,0); // Red Sandstone (plain)
+    }
+    return mat;
+}
+
 const char * get_mat_name(char *buf, int id, int meta) {
     if (id<0) {
         sprintf(buf, "-");
