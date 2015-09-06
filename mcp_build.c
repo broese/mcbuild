@@ -1500,14 +1500,15 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGREQ(size, NULL, sz);
         ARGMAT(NULL, mat, ad.mat);
         build_clear();
-        int base = 1;
+        int base = 1,ex=1;
         if (argflag(words, WORDLIST("none","n","bn"))) base=0;
         if (argflag(words, WORDLIST("minimal","min","m","bm"))) base=1;
         if (argflag(words, WORDLIST("full","f","bf"))) base=2;
-        build.bp = bplan_stairs(sz.x, sz.z, mat, base);
+        if (argflag(words, WORDLIST("exact","e"))) ex=-1;
+        build.bp = bplan_stairs(sz.x, sz.z, mat, base*ex);
         char **BASE = WORDLIST("none","minimal","full");
-        sprintf(reply, "Stairs width=%d floors=%d material=%s base=%s",
-                sz.x,sz.z,get_bid_name(buf, mat),BASE[base]);
+        sprintf(reply, "Stairs width=%d floors=%d material=%s base=%s%s",
+                sz.x,sz.z,get_bid_name(buf, mat),BASE[base],(ex<0)?" (exact)":"");
         goto Place;
     }
 

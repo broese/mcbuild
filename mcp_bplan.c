@@ -314,9 +314,12 @@ bplan * bplan_stairs(int32_t wd, int32_t hg, bid_t mat, int base) {
     // make stairs-type blocks face player
     if ((ITEMS[mat.bid].flags&I_STAIR)) mat.meta=3;
 
-    //TODO: different material for the stairs base,
-    //      or even automatically match material
-    //      (e.g. Sandstone stairs => Sandstone)
+    // unless -exact flag was specified, we choose a suitable material for the base
+    bid_t bmat = mat;
+    if (base > 0)
+        bmat = get_base_block_material(mat);
+    else
+        base = -base;
 
     int floor;
     for(floor=0; floor<hg; floor++) {
@@ -331,7 +334,7 @@ bplan * bplan_stairs(int32_t wd, int32_t hg, bid_t mat, int base) {
 
             if (floor!=(hg-1) && (base==2 || (base==1 && x==0))) {
                 b = lh_arr_new(BP);
-                b->b = mat;
+                b->b = bmat;
                 b->x = x;
                 b->z = -floor-1;
                 b->y = floor;
