@@ -777,6 +777,30 @@ int numrot(int from_dir, int to_dir) {
     return -1;
 }
 
+// calculate metas for a flipped version of a block
+
+int FLIP_MAP[][2] = {
+    [DIR_UP]    = { DIR_UP,    DIR_UP,    },
+    [DIR_DOWN]  = { DIR_DOWN,  DIR_DOWN,  },
+    [DIR_NORTH] = { DIR_NORTH, DIR_SOUTH, },
+    [DIR_SOUTH] = { DIR_SOUTH, DIR_NORTH, },
+    [DIR_EAST]  = { DIR_WEST,  DIR_EAST,  },
+    [DIR_WEST]  = { DIR_EAST,  DIR_WEST,  },
+};
+
+bid_t flip_meta(bid_t b, char mode) {
+    assert(mode != 'y'); //TODO: y-flipping
+
+    int8_t * mg = get_metagroup(b);
+    if (!mg) return b;
+
+    int mo = get_orientation(b);
+    int fmo = FLIP_MAP[mo][mode=='z'];
+    b.meta = mg[fmo-2];
+    return b;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
 

@@ -512,12 +512,14 @@ void bplan_flip(bplan *bp, char mode) {
         switch (mode) {
             case 'x':
                 b->x = -b->x;
+                b->b = flip_meta(b->b, 'x');
                 break;
             case 'y':
                 b->y = -b->y;
                 break;
             case 'z':
                 b->z = -b->z;
+                b->b = flip_meta(b->b, 'z');
                 break;
         }
     }

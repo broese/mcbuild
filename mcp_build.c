@@ -2839,6 +2839,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         }
         bplan_flip(build.bp, mode);
         sprintf(reply, "Buildplan flipped about %c axis",mode);
+        //TODO: normalize
         goto Place;
     }
 
