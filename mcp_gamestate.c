@@ -725,12 +725,10 @@ static void inv_shiftclick(int button, int16_t sid) {
                 break;
             }
         }
-
-        if (sid > 0) // except when we are crafting -
-            return;  // do not seek other slots to distribute items even if some remain
     }
 
-    // next try to find an empty slot
+    // if we have some items left after distributing these to partially
+    // filled stacked slots, try to put the rest into an empty slot
     for(i=start; i!=end && f->count>0; i+=inc) {
         if (mask & (1LL<<i)) {
             slot_t *t = &gs.inv.slots[i];
