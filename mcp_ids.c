@@ -71,7 +71,7 @@ const item_id ITEMS[] = {
     [0x29] = { "Gold Block" },
     [0x2a] = { "Iron Block" },
     [0x2b] = { "Double Slab", I_MTYPE,
-               { "Stone", "Sandstone", "Wood", "Cobble",
+               { "Stone", "Sandstone", "Stonewood", "Cobble",
                  "Brick", "Stone Brick", "Netherbrick", "Quartz",
                  "Smooth Stone", "Smooth Sandstone",
                  [15] = "Tile Quartz", }, },
@@ -153,9 +153,9 @@ const item_id ITEMS[] = {
     [0x6e] = { "Mycelium" },
     [0x6f] = { "Lilypad", I_MPOS },
 
-    [0x70] = { "Nether Brick" },
-    [0x71] = { "Nether Brick Fence" },
-    [0x72] = { "Nether Brick Stairs", I_MPOS|I_STAIR },         // P: dir
+    [0x70] = { "Netherbrick" },
+    [0x71] = { "Netherbrick Fence" },
+    [0x72] = { "Netherbrick Stairs", I_MPOS|I_STAIR },          // P: dir
     [0x73] = { "Nether Wart", I_STATE },                        // S: level
     [0x74] = { "Enchantment Table" },
     [0x75] = { "Brewing Stand", I_STATE },                      // S: bottles
@@ -493,7 +493,7 @@ int get_base_meta(int id, int meta) {
         case 0xa2: // Wood2
             return meta&3;
 
-        case 0x9b:
+        case 0x9b: // Quartz block
             return (meta>2) ? 2 : meta;
 
         default:
