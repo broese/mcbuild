@@ -310,21 +310,35 @@ cuboid_t export_cuboid_extent(extent_t ex) {
 #define DEBUG_INVENTORY 0
 
 int sameitem(slot_t *a, slot_t *b) {
-    //Note: we don't need to consider sameness of items like
+    // items with different item IDs are not same
+    // Note: we don't consider sameness of items like
     // 0x4b/0x4c (Redstone Torch on/off), since one type
     // may only appear as a block in the map, never as item
-
     if (a->item != b->item) return 0;
 
     // non-stackable items are never "same"
     if (ITEMS[a->item].flags&I_NSTACK) return 0;
 
-    // items w/o I_MTYPE do not use meta for type
-    if (!(ITEMS[a->item].flags&I_MTYPE)) return 1;
+    // items with meta/damage-coded type are not same if their meta values differ
+    if ((ITEMS[a->item].flags&I_MTYPE) && a->damage != b->damage) return 0;
 
-    // other bits may be active on the map, but in the inventory
-    // they will be same for the same material
-    return a->damage == b->damage;
+    // if both items have no NBT data - they are identical at this point
+    if (!a->nbt && !b->nbt) return 1;
+
+    // if both items have NBT data attached - it must be identical for items to be stackable
+    if (a->nbt && b->nbt) {
+        // compare NBT by serializing and comparing resulting binary data
+        //TODO: verify if this is sufficient or will we need a more sophisticated comparison?
+        uint8_t ba[65536], bb[65536], *wa = ba, *wb = bb;
+        nbt_write(&wa, a->nbt);
+        nbt_write(&wb, b->nbt);
+        ssize_t sa=wa-ba, sb=wb-bb;
+        if (sa!=sb) return 0; // different NBT length
+        return !memcmp(ba, bb, sa); // compare binary data
+    }
+    else
+        // one item has NBT, the other does not - they are different
+        return 0;
 }
 
 void dump_inventory() {
@@ -394,9 +408,6 @@ static void slot_transfer(slot_t *f, slot_t *t, int count) {
     }
 
     if (sameitem(f,t)) {
-        assert(!f->nbt);
-        assert(!t->nbt);
-
         t->count+=count;
         f->count-=count;
 
