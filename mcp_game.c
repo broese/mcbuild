@@ -467,7 +467,6 @@ void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, int dir) {
     ts->yaw = yaw;
     ts->pitch = DEFAULT_PITCH;
     ts->onground = gs.own.onground;
-    printf("--> "); dump_packet(s);
     queue_packet(s, sq);
 
     // packet to the server
@@ -478,8 +477,6 @@ void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, int dir) {
     tc->yaw = yaw;
     tc->pitch = DEFAULT_PITCH;
     tc->flags = 0;
-    printf("--> "); dump_packet(c);
-    printf("%.1f,%.1f,%.1f\n",tc->x,tc->z,tc->y);
     queue_packet(c, cq);
 }
 
@@ -619,10 +616,9 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"Hole radar is %s",opt.holeradar?"ON":"OFF");
         rpos = 2;
     }
-    else if (!strcmp(words[0],"face") || !strcmp(words[0],"turn")) {
-        int dir = player_direction();
-        if (mcparg_parse_direction(words+1, 0, reply, &dir))
-            face_direction(tq, bq, dir);
+    else if (!strcmp(words[0],"align")) {
+        face_direction(tq, bq, player_direction());
+        //TODO: should be possible to specify direction as argument
     }
     else if (!strcmp(words[0],"br") || !strcmp(words[0],"bright")) {
         int bright = -1;
