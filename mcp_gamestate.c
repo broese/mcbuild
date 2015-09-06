@@ -642,11 +642,11 @@ static void inv_shiftclick(int button, int16_t sid) {
 
     // set the bitmask suitable to the inventory area where the item can be moved
     int64_t mask;
-    if (sid>=9 && sid<=36) {
+    if (sid>=9 && sid<36) {
         // main area - try to move to the quickbar
         mask = SLOTS_QUICKBAR;
     }
-    else if (sid>36) {
+    else if (sid>=36) {
         // quickbar - try to move to the main area
         mask = SLOTS_MAINAREA;
     }
