@@ -42,9 +42,21 @@
 // forward declaration
 int query_auth_server();
 
-#define SERVER_ADDR "2b2t.org"
-#define SERVER_PORT 25565
+#define DEFAULT_BIND_ADDR   "0.0.0.0"
+#define DEFAULT_BIND_PORT   25565
+#define DEFAULT_REMOTE_ADDR "2b2t.org"
+#define DEFAULT_REMOTE_PORT 25565
 #define WEBSERVER_PORT 8080
+
+const char * o_appname;
+int          o_help = 0;
+char         o_baddr[256];
+uint16_t     o_bport;
+char         o_raddr[256];
+uint16_t     o_rport;
+
+uint32_t     bind_ip;
+uint32_t     remote_ip;
 
 #define ASYNC_THRESHOLD 500000
 #define NEAR_THRESHOLD 40000
@@ -135,10 +147,8 @@ struct {
     int comptr; // compression threshold, -1 means compression is disabled
 } mitm;
 
-char server_addr[1024]; // server address to connect to, dotted IP or domain name
-uint32_t server_ip;     // resolved server IP address
-uint16_t server_port;   // server port
-uint16_t bind_port;     // port to bind the proxy to locally
+uint32_t remote_addr;
+uint16_t remote_port;
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -322,8 +332,8 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
 
             // replace the server address in the message with our proper server
             // some servers refuse to accept connections for "127.0.0.1"
-            sprintf(pkt.serverAddr, "%s", server_addr);
-            pkt.serverPort = server_port;
+            sprintf(pkt.serverAddr, "%s", o_raddr);
+            pkt.serverPort = o_rport;
 
             write_varint(w, PID(CI_Handshake));
             w = encode_handshake(&pkt, w);
@@ -992,7 +1002,7 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
 ////////////////////////////////////////////////////////////////////////////////
 // Main loop
 
-int proxy_pump(uint32_t ip, uint16_t port) {
+int proxy_pump() {
     CLEAR(pa);
 
     CLEAR(mitm);
@@ -1000,7 +1010,7 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     mitm.cs = mitm.ms = -1;
 
     // Minecraft proxy server
-    int ss = lh_listen_tcp4_any(bind_port);
+    int ss = lh_listen_tcp4(bind_ip, o_bport);
     if (ss<0) return -1;
     lh_poll_add(&pa, ss, POLLIN, G_MCSERVER, NULL);
 
@@ -1030,7 +1040,7 @@ int proxy_pump(uint32_t ip, uint16_t port) {
 
         // handle connection requests on the MC server socket
         if ( (pd=lh_poll_getfirst(&pa, G_MCSERVER, POLLIN)) )
-            handle_server(pd->fd, ip, port);
+            handle_server(pd->fd, remote_ip, o_rport);
 
         // handle client- and server-side connection
         lh_conn_process(&pa, G_PROXY, handle_proxy);
@@ -1081,65 +1091,97 @@ int proxy_pump(uint32_t ip, uint16_t port) {
     return 0;
 }
 
-void test_stuff(int ac, char **av) {
-#if 0
-    pivot_t pv = { { 10, 70, 20 }, DIR_WEST };
-    size3_t  sz = { 100, 20, 50 };
+////////////////////////////////////////////////////////////////////////////////
 
-    extent_t ex = ps2extent(pv, sz);
-    printf("Extent from %d,%d,%d to %d,%d,%d\n",
-           ex.min.x,ex.min.y,ex.min.z,
-           ex.max.x,ex.max.y,ex.max.z);
+void print_usage() {
+    printf("Usage:\n"
+           "%s [-h] [-b [bindaddr:]bindport] [server[:port]]\n"
+           "  -h                      : print this help\n"
+           "  -b [bindaddr:]bindport] : address and port to bind the proxy socket to. Default: 127.0.0.1:25565\n"
+           "  [server[:port]]         : remote Minecraft server address and port. Default: 2b2t.org:25565\n",
+           o_appname,DEFAULT_BIND_ADDR, DEFAULT_BIND_PORT, DEFAULT_REMOTE_ADDR, DEFAULT_REMOTE_PORT);
+}
 
-    MCPacketQueue tq = {NULL,0}, bq = {NULL,0};
-    build_clear();
-    handle_command("bu floor 5,2 wool:yellow",&tq,&bq);
-    handle_command("bu dumpplan",&tq,&bq);
-    handle_command("bu ball 73 mat=49",&tq,&bq);
-    handle_command("bu trim y>=-1",&tq,&bq);
-    handle_command("bu hollow",&tq,&bq);
-    handle_command("bu trim y>=0",&tq,&bq);
-    handle_command("bu save dome73",&tq,&bq);
-#endif
+int parse_args(int ac, char **av) {
+    o_appname = av[0];
+
+    // set defaults
+    sprintf(o_baddr,"%s",DEFAULT_BIND_ADDR);
+    o_bport = DEFAULT_BIND_PORT;
+    sprintf(o_raddr,"%s",DEFAULT_REMOTE_ADDR);
+    o_rport = DEFAULT_REMOTE_PORT;
+    o_help = 0;
+
+    int opt,error=0,i;
+    char addr[256];
+    int port;
+
+    while ( (opt=getopt(ac,av,"b:h")) != -1 ) {
+        switch (opt) {
+            case 'h':
+                o_help = 1;
+                break;
+            case 'b': {
+                if (sscanf(optarg,"%[^:]:%d",addr,&port)==2) {
+                    sprintf(o_baddr, "%s", addr);
+                    o_bport = port;
+                }
+                else if (sscanf(optarg,"%d",&port)==1) {
+                    o_bport = port;
+                }
+                else if (sscanf(optarg,"%[^:]",addr)==1) {
+                    sprintf(o_baddr, "%s", addr);
+                }
+                else {
+                    printf("Failed to parse bind address/port \"%s\"\n",optarg);
+                    error++;
+                }
+                break;
+            }
+        }
+    }
+
+    if (av[optind]) {
+        if (sscanf(av[optind],"%[^:]:%d",addr,&port)==2) {
+            sprintf(o_raddr, "%s", addr);
+            o_rport = port;
+        }
+        else if (sscanf(av[optind],"%[^:]",addr)==1) {
+            sprintf(o_raddr, "%s", addr);
+        }
+        else if (sscanf(av[optind],"%d",&port)==1) {
+            o_bport = port;
+        }
+        else {
+            printf("Failed to parse bind address/port \"%s\"\n",av[optind]);
+            error++;
+        }
+    }
+
+    printf("Proxy address  :  %s:%d\n"
+           "Remote address :  %s:%d\n",
+           o_baddr,o_bport,o_raddr,o_rport);
 }
 
 int main(int ac, char **av) {
+    if (!parse_args(ac,av) || o_help) {
+        print_usage();
+        return !o_help;
+    }
 
-    //test_stuff(ac, av); return 0;
+    remote_ip = lh_dns_addr_ipv4(o_raddr);
+    if (remote_ip == 0xffffffff)
+        LH_ERROR(-1, "Failed to resolve remote server address %s",o_raddr);
+
+    bind_ip = lh_dns_addr_ipv4(o_baddr);
+    if (bind_ip == 0xffffffff)
+        LH_ERROR(-1, "Failed to resolve bind address %s",o_baddr);
+
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
-    // prepare default remote server address and port
-    sprintf(server_addr, "%s", SERVER_ADDR);
-    server_port = SERVER_PORT;
-    bind_port = SERVER_PORT;
-
-    if (av[1]) {
-        // if an argument is defined - use custom address and port
-        char arg_addr[4096];
-        int  arg_port;
-
-        int res = sscanf(av[1],"%[^:]:%d",arg_addr,&arg_port);
-        if (res==2) server_port = arg_port;
-        if (res>=1) sprintf(server_addr, "%s", arg_addr);
-        if (res<1)
-            LH_ERROR(-1, "Failed to parse remote server address and port from %s",av[1]);
-    }
-
-    if (av[2]) {
-        int port;
-        if (sscanf(av[2], "%d", &port)!=1)
-            LH_ERROR(-1, "Failed to parse bind port from %s", av[2]);
-
-        bind_port = port;
-    }
-
-    server_ip = lh_dns_addr_ipv4(server_addr);
-    if (server_ip == 0xffffffff)
-        LH_ERROR(-1, "Failed to obtain IP address for the server %s",server_addr);
-
     // start monitoring connection events
-    proxy_pump(server_ip, server_port);
+    proxy_pump();
 
     // cleanup openssl and curl
     ERR_remove_state(getpid());
