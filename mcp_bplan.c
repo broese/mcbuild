@@ -526,6 +526,37 @@ void bplan_flip(bplan *bp, char mode) {
     }
 }
 
+// flip the buildplan across one of the axis
+void bplan_tilt(bplan *bp, char mode) {
+    int i;
+    int32_t x,y,z;
+    for(i=0; i<BPC; i++) {
+        blkr *b = BPP+i;
+        switch (mode) {
+            case 'x':
+                y = b->z;
+                z = -b->y;
+                b->y = y;
+                b->z = z;
+                //TODO: support meta correction for x/z-tilt if possible
+                break;
+            case 'y':
+                x = -b->z;
+                z = b->x;
+                b->x = x;
+                b->z = z;
+                b->b = rotate_meta(b->b, 1);
+                break;
+            case 'z':
+                x = b->y;
+                y = -b->x;
+                b->x = x;
+                b->y = y;
+                break;
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 int bplan_save(bplan *bp, const char *name) {

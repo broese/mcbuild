@@ -2843,6 +2843,27 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
+    CMD(tilt) {
+        NEEDBP;
+        char mode='x';
+        if (words[0]) {
+            switch (words[0][0]) {
+                case 'x':
+                case 'y':
+                case 'z':
+                    mode = words[0][0];
+                    break;
+                default:
+                    sprintf(reply, "Usage: #build tilt [x|y|z]");
+                    goto Error;
+            }
+        }
+        bplan_tilt(build.bp, mode);
+        sprintf(reply, "Buildplan tilted about %c axis",mode);
+        //TODO: normalize
+        goto Place;
+    }
+
 #if 0
     else if (!strcmp(cmd, "flip")) {
         build_flip(words, reply);
