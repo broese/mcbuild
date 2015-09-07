@@ -70,7 +70,7 @@ bplan * bplan_stairs(int32_t wd, int32_t hg, bid_t mat, int base);
 #define TRIM_ZL   8
 #define TRIM_ZG   9
 
-int  bplan_hollow(bplan *bp, int flat);
+int  bplan_hollow(bplan *bp, int flat, int opaque);
 void bplan_extend(bplan *bp, int ox, int oz, int oy, int count);
 int  bplan_replace(bplan *bp, bid_t mat1, bid_t mat2);
 int  bplan_trim(bplan *bp, int type, int32_t value);

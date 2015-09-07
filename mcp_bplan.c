@@ -347,7 +347,7 @@ bplan * bplan_stairs(int32_t wd, int32_t hg, bid_t mat, int base) {
 ////////////////////////////////////////////////////////////////////////////////
 // Buildplan manipulation
 
-int bplan_hollow(bplan *bp, int flat) {
+int bplan_hollow(bplan *bp, int flat, int opaque) {
     assert(bp);
     bplan_update(bp);
 
@@ -371,9 +371,12 @@ int bplan_hollow(bplan *bp, int flat) {
         int32_t off_z = b->z-bp->minz+1;
         int32_t off   = off_x+off_z*(bp->sx+2)+off_y*size_xz;
 
-        // TODO: set the blocks not occupying the whole block (like slabs,
-        //       stairs, torches, etc) as empty as they don't seal the surface
-        v[off] = b->b.bid ? 1 : 0;
+        if (b->b.bid) {
+            // block is present
+            v[off] = 1;
+            if (!opaque || (ITEMS[b->b.bid].flags&I_OPAQUE))
+                v[off] += 2; // Bit 1 - block is considered opaque
+        }
     }
 
     // mark the blocks completely surrounded by other blocks for removal
@@ -383,11 +386,11 @@ int bplan_hollow(bplan *bp, int flat) {
         for(z=1; z<bp->sz+1; z++) {
             for(x=1; x<bp->sx+1; x++) {
                 int32_t off = off_y + x + z*(bp->sx+2);
-                if (v[off] &&
-                    v[off-1] && v[off+1] &&
-                    v[off-(bp->sx+2)] && v[off+(bp->sx+2)] &&
-                    ((v[off-size_xz] && v[off+size_xz]) || flat) )
-                    v[off] = -1;
+                if ( (v[off]&1) &&
+                     (v[off-1]&2) && (v[off+1]&2) &&
+                     (v[off-(bp->sx+2)]&2) && (v[off+(bp->sx+2)]&2) &&
+                     (((v[off-size_xz]&2) && (v[off+size_xz]&2))||flat) )
+                     v[off]&=0xfe; // disable "present" bit
             }
         }
     }
@@ -405,7 +408,7 @@ int bplan_hollow(bplan *bp, int flat) {
         int32_t off_z = b->z-bp->minz+1;
         int32_t off   = off_x+off_z*(bp->sx+2)+off_y*size_xz;
 
-        if (v[off] == 1) {
+        if (v[off]&1) {
             blkr *k = lh_arr_new(GAR(keep));
             *k = *b;
         }

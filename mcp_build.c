@@ -1450,7 +1450,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGMAT(NULL, mat, ad.mat);
         build_clear();
         build.bp = bplan_disk(sz.x, mat);
-        bplan_hollow(build.bp, 1);
+        bplan_hollow(build.bp, 1, 0);
         sprintf(reply, "Ring diam=%d material=%s",sz.x,get_bid_name(buf, mat));
         goto Place;
     }
@@ -1461,7 +1461,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGMAT(NULL, mat, ad.mat);
         build_clear();
         build.bp = bplan_ball(sz.x, mat);
-        bplan_hollow(build.bp, 0);
+        bplan_hollow(build.bp, 0, 0);
         sprintf(reply, "Ball diam=%d material=%s",sz.x,get_bid_name(buf, mat));
         goto Place;
     }
@@ -1471,7 +1471,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGMAT(NULL, mat, ad.mat);
         build_clear();
         build.bp = bplan_floor(sz.x, sz.z, mat);
-        bplan_hollow(build.bp, 1);
+        bplan_hollow(build.bp, 1, 0);
         sprintf(reply, "Square size=%dx%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
         goto Place;
     }
@@ -1525,7 +1525,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     CMD(hollow) {
         NEEDBP;
-        int removed = bplan_hollow(build.bp, argflag(words, WORDLIST("flat","2d","2","f","xz")));
+        int flat = argflag(words, WORDLIST("flat","2d","2","f","xz"));
+        int opaque = !argflag(words, WORDLIST("opaque","o"));
+        int removed = bplan_hollow(build.bp, flat, opaque);
         sprintf(reply, "Removed %d blocks, kept %zd",removed,C(build.bp->plan));
         goto Place;
     }
