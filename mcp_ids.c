@@ -514,6 +514,12 @@ int get_base_meta(int id, int meta) {
 
 bid_t get_base_material(bid_t mat) {
     assert(mat.bid <0x100);
+
+    // material for doubleslabs is the slab with the next block ID and same meta
+    if (ITEMS[mat.bid].flags&I_DSLAB) mat.bid++;
+
+    //TODO: support other block types where the block and item IDs differ
+
     mat.meta = get_base_meta(mat.bid, mat.meta);
     return mat;
 }
