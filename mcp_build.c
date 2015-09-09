@@ -594,6 +594,14 @@ void build_update() {
         // placed - this way we can support "empty" blocks like water in our buildplan
         b->empty  = ISEMPTY(bl.bid) && !b->placed;
 
+        if (it->flags&I_DSLAB) {
+            // we want to place doubleslab here and the block contains
+            // a suitable slab - mark it as empty, so we can place the second slab
+            bid_t bm = get_base_material(b->b);
+            if (bm.bid==bl.bid && bm.meta==(bl.meta&7))
+                b->empty = 1;
+        }
+
         // determine which neighbors do we have
         b->n_yp = !ISEMPTY(world[OFF(b->x,b->z,b->y+1)].bid);
         b->n_yn = !ISEMPTY(world[OFF(b->x,b->z,b->y-1)].bid);
@@ -610,6 +618,8 @@ void build_update() {
         lh_clear_obj(b->dots);
 
         //TODO: provide support for ALL position-dependent blocks
+        //TODO: when placing a double slab, prevent obstruction - place the slab further away first
+        //TODO: take care when placing a slab over a slab - prevent a doubleslab creation
         if (it->flags&I_SLAB) {
             // Slabs
             if (b->b.meta&8) // upper half placement

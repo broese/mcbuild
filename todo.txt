@@ -16,7 +16,7 @@
 
 = build process =
 
-- placement of double-slabs
++ placement of double-slabs
 - add delay between single slab placements to avoid accidental double-slab placement
 - better way to handle block repeated placements
   - verify if the block placement is confirmed
@@ -24,7 +24,7 @@
   - no turning to target
   - extended reach
   - no need for supporting blocks
-- support placement for blocks that have a differing item ID in the inventory, e.g. doors, cauldrons
+* support placement for blocks that have a differing item ID in the inventory, e.g. doors, cauldrons
 
 = buildplan manipulation =
 
