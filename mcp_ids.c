@@ -72,7 +72,7 @@ const item_id ITEMS[] = {
     [0x28] = { "Red Mushroom" },
     [0x29] = { "Gold Block",            I_OPAQUE },
     [0x2a] = { "Iron Block",            I_OPAQUE },
-    [0x2b] = { "Double Slab",           I_MTYPE|I_OPAQUE,
+    [0x2b] = { "Double Slab",           I_MTYPE|I_DSLAB|I_OPAQUE,
                { "Stone", "Sandstone", "Stonewood", "Cobble",
                  "Brick", "Stone Brick", "Netherbrick", "Quartz",
                  "Smooth Stone", "Smooth Sandstone",
@@ -168,7 +168,7 @@ const item_id ITEMS[] = {
     [0x7a] = { "Dragon Egg" },
     [0x7b] = { "Redstone Lamp",         I_OPAQUE },
     [0x7c] = { "Redstone Lamp (lit)",   I_OPAQUE },
-    [0x7d] = { "Wooden Double Slab",    I_MTYPE|I_OPAQUE,
+    [0x7d] = { "Wooden Double Slab",    I_MTYPE|I_DSLAB|I_OPAQUE,
                MNAMES_WOOD },
     [0x7e] = { "Wooden Slab",           I_MTYPE|I_MPOS|I_SLAB,          // P: up/down
                MNAMES_WOOD },
@@ -241,7 +241,7 @@ const item_id ITEMS[] = {
     [0xb3] = { "Red Sandstone",         I_MTYPE|I_OPAQUE,
                { NULL, "Chiseled", "Smooth"} },
     [0xb4] = { "Red Sandstone Stairs",  I_MPOS|I_STAIR },               // P: dir
-    [0xb5] = { "Red Sandstone D-Slab",  I_MTYPE|I_OPAQUE,
+    [0xb5] = { "Red Sandstone D-Slab",  I_MTYPE|I_DSLAB|I_OPAQUE,
                { [8]="Chiseled" }, },
     [0xb6] = { "Red Sandstone Slab",    I_MPOS|I_SLAB },                // P: up/down
     [0xb7] = { "Spruce Fence Gate",     I_MPOS|I_STATE },               // P: dir, S: open/close
