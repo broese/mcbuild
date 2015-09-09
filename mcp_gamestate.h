@@ -136,6 +136,7 @@ bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
                       int32_t yl, int32_t ys, bid_t *data);
 
 cuboid_t export_cuboid_extent(extent_t ex);
+bid_t get_block_at(int32_t x, int32_t z, int32_t y);
 
 int player_direction();
 int sameitem(slot_t *a, slot_t *b);

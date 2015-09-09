@@ -212,6 +212,8 @@ static void modify_blocks(int32_t X, int32_t Z, blkrec *blocks, int32_t count) {
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
                       int32_t yl, int32_t ys, bid_t *data) {
 
@@ -302,6 +304,15 @@ cuboid_t export_cuboid_extent(extent_t ex) {
     }
 
     return c;
+}
+
+// get just a single block value at given coordinates
+bid_t get_block_at(int32_t x, int32_t z, int32_t y) {
+    int idx = find_chunk(gs.world,x>>4,z>>4);
+    gschunk *gc = gs.world->chunks[idx];
+    if (!gc) return BLOCKTYPE(0,0);
+
+    return gc->blocks[y*256+(z&15)*16+(x&15)];
 }
 
 ////////////////////////////////////////////////////////////////////////////////
