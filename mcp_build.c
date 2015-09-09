@@ -1016,6 +1016,18 @@ static void brec_blockplace(MCPacket *pkt) {
 
     //printf("Recording block at %d,%d,%d\n",x,y,z);
 
+    // check if the placed block will become a double slab
+    if (ITEMS[b.bid].flags&I_SLAB) {
+        bid_t on = get_block_at(tpkt->bpos.x,tpkt->bpos.z,tpkt->bpos.y);
+        if (get_base_material(b).raw==get_base_material(on).raw &&
+            ((tpkt->face==DIR_UP && (on.meta&8)) ||
+             (tpkt->face==DIR_DOWN && !(on.meta&8)) ) ) {
+                y = tpkt->bpos.y;
+                b.bid--; // the doubleslab's block ID is 1 below the
+                         // corresponding slab, meta is the same
+        }
+    }
+
     // verify if this block is already in the pending queue
     int i;
     for(i=0; i<build.nbrp; i++) {
