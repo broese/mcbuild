@@ -272,6 +272,15 @@ typedef struct {
     uint8_t  pitch;
 } SP_SoundEffect_pkt;
 
+// 0x2d
+typedef struct {
+    uint8_t  wid;
+    char     wtype[256];
+    char    *title;
+    uint8_t  nslots;
+    uint32_t eid;   // horse's ID - only used if the window type is a EntityHorse
+} SP_OpenWindow_pkt;
+
 // 0x2e
 typedef struct {
     uint8_t wid;
@@ -495,6 +504,7 @@ typedef struct {
         PKT(SP_Explosion);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
+        PKT(SP_OpenWindow);
         PKT(SP_CloseWindow);
         PKT(SP_SetSlot);
         PKT(SP_ConfirmTransaction);

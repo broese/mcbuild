@@ -1166,6 +1166,39 @@ DUMP_BEGIN(SP_SoundEffect) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x2d SP_OpenWindow
+
+DECODE_BEGIN(SP_OpenWindow,_1_8_1) {
+    Pchar(wid);
+    Pstr(wtype);
+    Rstr(title);
+    tpkt->title = strdup(title);
+    Pshort(nslots);
+    if (!strcmp(tpkt->wtype, "EntityHorse")) {
+        Pint(eid);
+    }
+} DECODE_END;
+
+ENCODE_BEGIN(SP_OpenWindow,_1_8_1) {
+    Wchar(wid);
+    Wstr(wtype);
+    Wstr(title);
+    Wshort(nslots);
+    if (!strcmp(tpkt->wtype, "EntityHorse")) {
+        Wint(eid);
+    }
+} ENCODE_END;
+
+DUMP_BEGIN(SP_OpenWindow) {
+    printf("wid=%d wtype=%s title=%s nslots=%d eid=%d",
+           tpkt->wid,tpkt->wtype,tpkt->title,tpkt->nslots,tpkt->eid);
+} DUMP_END;
+
+FREE_BEGIN(SP_OpenWindow) {
+    lh_free(tpkt->title);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x2e SP_CloseWindow
 
 DECODE_BEGIN(SP_CloseWindow,_1_8_1) {
@@ -1559,6 +1592,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_Explosion,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
+        SUPPORT_DEF (SP_OpenWindow,_1_8_1),
         SUPPORT_DE  (SP_CloseWindow,_1_8_1),
         SUPPORT_DEF (SP_SetSlot,_1_8_1),
         SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
