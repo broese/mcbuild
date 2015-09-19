@@ -500,6 +500,7 @@ int get_base_meta(int id, int meta) {
         case 0x12: // Leaves
         case 0xa1: // Leaves2
         case 0xa2: // Wood2
+        case 0xaa: // Haybales
             return meta&3;
 
         case 0x9b: // Quartz block
