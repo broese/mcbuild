@@ -272,6 +272,11 @@ typedef struct {
     uint8_t  pitch;
 } SP_SoundEffect_pkt;
 
+// 0x2e
+typedef struct {
+    uint8_t wid;
+} SP_CloseWindow_pkt;
+
 // 0x2f
 typedef struct {
     uint8_t  wid;
@@ -490,6 +495,7 @@ typedef struct {
         PKT(SP_Explosion);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
+        PKT(SP_CloseWindow);
         PKT(SP_SetSlot);
         PKT(SP_ConfirmTransaction);
         PKT(SP_UpdateBlockEntity);

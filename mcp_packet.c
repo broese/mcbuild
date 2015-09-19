@@ -1166,6 +1166,21 @@ DUMP_BEGIN(SP_SoundEffect) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x2e SP_CloseWindow
+
+DECODE_BEGIN(SP_CloseWindow,_1_8_1) {
+    Pchar(wid);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_CloseWindow,_1_8_1) {
+    Wchar(wid);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_CloseWindow) {
+    printf("wid=%d", tpkt->wid);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x2f SP_SetSlot
 
 DECODE_BEGIN(SP_SetSlot,_1_8_1) {
@@ -1544,6 +1559,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_Explosion,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
+        SUPPORT_DE  (SP_CloseWindow,_1_8_1),
         SUPPORT_DEF (SP_SetSlot,_1_8_1),
         SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),
