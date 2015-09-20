@@ -26,12 +26,15 @@
   - no need for supporting blocks
 * support placement for blocks that have a differing item ID in the inventory, e.g. doors, cauldrons
 
-= buildplan manipulation =
+= buildplan manipulation/import =
 
 - auto-supports for disconnected blocks
 + export to schematic
 + fix trim issue - does not handle x/z correctly
 + hollow-2D
+- import PNG for pixel art, or convert to bplan with an external tool
+  - allow for different block sets
++ import/export to CSV
 
 = inventory handling =
 
@@ -53,8 +56,6 @@
 
 - map marker (using a beacon beam for example)
 - turn to target when attacking
-- import PNG for pixel art, or convert to bplan with an external tool
-  - allow for different block sets
 - autowalking to specific coordinates
 - autoenchant
 - search for blocks

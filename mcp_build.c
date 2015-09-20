@@ -1724,6 +1724,41 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Error;
     }
 
+    CMD(csvsave) {
+        NEEDBP;
+        if (!words[0]) {
+            sprintf(reply, "You must specify a filename (w/o .csv extension)");
+            goto Error;
+        }
+
+        if (!bplan_csvsave(build.bp, words[0]))
+            sprintf(reply, "Error saving to %s.csv",words[0]);
+        else
+            sprintf(reply, "Saved %zd blocks to %s.csv\n",
+                    C(build.bp->plan),words[0]);
+
+        goto Error;
+    }
+
+    CMD(csvload) {
+        if (!words[0]) {
+            sprintf(reply, "You must specify a filename (w/o .csv extension)");
+            goto Error;
+        }
+
+        bplan *bp = bplan_csvload(words[0]);
+
+        if (bp) {
+            build_clear();
+            build.bp = bp;
+            sprintf(reply, "Loaded %zd blocks from %s.csv\n", C(bp->plan),words[0]);
+            goto Place;
+        }
+
+        sprintf(reply, "Failed to load %s.csv\n",words[0]);
+        goto Error;
+    }
+
     CMD(rec) {
         char *rcmd = words[0];
         if (!rcmd || !strcmp(rcmd, "start")) {

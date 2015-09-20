@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <errno.h>
 
 #include <lh_bytes.h>
 #include <lh_files.h>
@@ -833,6 +834,83 @@ bplan * bplan_sload(const char *name) {
 
     return bp;
 }
+
+int bplan_csvsave(bplan *bp, const char *name) {
+    assert(bp);
+    bplan_update(bp);
+
+    char fname[256];
+    sprintf(fname, "csv/%s.csv", name);
+
+    FILE * csv = fopen(fname, "w");
+    if (!csv) {
+        printf("Error opening %s for writing : %s\n",fname, strerror(errno));
+        return 0;
+    }
+    fprintf(csv,"x,y,z,bid,meta\n");
+
+    int i;
+    for(i=0; i<BPC; i++) {
+        blkr *b = BPP+i;
+        if (fprintf(csv, "%d,%d,%d,%d,%d\n",b->x,b->y,b->z,b->b.bid,b->b.meta)<0) {
+            printf("Error writing to %s : %s\n",fname, strerror(errno));
+            fclose(csv);
+            return 0;
+        }
+    }
+    fclose(csv);
+
+    return 1;
+}
+
+bplan * bplan_csvload(const char *name) {
+    char fname[256];
+    sprintf(fname, "csv/%s.csv", name);
+
+    FILE * csv = fopen(fname, "r");
+    if (!csv) {
+        printf("Error opening %s for reading : %s\n",fname, strerror(errno));
+        return 0;
+    }
+
+    char buf[4096];
+
+    // skip header
+    if (!fgets(buf, sizeof(buf), csv)) {
+        printf("Error reading from %s : %s\n",fname, strerror(errno));
+        fclose(csv);
+        return NULL;
+    }
+
+    // read blocks
+    lh_create_obj(bplan, bp);
+    while(1) {
+        char * r = fgets(buf, sizeof(buf), csv);
+        if (!r) {
+            if (feof(csv)) break;
+            printf("Error reading from %s : %s\n",fname, strerror(errno));
+            lh_free(bp);
+            fclose(csv);
+            return NULL;
+        }
+
+        blkr *b = lh_arr_new(BP);
+        int bid,meta;
+        if (sscanf(r, "%d,%d,%d,%d,%d", &b->x, &b->y, &b->z, &bid, &meta)!=5) {
+            printf("Error parsing line %s from %s\n",r,fname);
+            lh_free(bp);
+            fclose(csv);
+            return NULL;
+        }
+        b->b.bid = bid;
+        b->b.meta = meta;
+    }
+    fclose(csv);
+
+    bplan_update(bp);
+    return bp;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
