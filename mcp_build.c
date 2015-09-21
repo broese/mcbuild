@@ -1216,7 +1216,8 @@ void build_dump_queue() {
 ////////////////////////////////////////////////////////////////////////////////
 // In-game preview
 
-#define PREVIEW_BLOCK BLOCKTYPE(0x98,0)
+//#define PREVIEW_BLOCK BLOCKTYPE(0x98,0)
+#define PREVIEW_BLOCK BLOCKTYPE(83,0)
 
 #define PREVIEW_REMOVE  0
 #define PREVIEW_MISSING 1
