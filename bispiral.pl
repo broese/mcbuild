@@ -8,22 +8,24 @@ my $PI= 4*atan2(1, 1);
 
 sub hollow_2d {
     my $s = scalar @_;
-    my ($i,$j);
+    my $b;
 
-    for($i=0; $i<$s; $i++) {
-        my $b=$_[$i];
-        for($j=0; $j<$s; $j++) {
-            my $n=$_[$j];
-            $$n{nw}=1 if ($$b{x}==$$n{x}-1 && $$b{z}==$$n{z});
-            $$n{ne}=1 if ($$b{x}==$$n{x}+1 && $$b{z}==$$n{z});
-            $$n{nn}=1 if ($$b{z}==$$n{z}-1 && $$b{x}==$$n{x});
-            $$n{ns}=1 if ($$b{z}==$$n{z}+1 && $$b{x}==$$n{x});
+    my $field = {};
+
+    foreach $b (@_) {
+        $$field{$$b{x}}{$$b{z}} = 'a';
+    }
+
+    foreach $b (@_) {
+        my $x = $$b{x};
+        my $z = $$b{z};
+        if ( defined ($$field{$x-1}{$z}) && defined ($$field{$x+1}{$z}) &&
+             defined ($$field{$x}{$z-1}) && defined ($$field{$x}{$z+1}) ) {
+            $$field{$x}{$z} = 'b';
         }
     }
 
-    return 
-      map { delete $$_{nw}; delete $$_{ne}; delete $$_{nn}; delete $$_{ns}; $_ }
-      grep { !($$_{nw} && $$_{ne} && $$_{nn} && $$_{ns}) } @_;
+    return grep { $$field{$$_{x}}{$$_{z}} eq 'a' } @_;
 }
 
 sub make_disk {
@@ -139,6 +141,10 @@ foreach (@B) {
 export("csv/twirl2.csv",values %J);
 
 __END__
+
+# Example for 2D-hollowing a disk
+my @disk = hollow_2d(make_disk(3.3));
+foreach (@disk) { print "$$_{x},$$_{z}\n"; }
 
 # big pile of melons :)
 my $nr = defined($ARGV[2]) ? $ARGV[2] : 2;
