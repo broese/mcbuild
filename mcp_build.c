@@ -1234,6 +1234,7 @@ void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq, int mode) {
     int i,j;
     for(i=0; i<C(build.task); i++) {
         blk *b = &P(build.task)[i];
+        if (build.limit && b->y>build.limit) continue;
         if (b->placed) continue;
 
         int32_t X=b->x>>4;
