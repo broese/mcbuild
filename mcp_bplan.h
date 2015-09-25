@@ -88,3 +88,4 @@ int bplan_ssave(bplan *bp, const char *name);
 bplan * bplan_sload(const char *name);
 int bplan_csvsave(bplan *bp, const char *name);
 bplan * bplan_csvload(const char *name);
+bplan * bplan_pngload(const char *name, const char *setname);

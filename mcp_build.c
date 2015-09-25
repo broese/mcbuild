@@ -1761,6 +1761,25 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Error;
     }
 
+    CMD2(pngload,png) {
+        if (!words[0]) {
+            sprintf(reply, "You must specify a filename (w/o .png extension)");
+            goto Error;
+        }
+
+        bplan *bp = bplan_pngload(words[0],words[1]);
+
+        if (bp) {
+            build_clear();
+            build.bp = bp;
+            sprintf(reply, "Loaded %zd blocks from %s.png\n", C(bp->plan),words[0]);
+            goto Place;
+        }
+
+        sprintf(reply, "Failed to load %s.png\n",words[0]);
+        goto Error;
+    }
+
     CMD(rec) {
         char *rcmd = words[0];
         if (!rcmd || !strcmp(rcmd, "start")) {

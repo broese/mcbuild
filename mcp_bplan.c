@@ -4,6 +4,8 @@
 #include <lh_bytes.h>
 #include <lh_files.h>
 #include <lh_compress.h>
+#include <lh_image.h>
+#include <lh_debug.h>
 
 #include "mcp_bplan.h"
 #include "mcp_ids.h"
@@ -908,6 +910,104 @@ bplan * bplan_csvload(const char *name) {
     fclose(csv);
 
     bplan_update(bp);
+    return bp;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+typedef struct {
+    int32_t color;
+    bid_t    b;
+} cmap_t;
+
+cmap_t CMAP_WOOL[] = {
+    { 0xDDDDDD, BLOCKTYPE(35,0) },
+    { 0xDB7D3E, BLOCKTYPE(35,1) },
+    { 0xB350BC, BLOCKTYPE(35,2) },
+    { 0x6B8AC9, BLOCKTYPE(35,3) },
+    { 0xB1A627, BLOCKTYPE(35,4) },
+    { 0x41AE38, BLOCKTYPE(35,5) },
+    { 0xD08499, BLOCKTYPE(35,6) },
+    { 0x404040, BLOCKTYPE(35,7) },
+    { 0x9AA1A1, BLOCKTYPE(35,8) },
+    { 0x2E6E89, BLOCKTYPE(35,9) },
+    { 0x7E3DB5, BLOCKTYPE(35,10) },
+    { 0x2E388D, BLOCKTYPE(35,11) },
+    { 0x4F321F, BLOCKTYPE(35,12) },
+    { 0x35461B, BLOCKTYPE(35,13) },
+    { 0x963430, BLOCKTYPE(35,14) },
+    { 0x191616, BLOCKTYPE(35,15) },
+    { 0x000000, BLOCKTYPE(0,0) },   // terminator
+};
+
+typedef struct {
+    const char * name;
+    cmap_t * set;
+} setname;
+
+setname SETS[] = {
+    { "wool", CMAP_WOOL },
+    { NULL, NULL },
+};
+
+static inline bid_t match_color(uint32_t c, cmap_t * set) {
+    c &= 0x00ffffff;
+    int i, bi=0, bdiff=0x7fffffff;
+
+    for(i=0; set[i].b.bid; i++) {
+        uint32_t mc = set[i].color;
+        int rd = ((c>>16)&0xff)-((mc>>16)&0xff);
+        int gd = ((c>>8)&0xff) -((mc>>8)&0xff);
+        int bd = (c&0xff)      -(mc&0xff);
+        int diff = rd*rd+gd*gd+bd*bd;
+        if (diff < bdiff) { bi = i; bdiff = diff; }
+    }
+
+    return set[bi].b;
+}
+
+bplan * bplan_pngload(const char *name, const char *setname) {
+    char fname[256];
+    sprintf(fname, "png/%s.png", name);
+
+    int i;
+    cmap_t *set=NULL;
+    if (!setname || !setname[0]) {
+        set=CMAP_WOOL;
+    }
+    else {
+        for (i=0; SETS[i].name; i++) {
+            if (!strcasecmp(setname, SETS[i].name)) {
+                set = SETS[i].set;
+                break;
+            }
+        }
+        if (!set) LH_ERROR(NULL, "No such color set \"%s\"", setname);
+    }
+
+    lhimage *img = import_png_file(fname);
+    if (!img) LH_ERROR(NULL, "Failed to open %s as PNG", fname);
+
+    lh_create_obj(bplan, bp);
+    int x,y;
+
+    for (y=0; y<img->height; y++) {
+        int yy=img->height-y-1;
+        uint32_t *row = img->data+yy*img->stride;
+
+        for (x=0; x<img->width; x++) {
+            uint32_t pixel = row[x];
+            if (pixel&0xff000000) continue; // skip transparent pixels
+            bid_t mat = match_color(pixel, set);
+
+            blkr *b = lh_arr_new(BP);
+            b->x = x;
+            b->y = y;
+            b->z = 0;
+            b->b=mat;
+        }
+    }
+
     return bp;
 }
 
