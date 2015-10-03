@@ -108,37 +108,45 @@ sub polar_cut {
 }
 
 my @B=();
-for(my $y=28; $y<120; $y++) {
-    my $r = (sin(1/($y/70))-0.6)*22+8;
-    my @disk = map { $$_{y}=$y-28; $_ } make_disk($r);
+my $st = 28;
+for(my $y=$st; $y<$st+120; $y++) {
+#    my $r = sin(1/($y/30)-0.6)*10;
+    my $r = (sin(1/($y/60))-0.6)*22+8;
+    my @disk = map { $$_{y}=$y-$st; $_ } make_disk($r);
     my @hd = hollow_2d(@disk);
-    my $wd = $r/30;
-    my $ph = ($y-28)/100;
+    my $wd = $r/(30);
+    my $ph = ($y-$st)/120;
     my @cut = polar_cut(2, $wd, $ph, @hd);
     push @B, @cut;
 }
+# "White", "Orange", "Magenta", "LBlue", "Yellow", "Lime", "Pink", "Grey",
+# "LGrey", "Cyan", "Purple", "Blue",     "Brown", "Green", "Red", "Black"
+
+my $CA = 0;
+my $CB = 11;
+my $CC = 3;
 
 my %J = ();
 foreach (@B) {
     my $id = "$$_{x},$$_{z},$$_{y}";
     if (defined $J{$id}) {
-        $J{$id}{meta} = 10; # purple
+        $J{$id}{meta} = $CC;
     }
     else {
-        $J{$id} = { x=>$$_{x}, z=>$$_{z}, y=>$$_{y}, meta=>11, bid=>0x5f }; # blue
+        $J{$id} = { x=>$$_{x}, z=>$$_{z}, y=>$$_{y}, meta=>$CA, bid=>0x5f };
     }
 
     my $nz = -$$_{z};
     my $id2 = "$$_{x},$nz,$$_{y}";
     if (defined $J{$id2}) {
-        $J{$id2}{meta} = 10; # purple
+        $J{$id2}{meta} = $CC;
     }
     else {
-        $J{$id2} = { x=>$$_{x}, z=>$nz, y=>$$_{y}, meta=>14, bid=>0x5f }; # red
+        $J{$id2} = { x=>$$_{x}, z=>$nz, y=>$$_{y}, meta=>$CB, bid=>0x5f };
     }
 }
 
-export("csv/twirl2.csv",values %J);
+export("csv/twirl3.csv",values %J);
 
 __END__
 
