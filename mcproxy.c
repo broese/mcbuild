@@ -44,6 +44,7 @@ int query_auth_server();
 
 #define DEFAULT_BIND_ADDR   "0.0.0.0"
 #define DEFAULT_BIND_PORT   25565
+#define DEFAULT_WEBSERVER_PORT   8080
 #define DEFAULT_REMOTE_ADDR "2b2t.org"
 #define DEFAULT_REMOTE_PORT 25565
 #define WEBSERVER_PORT 8080
@@ -52,10 +53,13 @@ const char * o_appname;
 int          o_help = 0;
 char         o_baddr[256];
 uint16_t     o_bport;
+char         o_waddr[256];
+uint16_t     o_wport;
 char         o_raddr[256];
 uint16_t     o_rport;
 
 uint32_t     bind_ip;
+uint32_t     web_ip;
 uint32_t     remote_ip;
 
 #define ASYNC_THRESHOLD 500000
@@ -1015,7 +1019,7 @@ int proxy_pump() {
     lh_poll_add(&pa, ss, POLLIN, G_MCSERVER, NULL);
 
     // fake session.minecraft.com web server
-    int ws = lh_listen_tcp4_any(WEBSERVER_PORT);
+    int ws = lh_listen_tcp4(web_ip, o_wport);
     if (ws<0) return -1;
     lh_poll_add(&pa, ws, POLLIN, G_WEBSERVER, NULL);
 
@@ -1098,6 +1102,7 @@ void print_usage() {
            "%s [-h] [-b [bindaddr:]bindport] [server[:port]]\n"
            "  -h                      : print this help\n"
            "  -b [bindaddr:]bindport] : address and port to bind the proxy socket to. Default: 127.0.0.1:25565\n"
+           "  -w [bindaddr:]bindport] : address and port to bind the webserver socket to. Default: 127.0.0.1:8080\n"
            "  [server[:port]]         : remote Minecraft server address and port. Default: 2b2t.org:25565\n",
            o_appname,DEFAULT_BIND_ADDR, DEFAULT_BIND_PORT, DEFAULT_REMOTE_ADDR, DEFAULT_REMOTE_PORT);
 }
@@ -1108,6 +1113,8 @@ int parse_args(int ac, char **av) {
     // set defaults
     sprintf(o_baddr,"%s",DEFAULT_BIND_ADDR);
     o_bport = DEFAULT_BIND_PORT;
+    sprintf(o_waddr,"%s",DEFAULT_BIND_ADDR);
+    o_wport = DEFAULT_WEBSERVER_PORT;
     sprintf(o_raddr,"%s",DEFAULT_REMOTE_ADDR);
     o_rport = DEFAULT_REMOTE_PORT;
     o_help = 0;
@@ -1116,7 +1123,7 @@ int parse_args(int ac, char **av) {
     char addr[256];
     int port;
 
-    while ( (opt=getopt(ac,av,"b:h")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:w:h")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -1133,7 +1140,24 @@ int parse_args(int ac, char **av) {
                     sprintf(o_baddr, "%s", addr);
                 }
                 else {
-                    printf("Failed to parse bind address/port \"%s\"\n",optarg);
+                    printf("Failed to parse proxy bind address/port \"%s\"\n",optarg);
+                    error++;
+                }
+                break;
+            }
+            case 'w': {
+                if (sscanf(optarg,"%[^:]:%d",addr,&port)==2) {
+                    sprintf(o_waddr, "%s", addr);
+                    o_wport = port;
+                }
+                else if (sscanf(optarg,"%d",&port)==1) {
+                    o_wport = port;
+                }
+                else if (sscanf(optarg,"%[^:]",addr)==1) {
+                    sprintf(o_waddr, "%s", addr);
+                }
+                else {
+                    printf("Failed to parse webserver bind address/port \"%s\"\n",optarg);
                     error++;
                 }
                 break;
@@ -1158,9 +1182,10 @@ int parse_args(int ac, char **av) {
         }
     }
 
-    printf("Proxy address  :  %s:%d\n"
-           "Remote address :  %s:%d\n",
-           o_baddr,o_bport,o_raddr,o_rport);
+    printf("Proxy address     :  %s:%d\n"
+           "Webserver address :  %s:%d\n"
+           "Remote address    :  %s:%d\n",
+           o_baddr,o_bport,o_waddr,o_wport,o_raddr,o_rport);
 }
 
 #define MKDIR(name) if (mkdir( #name ,0777)<0 && errno!=EEXIST)         \
@@ -1185,7 +1210,11 @@ int main(int ac, char **av) {
 
     bind_ip = lh_dns_addr_ipv4(o_baddr);
     if (bind_ip == 0xffffffff)
-        LH_ERROR(-1, "Failed to resolve bind address %s",o_baddr);
+        LH_ERROR(-1, "Failed to resolve proxy bind address %s",o_baddr);
+
+    web_ip = lh_dns_addr_ipv4(o_waddr);
+    if (web_ip == 0xffffffff)
+        LH_ERROR(-1, "Failed to resolve webserver bind address %s",o_waddr);
 
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
