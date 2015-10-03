@@ -11,6 +11,7 @@ outcast.c
 test.c
 *.bplan
 bases.txt
+players.txt
 
 # applications
 mcproxy
@@ -24,9 +25,15 @@ varint
 nbttest
 invedit
 chunkradar
+bptest
+spiral
 
 # directories
 saved
+schematic
+bplan
+png
+csv
 pcaps
 junk
 reg
@@ -34,4 +41,5 @@ region
 chunks
 doc
 maps
-
+projects
+bases

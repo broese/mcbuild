@@ -20,7 +20,7 @@ endif
 
 all: mcproxy mcpdump
 
-test: nbttest argtest spiral bptest
+test: nbttest argtest spiral bptest varint
 
 
 mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o mcp_ids.o nbt.o mcp_build.o mcp_arg.o mcp_bplan.o mcp_types.o
