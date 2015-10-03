@@ -71,11 +71,12 @@
 
     <p>In the package selection window, select following additional packages:</p>
     <ul>
-      <li>Libs/openssl-devel</li>
       <li>Libs/libcurl-devel</li>
       <li>Libs/zlib-devel</li>
+      <li>Libs/libpng-devel</li>
       <li>Libs/libisl10</li>
-      <li>Libs/licloog-isl4</li>
+      <li>Libs/libcloog-isl4</li>
+      <li>Devel/openssl-devel</li>
       <li>Devel/git</li>
       <li>Devel/gcc-core</li>
       <li>Devel/make</li>
@@ -112,7 +113,7 @@ make
     <pre>
 cd
 git clone https://github.com/broese/mcbuild.git
-cd libhelper
+cd mcbuild
 make
     </pre>
 
@@ -146,6 +147,9 @@ make
     <p>If you have just made a clean install of Minecraft on your PC,
       please launch it at least once normally before continuing, so it
       will set up all directories and files.</p>
+
+    <p>Make sure the client is completely closed (including launcher)
+      before continuing.</p>
 
     <p>All following instructions are using commandline tools.
       I verified the process on Windows/Cygwin and Linux installations
