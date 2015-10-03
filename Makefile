@@ -1,6 +1,6 @@
 CFLAGS=-g
 LIBS_LIBHELPER=-L../libhelper -lhelper
-LIBS=-lm -lpng -lz -lpcap -lcurl $(LIBS_LIBHELPER)
+LIBS=$(LIBS_LIBHELPER) -lm -lpng -lz -lcurl
 DEFS=-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
 INC=-I../libhelper
 
@@ -14,10 +14,13 @@ endif
 ifeq ($(UNAME),Linux)
         LIBS += -lcrypto -lz -lssl
 endif
+ifeq ($(shell uname -o),Cygwin)
+        LIBS += -lcrypto -lz -lssl
+endif
 
+all: mcproxy mcpdump
 
-all: mcproxy mcpdump nbttest argtest spiral bptest
-
+test: nbttest argtest spiral bptest
 
 
 mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o mcp_ids.o nbt.o mcp_build.o mcp_arg.o mcp_bplan.o mcp_types.o
