@@ -1,0 +1,385 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>MCBuild Documentation - Interface</title>
+    <link rel="stylesheet" href="styles.css">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  </head>
+  <body>
+    <h1>Interface</h1>
+
+    <p>This section gives you the overview of the chat interface
+    and the list of available commands.</p>
+
+    <p>MCBuild is controlled mostly via commands issued in the chat,
+      and also issues notifications back to you via chat. The chat
+      notifications will be preceeded with <b>&lt;MCP&gt;</b>,
+      and be colored, so you can differentiate them from the
+      general chat. Some notifications will appear in the
+      &quot;Pop-up&quot; chat area above your hotbar.
+
+    <p>Certain
+      actions however are done via interaction with the world -
+      so for example, the pivot point to start building can be
+      specified by placing a block there, and the in-world preview
+      will spawn visible fantom blocks in the world.</p>
+
+    <p>Some other commands, or asynchronous processes will print
+      information to the terminal - otherwise it would be too
+      verbose for the chat. Usually it serves debug purposes,
+      and can be ignored. The one exception maybe is the
+      '#build material' command to show the summary of required
+      materials for a building.</p>
+
+    <p>All MCBuild-related commands start with a '#' as the first
+      symbol. MCBuild will intercept these messages and will not
+      forward them into general chat. Even if you specify an incorrect
+      or unrecognized command, it will not be forwarded further
+      to the chat, but instead ignored.</p>
+
+    <p>Some of the custom clients posess a convenient feature to
+      bind certain chat messages to hotkeys. This feature will
+      be very useful with MCBuild, as you can summon certain
+      frequently used commands like '#build pause' or '#build preview'
+      with just a single key press. Examples of custom clients
+      with this feature are Metro and Weepcraft</p>
+
+    <h2>List of commands</h2>
+    <p>Below is the list of all commands currently supported by
+      MCBuild. Many of them are simple toggles, so I will describe
+      them directly in the table. Some other commands are more
+      complex and have parameters, especially those related to
+      building. Those will have links to the separate sections
+      describing them in more detail.</p>
+
+    <p>Commands have a full name and a shorter name provided for
+      convenience. So, for the building-related commands you
+      can use '#build' or '#bu' interchangingly. Same applies
+      to the most parameters, but these will be described in
+      a separate section.</p>
+
+    <table class="striped" style="width:100%">
+        <tr>
+          <th>Name</th>
+          <th>Short</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+
+        <tr>
+          <td>build</td>
+          <td>bu</td>
+          <td>params</td>
+          <td>Build functions. Refer to the <a href="build.html">building guide</a> or the summary table of building commands below</td>
+        </tr>
+        <tr>
+          <td>autokill</td>
+          <td>ak</td>
+          <td>toggle</td>
+          <td>Kill-aura. Only attacks hostile monsters</td>
+        </tr>
+        <tr>
+          <td>grind</td>
+          <td></td>
+          <td>params</td>
+          <td>Autokill monsters until a certain experience level is reached. Use in a XP grinder.<br>
+            <tt>grind</tt> - Grind until level 30<br>
+            <tt>grind &lt;n&gt;</tt> - Grind until level n<br>
+            <tt>grind stop</tt> - Stop grinding<br>
+          </td>
+        </tr>
+        <tr>
+          <td>antiafk</td>
+          <td>afk</td>
+          <td>toggle</td>
+          <td>Anti-AFKing - repeatedly places and removes a torch beneath your feet. You must have torches in your inventory</td>
+        </tr>
+        <tr>
+          <td>autoshear</td>
+          <td>ash</td>
+          <td>toggle</td>
+          <td>Automatically shear sheep in your vicinity. Only activates when you hold shears as your active item</td>
+        </tr>
+        <tr>
+          <td>antispam</td>
+          <td>as</td>
+          <td>toggle</td>
+          <td>Block certain annoying chat messages</td>
+        </tr>
+        <tr>
+          <td>holeradar</td>
+          <td>hr</td>
+          <td>toggle</td>
+          <td>Warn about holes on your way. Useful when walking or digging nether tunnels</td>
+        </tr>
+        <tr>
+          <td>align</td>
+          <td></td>
+          <td></td>
+          <td>Align the player exactly to a world direction and block center. Useful for autowalking nether tunnels</td>
+        </tr>
+        <tr>
+          <td>bright</td>
+          <td>br</td>
+          <td>params</td>
+          <td>Increment brightness of the world by specified level. Use '#bright 0' to set it to the original value. Only works for new loaded chunks<br>
+            <tt>bright n</tt> - increase brightness by n levels. Clamped at 15
+          </td>
+        </tr>
+        <tr>
+          <td>test</td>
+          <td></td>
+          <td>debug</td>
+          <td>Test MCBuild response - use this command to check if MCBuild was set up properly</td>
+        </tr>
+        <tr>
+          <td>entities</td>
+          <td></td>
+          <td>debug</td>
+          <td>Dump the table of tracked entities</td>
+        </tr>
+        <tr>
+          <td>coords</td>
+          <td></td>
+          <td>debug</td>
+          <td>Print your current coords (block coords of your feet)</td>
+        </tr>
+        <tr>
+          <td>inv</td>
+          <td></td>
+          <td>debug</td>
+          <td>Print your inventory to the terminal</td>
+        </tr>
+        <tr>
+          <td>changeheld</td>
+          <td></td>
+          <td>debug</td>
+          <td>Change the active hotbar slot.<br>
+            <tt>changeheld &lt;sid&gt;</tt> - switch to hotbar slot sid (0-9)<br>
+            <tt>changeheld &lt;sid&gt; 1</tt> - switch to hotbar slot sid and notify client<br>
+          </td>
+        </tr>
+        <tr>
+          <td>swapslots</td>
+          <td></td>
+          <td>debug</td>
+          <td>Swap items in two slots in the inventory<br>
+            <tt>swapslots &lt;sid1&gt; &lt;sid2&gt;</tt> - swap items in the inventory slots sid1 and sid2 (0-45)
+          </td>
+        </tr>
+    </table>
+
+    <h2>List of building commands</h2>
+    <p>Below is the summary table of all building-related
+      commands. A more detailed overview of the building
+      process and parameters if given in the 
+      <a href="build.html">building guide</a>. This table
+      only serves as a quick cheat-sheet</p>
+
+    <p>All building commands have form '#build command_name [parameters]'
+      or can be shortened to '#bu command_name [parameters]'.</p>
+      
+
+    <table class="striped" style="width:100%">
+        <tr>
+          <th>Name</th>
+          <th>Parameters</th>
+          <th>Description</th>
+        </tr>
+
+        <tr><td colspan=3 class="separator">Parametric Builds</td></tr>
+        <tr>
+          <td>floor</td>
+          <td>size,material</td>
+          <td>Solid rectangular floor WxL</td>
+        </tr>
+        <tr>
+          <td>wall</td>
+          <td>size,material</td>
+          <td>Solid rectangular wall WxH</td>
+        </tr>
+        <tr>
+          <td>disk</td>
+          <td>diameter,material</td>
+          <td>Solid disk with diameter D</td>
+        </tr>
+        <tr>
+          <td>ball</td>
+          <td>diameter,material</td>
+          <td>Solid ball with diameter D</td>
+        </tr>
+        <tr>
+          <td>ring</td>
+          <td>diameter,material</td>
+          <td>Ring with diameter D</td>
+        </tr>
+        <tr>
+          <td>sphere</td>
+          <td>diameter,material</td>
+          <td>Hollow sphere with diameter D</td>
+        </tr>
+        <tr>
+          <td>square</td>
+          <td>size,material</td>
+          <td>Hollow rectangular floor WxL</td>
+        </tr>
+        <tr>
+          <td>scaffolding,scaf</td>
+          <td>size,[material],[-ladder]</td>
+          <td>Scaffolding width W, H floors. -ladder for an alternative design using ladders</td>
+        </tr>
+        <tr>
+          <td>stairs</td>
+          <td>size,material,[-none|minimal|full],[-exact]</td>
+          <td>Stairs</td>
+        </tr>
+
+        <tr><td colspan=3 class="separator">Buildplan Manipulation</td></tr>
+        <tr>
+          <td>extend,ext</td>
+          <td>offset|direction,count</td>
+          <td>Extend the buildplan multiple times with given offset or direction</td>
+        </tr>
+        <tr>
+          <td>hollow</td>
+          <td>[-flat],[-opaque]</td>
+          <td>Hollow out a 3D structure, use -flat for 2D structures, consider all blocks opaque with -opaque</td>
+        </tr>
+        <tr>
+          <td>replace</td>
+          <td>material1,material2</td>
+          <td>Replace specific material in the buildplan with another. Use ID=0 (Air) to delete blocks</td>
+        </tr>
+        <tr>
+          <td>trim</td>
+          <td>trimspec ...</td>
+          <td>Trim the buildplan leaving only blocks mathcing the trimspec (e.g. y>=3) </td>
+        </tr>
+        <tr>
+          <td>flip</td>
+          <td>[axis]</td>
+          <td>Flip the buildplan along specified axis (x by default)</td>
+        </tr>
+        <tr>
+          <td>tilt</td>
+          <td>[axis]</td>
+          <td>Tilt/rotate the buildplan by 90 degrees around specified axis (x by default)</td>
+        </tr>
+        <tr>
+          <td>normalize,norm</td>
+          <td></td>
+          <td>Shift the entire buildplan so that pivot block is in the leftmost, nearest, bottom point</td>
+        </tr>
+        <tr>
+          <td>shrink</td>
+          <td></td>
+          <td>Shrink the buildplan by factor 2. Only works well for solid builds</td>
+        </tr>
+
+        <tr><td colspan=3 class="separator">Import/Export</td></tr>
+        <tr>
+          <td>save</td>
+          <td>filename</td>
+          <td>Export buildplan to .bplan format</td>
+        </tr>
+        <tr>
+          <td>ssave</td>
+          <td>filename</td>
+          <td>Export buildplan to .schematic format</td>
+        </tr>
+        <tr>
+          <td>csvsave</td>
+          <td>filename</td>
+          <td>Export buildplan to .csv format</td>
+        </tr>
+        <tr>
+          <td>load</td>
+          <td>filename</td>
+          <td>Import buildplan from .bplan file</td>
+        </tr>
+        <tr>
+          <td>sload</td>
+          <td>filename</td>
+          <td>Import buildplan from .schematic file</td>
+        </tr>
+        <tr>
+          <td>csvload</td>
+          <td>filename</td>
+          <td>Import buildplan from .csv file</td>
+        </tr>
+        <tr>
+          <td>pngload,png</td>
+          <td>filename,[blockset]</td>
+          <td>Import buildplan from .png file as a pixelart wall
+            and using a specific blockset (wool by default)</td>
+        </tr>
+        <tr>
+          <td>rec</td>
+          <td>start|stop|resume</td>
+          <td>Build recorder - will record placed blocks, creating
+            a buildplan. First placed block is the pivot.</td>
+        </tr>
+        <tr>
+          <td>scan</td>
+          <td>pivot,size</td>
+          <td>Scan a cuboid of given size and pivot from the world to produce a buildplan.</td>
+        </tr>
+
+        <tr><td colspan=3 class="separator">Build Control</td></tr>
+        <tr>
+          <td>place</td>
+          <td>once|many|again|cancel,[pivot]</td>
+          <td>Initiate a buildplan placement - once or many times,
+            or using the previous pivot position, or cancel the placement.
+            Pivot can be specified explicitly or by placing a block.</td>
+        </tr>
+        <tr>
+          <td>cancel</td>
+          <td></td>
+          <td>Cancel building process</td>
+        </tr>
+        <tr>
+          <td>pause</td>
+          <td></td>
+          <td>Pause/unpause building process</td>
+        </tr>
+        <tr>
+          <td>preview</td>
+          <td>-true|missing|remove</td>
+          <td>Generate or remove an in-world preview of the buildplan.
+            -missing mode shows blocks still missing or placed incorrectly</td>
+        </tr>
+        <tr>
+          <td>limit,li</td>
+          <td>[ycoord|-]</td>
+          <td>Set a vertical limit for building and preview - useful for building layer by layer</td>
+        </tr>
+        <tr>
+          <td>opt,set</td>
+          <td>[option_name=value]</td>
+          <td>Set a building option (standard delays, etc.). Without arguments prints current values.</td>
+        </tr>
+
+        <tr><td colspan=3 class="separator">Debug</td></tr>
+        <tr>
+          <td>dumpplan</td>
+          <td></td>
+          <td>Dump buildplan to terminal</td>
+        </tr>
+        <tr>
+          <td>dumptask</td>
+          <td></td>
+          <td>Dump buildtask to terminal</td>
+        </tr>
+        <tr>
+          <td>dumpqueue</td>
+          <td></td>
+          <td>Dump blocks immediately scheduled for placement to terminal</td>
+        </tr>
+
+
+    </table>
+    
+
+  </body>
+</html>
