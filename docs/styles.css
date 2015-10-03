@@ -1,0 +1,22 @@
+table, th, td {
+  border: 1px solid gray;
+  border-collapse: collapse;
+}
+
+th { 
+  background-color:#e0e0ff
+}
+
+td.separator {
+  background-color:#e0e0e0;
+  font-weight: bold;
+}
+
+th, td {
+  padding: 5px;
+  text-align: left;
+}
+
+.striped tr:nth-child(odd) {
+  background-color:#ffffe0
+}
