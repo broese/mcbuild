@@ -258,7 +258,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
             pkt->ts.tv_sec = sec;
             pkt->ts.tv_usec = usec;
             //dump_packet(pkt);
-            //gs_packet(pkt);
+            gs_packet(pkt);
             mcpd_packet(pkt);
             free_packet(pkt);
         }
@@ -345,6 +345,10 @@ int main(int ac, char **av) {
 #if 1
     if (!av[1]) LH_ERROR(-1, "Usage: %s <file.mcs>", av[0]);
 
+    gs_reset();
+    gs_setopt(GSOP_PRUNE_CHUNKS, 0);
+    gs_setopt(GSOP_SEARCH_SPAWNERS, 1);
+
     int i;
     for(i=1; av[i]; i++) {
         uint8_t *data;
@@ -354,18 +358,15 @@ int main(int ac, char **av) {
             //break;
         }
         else {
-            gs_reset();
-            gs_setopt(GSOP_PRUNE_CHUNKS, 0);
-            gs_setopt(GSOP_SEARCH_SPAWNERS, 1);
 
             parse_mcp(data, size);
             //dump_inventory();
             //dump_entities();
-
             free(data);
-            gs_destroy();
         }
     }
+    //dump_overworld();
+    gs_destroy();
 
 #if 0
     for(i=0; i<C(spawners); i++) {
@@ -377,4 +378,5 @@ int main(int ac, char **av) {
 
     find_spawners();
 #endif
+
 }

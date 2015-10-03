@@ -140,3 +140,5 @@ bid_t get_block_at(int32_t x, int32_t z, int32_t y);
 
 int player_direction();
 int sameitem(slot_t *a, slot_t *b);
+
+void dump_overworld();

@@ -161,7 +161,6 @@ static void free_chunks(gsworld *w) {
 
 static void dump_chunks(gsworld *w) {
     if (!w) return;
-
     if (w->chunks) {
         int x,z;
         for(z=0; z<w->Zs; z++) {
@@ -210,6 +209,10 @@ static void modify_blocks(int32_t X, int32_t Z, blkrec *blocks, int32_t count) {
 #endif
         gc->blocks[boff] = b->bid;
     }
+}
+
+void dump_overworld() {
+    dump_chunks(&gs.overworld);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1180,16 +1183,18 @@ void gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(SP_SetSlot) {
+            dump_packet(pkt);
             switch(tpkt->wid) {
-                case 0:
-                    dump_packet(pkt);
+                case 0: {
+                    //dump_packet(pkt);
                     // main inventory window (wid=0)
                     assert(tpkt->sid>=0 && tpkt->sid<45);
 
                     // copy the slot to our inventory slot
                     copy_slot(&tpkt->slot, &gs.inv.slots[tpkt->sid]);
                     break;
-                case 255:
+                }
+                case 255: {
                     // drag-slot
                     dump_packet(pkt);
                     slot_t * ds = &gs.inv.drag;
@@ -1202,6 +1207,7 @@ void gs_packet(MCPacket *pkt) {
                         copy_slot(&tpkt->slot, ds);
                     }
                     break;
+                }
             }
         } _GSP;
 
@@ -1212,8 +1218,9 @@ void gs_packet(MCPacket *pkt) {
             // ignore non-inventory windows - we will receive an explicit update
             // for those via SP_SetSlot messages after the window closes,
             // but the main inventory window (wid=0) needs to be tracked
+            if (DEBUG_INVENTORY)
+                dump_packet(pkt);
             if (tpkt->wid != 0) break;
-            dump_packet(pkt);
 
             // in this function we do not actually modify the the inventory
             // but just record the action for later - actual change occurs
