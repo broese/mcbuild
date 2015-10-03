@@ -1163,7 +1163,17 @@ int parse_args(int ac, char **av) {
            o_baddr,o_bport,o_raddr,o_rport);
 }
 
+#define MKDIR(name) if (mkdir( #name ,0777)<0 && errno!=EEXIST)         \
+        { printf("Failed to create directory '%s'\n", #name ); return 1; }
+
 int main(int ac, char **av) {
+    // create directories if they don't exist yet
+    MKDIR(saved);
+    MKDIR(bplan);
+    MKDIR(schematic);
+    MKDIR(png);
+    MKDIR(csv);
+
     if (!parse_args(ac,av) || o_help) {
         print_usage();
         return !o_help;
