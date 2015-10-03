@@ -4,7 +4,7 @@ table, th, td {
 }
 
 th { 
-  background-color:#e0e0ff
+  background-color:#e0e0ff;
 }
 
 td.separator {
@@ -18,5 +18,5 @@ th, td {
 }
 
 .striped tr:nth-child(odd) {
-  background-color:#ffffe0
+  background-color:#ffffe0;
 }
