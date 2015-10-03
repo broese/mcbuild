@@ -398,13 +398,14 @@ static inline void prune_slot(slot_t *s) {
 }
 
 static void slot_transfer(slot_t *f, slot_t *t, int count) {
-    assert(f->count >= count);
-    assert(f->item > 0);
-
     if (DEBUG_INVENTORY) {
+        printf("*** Slot transfer of %d items\n",count);
         printf("  From: "); dump_slot(f); printf("\n");
         printf("  To  : "); dump_slot(t); printf("\n");
     }
+
+    assert(f->count >= count);
+    assert(f->item > 0);
 
     if (t->item == -1) {
         // destination slot is empty
@@ -487,9 +488,16 @@ static void inv_click(int button, int16_t sid) {
                 // remove 1x of each source items from the crafting grid
                 int i;
                 for(i=1; i<5; i++) {
+                    if (DEBUG_INVENTORY) {
+                        printf("  => remove 1 item from slot %d :\n",i);
+                        printf("    Was: "); dump_slot(&gs.inv.slots[i]); printf("\n");
+                    }
                     if (gs.inv.slots[i].item >= 0)
                         gs.inv.slots[i].count --;
                     prune_slot(&gs.inv.slots[i]);
+                    if (DEBUG_INVENTORY) {
+                        printf("    Now: "); dump_slot(&gs.inv.slots[i]); printf("\n");
+                    }
                 }
             }
         }
@@ -651,6 +659,7 @@ static void inv_shiftclick(int button, int16_t sid) {
     // handle armor-type items
     int armorslot = -1;
 
+    //TODO: how do we handle a shift click on an armor item IN an armor slot?
     if (I_HELMET(f->item))     armorslot = 5;
     if (I_CHESTPLATE(f->item)) armorslot = 6;
     if (I_LEGGINGS(f->item))   armorslot = 7;
@@ -685,6 +694,7 @@ static void inv_shiftclick(int button, int16_t sid) {
 
     int stacksize = STACKSIZE(gs.inv.slots[sid].item);
 
+    //FIXME: the same should be valid for slots 1-4?
     // if we distribute from the product slot, search in the
     // opposite direction, so the quickbar gets filled first
     int start = (sid==0) ? 44 : 8;
@@ -1192,6 +1202,13 @@ void gs_packet(MCPacket *pkt) {
 
                     // copy the slot to our inventory slot
                     copy_slot(&tpkt->slot, &gs.inv.slots[tpkt->sid]);
+
+                    if (DEBUG_INVENTORY) {
+                        printf("*** set slot sid=%d: ", tpkt->sid);
+                        dump_slot(&tpkt->slot);
+                        printf("\n");
+                    }
+
                     break;
                 }
                 case 255: {
@@ -1202,11 +1219,21 @@ void gs_packet(MCPacket *pkt) {
                         ds->count != tpkt->slot.count ||
                         ds->damage != tpkt->slot.damage ||
                         (!ds->nbt) != (!tpkt->slot.nbt) ) {
-                        if (DEBUG_INVENTORY)
-                            printf("*** drag slot corrected by the server\n");
+                        if (DEBUG_INVENTORY) {
+                            printf("*** drag slot corrected by the server:\n");
+                            printf("  tracked: "); dump_slot(ds); printf("\n");
+                            printf("  server:  "); dump_slot(&tpkt->slot); printf("\n");
+                        }
                         copy_slot(&tpkt->slot, ds);
                     }
                     break;
+                }
+                default: { // some block with inventory capabilities
+                    if (DEBUG_INVENTORY) {
+                        printf("*** !!! set slot wid=%d sid=%d: ", tpkt->wid, tpkt->sid);
+                        dump_slot(&tpkt->slot);
+                        printf("\n");
+                    }
                 }
             }
         } _GSP;
@@ -1218,13 +1245,11 @@ void gs_packet(MCPacket *pkt) {
             // ignore non-inventory windows - we will receive an explicit update
             // for those via SP_SetSlot messages after the window closes,
             // but the main inventory window (wid=0) needs to be tracked
+            //FIXME: sometimes this does not happen and the inventory gets corrupted
+            // - needs further debugging
             if (DEBUG_INVENTORY)
                 dump_packet(pkt);
             if (tpkt->wid != 0) break;
-
-            // in this function we do not actually modify the the inventory
-            // but just record the action for later - actual change occurs
-            // when we receive the SP_ConfirmTransaction packet
 
             invact * a = lh_arr_new(IAQ);
             a->aid    = tpkt->aid;
@@ -1286,9 +1311,27 @@ void gs_packet(MCPacket *pkt) {
             }
         } _GSP;
 
+        GSP(SP_OpenWindow) {
+            if (DEBUG_INVENTORY) {
+                printf("*** Open Window wid=%d type=%s\n",
+                       tpkt->wid, tpkt->wtype);
+            }
+        } _GSP;
+
         case CP_CloseWindow:
         case SP_CloseWindow: {
-            dump_packet(pkt);
+            SP_CloseWindow_pkt *tpkt = &pkt->_SP_CloseWindow;
+
+            if (DEBUG_INVENTORY) {
+                printf("*** Close Window (%s), wid=%d\n",
+                       pkt->cl?"Client":"Server", tpkt->wid);
+                if (gs.inv.drag.item!=-1) {
+                    printf("  discarding dragslot: ");
+                    dump_slot(&gs.inv.drag);
+                    printf("\n");
+                }
+            }
+
             // discard anything in dragslot - if you happen to drag
             // some items when the window is closed, they will be thrown
             gs.inv.drag.item = -1;
@@ -1297,6 +1340,11 @@ void gs_packet(MCPacket *pkt) {
             // discard the crafting and the product slot
             int i;
             for(i=0; i<5; i++) {
+                if (DEBUG_INVENTORY && gs.inv.slots[i].item!=-1) {
+                    printf("  discarding crafting slot %d: ",i);
+                    dump_slot(&gs.inv.slots[i]);
+                    printf("\n");
+                }
                 gs.inv.slots[i].item = -1;
                 prune_slot(&gs.inv.slots[i]);
             }
