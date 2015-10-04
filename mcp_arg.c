@@ -234,12 +234,12 @@ int argf_offset(arg_defaults *ad, char **words, char **names, off3_t *offset) {
     int32_t x,y,z,o;
     char dir[4096]; dir[0] = 0;
 
-    int fi = argparse(words, names, fmt_offset, &offset->x, &offset->z, &offset->y, &o, dir);
+    int fi = argparse(words, names, fmt_offset, &x, &z, &y, &o, dir);
     switch (fi) {
         case 0: // explicitly specified offset
             break;
         case 1: // x,z offset - assume y=0
-            offset->y = 0;
+            y = 0;
             break;
         case 2: // explicit offset and direction
             switch(tolower(dir[0])) {
@@ -252,8 +252,8 @@ int argf_offset(arg_defaults *ad, char **words, char **names, off3_t *offset) {
             }
             break;
         case 3: // x-only offset - assume z=y=0
-            offset->y = 0;
-            offset->z = 0;
+            y = 0;
+            z = 0;
             break;
         case 4: // direction only - calculate offset from the buildplan size
             switch(tolower(dir[0])) {
