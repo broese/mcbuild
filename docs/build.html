@@ -1,0 +1,248 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>MCBuild Documentation - Building Guide</title>
+    <link rel="stylesheet" href="styles.css">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  </head>
+
+  <body>
+    <h1>Building Guide</h1>
+
+    <p>This chapter covers the building process in more detail,
+      describes the available building functions and provides
+      tips for building in difficult conditions.</p>
+
+    <a name="principles">
+    <h2>Building Process Principles</h2>
+
+    <p>When the building functions are used you will be dealing with
+      two things called <b>buildplan</b> and <b>buildtask</b>.</p>
+
+    <p>A buildplan is like a blueprint of a structure. It defines a
+      list of blocks, including their meta values (which define
+      subtype and/or orientation for some block types). The block
+      coordinates within the buildplan are relative to a block at
+      0,0,0 called <b>pivot</b>. The pivot block may be itself
+      a part of the buildplan or not - it does not matter. The pivot
+      however represents the &quot;origin&quot; of the buildplan</p>
+
+    <p>A buildplan can be created using one of the parametric building
+      functions, imported from external files, and manipulated in
+      various ways.</p>
+
+    <p>In order to start actual building, you need to start a buildtask
+      from the buildplan by placing its pivot somewhere in the world.
+      Both position and direction of the placement define how the
+      blocks will be placed. The block coordinates are translated from
+      the relative to the world coordinates. The orientation-dependent
+      meta values are rotated to match the new direction. In the
+      buildplan, the metas are encoded as if the pivot direction is
+      towards north. When pivot is placed, you define the new direction.</p>
+
+    <p>The actual placement may be done either by specifying explicit
+      coordinates and direction as parameter, or more conveniently by
+      placing a block. The coordinates and the direction of the placement
+      are taken as pivot parameters, and the placement itself is not
+      forwarded to the server.</p>
+
+    <p>Some other parameters used in the various commands behave that
+      way - you can either specify them explicitly, or omit them, and
+      make MCBuild use some defaults derived from your current state.
+      One such parameter is the material specification - if you omit it,
+      MCBuild will just use the block type you are currently holding.
+    </p>
+
+    <p>In order to have a quick example, how it works, try following:</p>
+    <ul>
+      <li>Hold some buildable block in your hand</li>
+      <li>Enter <tt>#build floor 5,5</tt></li>
+      <li>You should get a message about created floor</li>
+      <li>Place any block at some coordinates</li>
+      <li>You will receive another message about placing pivot and the building will start</li>
+      <li>Walk around the structure being built to reach all corners</li>
+      <li>Enter <tt>#build cancel</tt> to stop building</li>
+    </ul>
+
+    <img src="images/build_example.jpg">
+
+    <p>You may have noticed that if you break the blocks you just
+      built without canceling, they will be immediately rebuilt. This is
+      because your active buildtask constantly checks if there are
+      buildable blocks in vicinity that are unoccupied and will attempt
+      to place blocks there.</p>
+
+    <p>In order to be built, blocks need to have adjacent blocks already
+      in place. Most full blocks without specific orientation can be placed
+      on any of the adjacent surfaces, but certain blocks require a certain
+      direction to be placed in order to obtain correct orientation. Ultimately,
+      the player must click once of the suitable points at a suitable face
+      while facing a suitable direction.</p>
+
+    <p>While a buildtask is active, MCBuild constantly checks which blocks
+      fulfill these conditions and can be placed, but it is the task of the
+      player to navigate around the structure to reach all possible points</p>
+
+    <p>MCBuild will automatically fetch the necessary materials from your
+      inventory into the hotbar slots 3-7 and use them to build. If you're
+      building in creative mode, that works as well, but you need to have all
+      materials you are using in your survival inventory - creative block
+      selection is not supported.</p>
+
+    <a name="parameters">
+    <h2>Build Command Parameters</h2>
+
+    <p>Before we can review the various build commands available, we need
+      to understand how MCBuild is parsing parameters to its functions.
+      The parameter parsing is designed such way that the user will have
+      to type as little as possible while avoiding ambiguity. Many option
+      names can be shortened or omitted, some parameter parts have default
+      values, and as already mentioned, some parameters can be omitted
+      altogether, making MCBuild using suitable defaults derived from your
+      current gamestate.</p>
+
+    <p>There are two types of parameters - named parameters and flags.</p>
+
+    <p>The flag-type parameters are always preceeded by a minus sign, but
+      may have long or short name. They are simple switches, enabling
+      some option when specified.</p>
+
+    <p>Named parameters have the general format <tt>name=value</tt>.
+      If a command expects a certain named parameter, if will first
+      look for the general form, using the full or one of the shortened
+      names of the parameter. If not found, a named parameter may have
+      a default position, in which case the name can be omitted, and only
+      the value used as parameter. If that is not found, or the parameter
+      has no default position, it may have a way to be derived from
+      the game state. For example, the parameter defining a position of
+      the pivot can be obtained when player places a block.</p>
+
+    <p>Named parameters in their full form (i.e. with the name), and flags
+      can be specified in any order on the command line. Named parameters
+      without a name however must be specified in their default order.</p>
+
+    <p>The values of the named parameter may have many different forms.
+      So, for example a material specification can be done by numeric
+      block ID, or hexadecimal ID, or even by name. It may also have an
+      optional meta value, which can be also numeric or a string.</p>
+
+    <p>The following example illustrates how it works for the command
+      <tt>#build stair</tt>. This command creates a flight of stairs,
+      it has a mandatory parameter <tt>size</tt> and optional parameter
+      the <tt>material</tt>, as well as a few flags. The following
+      list shows examples what the user can specify and how MCBuild
+      will interpret this.</p>
+
+    <hr>
+    <p><tt>#build stairs size=5,20 material=brick</tt></p>
+    <p>This creates a buildplan of stairs, 5 blocks wide, and 10 blocks
+      high, made of brick blocks and the default minimal base -
+      one column of blocks under the stairs to provide connection
+      between the steps).</p>
+
+    <img src="images/stairs1.jpg">
+    
+    <hr>
+    <p><tt>#build stairs m=brick s=5,10</tt></p>
+    <p>This will create exactly the same, but the order of the parameters
+      is arbitrary (since they both have proper names) and I used
+      the short names.</p>
+
+    <hr>
+    <p><tt>#build stairs 5,10 brick</tt></p>
+    <p>This is an even shorter form that omits the names and therefore
+      the parameters are interpreted in their default order. It is
+      assumed that &quot;5,10&quot; is the size parameter, and
+      &quot;brick&quot; is the material.</p>
+
+    <hr>
+    <p><tt>#build stairs brick 5,10</tt></p>
+    <p>This however will give you an error - the parameters have no names
+      so the default order is assumed, and &quot;brick&quot; cannot
+      be parsed as size.</p>
+
+    <hr>
+    <p><tt>#build stairs m=brick 5,10</tt></p>
+    <p>This however works - the material parameter is identified by the
+      explicit name, while the size as the first unnamed parameter</p>
+
+    <hr>
+    <p><tt>#build stairs brick s=5,10</tt></p>
+    <p>This works as well - as long as the ambiguity is resolved
+      somehow, argument parsing will identify the necessary parameters.</p>
+
+    <hr>
+    <p><tt>#build stairs -e wooden_stairs -f s=5,10</tt></p>
+    <p>Flags can be placed anywhere - since they have a unique name
+      and can be identified by the minus sign. This particular command
+      will use wooden stairs block, make a full base (i.e. base extends
+      over the entire width of the stairs) and make sure exactly same block
+      is used for the base (otherwise MCBuild will try to use matching
+      wooden planks)</p>
+
+    <img src="images/stairs2.jpg">
+
+    <hr>
+    <p><tt>#build stairs 5,10</tt></p>
+    <p>In this case we don't specify the material. MCBuild will assume
+      we want to build using the block we currently hold in our hand.
+      If the player holds nothing, or it's an item that cannot be placed
+      as a block, you will receive an error.</p>
+
+    <img src="images/stairs3.jpg">
+    <p>As you may see - in this case the cobblestone stairs was
+      used for building the stairs, since the player held it in hand
+      and the cobblestone block was used for the base.</p>
+
+    <a name="commonparam">
+    <h2>Common Parameter</h2>
+
+    <p>A reference for some common parameter value formats used in multiple
+      commands.</p>
+
+    <a name="par_mat">
+    <h3>Material</h3>
+
+    <p>Material can be specified my its decimal or hexadecimal block ID,
+      or by symbolic name. For slabs you can also specify whether you
+      want the upper or the lower form</p>
+
+    <p>Names: material,mat,m</p>
+
+    <p>Default material: block that player holds at the moment of issuing the command</p>
+
+    <p>As example, the following material formats represent stone and sandstone
+      slabs in different positions. The block ID for stone slabs is 0x2C / 44, but
+      block meta is additionally required to define exact material and position.
+      By default, meta=0 will be assumed, which corresponds to the plain stone slabs
+      in lower position. Sandstone stone slabs have meta 1 for the lower (default)
+      and 9 for the upper position. The exact type can be controlled by the explicit
+      meta value or in combination of the meta value + upper flag</p>
+
+    <table>
+        <tr><th>Specification</th><th>Description</th><th>Resulting block</th></tr>
+
+        <tr class="toned"><td>44</td><td>Decimal ID</td><td rowspan=3>Stone slab (lower)</td></tr>
+        <tr class="toned"><td>0x2c</td><td>Hex ID</td></tr>
+        <tr class="toned"><td>stone_slab</td><td>Name</td></tr>
+
+        <tr><td>44u</td><td>Decimal ID+upper</td><td rowspan=3>Stone slab (upper)</td></tr>
+        <tr><td>0x2c:u</td><td>Hex ID+upper</td></tr>
+        <tr><td>stone_slab::u</td><td>Name+upper</td></tr>
+
+        <tr class="toned"><td>44:1</td><td>Decimal ID+meta</td><td rowspan=4>Sandstone slab (lower)</td></tr>
+        <tr class="toned"><td>0x2c:1</td><td>Hex ID+meta</td></tr>
+        <tr class="toned"><td>stone_slab:1</td><td>Name+meta</td></tr>
+        <tr class="toned"><td>stone_slab:sandstone</td><td>Name+subname</td></tr>
+
+        <tr><td>44:9</td><td>Decimal ID+meta</td><td rowspan=7>Sandstone slab (upper)</td></tr>
+        <tr><td>0x2c:9</td><td>Hex ID+meta</td></tr>
+        <tr><td>stone_slab:9</td><td>Name+meta</td></tr>
+        <tr><td>44:1u</td><td>Decimal ID+meta+upper</td></tr>
+        <tr><td>0x2c:1u</td><td>Hex ID+meta+upper</td></tr>
+        <tr><td>stone_slab:1u</td><td>Name+meta+upper</td></tr>
+        <tr><td>stone_slab:sandstone:u</td><td>Name+subname+upper</td></tr>
+    </table>
+
+  </body>
+</html>

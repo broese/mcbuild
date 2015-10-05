@@ -20,3 +20,7 @@ th, td {
 .striped tr:nth-child(odd) {
   background-color:#ffffe0;
 }
+
+tr.toned {
+  background-color:#ffffe0;
+}
