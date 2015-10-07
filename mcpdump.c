@@ -24,6 +24,79 @@
 
 static char * states = "ISLP";
 
+////////////////////////////////////////////////////////////////////////////////
+
+int o_help                      = 0;
+int o_block_id                  = -1;
+int o_block_meta                = -1;
+int o_spawner_mult              = 0;
+int o_spawner_single            = 0;
+int o_track_inventory           = 0;
+int o_track_thunder             = 0;
+int o_dump_packets              = 0;
+
+void print_usage() {
+    printf("Usage:\n"
+           "mcpdump [options] file.mcs...\n"
+           "  -h                        : print this help\n"
+           "  -b id[:meta]              : search for blocks by block ID and optionally meta value\n"
+           "  -s                        : search for multiple-spawner locations\n"
+           "  -S                        : search for single spawner locations\n"
+           "  -i                        : track inventory transactions and dump inventory\n"
+           "  -t                        : track thunder sounds\n"
+           "  -d                        : dump packets\n"
+    );
+}
+
+int parse_args(int ac, char **av) {
+    int opt,error=0;
+
+    while ( (opt=getopt(ac,av,"b:sSihdt")) != -1 ) {
+        switch (opt) {
+            case 'h':
+                o_help = 1;
+                break;
+            case 's':
+                o_spawner_single = 1;
+                break;
+            case 'S':
+                o_spawner_mult = 1;
+                break;
+            case 'i':
+                o_track_inventory = 1;
+                break;
+            case 't':
+                o_track_thunder = 1;
+                break;
+            case 'd':
+                o_dump_packets = 1;
+                break;
+            case 'b': {
+                int bid,meta;
+                if (sscanf(optarg, "%d:%d", &bid, &meta)==2) {
+                    o_block_id = bid;
+                    o_block_meta = meta;
+                }
+                else if (sscanf(optarg, "%d", &bid)==1) {
+                    o_block_id = bid;
+                    o_block_meta = -1;
+                }
+                else {
+                    printf("-b : you must specify an argument as block_id[:meta] - use decimal numbers\n");
+                    error++;
+                }
+                break;
+            }
+        }
+    }
+
+    if (!av[optind]) error++;
+
+    return error==0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 #define VIEWDIST (158<<5)
 #define THUNDERDIST (160000<<5)
 
@@ -151,7 +224,6 @@ void mcpd_packet(MCPacket *pkt) {
             break;
         }
 
-#if 1
         case SP_SoundEffect: {
             SP_SoundEffect_pkt *tpkt = (SP_SoundEffect_pkt *)&pkt->_SP_SoundEffect;
             if (!strcmp(tpkt->name,"ambient.weather.thunder")) {
@@ -161,54 +233,6 @@ void mcpd_packet(MCPacket *pkt) {
             }
             break;
         }
-#endif
-
-#if 0
-        case SP_ChunkData: {
-            SP_ChunkData_pkt *tpkt = (SP_ChunkData_pkt *)&pkt->_SP_ChunkData;
-            if (tpkt->chunk.mask) {
-                lh_save("pkt_original",pkt->raw, pkt->rawlen);
-                uint8_t buf[MAXPLEN];
-                ssize_t sz = encode_packet(pkt, buf);
-                lh_save("pkt_encoded",buf+1, sz-1); //skip the packet ID that encode_packet adds
-                pkt->modified = 1;
-                sz = encode_packet(pkt, buf);
-                lh_save("pkt_reencoded",buf+1, sz-1);
-                exit(0);
-            }
-            break;
-        }
-#endif
-
-#if 0
-        case SP_MapChunkBulk: {
-            SP_MapChunkBulk_pkt *tpkt = (SP_MapChunkBulk_pkt *)&pkt->_SP_MapChunkBulk;
-            lh_save("pkt_original",pkt->raw, pkt->rawlen);
-            uint8_t buf[MAXPLEN];
-            ssize_t sz = encode_packet(pkt, buf);
-            lh_save("pkt_encoded",buf+1, sz-1); //skip the packet ID that encode_packet adds
-            pkt->modified = 1;
-            sz = encode_packet(pkt, buf);
-            lh_save("pkt_reencoded",buf+1, sz-1);
-            exit(0);
-            break;
-        }
-#endif
-
-#if 0
-        case SP_MultiBlockChange: {
-            SP_MultiBlockChange_pkt *tpkt = (SP_MultiBlockChange_pkt *)&pkt->_SP_MultiBlockChange;
-            lh_save("pkt_original",pkt->raw, pkt->rawlen);
-            uint8_t buf[MAXPLEN];
-            ssize_t sz = encode_packet(pkt, buf);
-            lh_save("pkt_encoded",buf+1, sz-1); //skip the packet ID that encode_packet adds
-            pkt->modified = 1;
-            sz = encode_packet(pkt, buf);
-            lh_save("pkt_reencoded",buf+1, sz-1);
-            exit(0);
-            break;
-        }
-#endif
     }
 }
 
@@ -257,7 +281,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
             MCPacket *pkt = decode_packet(is_client, p, plen);
             pkt->ts.tv_sec = sec;
             pkt->ts.tv_usec = usec;
-            //dump_packet(pkt);
+            if (o_dump_packets) dump_packet(pkt);
             gs_packet(pkt);
             mcpd_packet(pkt);
             free_packet(pkt);
@@ -330,53 +354,46 @@ void extract_cuboid(int X, int Z, int y) {
 
 int main(int ac, char **av) {
 
-#if 0
-    int bid  = atoi(av[1]);
-    int meta = atoi(av[2]);
-    int rot  = atoi(av[3]);
-
-    bid_t b  = BLOCKTYPE(bid,meta);
-    bid_t bb = rotate_meta(b,rot);
-
-    printf("rot=%d, %d:%d => %d:%d\n",
-           rot, b.bid, b.meta, bb.bid, bb.meta);
-#endif
-
-#if 1
-    if (!av[1]) LH_ERROR(-1, "Usage: %s <file.mcs>", av[0]);
+    if (!parse_args(ac,av) || o_help) {
+        print_usage();
+        return !o_help;
+    }
 
     gs_reset();
     gs_setopt(GSOP_PRUNE_CHUNKS, 0);
-    gs_setopt(GSOP_SEARCH_SPAWNERS, 1);
+
+    if (o_spawner_single && o_spawner_mult)
+        gs_setopt(GSOP_SEARCH_SPAWNERS, 1);
+
+    if (o_track_inventory)
+        gs_setopt(GSOP_TRACK_INVENTORY, 1);
 
     int i;
-    for(i=1; av[i]; i++) {
+    for(i=optind; av[i]; i++) {
         uint8_t *data;
         ssize_t size = lh_load_alloc(av[i], &data);
-        if (size < 0) {
-            fprintf(stderr,"Failed to open %s : %s",av[i],strerror(errno));
-            //break;
-        }
-        else {
-
+        if (size >= 0) {
             parse_mcp(data, size);
-            //dump_inventory();
-            //dump_entities();
             free(data);
         }
     }
     //dump_overworld();
-    gs_destroy();
+
+    if (o_spawner_single) {
+        for(i=0; i<C(spawners); i++) {
+            spawner_t *s = P(spawners)+i;
+            printf("SNG %c %5d,%2d,%5d\n",s->type==SPAWNER_ZOMBIE?'Z':'S',
+                   s->loc.x,s->loc.y,s->loc.z);
+        }
+    }
+
+    if (o_spawner_mult)
+        find_spawners();
 
 #if 0
-    for(i=0; i<C(spawners); i++) {
-        spawner_t *s = P(spawners)+i;
-        printf("%c %5d,%2d,%5d\n",s->type==SPAWNER_ZOMBIE?'Z':'S',
-               s->loc.x,s->loc.y,s->loc.z);
-    }
+    if (o_block_id >=0)
+        search_blocks(o_block_id, o_block_meta);
 #endif
 
-    find_spawners();
-#endif
-
+    gs_destroy();
 }
