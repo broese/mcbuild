@@ -1193,7 +1193,7 @@ void gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(SP_SetSlot) {
-            dump_packet(pkt);
+            if (!gs.opt.track_inventory) break;
             switch(tpkt->wid) {
                 case 0: {
                     //dump_packet(pkt);
@@ -1239,6 +1239,7 @@ void gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(CP_ClickWindow) {
+            if (!gs.opt.track_inventory) break;
             // set flag that the client has a window open right now
             gs.inv.windowopen = 1;
 
@@ -1293,6 +1294,7 @@ void gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(SP_ConfirmTransaction) {
+            if (!gs.opt.track_inventory) break;
             dump_packet(pkt);
             if (tpkt->wid != 0) break;
 
@@ -1320,6 +1322,7 @@ void gs_packet(MCPacket *pkt) {
 
         case CP_CloseWindow:
         case SP_CloseWindow: {
+            if (!gs.opt.track_inventory) break;
             SP_CloseWindow_pkt *tpkt = &pkt->_SP_CloseWindow;
 
             if (DEBUG_INVENTORY) {
@@ -1350,7 +1353,6 @@ void gs_packet(MCPacket *pkt) {
             }
 
             gs.inv.windowopen = 0;
-
             break;
         }
     }
@@ -1408,6 +1410,9 @@ int gs_setopt(int optid, int value) {
         case GSOP_TRACK_ENTITIES:
             gs.opt.track_entities = value;
             break;
+        case GSOP_TRACK_INVENTORY:
+            gs.opt.track_inventory = value;
+            break;
 
         default:
             LH_ERROR(-1,"Unknown option ID %d\n", optid);
@@ -1423,6 +1428,8 @@ int gs_getopt(int optid) {
         case GSOP_SEARCH_SPAWNERS:
             return gs.opt.search_spawners;
         case GSOP_TRACK_ENTITIES:
+            return gs.opt.track_entities;
+        case GSOP_TRACK_INVENTORY:
             return gs.opt.track_entities;
 
         default:

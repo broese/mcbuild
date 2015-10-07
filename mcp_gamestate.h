@@ -13,6 +13,7 @@
 #define GSOP_PRUNE_CHUNKS       1
 #define GSOP_SEARCH_SPAWNERS    2
 #define GSOP_TRACK_ENTITIES     3
+#define GSOP_TRACK_INVENTORY    4
 
 #define ENTITY_UNKNOWN  0
 #define ENTITY_SELF     1
@@ -76,6 +77,7 @@ typedef struct _gamestate {
         int prune_chunks;
         int search_spawners;
         int track_entities;
+        int track_inventory;
     } opt;
 
     struct {
