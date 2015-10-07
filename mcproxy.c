@@ -1100,7 +1100,7 @@ int proxy_pump() {
 
 void print_usage() {
     printf("Usage:\n"
-           "%s [-h] [-b [bindaddr:]bindport] [server[:port]]\n"
+           "%s [options] [server[:port]]\n"
            "  -h                      : print this help\n"
            "  -b [bindaddr:]bindport] : address and port to bind the proxy socket to. Default: 127.0.0.1:25565\n"
            "  -w [bindaddr:]bindport] : address and port to bind the webserver socket to. Default: 127.0.0.1:8080\n"
@@ -1163,6 +1163,11 @@ int parse_args(int ac, char **av) {
                 }
                 break;
             }
+            case '?': {
+                printf("Unknown option -%c", opt);
+                error++;
+                break;
+            }
         }
     }
 
@@ -1178,7 +1183,7 @@ int parse_args(int ac, char **av) {
             o_bport = port;
         }
         else {
-            printf("Failed to parse bind address/port \"%s\"\n",av[optind]);
+            printf("Failed to parse remote server address/port \"%s\"\n",av[optind]);
             error++;
         }
     }
@@ -1187,6 +1192,8 @@ int parse_args(int ac, char **av) {
            "Webserver address :  %s:%d\n"
            "Remote address    :  %s:%d\n",
            o_baddr,o_bport,o_waddr,o_wport,o_raddr,o_rport);
+
+    return error==0;
 }
 
 #define MKDIR(name) if (mkdir( #name ,0777)<0 && errno!=EEXIST)         \
