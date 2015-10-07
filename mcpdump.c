@@ -34,6 +34,7 @@ int o_spawner_single            = 0;
 int o_track_inventory           = 0;
 int o_track_thunder             = 0;
 int o_dump_packets              = 0;
+int o_dimension                 = 0;
 
 void print_usage() {
     printf("Usage:\n"
@@ -45,13 +46,14 @@ void print_usage() {
            "  -i                        : track inventory transactions and dump inventory\n"
            "  -t                        : track thunder sounds\n"
            "  -d                        : dump packets\n"
+           "  -D dimension              : specify dimension (0:overworld, -1:nether, 1:end)\n"
     );
 }
 
 int parse_args(int ac, char **av) {
     int opt,error=0;
 
-    while ( (opt=getopt(ac,av,"b:sSihdt")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:D:sSihdt")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -85,6 +87,17 @@ int parse_args(int ac, char **av) {
                     printf("-b : you must specify an argument as block_id[:meta] - use decimal numbers\n");
                     error++;
                 }
+                break;
+            }
+            case 'D': {
+                if (sscanf(optarg, "%d", &o_dimension)!=1 || o_dimension<-1 || o_dimension>1) {
+                    printf("-D : incorrect dimension specified, must be 0 for Overworld, -1 for nether, 1 for end\n");
+                    error++;
+                }
+            }
+            case '?': {
+                printf("Unknown option -%c", opt);
+                error++;
                 break;
             }
         }
@@ -352,6 +365,41 @@ void extract_cuboid(int X, int Z, int y) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void search_blocks(int dim, int bid, int meta) {
+    gsworld *w;
+    switch (dim) {
+        case 0:  w = &gs.overworld; break;
+        case -1: w = &gs.nether; break;
+        case 1:  w = &gs.end; break;
+    }
+
+    if (!w) return;
+
+    int Xi,Zi,i;
+    for(Zi=0; Zi<w->Zs; Zi++) {
+        for(Xi=0; Xi<w->Xs; Xi++) {
+            int32_t idx = Xi+Zi*w->Xs;
+            gschunk *c = w->chunks[idx];
+
+            if (c) {
+                for(i=0; i<65536; i++) {
+                    bid_t bl = c->blocks[i];
+                    if (bl.bid == bid && (meta<0 || bl.meta == meta) ) {
+                        int32_t x = ((Xi+w->Xo)*16+(i&0xf));
+                        int32_t z = ((Zi+w->Zo)*16+((i>>4)&0xf));
+                        int32_t y = i>>8;
+
+                        printf("Block %3d:%2d at %5d,%5d,%3d\n",
+                               bl.bid, bl.meta, x, z, y);
+                    }
+                }
+            }
+        }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 int main(int ac, char **av) {
 
     if (!parse_args(ac,av) || o_help) {
@@ -377,6 +425,10 @@ int main(int ac, char **av) {
             free(data);
         }
     }
+
+    if (o_track_inventory)
+        dump_inventory();
+    //dump_entities();
     //dump_overworld();
 
     if (o_spawner_single) {
@@ -390,10 +442,8 @@ int main(int ac, char **av) {
     if (o_spawner_mult)
         find_spawners();
 
-#if 0
     if (o_block_id >=0)
-        search_blocks(o_block_id, o_block_meta);
-#endif
+        search_blocks(o_dimension, o_block_id, o_block_meta);
 
     gs_destroy();
 }
