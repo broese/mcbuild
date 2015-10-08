@@ -222,7 +222,7 @@ int matl=4, math=7;
 int64_t mat_last[9];
 
 // find a suitable slot in the quickbar where we can swap in materials from the main inventory
-static int find_evictable_slot() {
+int find_evictable_slot() {
     int i;
     int best_s = matl;
     int64_t best_ts = mat_last[matl];

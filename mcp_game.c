@@ -30,6 +30,7 @@ struct {
     int antiafk;
     int antispam;
     int autoshear;
+    int autoeat;
     int bright;
 } opt;
 
@@ -440,6 +441,75 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Auto-eat
+
+uint64_t ae_last_eat = 0;
+#define EAT_INTERVAL 2000000
+#define EAT_THRESHOLD 8
+#define EAT_MAX 20
+
+void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
+    // skip if we used autoeat less than EAT_INTERVAL us ago
+    uint64_t ts = gettimestamp();
+    if ((ts-ae_last_eat)<EAT_INTERVAL) return;
+
+    // if we have full health, start eating when food<EAT_THRESHOLD
+    // if we're less than full health, eat until max food level
+    if ( gs.own.health >= 20.0 ) {
+        if (gs.own.food > EAT_THRESHOLD) return;
+    }
+    else {
+        if (gs.own.food >= EAT_MAX) return;
+    }
+
+    // find suitable food in the inventory
+    int i, fooditem;
+    // search backwards to find items in the hotbar first
+    for(i=44; i>=9; i--) {
+        slot_t *s = &gs.inv.slots[i];
+        if (s->item > 0 && ITEMS[s->item].flags&I_FOOD) {
+            fooditem = s->item;
+            break;
+        }
+    }
+
+    if (i<9) { // we could not find anything edible
+        opt.autoeat = 0;
+        chat_message("Autoeat disabled - out of food!", cq, "gold", 2);
+        return;
+    }
+
+    // fetch the food item into hotbar if it's in the main inventory
+    int eslot = i;
+    if (i<36) {
+        eslot = find_evictable_slot()+36;
+        gmi_swap_slots(sq, cq, i, eslot);
+    }
+
+    // switch to the food item, but remember what was selected before
+    int held=gs.inv.held;
+    gmi_change_held(sq, cq, eslot-36, 0);
+
+    NEWPACKET(CP_PlayerBlockPlacement, pbp);
+    tpbp->bpos.x = -1;
+    tpbp->bpos.y = -1;
+    tpbp->bpos.z = -1;
+    tpbp->face   = -1;
+    tpbp->cx     = 0;
+    tpbp->cy     = 0;
+    tpbp->cz     = 0;
+    tpbp->item   = gs.inv.slots[eslot];
+    queue_packet(pbp,sq);
+    dump_packet(pbp);
+
+    // switch back to whatever the client was holding
+    if (held != gs.inv.held)
+        gmi_change_held(sq, cq, held, 0);
+
+    ae_last_eat = ts;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Autowalk (work in progress)
 
 #define DEFAULT_PITCH 20
@@ -570,6 +640,11 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
     else if (!strcmp(words[0],"ash") || !strcmp(words[0],"autoshear")) {
         opt.autoshear = !opt.autoshear;
         sprintf(reply,"Autoshear is %s",opt.autoshear?"ON":"OFF");
+        rpos = 2;
+    }
+    else if (!strcmp(words[0],"ae") || !strcmp(words[0],"autoeat")) {
+        opt.autoeat = !opt.autoeat;
+        sprintf(reply,"Autoeat is %s",opt.autoeat?"ON":"OFF");
         rpos = 2;
     }
     else if (!strcmp(words[0],"as") || !strcmp(words[0],"antispam")) {
@@ -953,9 +1028,10 @@ void gm_reset() {
 }
 
 void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
-    if (opt.autokill) autokill(sq);
-    if (opt.antiafk)  antiafk(sq, cq);
+    if (opt.autokill)  autokill(sq);
+    if (opt.antiafk)   antiafk(sq, cq);
     if (opt.autoshear) autoshear(sq);
+    if (opt.autoeat)   autoeat(sq, cq);
 
     build_progress(sq, cq);
 }
