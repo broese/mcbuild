@@ -185,6 +185,9 @@
 // and do not have transparent areas
 #define I_OPAQUE (1<<6)
 
+// edible (and preferred) foods
+#define I_FOOD (1<<7)
+
 // (placed blocks only) - metadata defines the placement orientation, but we
 // provide no specific support for it, so it can be ignored
 // Once support for certain block positioning is implemented, remove I_MPOS
