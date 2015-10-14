@@ -10,12 +10,13 @@ ifeq ($(UNAME),SunOS)
         INC  += -I/users/atm/broese/include
         LIBS += -lsocket -lnsl -lmd5 -L/users/atm/broese/lib -lz -lssl -lcrypto
 	CC=gcc
-endif
+else
 ifeq ($(UNAME),Linux)
         LIBS += -lcrypto -lz -lssl
 endif
 ifeq ($(shell uname -o),Cygwin)
         LIBS += -lcrypto -lz -lssl
+endif
 endif
 
 all: mcproxy mcpdump
