@@ -790,7 +790,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         //TODO: notify user about missing materials
 
         // silently switch to this slot
-        gmi_change_held(sq, cq, islot, 0);
+        gmi_change_held(sq, cq, islot, 1);
         slot_t * hslot = &gs.inv.slots[islot+36];
 
         char buf[4096];
@@ -855,7 +855,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
     // switch back to whatever the client was holding
     if (held != gs.inv.held)
-        gmi_change_held(sq, cq, held, 0);
+        gmi_change_held(sq, cq, held, 1);
 }
 
 

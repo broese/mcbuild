@@ -409,7 +409,7 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
         }
         else {
             int held=gs.inv.held;
-            gmi_change_held(sq, cq, tslot, 0);
+            gmi_change_held(sq, cq, tslot, 1);
 
             // place torch
             NEWPACKET(CP_PlayerBlockPlacement, pbp);
@@ -429,7 +429,7 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
 
             // switch back to whatever the client was holding
             if (held != gs.inv.held)
-                gmi_change_held(sq, cq, held, 0);
+                gmi_change_held(sq, cq, held, 1);
         }
     }
 
@@ -488,7 +488,7 @@ void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
 
     // switch to the food item, but remember what was selected before
     int held=gs.inv.held;
-    gmi_change_held(sq, cq, eslot-36, 0);
+    gmi_change_held(sq, cq, eslot-36, 1);
 
     NEWPACKET(CP_PlayerBlockPlacement, pbp);
     tpbp->bpos.x = -1;
@@ -504,7 +504,7 @@ void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
 
     // switch back to whatever the client was holding
     if (held != gs.inv.held)
-        gmi_change_held(sq, cq, held, 0);
+        gmi_change_held(sq, cq, held, 1);
 
     ae_last_eat = ts;
 }
