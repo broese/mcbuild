@@ -833,6 +833,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         tpbp->cx = cx;
         tpbp->cy = cy;
         tpbp->cz = cz;
+        clone_slot(hslot,&tpbp->item);
         queue_packet(pbp,sq);
         //dump_packet(pbp);
 

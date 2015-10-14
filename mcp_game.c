@@ -420,6 +420,7 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
             tpbp->cx     = 8;
             tpbp->cy     = 16;
             tpbp->cz     = 8;
+            clone_slot(&gs.inv.slots[tslot+36], &tpbp->item);
             queue_packet(pbp,sq);
             dump_packet(pbp);
 
@@ -498,7 +499,7 @@ void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
     tpbp->cx     = 0;
     tpbp->cy     = 0;
     tpbp->cz     = 0;
-    tpbp->item   = gs.inv.slots[eslot];
+    clone_slot(&gs.inv.slots[eslot], &tpbp->item);
     queue_packet(pbp,sq);
     dump_packet(pbp);
 
