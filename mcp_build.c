@@ -770,6 +770,9 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
     // time update - try to build any blocks from the placeable blocks list
     if (!build.active) return;
 
+    // do not attempt to build while jumping or falling (i.e. feet not on ground)
+    if (!gs.own.onground) return;
+
     uint64_t ts = gettimestamp();
 
     if (ts < build.lastbuild+buildopts.bldint) return;
