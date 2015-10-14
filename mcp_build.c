@@ -865,6 +865,12 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 void place_pivot(pivot_t pv) {
     assert(build.bp);
 
+    // cancel the placement mode, unless "place many" is active
+    if (build.placemode == 1) {
+        build.placemode = 0;
+        build_cancel();
+    }
+
     // create a new buildtask from our buildplan
     int i;
     for(i=0; i<C(build.bp->plan); i++) {
@@ -909,11 +915,6 @@ void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     int32_t y = tpkt->bpos.y - NOFF[tpkt->face][2];
 
     int dir = player_direction();
-
-    if (build.placemode == 1) {
-        build.placemode = 0;
-        build_cancel(); // don't cancel the task in "multiple placement" mode
-    }
 
     pivot_t pv = { {x,y,z}, dir};
     place_pivot(pv);
