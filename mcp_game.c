@@ -443,9 +443,19 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
 // Auto-eat
 
 uint64_t ae_last_eat = 0;
-#define EAT_INTERVAL 2000000
-#define EAT_THRESHOLD 8
-#define EAT_MAX 20
+int ae_held = -1;
+
+#define EAT_INTERVAL    2000000
+#define EAT_THRESHOLD   8
+#define EAT_MAX         20
+
+/*
+  The problem of autoeating - start eating is just a single packet sent to the
+  server (PlayerBlockPlacement with coords -1,-1,-1), but the eating is not
+  finished until the server confirms it. If we switch away from the food slot
+  too early, it will be aborted. So, after eating, we need to delay switching
+  back to the old slot by 2 seconds.
+*/
 
 void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
     // skip if we used autoeat less than EAT_INTERVAL us ago
@@ -454,56 +464,62 @@ void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
 
     // if we have full health, start eating when food<EAT_THRESHOLD
     // if we're less than full health, eat until max food level
-    if ( gs.own.health >= 20.0 ) {
-        if (gs.own.food > EAT_THRESHOLD) return;
-    }
-    else {
-        if (gs.own.food >= EAT_MAX) return;
-    }
+    if ( (gs.own.health >= 20.0 && (gs.own.food > EAT_THRESHOLD)) ||
+         (gs.own.health < 20.0 && (gs.own.food >= EAT_MAX))) {
+        // our hunder is OK, check if we need to restore an old item slot
 
-    // find suitable food in the inventory
-    int i, fooditem;
-    // search backwards to find items in the hotbar first
-    for(i=44; i>=9; i--) {
-        slot_t *s = &gs.inv.slots[i];
-        if (s->item > 0 && ITEMS[s->item].flags&I_FOOD) {
-            fooditem = s->item;
-            break;
+        if (ae_held != -1) {
+            // we had something else selected previously, restore the
+            // selected hotbar slot.
+
+            gmi_change_held(sq, cq, ae_held, 1);
+            ae_held = -1;
         }
-    }
-
-    if (i<9) { // we could not find anything edible
-        opt.autoeat = 0;
-        chat_message("Autoeat disabled - out of food!", cq, "gold", 2);
         return;
     }
 
-    // fetch the food item into hotbar if it's in the main inventory
-    int eslot = i;
-    if (i<36) {
-        eslot = find_evictable_slot()+36;
-        gmi_swap_slots(sq, cq, i, eslot);
+    //printf("Hunger=%d Health=%f, gonna eat! Held=%d\n",
+    //       gs.own.food, gs.own.health, gs.inv.held);
+
+    slot_t *s = &gs.inv.slots[gs.inv.held+36];
+    if (!(s->item>0 && ITEMS[s->item].flags&I_FOOD)) {
+        // current slot is not edible, try to find food elsewhere in the
+        // inventory, searching backwards to find items in the hotbar first
+        int i;
+        for(i=44; i>=9; i--) {
+            s = &gs.inv.slots[i];
+            if (s->item > 0 && ITEMS[s->item].flags&I_FOOD) break;
+        }
+
+        if (i<9) { // we could not find anything edible
+            opt.autoeat = 0;
+            chat_message("Autoeat disabled - out of food!", cq, "gold", 2);
+            return;
+        }
+
+        // fetch the food item into hotbar if it's in the main inventory
+        int eslot = i;
+        if (i<36) {
+            eslot = find_evictable_slot()+36;
+            gmi_swap_slots(sq, cq, i, eslot);
+        }
+
+        // switch to the food item, but remember what was selected before
+        ae_held=gs.inv.held;
+        gmi_change_held(sq, cq, eslot-36, 1);
     }
 
-    // switch to the food item, but remember what was selected before
-    int held=gs.inv.held;
-    gmi_change_held(sq, cq, eslot-36, 1);
-
+    // send start eating packet to the server and exit, switch back to
+    // the old slot will be done next time this function runs
     NEWPACKET(CP_PlayerBlockPlacement, pbp);
-    tpbp->bpos.x = -1;
-    tpbp->bpos.y = -1;
-    tpbp->bpos.z = -1;
+    tpbp->bpos = POS(-1,-1,-1);
     tpbp->face   = -1;
     tpbp->cx     = 0;
     tpbp->cy     = 0;
     tpbp->cz     = 0;
-    clone_slot(&gs.inv.slots[eslot], &tpbp->item);
+    clone_slot(s, &tpbp->item);
     queue_packet(pbp,sq);
     dump_packet(pbp);
-
-    // switch back to whatever the client was holding
-    if (held != gs.inv.held)
-        gmi_change_held(sq, cq, held, 1);
 
     ae_last_eat = ts;
 }
