@@ -413,9 +413,7 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
 
             // place torch
             NEWPACKET(CP_PlayerBlockPlacement, pbp);
-            tpbp->bpos.x = x;
-            tpbp->bpos.z = z;
-            tpbp->bpos.y = y-1;
+            tpbp->bpos = POS(x,y-1,z);
             tpbp->face   = 1;
             tpbp->cx     = 8;
             tpbp->cy     = 16;

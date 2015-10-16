@@ -826,9 +826,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
         // place block
         NEWPACKET(CP_PlayerBlockPlacement, pbp);
-        tpbp->bpos.x = b->x+NOFF[face][0];
-        tpbp->bpos.z = b->z+NOFF[face][1];
-        tpbp->bpos.y = b->y+NOFF[face][2];
+        tpbp->bpos = POS(b->x+NOFF[face][0],b->y+NOFF[face][2],b->z+NOFF[face][1]);
         tpbp->face = face;
         tpbp->cx = cx;
         tpbp->cy = cy;
