@@ -37,10 +37,10 @@ struct {
 // loaded base locations - for thunder protection
 #define MAXBASES 256
 #define BASESFILE "bases.txt"
-#define BASEDIST 1500
 
 typedef struct {
-    int32_t x,z;
+    int32_t x,z,r;
+    char name[256];
 } wcoord_t;
 wcoord_t bases[MAXBASES];
 int nbases=0;
@@ -445,7 +445,7 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
 uint64_t ae_last_eat = 0;
 int ae_held = -1;
 
-#define EAT_INTERVAL    2000000
+#define EAT_INTERVAL    5000000
 #define EAT_THRESHOLD   8
 #define EAT_MAX         20
 
@@ -829,10 +829,10 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 for(i=0; i<nbases; i++) {
                     float dx = (float)(bases[i].x - gs.own.x/32);
                     float dz = (float)(bases[i].z - gs.own.z/32);
-                    if ( sqrtf(dx*dx+dz*dz) < BASEDIST ) {
-                        printf("Dropping connection because we are too close to base #%d at %d,%d : "
-                               "dx=%.0f dz=%.0f dist=%d\n",
-                               i, bases[i].x, bases[i].z,dx,dz,BASEDIST);
+                    if ( sqrtf(dx*dx+dz*dz) < (float)bases[i].r  ) {
+                        printf("Dropping connection because we are too close to base %s at %d,%d : "
+                               "dx=%.0f dz=%.0f radius=%d\n",
+                               bases[i].name, bases[i].x, bases[i].z, dx, dz, bases[i].r);
                         drop_connection();
                         break;
                     }
@@ -976,20 +976,29 @@ void readbases() {
         if (!fgets(buf, sizeof(buf), fp)) break;
         if (buf[0]=='#' || buf[0]==0x0d || buf[0]==0x0a) continue;
 
-        int32_t x,z;
-        if (sscanf(buf, "%d,%d", &x, &z)!=2) {
+        int32_t x,z,r;
+        char s[4096];
+        if (sscanf(buf, "%d,%d,%d,%[^,]", &x, &z, &r, s)!=4) {
             printf("Error parsing line '%s' in %s\n",buf,BASESFILE);
             continue;
         }
+
+        int i;
+        for(i=0; i<sizeof(s)&&s[i]; i++) if (s[i]<0x20) s[i]=0;
+
         bases[nbases].x = x;
         bases[nbases].z = z;
+        bases[nbases].r = r;
+        strncpy(bases[nbases].name, s, sizeof(bases[nbases].name)-1);
         nbases++;
     }
 
     int i;
     for(i=0; i<nbases; i++) {
-        printf("%3d : %+5d,%+5d\n",i,bases[i].x,bases[i].z);
+        printf("%3d : %+6d,%+6d %5d %s\n",
+               i,bases[i].x,bases[i].z,bases[i].r,bases[i].name);
     }
+    fflush(stdout);
 }
 
 // load friend/foe UUIDs
