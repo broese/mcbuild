@@ -184,6 +184,8 @@ struct {
     int anyface;           // attempt to build on any faces, even those looking away from you
                            // this type of building will work on vanilla servers, but may be
                            // blocked on some, including 2b2t
+    int bjump;             // build while jumping/flying/swimming - this is disabled by default
+                           // but useful in some situations, e.g. when building under water
 } buildopts = { 0 };
 
 typedef struct {
@@ -205,6 +207,7 @@ bopt_t OPTIONS[] = {
     { "wm", "wall mode - limit placement to blocks beneath player",     &buildopts.wallmode, 0},
     { "sm", "seal mode - limit placement to blocks in front of player", &buildopts.sealmode, 0},
     { "anyface", "place on any faces even if they look away from player",   &buildopts.anyface, 0},
+    { "bjump", "build while jumping/falling/swimming",                  &buildopts.bjump, 0},
     { NULL, NULL, NULL, 0 }, //list terminator
 };
 
@@ -771,7 +774,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (!build.active) return;
 
     // do not attempt to build while jumping or falling (i.e. feet not on ground)
-    if (!gs.own.onground) return;
+    if (!(gs.own.onground || buildopts.bjump)) return;
 
     uint64_t ts = gettimestamp();
 
