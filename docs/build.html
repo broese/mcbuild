@@ -205,11 +205,9 @@
 
     <p>Material can be specified my its decimal or hexadecimal block ID,
       or by symbolic name. For slabs you can also specify whether you
-      want the upper or the lower form</p>
+      want the upper or the lower form.</p>
 
     <p>Names: material,mat,m</p>
-
-    <p>Default material: block that player holds at the moment of issuing the command</p>
 
     <p>As example, the following material formats represent stone and sandstone
       slabs in different positions. The block ID for stone slabs is 0x2C / 44, but
@@ -220,7 +218,7 @@
       meta value or in combination of the meta value + upper flag</p>
 
     <table>
-        <tr><th>Specification</th><th>Description</th><th>Resulting block</th></tr>
+        <tr><th>Example specification</th><th>Description</th><th>Resulting block</th></tr>
 
         <tr class="toned"><td>44</td><td>Decimal ID</td><td rowspan=3>Stone slab (lower)</td></tr>
         <tr class="toned"><td>0x2c</td><td>Hex ID</td></tr>
@@ -243,6 +241,77 @@
         <tr><td>stone_slab:1u</td><td>Name+meta+upper</td></tr>
         <tr><td>stone_slab:sandstone:u</td><td>Name+subname+upper</td></tr>
     </table>
+
+    <p>Examples of use:</p>
+    <p>Floor made with oak woodplanks</p>
+    <p><tt>#build floor size=10,10 material=5</tt></p>
+    <p>Floor made with spruce woodplanks</p>
+    <p><tt>#build floor size=10,10 material=5:1</tt></p>
+    <p>A ball made from red wool</p>
+    <p><tt>#build ball d=7 m=wool:red</tt></p>
+    <p>Replace all obsidian in a buildplan with diamond blocks</p>
+    <p><tt>#build replace obsidian diamond_block</tt></p>
+    <p>Create a cobble slab floor with slabs in upper position</p>
+    <p><tt>#build floor 10,10 0x2c:4u</tt></p>
+
+    <a name="par_pivot">
+    <h3>Pivot</h3>
+
+    <p>The pivot parameter defines a specific absolute world coordinates plus
+      direction. As the name suggests, it defines the exact placement of a pivot
+      block in the world and is thus used with commands lice <tt>place</tt> and
+      <tt>scan</tt></p>
+
+    <p>Names: pivot,pv,p,from,pos,at</p>
+
+    <p>Default: waits for the player to place a block and uses these coordinates and
+      direction (place command only)</p>
+
+    <p>Default pivot: depending on the command. For 'build place', pivot can be specified
+      by placing a block after a command was issued</p>
+
+    <p>Following table shows various pivot spec formats</p>
+
+    <table class="striped" style="width:100%">
+        <tr><th>Specification</th><th>Examples</th><th>Description</th></tr>
+
+        <tr>
+          <td>x,z,y,dir</td>
+          <td>123,456,64,e</td>
+          <td>Absolute coordinates and direction</td>
+        </tr>
+        <tr>
+          <td>x,z,y</td>
+          <td>123,456,64</td>
+          <td>Absolute coordinates. As direction the current player's direction is assumed</td>
+        </tr>
+        <tr>
+          <td>x,z,dir</td>
+          <td>123,456,n</td>
+          <td>Absolute horizontal coordinates and direction. Player's current y coordinate (at feet level) is assumed for Y-coordinate</td>
+        </tr>
+        <tr>
+          <td>x,z</td>
+          <td>123,456</td>
+          <td>Absolute horizontal coordinates. Y-coordinate and direction is assumed from the player's Y-coordinate and look direction</td>
+        </tr>
+        <tr>
+          <td>dist</td>
+          <td>0</td>
+          <td>Distance to the pivot point. The direction corresponds to player's look direction, the coordinates are assumed for a block that is <i>dist</i> blocks in front of the player.
+            Value 0 would correspond to the block where the player stands right now (the feet position). Value of 1 would mean a block right in front of the player</td>
+        </tr>
+    </table>
+
+    <p>Examples of use:</p>
+    <p>Place a pivot block at postion 1000,500, y=100, direction east</p>
+    <p><tt>#build place pivot=1000,500,100,e</tt></p>
+    <p>Place a pivot block at postion 1000,500, direction south, at the same level the player is standing</p>
+    <p><tt>#build place pv=1000,500,s</tt></p>
+    <p>Place a pivot right in front of the player</p>
+    <p><tt>#build place 1</tt></p>
+    <p>Scan an area of 10x10x5 blocks, while player is standing right at the spot of the pivot</p>
+    <p><tt>#build scan 0 10,10,5</tt></p>
 
   </body>
 </html>
