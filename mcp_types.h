@@ -40,7 +40,11 @@ typedef struct {
     };
 } pos_t;
 
+#ifdef BUG_UNNAMED_INITIALIZER
+#define POS(X,Y,Z) (pos_t){ (((int64_t)X)<<38)|(((int64_t)Y)<<26)|Z }
+#else
 #define POS(X,Y,Z) (pos_t){ .x=X, .y=Y, .z=Z }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // coordinates
