@@ -1401,6 +1401,7 @@ static inline int arg_trim(char **words, int *value) {
 
     // parse value
     if (sscanf(words[0]+pos, "%d", value) != 1) return TRIM_UNK;
+    *value += off;
 
     // remove the string from the wordlist if parsed successfully
     int i;
