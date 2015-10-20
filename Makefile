@@ -1,72 +1,74 @@
 CFLAGS=-g
-LIBS_LIBHELPER=-L../libhelper -lhelper
-LIBS=$(LIBS_LIBHELPER) -lm -lpng -lz -lcurl
 DEFS=-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
 INC=-I../libhelper
+LIBS_LIBHELPER=-L../libhelper -lhelper
+LIBS=$(LIBS_LIBHELPER) -lm -lpng -lz -lcurl -lcrypto
 
-UNAME := $(shell uname -s)
-ifeq ($(UNAME),SunOS)
+SRC_BASE=$(addsuffix .c, mcp_packet mcp_ids mcp_types nbt)
+SRC_MCPROXY=$(addsuffix .c, mcproxy mcp_gamestate mcp_game mcp_build mcp_arg mcp_bplan) $(SRC_BASE)
+SRC_MCPDUMP=$(addsuffix .c, mcpdump mcp_gamestate) $(SRC_BASE)
+SRC_ALL=$(SRC_MCPROXY) mcpdump.c varint.c nbt.c spiral.c
+
+ALLBIN=mcproxy mcpdump
+TSTBIN=nbttest argtest spiral bptest varint
+
+HDR_ALL=$(addsuffix .h, mcp_packet mcp_ids mcp_types nbt mcp_game mcp_gamestate mcp_build mcp_arg mcp_bplan)
+
+DEPFILE=make.depend
+
+ifeq ($(shell uname -s),SunOS)
 	DEFS += -DBUG_UNNAMED_INITIALIZER=1
-        INC  += -I/users/atm/broese/include
-        LIBS += -lsocket -lnsl -lmd5 -L/users/atm/broese/lib -lz -lssl -lcrypto
-	CC=gcc
+	INC  += -I$(HOME)/include
+	LIBS += -lsocket -lnsl -lmd5 -L$(HOME)/lib
+	CC   = gcc
 else
-ifeq ($(UNAME),Linux)
-        LIBS += -lcrypto -lz -lssl
-endif
 ifeq ($(shell uname -o),Cygwin)
-        LIBS += -lcrypto -lz -lssl
+	CFLAGS=-std=gnu99
 endif
 endif
 
-all: mcproxy mcpdump
 
-test: nbttest argtest spiral bptest varint
+all: $(ALLBIN)
 
+test: $(TSTBIN)
+	@echo > /dev/null
 
-mcproxy: mcproxy.o mcp_gamestate.o mcp_packet.o mcp_game.o mcp_ids.o nbt.o mcp_build.o mcp_arg.o mcp_bplan.o mcp_types.o
+mcproxy: $(SRC_MCPROXY:.c=.o)
 	$(CC) -o $@ $^ $(LIBS)
 
-mcpdump: mcpdump.o mcp_gamestate.o mcp_packet.o mcp_ids.o mcp_types.o nbt.o
+mcpdump: $(SRC_MCPDUMP:.c=.o)
 	$(CC) -o $@ $^ $(LIBS)
 
-spiral: spiral.o
-	$(CC) -o $@ $^ $(LIBS)
 
-nbttest: nbt.c
-	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS_LIBHELPER)
 
-argtest: mcp_arg.c mcp_ids.o mcp_gamestate.o nbt.o mcp_packet.o mcp_types.o
+argtest: $(SRC_BASE:.c=.o) mcp_arg.c
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
 
-bptest: mcp_bplan.c mcp_ids.o mcp_packet.o nbt.o mcp_types.o
+bptest: $(SRC_BASE:.c=.o) mcp_bplan.c
+	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
+
+nbttest: nbt.c
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
 
 varint: varint.c
-	$(CC) $(CFLAGS) $(INC) $(DEFS) -o $@ $^ $(LIBS)
+	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
 
-.c.o:
-	$(CC) $(CFLAGS) $(INC) $(DEFS) -o $@ -c $<
-
-
-
-mcproxy.o mcpdump.o: mcp_gamestate.h mcp_game.h mcp_ids.h nbt.h
-
-mcp_gamestate.o: mcp_gamestate.h mcp_ids.h
-
-mcp_game.o: mcp_gamestate.h mcp_game.h mcp_ids.h mcp_packet.h mcp_build.h
-
-mcp_ids.o: mcp_ids.h
-
-mcp_types.o: mcp_types.h nbt.h
-
-mcp_packet.o: nbt.h mcp_ids.h mcp_types.h
-
-mcp_build.o: mcp_ids.h mcp_build.h mcp_bplan.h mcp_gamestate.h mcp_game.h mcp_arg.h mcp_types.h
-
-mcp_bplan.o: mcp_bplan.h mcp_packet.h mcp_types.h
+spiral: spiral.c
+	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
 
 
+
+.c.o: $(DEPFILE)
+	$(CC) $(CFLAGS) $(DEFS) $(INC) $(CONFIG) -o $@ -c $<
+
+$(DEPFILE): $(SRC_ALL) $(HDR_ALL)
+	@rm -rf $(DEPFILE) $(DEPFILE).bak
+	@touch $(DEPFILE)
+	makedepend -Y -f $(DEPFILE) $(SRC_ALL) 2> /dev/null
 
 clean:
-	rm -f *.o *~ nbttest mcproxy mcpdump argtest
+	rm -f *.o *~ $(ALLBIN) $(TSTBIN) $(DEPFILE)
+
+FORCE:
+
+sinclude $(DEPFILE)
