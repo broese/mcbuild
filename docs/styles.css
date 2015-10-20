@@ -24,3 +24,9 @@ th, td {
 tr.toned {
   background-color:#ffffe0;
 }
+
+tt {
+  background-color:#ffffe0;
+  font-weight: bold;
+  padding: 5px;
+}

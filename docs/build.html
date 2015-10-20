@@ -264,12 +264,6 @@
 
     <p>Names: pivot,pv,p,from,pos,at</p>
 
-    <p>Default: waits for the player to place a block and uses these coordinates and
-      direction (place command only)</p>
-
-    <p>Default pivot: depending on the command. For 'build place', pivot can be specified
-      by placing a block after a command was issued</p>
-
     <p>Following table shows various pivot spec formats</p>
 
     <table class="striped" style="width:100%">
@@ -312,6 +306,146 @@
     <p><tt>#build place 1</tt></p>
     <p>Scan an area of 10x10x5 blocks, while player is standing right at the spot of the pivot</p>
     <p><tt>#build scan 0 10,10,5</tt></p>
+
+    <a name="build_parametric">
+    <h2>Parametric Structures</h2>
+
+    <p>This class of commands will create a buildplan of simple generic structures,
+      usually made from a single type of material and with size specified as parameter.</p>
+
+    <p>Calling a parametric build command will cancel your current buildtask and
+      replace your current buildplan with a generated one. By default, you will immediately
+      enter the "#build place once" mode of placement (depending on your placemode setting),
+      i.e. placing a block somewhere will specify the pivot point of your new structure
+      and the building will start.</p>
+
+    <p>All parametric build commands accept the parameter <a href="#par_mat">material</a>
+      in one of the supported formats. If you omit the explicit material specification,
+      the material you currently hold in your hand will be used. If your hand is empty
+      of you hold a non-placeable item, you will receive an error.</p>
+
+    <a name="para_floor">
+    <h3>floor,rect</h3>
+
+    <p>Flat rectangular floor. rect variation takes exactly same parameters but creates only the border.</p>
+    <p>Format:</p>
+    <p><tt>#build floor size=W[,L] [material=matspec]</tt></p>
+    <p><tt>#build rect size=W[,L] [material=matspec]</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>size|sz|s=W[,L] : size of the floor, W blocks wide (to the right) and L blocks long (to the front). If L is omitted, assuming square WxW.</li>
+      <li>material|mat|m=<a href="#par_mat">material</a> : material to build with. If omitted, assuming the block you hold in your hand</li>
+    </ul>
+
+    <p>Pivot: leftmost nearest block</p>
+
+    <p>Examples and usage tips:</p>
+
+    <p><tt>#build floor size=10,5 material=cobblestone</tt> - 10x5 cobblestone floor</p>
+    <p><tt>#build floor 100 dirt</tt> - 100x100 dirt floor - useful for quickly fixing holes in the ground or flattening the landscape</p>
+    <p><tt>#build floor 1,1000</tt> - A narrow 1x1000 floor made of whatever material you are holding - e.g. as a narrow bridge/walkway or to automatically fix the holes at your path as you walk - e.g. on a nether tunnel.</p>
+    <p><tt>#build floor 50x30 wooden_slab:birch:u</tt> - 50x30 floor made of birch slabs in upper position - e.g. for covering the ceiling.</p>
+    <p><tt>#build rect 10 m=fence</tt> - 10x10 rectange made of fence - e.g. making an animal pen.</p>
+
+
+    <a name="para_disk">
+    <h3>disk,ring</h3>
+
+    <p>Flat disk, or ring (i.e. border only). The ring is obtained by applying the 2D hollow function to the disk of the same diameter</p>
+    <p>Format:</p>
+    <p><tt>#build disk diameter=D [material=matspec]</tt></p>
+    <p><tt>#build ring diameter=D [material=matspec]</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>diameter,diam,d=D : diameter of the disk or ring.</li>
+      <li>material|mat|m=<a href="#par_mat">material</a> : material to build with. If omitted, assuming the block you hold in your hand</li>
+    </ul>
+
+    <p>Pivot: center</p>
+
+    <p>Examples and usage tips:</p>
+
+    <p><tt>#build ring d=15 m=cobblestone</tt> - cobblestone ring with diameter 15</p>
+    <p><tt>#build disk 5</tt> - disk of diameter 5 made with whatever block you were holding in your hand</p>
+
+
+
+    <a name="para_ball">
+    <h3>ball,sphere</h3>
+
+    <p>Ball, or hollowed sphere of a given diameter. The sphere is obtained by generating the ball of the same diameter and applying 3D hollow function to it.</p>
+    <p>Format:</p>
+    <p><tt>#build ball diameter=D [material=matspec]</tt></p>
+    <p><tt>#build sphere diameter=D [material=matspec]</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>diameter,diam,d=D : diameter of the ball or sphere.</li>
+      <li>material|mat|m=<a href="#par_mat">material</a> : material to build with. If omitted, assuming the block you hold in your hand</li>
+    </ul>
+
+    <p>Pivot: center</p>
+
+    <p>Examples and usage tips:</p>
+
+    <p><tt>#build sphere d=15 m=cobblestone</tt> - cobblestone sphere with diameter 15</p>
+    <p><tt>#build ball 5</tt> - ball of diameter 5 made with whatever block you were holding in your hand</p>
+
+
+
+    <a name="para_stairs">
+    <h3>stairs</h3>
+
+    <p>A flight of stairs with an optional base (to allow building over open space. If you choose a stairs-type block as material,
+      the meta values will be adjusted to create correct steps and the base blocks will be created using a matching material
+      (i.e. cobblestone blocks for the cobblestone stairs), unless -e option specified.</p>
+    <p>Format:</p>
+    <p><tt>#build stairs size=W,H [material=matspec] [-n|m|f] [-e]</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>size|sz|s=W,H : size of the stairs - H blocks wide, H blocks high</li>
+      <li>material|mat|m=<a href="#par_mat">material</a> : material to build with. If omitted, assuming the block you hold in your hand</li>
+      <li>-n : Don't add any base blocks</li>
+      <li>-m : add minimum base at the left side (default)</li>
+      <li>-f : add full base over the entire width</li>
+      <li>-e : do not try to choose a suitable full block for the base, use exactly same block type as the steps</li>
+    </ul>
+
+    <p>Pivot: leftmost bottom</p>
+
+    <p>Examples and usage tips:</p>
+
+    <p><tt>#build stairs 3,10 -f</tt> - stairs 3 blocks wide and 10 steps high, full base, made with whatever material you are holding</p>
+    <p><tt>#build stairs 3,10 cobblestone_stairs</tt> - cobblestone stairs using stairs blocks</p>
+
+
+
+    <a name="para_scaf">
+    <h3>scaffolding,scaf</h3>
+
+    <p>A scaffolding with given width and number of levels build out of blocks of a single type (dirt by default).
+      If the -l option specified, an alternative design using ladders will be created. The standard-design
+      scaffolding screates a simple stairs allowing you to climb it. The scaffolding is made at least 7 blocks wide.
+      The floors are 3 blocks high.</p>
+
+    <p>Format:</p>
+    <p><tt>#build scaffolding size=W,H [material=matspec] [-l]</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>size|sz|s=W,H : size of the scaffolding - W blocks wide, H floors high (3*H blocks high)</li>
+      <li>material|mat|m=<a href="#par_mat">material</a> : material to build with. If omitted, assuming the block you hold in your hand</li>
+      <li>-l : generate an alternative design scaffolding with a ladder.</li>
+    </ul>
+
+    <p>Pivot: leftmost bottom</p>
+
+    <p>Examples and usage tips:</p>
+
+    <p><tt>#build scaf 15,5 -l</tt> - scaffolding 15 blocks wide and 5 floors high</p>
 
   </body>
 </html>
