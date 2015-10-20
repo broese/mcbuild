@@ -1436,25 +1436,25 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
     // Parametric builds
-    CMD(floor) {
+    CMD2(floor,fl) {
         ARGREQ(size, NULL, sz);
         ARGMAT(NULL, mat, ad.mat);
         build_clear();
         build.bp = bplan_floor(sz.x, sz.z, mat);
-        sprintf(reply, "Floor size=%dx%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
+        sprintf(reply, "Floor size=%d,%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
         goto Place;
     }
 
-    CMD(wall) {
+    CMD2(wall,wa) {
         ARGREQ(size, NULL, sz);
         ARGMAT(NULL, mat, ad.mat);
         build_clear();
         build.bp = bplan_wall(sz.x, sz.z, mat);
-        sprintf(reply, "Wall size=%dx%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
+        sprintf(reply, "Wall size=%d,%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
         goto Place;
     }
 
-    CMD(disk) {
+    CMD2(disk,di) {
         char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
         ARGREQ(size, dwords, sz);
         ARGMAT(NULL, mat, ad.mat);
@@ -1464,7 +1464,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
-    CMD(ball) {
+    CMD2(ball,ba) {
         char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
         ARGREQ(size, dwords, sz);
         ARGMAT(NULL, mat, ad.mat);
@@ -1474,7 +1474,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
-    CMD(ring) {
+    CMD2(ring,ri) {
         char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
         ARGREQ(size, dwords, sz);
         ARGMAT(NULL, mat, ad.mat);
@@ -1485,7 +1485,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
-    CMD(sphere) {
+    CMD2(sphere,sp) {
         char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
         ARGREQ(size, dwords, sz);
         ARGMAT(NULL, mat, ad.mat);
@@ -1496,13 +1496,13 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
-    CMD(square) {
+    CMD2(rectangle,rect) {
         ARGREQ(size, NULL, sz);
         ARGMAT(NULL, mat, ad.mat);
         build_clear();
         build.bp = bplan_floor(sz.x, sz.z, mat);
         bplan_hollow(build.bp, 1, 0);
-        sprintf(reply, "Square size=%dx%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
+        sprintf(reply, "Rectangle size=%dx%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
         goto Place;
     }
 
@@ -1526,7 +1526,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
-    CMD(stairs) {
+    CMD2(stairs,stair) {
         ARGREQ(size, NULL, sz);
         ARGMAT(NULL, mat, ad.mat);
         build_clear();
@@ -1553,7 +1553,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
-    CMD(hollow) {
+    CMD2(hollow,ho) {
         NEEDBP;
         int flat = argflag(words, WORDLIST("flat","2d","2","f","xz"));
         int opaque = !argflag(words, WORDLIST("opaque","o"));
@@ -1562,7 +1562,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
-    CMD(replace) {
+    CMD2(replace,re) {
         NEEDBP;
         char **mw1 = WORDLIST("material1","mat1","m1");
         char **mw2 = WORDLIST("material2","mat2","m2");
@@ -1786,7 +1786,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Error;
     }
 
-    CMD(rec) {
+    CMD2(record,rec) {
         char *rcmd = words[0];
         if (!rcmd || !strcmp(rcmd, "start")) {
             build_clear();
