@@ -1963,6 +1963,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Error;
     }
 
+    sprintf(reply, "Unrecognized command");
+    goto Error;
+
  Place:
     bplan_update(build.bp);
     build.placemode = buildopts.placemode; // initiate placing
