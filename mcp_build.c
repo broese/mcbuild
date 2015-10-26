@@ -877,9 +877,15 @@ void place_pivot(pivot_t pv) {
     }
 
     // create a new buildtask from our buildplan
-    int i;
+    int i, trimmed=0;
     for(i=0; i<C(build.bp->plan); i++) {
         blkr bp=rel2abs(pv, P(build.bp->plan)[i]);
+        if (bp.y<0 || bp.y >255) {
+            // exclude blocks that exceed vertical range to avoid issues
+            // with placement and preview
+            trimmed++;
+            continue;
+        }
         blk  *bt = lh_arr_new_c(BTASK); // new element in the buildtask
         bt->x = bp.x;
         bt->y = bp.y;
@@ -906,6 +912,8 @@ void place_pivot(pivot_t pv) {
 
     printf("Buildtask boundary: X: %d - %d   Z: %d - %d   Y: %d - %d\n",
            build.xmin, build.xmax, build.zmin, build.zmax, build.ymin, build.ymax);
+    if (trimmed > 0)
+        printf("Warning: %d blocks exceeded the y range and were trimmed\n", trimmed);
 
     build_update();
 }
@@ -1621,7 +1629,6 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
             }
         }
         bplan_flip(build.bp, mode);
-        bplan_normalize(build.bp);
         sprintf(reply, "Buildplan flipped about %c axis",mode);
         goto Place;
     }
@@ -1642,7 +1649,6 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
             }
         }
         bplan_tilt(build.bp, mode);
-        bplan_normalize(build.bp);
         sprintf(reply, "Buildplan tilted about %c axis",mode);
         goto Place;
     }
