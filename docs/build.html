@@ -646,5 +646,94 @@
 
 
 
+
+    <a name="build_import">
+    <h2>Import/Export</h2>
+
+    <p>This section describes commands for importing and exporting
+      buildplans from and to external files</p>
+
+    <a name="file_save">
+    <h3>save</h3>
+
+    <p>Save current buildplan to .bplan format (native MCBuild format).
+      File is placed into bplan subdirectory. Note that the filename does
+      not include the extension or path.</p>
+
+    <p>Format:</p>
+    <p><tt>#build save filename</tt></p>
+    
+
+    <a name="file_load">
+    <h3>load</h3>
+
+    <p>Load the buildplan from .bplan format</p>
+
+    <p>Format:</p>
+    <p><tt>#build load filename</tt></p>
+    
+
+
+    <a name="file_ssave">
+    <h3>ssave</h3>
+
+    <p>Export the buildplan to .schematic format. The file will be placed
+      into schematic subdirectory.</p>
+
+    <p>Format:</p>
+    <p><tt>#build ssave filename</tt></p>
+
+
+    
+    <a name="file_sload">
+    <h3>sload</h3>
+
+    <p>Import buildplan from MCEdit .schematic format. Note that the import
+      only imports block IDs and meta values. Additional data such as entities 
+      and block entities (i.e. writings on the signs) are ignored.</p>
+
+    <p>Format:</p>
+    <p><tt>#build sload filename</tt></p>
+    
+
+
+
+    <a name="file_csvsave">
+    <h3>csvsave</h3>
+
+    <p>Export the buildplan to .csv format. The file will be placed
+      into csv subdirectory. The format is a list of blocks, 1 block
+      per line, with the following 5 values: x,y,z,block_id,block_meta</p>
+
+    <p>Format:</p>
+    <p><tt>#build csvsave filename</tt></p>
+
+
+    
+    <a name="file_csvload">
+    <h3>csvload</h3>
+
+    <p>Import buildplan from CSV format.</p>
+
+    <p>Format:</p>
+    <p><tt>#build csvload filename</tt></p>
+    
+
+
+    <a name="file_png">
+    <h3>pngload,png</h3>
+
+    <p>Import buildplan from a PNG file as pixelart. Each pixel is
+      transformed into a block from the specified set with the closest
+      color. Transparent pixels result in empty blocks. Currently,
+      the only supported blockset is "wool" - the set of 16 colored
+      wool blocks. PNG will be loaded from the png subdirectory.</p>
+
+    <p>Format:</p>
+    <p><tt>#build pngload setname</tt></p>
+    
+
+
+
   </body>
 </html>
