@@ -1254,6 +1254,10 @@ void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq, int mode) {
         int32_t X=b->x>>4;
         int32_t Z=b->z>>4;
 
+        // skip blocks located in unloaded chunks
+        int32_t idx = find_chunk(gs.world, X, Z);
+        if (!gs.world->chunks[idx]) continue;
+
         // see if we already have a packet for this chunk prepared
         SP_MultiBlockChange_pkt *tpkt=NULL;
         for(j=0; j<npackets; j++) {
