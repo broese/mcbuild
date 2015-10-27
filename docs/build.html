@@ -815,8 +815,147 @@
     <img src="images/scan_after.jpg">
     
 
+    <a name="build_control">
+    <h2>Building Control</h2>
+
+    <a name="ctrl_place">
+    <h3>place</h3>
+
+    <p>Place a pivot block in the world to create a buildtask from the buildplan
+      and initiate building process. The pivot coordinates can be specified
+      explicitly, in which case the building can start immediately, or let
+      the player place any block at the desired pivot coordinates.</p>
+
+    <p>Note that most commands for parametric builds or buildplan manipulation
+      or loading will automatically initiate placement mode, as if you type
+      <tt>#build place once</tt> immediately afterward. This behavior can be
+      changed by setting the <a href="#build_opts">placemode</a> option.</p>
+
+    <p>Format:</p>
+    <p><tt>#build place once</tt> - initiate placement process. When player places
+      any block, its position and player's look direction will define the pivot.</p>
+    <p><tt>#build place many</tt> - initiate placement process, but unlike
+      &quot;place once&quot; placement mode is retained when player places a block,
+      every time adding another copy of buildplan to the buildtask, until canceled</p>
+    <p><tt>#build place again</tt> - place the buildplan once more at the same coordinates</p>
+    <p><tt>#build place cancel</tt> - cancel the placement process. Not to be confused
+      with <tt>#build cancel</tt> which cancels building process</p>
+    <p><tt>#build pivot=pivotspec</tt> - place the buildplan at explicitly specified pivot.</p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>pivot|pv|p - <a href="#par_pivot">Pivot specification</a></li>
+    </ul>
+
+    <p>Examples and usage tips:</p>
+    <p><tt>#build place</tt> - start placement process.</p>
+    <p><tt>#build place 100,200,64,n</tt> - place at coordinates x=100, z=200, y=64, in direction North</p>
+    <p><tt>#build place 1</tt> - place right before the player and in the direction of player's look</p>
+
+
+
+    <a name="ctrl_cancel">
+    <h3>cancel</h3>
+
+    <p>Cancel the building process. This command will stop and clear your buildtask
+      and any active placement mode, but your buildplan will remain. After canceling,
+      you can restart building process at the same position with <tt>#build place again</tt>.
+      Issuing any command that creates, loads or modifies your buildplan will also
+      cancel your current buildtask.</p>
+
+    <p>Format:</p>
+    <p><tt>#build cancel</tt></p>
+
+
+    <a name="ctrl_pause">
+    <h3>pause</h3>
+
+    <p>Pauses or unpauses the building process without canceling the buildtask.
+      This command is useful when you need to interrupt building briefly to
+      fix something manually or to avoid dangerous situation. It is very advisable
+      to bind this command to a hotkey, if your client supports that.</p>
+
+    <p>Format:</p>
+    <p><tt>#build pause</tt></p>
+
+
+    <a name="ctrl_preview">
+    <h3>preview</h3>
+
+    <p>Create an in-world preview of your current buildtask. The preview is generated
+      by spawning phanthom blocks in your world (using BlockChange packets injected
+      into protocol). Please note that the blocks only exist in your client and
+      not on the server, however are assumed to be real by your client. Attempting
+      to walk over them, or standing in the spot where such blocks may appear may
+      be dangerous in survival mode, as you may fall through or be pushed aside.</p>
+
+    <p>The preview has two modes - the &quot;true&quot; mode and the &quot;missing&quot;
+      mode. The former will display how the build would like when finished. The latter
+      will show you the positions of the blocks missing or incorrectly placed, using
+      a single type of block. Currently, the sugarcane block is used for this purpose
+      for its properties - it is considered non-solid by the client, so it won't block
+      your movement and at the same time allowing you to use safewalk mods to avoid
+      accidentally stepping on it.</p>
+
+    <p>Currently the preview had several deficiencies that will be addressed in the
+      future releases.</p>
+
+    <p>Large previews can cause generation of many block updates at once, which may
+      stall your client and cause it to timeout and disconnect. Avoid using it on
+      builds with more than 10000 blocks or try to limit the preview size by using
+      <a href="#ctrl_limit">limit</a> or <a href="#mani_trim">trim</a>.</p>
+
+    <p>If you cancel your buildtask while a preview is still active, you will lose
+      the ability to remove it. The phantom blocks will remain until destroyed or
+      removed by chunk reloading. You can fix the issue by generating exactly same
+      buildtask (i.e. by using <tt>#build place again</tt>) and then removing the
+      preview.</p>
+
+    <p>The phantom blocks may disappear because of the block updates in adjacent
+      blocks, or because of the build attempts not accepted by the server.
+      you can issue a preview command again to renew them.</p>
+
+    <p>It is advisable to bind the preview commands to hotkeys, if supported by
+      your client.</p>
+
+    <p>Format:</p>
+    <p><tt>#build preview [-t|-m|-r]</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>-true|t - Activate &quot;true&quot; preview mode.</li>
+      <li>-missing|m - Activate &quot;missing&quot; preview mode.</li>
+      <li>-remove|r - Remove the preview.</li>
+    </ul>
+
+
+    <a name="ctrl_limit">
+    <h3>limit,li</h3>
+
+    <p>Limit the maximum height level for building. This function is meant
+      to allow you to build layer by layer, which is often the only reliable
+      method for building large structures in survival, where you don't have
+      ability to fly and have to use your bulding as platform for walking on.</p>
+
+    <p>Setting the limit does not trim your buildtask, it only disables building
+      of the blocks above defined limit. The idea is to set limit one higher
+      every time you finish a layer and so gradually advance to the top.</p>
+
+    <p>Setting the limit affects the preview function - the preview will
+      be trimmed to the same height.</p>
+
+    <p>Format:</p>
+    <p><tt>#build limit Y</tt> - set limit to specific Y coordinate. Only blocks
+      with y&lt;=Y can be build</p>
+    <p><tt>#build limit</tt> - set limit to the coordinate of player's feet. By issuing
+      this command you will enable the building of the layer just above the block you
+      are standing on</p>
+    <p><tt>#build limit -|none</tt> - disable limit.</p>
+
 
     
+    
+
       
   </body>
 </html>
