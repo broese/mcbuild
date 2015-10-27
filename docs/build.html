@@ -474,7 +474,7 @@
     <p>Format:</p>
     <p><tt>#build extend offset=x[,z[,y]]|dir [count=n]</tt></p>
 
-    <p>Paramaters:</p>
+    <p>Parameters:</p>
     <ul>
       <li>offset|off|o=x[,z[,y]] : explicit offset by x,y,z. Omitted
         coordinate components are assumed 0.</li>
@@ -695,6 +695,7 @@
     <p>Format:</p>
     <p><tt>#build sload filename</tt></p>
     
+    <p>Pivot: at the normalized position.</p>
 
 
 
@@ -725,13 +726,28 @@
 
     <p>Import buildplan from a PNG file as pixelart. Each pixel is
       transformed into a block from the specified set with the closest
-      color. Transparent pixels result in empty blocks. Currently,
-      the only supported blockset is "wool" - the set of 16 colored
-      wool blocks. PNG will be loaded from the png subdirectory.</p>
+      color. Transparent pixels result in empty blocks. PNG will
+      be loaded from the png subdirectory.</p>
 
     <p>Format:</p>
-    <p><tt>#build pngload setname</tt></p>
+    <p><tt>#build pngload [setname]</tt></p>
     
+    <p>Parameters:</p>
+    <ul>
+      <li>[setname] - Name of the block set used for mapping the colors.
+      Currently supported: wool, clay and glass. Default is wool.</li>
+    </ul>
+
+    <p>Examples and usage tips:</p>
+    <p><tt>#build png bucket_lava</tt></p>
+    <p><tt>#build png bucket_lava clay</tt></p>
+    <p><tt>#build png bucket_lava glass</tt></p>
+    <p>Examples of minecraft's lava bucket icon rendered in wool,
+      clay and glass</p>
+
+    <img src="images/pixelart.jpg">
+
+    <p>Pivot: at the normalized position.</p>
 
 
 
