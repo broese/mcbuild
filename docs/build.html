@@ -751,5 +751,72 @@
 
 
 
+    <a name="build_special">
+    <h2>Special Functions</h2>
+
+
+    <a name="spec_recorder">
+    <h3>record,rec</h3>
+
+    <p>Recorder allows you to create a buildplan on the fly by recording
+      your own block placements. The recording is started by issuing 
+      <tt>#build record start</tt> (or just <tt>#build record</tt>) command.
+      The first block you place automatically becomes your pivot block.</p>
+    <p>Recording is stopped with <tt>#build record stop</tt>, after which you
+      will have a valid buildplan.</p>
+    <p>Recording can be resumed with <tt>#build record resume</tt></p>
+
+    <p>Format:</p>
+    <p><tt>#build record [start|stop|resume]</tt></p>
+
+    <p>Examples and usage tips:</p>
+    <p><tt>#build rec</tt></p>
+    <p>(now place 4 blocks in a checkerboard pattern)</p>
+    <p><tt>#build rec stop</tt></p>
+    <p><tt>#build ext r 10</tt></p>
+    <p><tt>#build ext f 10</tt></p>
+    <p>Create simple repeating patterns and structures by recording a
+      single fragment and then replicate it, like this checkerboard floor:</p>
+
+    <img src="images/checkerboard.jpg">
+
+
+    <a name="spec_scan">
+    <h3>scan</h3>
+
+    <p>Scan function creates a buildplan from the existing world
+      structure. The scan cuboid is specified by the pivot location
+      and size. The pivot is always in normalized position, meaning
+      your scanning ares will extend to the right, front and upwards
+      from it. Scanning will automatically omit certain blocks such
+      as water, lava, fire, and grass.</p>
+
+    <p>Format:</p>
+    <p><tt>#build scan pivot=pivotspec size=width[,length[,height]]</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>pivot|pv|p - <a href="#par_pivot">Pivot specification</a></li>
+      <li>size|sz|s - Size of the cuboid to scan. If height or length
+        is omitted, they are assumed 1.</li>
+    </ul>
+
+    <p>Examples and usage tips:</p>
+    <p><tt>#build scan 1 15,9,10</tt></p>
+    <p>Most convenient way to specify the pivot is by using the
+      &quot;distance&quot; form of the pivot specification. Use 0
+      while standing directly on the spot of the pivot point, or
+      1 while standing right before it, as pictured below.
+      (The redstone block marks the position below the pivot)</p>
+    <img src="images/scan_pos.jpg">
+    <p>Make sure to select your pivot point to get the blocks on
+      the outside, like torches or overhanging roofs. And here you
+      see a preview of a copy placed next to the original:</p>
+    <img src="images/scan_after.jpg">
+    
+
+
+    
+      
   </body>
 </html>
