@@ -921,22 +921,64 @@ typedef struct {
 } cmap_t;
 
 cmap_t CMAP_WOOL[] = {
-    { 0xDDDDDD, BLOCKTYPE(35,0) },
-    { 0xDB7D3E, BLOCKTYPE(35,1) },
-    { 0xB350BC, BLOCKTYPE(35,2) },
-    { 0x6B8AC9, BLOCKTYPE(35,3) },
-    { 0xB1A627, BLOCKTYPE(35,4) },
-    { 0x41AE38, BLOCKTYPE(35,5) },
-    { 0xD08499, BLOCKTYPE(35,6) },
-    { 0x404040, BLOCKTYPE(35,7) },
-    { 0x9AA1A1, BLOCKTYPE(35,8) },
-    { 0x2E6E89, BLOCKTYPE(35,9) },
-    { 0x7E3DB5, BLOCKTYPE(35,10) },
-    { 0x2E388D, BLOCKTYPE(35,11) },
-    { 0x4F321F, BLOCKTYPE(35,12) },
-    { 0x35461B, BLOCKTYPE(35,13) },
-    { 0x963430, BLOCKTYPE(35,14) },
-    { 0x191616, BLOCKTYPE(35,15) },
+    { 0xDEDEDE, BLOCKTYPE(35,0) },  // white
+    { 0xdb7d3f, BLOCKTYPE(35,1) },  // orange
+    { 0xb451bd, BLOCKTYPE(35,2) },  // magenta
+    { 0x6b8ac9, BLOCKTYPE(35,3) },  // lblue
+    { 0xB1A627, BLOCKTYPE(35,4) },  // yellow
+    { 0x42ae39, BLOCKTYPE(35,5) },  // lime
+    { 0xd08499, BLOCKTYPE(35,6) },  // pink
+    { 0x404040, BLOCKTYPE(35,7) },  // gray
+    { 0x9BA1A1, BLOCKTYPE(35,8) },  // lgray
+    { 0x2f6f89, BLOCKTYPE(35,9) },  // cyan
+    { 0x7f3eb6, BLOCKTYPE(35,10) }, // purple
+    { 0x2e398e, BLOCKTYPE(35,11) }, // blue
+    { 0x4f321f, BLOCKTYPE(35,12) }, // brown
+    { 0x35471b, BLOCKTYPE(35,13) }, // green
+    { 0x973431, BLOCKTYPE(35,14) }, // red
+    { 0x1a1616, BLOCKTYPE(35,15) }, // black
+    { 0x000000, BLOCKTYPE(0,0) },   // terminator
+};
+
+cmap_t CMAP_GLASS[] = {
+    { 0xDBF2F5, BLOCKTYPE(20,0) },  // plain
+    { 0xFFFFFF, BLOCKTYPE(95,0) },  // white
+    { 0xD87F33, BLOCKTYPE(95,1) },  // orange
+    { 0xB24CD8, BLOCKTYPE(95,2) },  // magenta
+    { 0x6699D8, BLOCKTYPE(95,3) },  // lblue
+    { 0xE5E533, BLOCKTYPE(95,4) },  // yellow
+    { 0x7FCC19, BLOCKTYPE(95,5) },  // lime
+    { 0xF27FA5, BLOCKTYPE(95,6) },  // pink
+    { 0x4C4C4C, BLOCKTYPE(95,7) },  // gray
+    { 0x999999, BLOCKTYPE(95,8) },  // lgray
+    { 0x4C7F99, BLOCKTYPE(95,9) },  // cyan
+    { 0x7F3FB2, BLOCKTYPE(95,10) }, // purple
+    { 0x334CB2, BLOCKTYPE(95,11) }, // blue
+    { 0x664C33, BLOCKTYPE(95,12) }, // brown
+    { 0x667F33, BLOCKTYPE(95,13) }, // green
+    { 0x993333, BLOCKTYPE(95,14) }, // red
+    { 0x191919, BLOCKTYPE(95,15) }, // black
+    { 0x000000, BLOCKTYPE(0,0) },   // terminator
+};
+
+cmap_t CMAP_CLAY[] = {
+    { 0x975d43, BLOCKTYPE(172,0) },  // plain
+    { 0xd2b2a1, BLOCKTYPE(159,0) },  // white
+    { 0xa25426, BLOCKTYPE(159,1) },  // orange
+    { 0x96586d, BLOCKTYPE(159,2) },  // magenta
+    { 0x716d8a, BLOCKTYPE(159,3) },  // lblue
+    { 0xba8523, BLOCKTYPE(159,4) },  // yellow
+    { 0x687635, BLOCKTYPE(159,5) },  // lime
+    { 0xa24e4f, BLOCKTYPE(159,6) },  // pink
+    { 0x3a2a24, BLOCKTYPE(159,7) },  // gray
+    { 0x876b62, BLOCKTYPE(159,8) },  // lgray
+    { 0x575b5b, BLOCKTYPE(159,9) },  // cyan
+    { 0x764656, BLOCKTYPE(159,10) }, // purple
+    { 0x4a3c5b, BLOCKTYPE(159,11) }, // blue
+    { 0x4d3324, BLOCKTYPE(159,12) }, // brown
+    { 0x4c532a, BLOCKTYPE(159,13) }, // green
+    { 0x8f3d2f, BLOCKTYPE(159,14) }, // red
+    { 0x251710, BLOCKTYPE(159,15) }, // black
     { 0x000000, BLOCKTYPE(0,0) },   // terminator
 };
 
@@ -947,6 +989,8 @@ typedef struct {
 
 setname SETS[] = {
     { "wool", CMAP_WOOL },
+    { "clay", CMAP_CLAY },
+    { "glass", CMAP_GLASS },
     { NULL, NULL },
 };
 

@@ -6,8 +6,8 @@
 #define MNAMES_WOOD     { "Oak", "Spruce", "Birch", "Jungle", "Acacia", "Dark Oak" }
 #define MNAMES_OLDWOOD  { "Oak", "Spruce", "Birch", "Jungle" }
 #define MNAMES_NEWWOOD  { "Acacia", "Dark Oak", NULL, NULL }
-#define MNAMES_COLOR    { "White", "Orange", "Magenta", "LBlue", "Yellow", "Lime", "Pink", "Grey", \
-                          "LGrey", "Cyan", "Purple", "Blue", "Brown", "Green", "Red", "Black" }
+#define MNAMES_COLOR    { "White", "Orange", "Magenta", "LBlue", "Yellow", "Lime", "Pink", "Gray", \
+                          "LGray", "Cyan", "Purple", "Blue", "Brown", "Green", "Red", "Black" }
 
 const item_id ITEMS[] = {
     ////////////////////////////////////////////////////////////////////////
