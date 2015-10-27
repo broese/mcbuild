@@ -483,26 +483,21 @@ static inline void setdots(blk *b, uint16_t *u, uint16_t *d,
 static void build_update_placed() {
     if (C(build.task)<=0) return;
 
-    // offset coords of the cuboid
-    int32_t Xo = (build.xmin-1)>>4;
-    int32_t Zo = (build.zmin-1)>>4;
-    int32_t xo = Xo<<4;
-    int32_t zo = Zo<<4;
-    int32_t yo = build.ymin-1;
+    extent_t ex = { { build.xmin, build.ymin, build.zmin },
+                    { build.xmax, build.ymax, build.zmax } };
 
-    // cuboid size
-    int32_t Xsz = ((build.xmax+1)>>4)-Xo+1;
-    int32_t Zsz = ((build.zmax+1)>>4)-Zo+1;
-    int32_t xsz = Xsz<<4;
-    int32_t zsz = Zsz<<4;
-    int32_t ysz = build.ymax-build.ymin+3;
+    int32_t xsz = build.xmax-build.xmin+1;
+    int32_t ysz = build.ymax-build.ymin+1;
+    int32_t zsz = build.zmax-build.zmin+1;
 
-    bid_t * world = export_cuboid(Xo, Xsz, Zo, Zsz, yo, ysz, NULL);
+    cuboid_t c = export_cuboid_extent(ex);
 
     int i;
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
-        bid_t bl = world[OFF(b->x,b->z,b->y)];
+        bid_t *slice = c.data[b->y-build.ymin]+c.boff;
+        bid_t *row = slice+(b->z-build.zmin)*c.sa.x;
+        bid_t bl = row[b->x-build.xmin];
         b->placed = (bl.raw == b->b.raw);
         b->empty  = ISEMPTY(bl.bid) && !b->placed;
         b->current = bl;
