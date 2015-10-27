@@ -313,10 +313,11 @@
     <p>This class of commands will create a buildplan of simple generic structures,
       usually made from a single type of material and with size specified as parameter.</p>
 
-    <p>Calling a parametric build command will cancel your current buildtask and
-      replace your current buildplan with a generated one. By default, you will immediately
-      enter the "#build place once" mode of placement (depending on your placemode setting),
-      i.e. placing a block somewhere will specify the pivot point of your new structure
+    <p>Calling a parametric build command will replace your current buildplan
+      with a generated one, but the current buildtask will be cancelled only upon
+      placement. By default, you will immediately enter the "#build place once"
+      mode of placement (depending on your placemode setting), i.e. placing
+      a block somewhere will specify the pivot point of your new structure
       and the building will start.</p>
 
     <p>All parametric build commands accept the parameter <a href="#par_mat">material</a>
@@ -436,8 +437,10 @@
 
     <p>Parameters:</p>
     <ul>
-      <li>size|sz|s=W,H : size of the scaffolding - W blocks wide, H floors high (3*H blocks high)</li>
-      <li>material|mat|m=<a href="#par_mat">material</a> : material to build with. If omitted, assuming the block you hold in your hand</li>
+      <li>size|sz|s=W,H : size of the scaffolding - W blocks wide, H floors
+        high (3*H blocks high)</li>
+      <li>material|mat|m=<a href="#par_mat">material</a> : material to build
+        with. If omitted, assuming the block you hold in your hand</li>
       <li>-l : generate an alternative design scaffolding with a ladder.</li>
     </ul>
 
@@ -446,6 +449,202 @@
     <p>Examples and usage tips:</p>
 
     <p><tt>#build scaf 15,5 -l</tt> - scaffolding 15 blocks wide and 5 floors high</p>
+
+
+
+
+    <a name="build_manipulate">
+    <h2>Buildplan Manipulation</h2>
+
+    <p>This section describes functions that perform various manipulations
+      on the buildplan. The functions require an existing and non-empty
+      buildplan. They will modify the buildplan only and not your current
+      buildtask.</p>
+
+
+    <a name="mani_ext">
+    <h3>extend,ext</h3>
+
+    <p>Extend the buildplan by replicating it a number of times and
+      placing the copies at an offset. The offset may be specified explicitly,
+      or by specifying the extension direction, in which case the copies will
+      be placed next to each other or stacked. If any blocks of a copy overlap the
+      previously existing blocks they will replace these.</p>
+
+    <p>Format:</p>
+    <p><tt>#build extend offset=x[,z[,y]]|dir [count=n]</tt></p>
+
+    <p>Paramaters:</p>
+    <ul>
+      <li>offset|off|o=x[,z[,y]] : explicit offset by x,y,z. Omitted
+        coordinate components are assumed 0.</li>
+      <li>offset|off|o=u|d|r|l|f|b : implicit offset by direction (up:+Y,
+        down:-Y, right:+X, left:-X, forward:-Z, backward:+Z). The actual
+        offset is determined by the current size of the buildplan in that
+        dimension, causing the copies to be stacked upon each other, or
+        placed next to each other</li>
+      <li>count|cnt|c=n : create that many copies. I omitted, assuming 1
+        - causing a doubling of the buildplan</li>.
+    </ul>
+
+    <p>Pivot: postion of the original pivot is retained</p>
+
+    <p>Examples and usage tips:</p>
+
+    <p><tt>#build floor 1 torch:5</tt></p>
+    <p><tt>#build extend o=8 c=10</tt></p>
+    <p><tt>#build extend o=0,-8 c=10</tt></p>
+    <p>Create a 10x10 grid of torches 8 blocks apart. Note that we have to
+      use meta=5 when specifying the torch as material to obtain torches
+      standing on the ground.</p>
+
+    <img src="images/mani_torches.jpg" alt="Field of torches">
+
+    <p><tt>#build ball 9 diamond_block</tt></p>
+    <p><tt>#build ext u 3</tt></p>
+    <p>Create a three dimaond balls stacked on each other. (Pivot is placed
+      on the ground so only a half of the bottom ball is showing)</p>
+
+    <img src="images/mani_stacked.jpg" alt="Stacked balls">
+
+    <p><tt>#build ring 15 cobblestone</tt></p>
+    <p><tt>#build extend u 30</tt></p>
+    <p>Create a simple tower by extruding a ring</p>
+
+    <img src="images/mani_tower.jpg" alt="Simple tower">
+
+
+    <a name="mani_hollow">
+    <h3>hollow,ho</h3>
+
+    <p>Hollow out the buildplan structure by removing all blocks completely
+      surrounded by other blocks. The &quot;flat&quot; variant is an analog
+      for flat structures.</p>
+
+    <p>Format:</p>
+    <p><tt>#build hollow [-flat] [-opaque]</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>-flat|f|2 : 2D hollowing for the flat structures</li>
+      <li>-opaque|o : Consider all blocks opaque. By default, hollowing procedure
+        will consider non-opaque blocks (partially filled or transparent) as
+        empty, avoiding unintentional holes at the surface. Use this option
+        to override that</li>
+    </ul>
+
+    <p>Pivot: postion of the original pivot is retained</p>
+
+
+    <a name="mani_replace">
+    <h3>replace,re</h3>
+
+    <p>Replace one material in the buildplan with another. Replacing with
+      Air (id=0) will remove the blocks.</p>
+
+    <p>Format:</p>
+    <p><tt>#build replace material1=matspec material2=matspec</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>material1|mat1|m1=matspec - material to replace</li>
+      <li>material2|mat2|m2=matspec - material to replace with</li>
+    </ul>
+
+    <p>Examples and usage tips:</p>
+    <p><tt>#build replace cobblestone stonebrick</tt> - replace all cobblestone with stonebricks</p>
+    <p><tt>#build replace stained_glass:red stained_glass:blue</tt> - replace
+    red glass with blue glass.</p>
+    <p><tt>#build replace dirt air</tt> - remove all dirt blocks from the buildplan</p>
+
+    <p>Pivot: postion of the original pivot is retained</p>
+
+
+    <a name="mani_trim">
+    <h3>trim</h3>
+
+    <p>Remove all blocks from the buildplan with coordinates not matching
+      trim specification. You can specify multiple trims which will be
+      applied one by one</p>
+
+    <p>Format:</p>
+    <p><tt>#build trim trimspec ...</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>x|y|z&lt;relation&gt;number - trim specification of block coordinates</li>
+    </ul>
+
+    <p>Examples and usage tips:</p>
+    <p><tt>#build ball 25 stonebrick</tt></p>
+    <p><tt>#build hollow</tt></p>
+    <p><tt>#build trim y&gt;=0 z&lt;10</tt></p>
+    <p>Build a cut-out dome</p>
+
+    <img src="images/mani_trim.jpg">
+
+    <p>Pivot: postion of the original pivot is retained</p>
+
+
+    <a name="mani_flip">
+    <h3>flip</h3>
+
+    <p>Mirror the buildplan along one of the axis.</p>
+
+    <p>Format:</p>
+    <p><tt>#build flip [x|y|z]</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>[x|y|z] - Axis along which the buildplan is mirrored. Default is x
+        axis, i.e. flipping left and right.</li>
+    </ul>
+
+    <p>Pivot: postion of the original pivot is retained</p>
+
+
+    <a name="mani_tilt">
+    <h3>tilt</h3>
+
+    <p>Tilt/rotate the buildplan around an axis</p>
+
+    <p>Format:</p>
+    <p><tt>#build tilt [x|y|z]</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>[x|y|z] - Axis around which buildplan is mirrored. Default is x
+        axis, i.e. tilting forward</li>
+    </ul>
+
+    <p>Pivot: postion of the original pivot is retained</p>
+
+
+    <a name="mani_norm">
+    <h3>normalize,norm</h3>
+
+    <p>Normalize the buildplan so the pivot block is located at the
+      leftmost, bottom, nearest position.</p>
+
+    <p>Format:</p>
+    <p><tt>#build normalize</tt></p>
+
+    <p>Pivot: moved to the normalized position.</p>
+
+
+    <a name="mani_tilt">
+    <h3>shrink</h3>
+
+    <p>Shrink the buildplan by factor 2. Works well only for non-hollow
+      builds made of the same material.</p>
+
+    <p>Format:</p>
+    <p><tt>#build shrink</tt></p>
+
+    <p>Pivot: moved to the normalized position.</p>
+
+
+
 
   </body>
 </html>
