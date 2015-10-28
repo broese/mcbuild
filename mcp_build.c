@@ -500,6 +500,14 @@ static void build_update_placed() {
     free_cuboid(c);
 }
 
+#define PLACE_EAST(b)  setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL);
+#define PLACE_WEST(b)  setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE);
+#define PLACE_NORTH(b) setdots(b, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE);
+#define PLACE_SOUTH(b) setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE);
+#define PLACE_FLOOR(b) setdots(b, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
+#define PLACE_NONE(b)  setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
+#define PLACE_ALL(b)   setdots(b, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL);
+
 // called when player position or look have changed - update our placeable blocks list
 void build_update() {
     if (!build.active) return;
@@ -653,48 +661,26 @@ void build_update() {
         }
         else if (it->flags&I_TORCH) {
             switch(b->b.meta) {
-                case 1: //east
-                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL);
-                    break;
-                case 2: //west
-                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE);
-                    break;
-                case 3: //south
-                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE);
-                    break;
-                case 4: //north
-                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE);
-                    break;
-                case 5: //ground
-                    setdots(b, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
-                    break;
-                default:
-                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
-                    break;
+                case 1: PLACE_EAST(b); break;
+                case 2: PLACE_WEST(b); break;
+                case 3: PLACE_SOUTH(b); break;
+                case 4: PLACE_NORTH(b); break;
+                case 5: PLACE_FLOOR(b); break;
+                default: PLACE_NONE(b); break;
             }
         }
         else if (it->flags&I_ONWALL) {
             switch(b->b.meta) {
-                case 2: //north
-                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE);
-                    break;
-                case 3: //south
-                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE);
-                    break;
-                case 4: //west
-                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE);
-                    break;
-                case 5: //east
-                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL);
-                    break;
-                default:
-                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
-                    break;
+                case 2: PLACE_NORTH(b); break;
+                case 3: PLACE_SOUTH(b); break;
+                case 4: PLACE_WEST(b); break;
+                case 5: PLACE_EAST(b); break;
+                default: PLACE_NONE(b); break;
             }
         }
         else {
             // Blocks that don't have I_MPOS or not supported
-            setdots(b, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL);
+            PLACE_ALL(b);
         }
 
         // disable the faces where there is no neighbor
