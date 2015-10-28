@@ -202,62 +202,26 @@ static void autoshear(MCPacketQueue *sq) {
 ////////////////////////////////////////////////////////////////////////////////
 // Holeradar
 
-#define HR_DISTC 2
-#define HR_DISTB (HR_DISTC<<4)
+#define HR_DIST 32
 
 static void hole_radar(MCPacketQueue *cq) {
     int x = gs.own.lx;
     int y = gs.own.ly-1;
     int z = gs.own.lz;
 
-    int lx=-(int)(65536*sin(gs.own.yaw/180*M_PI));
-    int lz=(int)(65536*cos(gs.own.yaw/180*M_PI));
-
-    int X=x>>4;
-    int Z=z>>4;
-
-    bid_t data[(HR_DISTC+1)*256];
-    int off,sh;
-
+    int i,lx=0,lz=1;
     switch(player_direction()) {
-        case DIR_WEST:
-            lz=0;
-            lx=-1;
-            export_cuboid(X-HR_DISTC,HR_DISTC+1,Z,1,y,1,data);
-            off = (x&0x0f)+HR_DISTB+(z&0x0f)*(HR_DISTB+16);
-            sh=-1;
-            break;
-        case DIR_EAST:
-            lz=0;
-            lx=1;
-            export_cuboid(X,HR_DISTC+1,Z,1,y,1,data);
-            off = (x&0x0f)+(z&0x0f)*(HR_DISTB+16);
-            sh=1;
-            break;
-        case DIR_NORTH:
-            lx=0;
-            lz=-1;
-            export_cuboid(X,1,Z-HR_DISTC,HR_DISTC+1,y,1,data);
-            off = (x&0x0f)+((z&0x0f)+HR_DISTB)*16;
-            sh=-16;
-            break;
-        case DIR_SOUTH:
-            lx=0;
-            lz=1;
-            export_cuboid(X,1,Z,HR_DISTC+1,y,1,data);
-            off = (x&0x0f)+(z&0x0f)*16;
-            sh=16;
-            break;
+        case DIR_EAST: lx=1; lz=0; break;
+        case DIR_WEST: lx=-1; lz=0; break;
+        case DIR_SOUTH: lx=0; lz=1; break;
+        case DIR_NORTH: lx=0; lz=-1; break;
     }
 
-    int i;
-    for(i=1; i<=HR_DISTB; i++) {
-        off+=sh;
-        //TODO: check for other block types
-        if (data[off].bid==0) {
+    for(i=0; i<HR_DIST; i++) {
+        bid_t bl = get_block_at(x+lx*i, z+lz*i, y);
+        if (ISEMPTY(bl.bid)) {
             char reply[32768];
-            sprintf(reply, "*** HOLE *** : %d,%d y=%d d=%d",
-                    x+lx*i,z+lz*i,y,i);
+            sprintf(reply, "*** HOLE *** : %d,%d y=%d d=%d", x+lx*i,z+lz*i,y,i);
             chat_message(reply, cq, "gold", 2);
             break;
         }
