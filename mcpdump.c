@@ -354,6 +354,7 @@ static void print_slice(bid_t * data,int Xs, int Zs) {
     }
 }
 
+#if 0
 void extract_cuboid(int X, int Z, int y) {
     int Xs=5,Zs=5;
     bid_t * map = export_cuboid(X,Xs,Z,Zs,y,1,NULL);
@@ -362,6 +363,7 @@ void extract_cuboid(int X, int Z, int y) {
     print_slice(map,Xs,Zs);
     free(map);
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 

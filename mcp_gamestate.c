@@ -217,49 +217,6 @@ void dump_overworld() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-bid_t * export_cuboid(int32_t Xl, int32_t Xs, int32_t Zl, int32_t Zs,
-                      int32_t yl, int32_t ys, bid_t *data) {
-
-    int32_t sz = ys*Xs*Zs*256;  // total size of the cuboid in blocks
-
-    // if user did not provide a buffer, allocate it for him
-    if (!data) lh_alloc_num(data, sz);
-
-    char buf[4096];
-    lh_clear_obj(buf);
-
-    int X,Z,j,k;
-    for(X=Xl; X<Xl+Xs; X++) {
-        for(Z=Zl; Z<Zl+Zs; Z++) {
-            // get the chunk data
-            int idx = find_chunk(gs.world,X,Z);
-            gschunk *gc = gs.world->chunks[idx];
-            if (!gc) continue;
-
-            // offset of this chunk's data (in blocks)
-            // where it will be placed in the cuboid
-            int xoff = (X-Xl)*16;
-            int zoff = (Z-Zl)*16;
-
-            // block offset of the chunk's start in the cuboid buffer
-            int boff = xoff + zoff*Xs*16;
-
-            for(j=0; j<ys; j++) {
-                // block offset of y slice in the chunk's block data
-                int yoff = (j+yl)*256;
-                int doff = boff + Xs*Zs*256*j;
-                for(k=0; k<16; k++) {
-                    memcpy(data+doff, gc->blocks+yoff, 16*sizeof(bid_t));
-                    yoff += 16;
-                    doff += Xs*16;
-                }
-            }
-        }
-    }
-
-    return data;
-}
-
 cuboid_t export_cuboid_extent(extent_t ex) {
     int x,y,z;
 
