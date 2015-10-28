@@ -377,10 +377,7 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
     int y=gs.own.y>>5;
     int z=gs.own.z>>5;
 
-    bid_t world[256];
-    export_cuboid(x>>4,1,z>>4,1,y,1,world);
-
-    bid_t b = world[(x&15)+(z&15)*16];
+    bid_t b = get_block_at(x,z,y);
 
     if (b.bid == 0x32) {
         // We have the torch at our feet - break it
