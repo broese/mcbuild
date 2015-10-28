@@ -513,13 +513,52 @@ int get_base_meta(int id, int meta) {
     return meta;
 }
 
+// mapping macro for the block types that have different IDs
+// for the block and the item used for placement of such block
+#define BI(block,item) if (mat.bid == block) return BLOCKTYPE(item,0)
+
 bid_t get_base_material(bid_t mat) {
     assert(mat.bid <0x100);
 
     // material for doubleslabs is the slab with the next block ID and same meta
     if (ITEMS[mat.bid].flags&I_DSLAB) mat.bid++;
 
-    //TODO: support other block types where the block and item IDs differ
+    BI(55,331);   // Redstone Wire -> Redstone
+    BI(132,287);  // Tripwire -> String
+
+    BI(92,354);   // Cake
+    BI(117,379);  // Brewing Stand
+    BI(118,380);  // Cauldron
+    BI(140,390);  // Flower pot
+
+    BI(59,295);   // Wheat -> Wheat Seeds
+    BI(83,338);   // Sugar Cane
+    BI(115,372);  // Nether Wart
+    BI(141,391);  // Carrot Plant -> Carrot
+    BI(142,392);  // Potato Plant -> Potato
+    BI(104,361);  // Pumpkin Stem -> Pumpkin Seeds
+    BI(105,362);  // Melon Stem -> Melon Seeds
+    if (mat.bid == 127) return BLOCKTYPE(351,3);  // Cocoa -> Cocoa Beans (which is also a Brown Dye, duh)
+
+    BI(63,323);   // Standing Sign -> Sign
+    BI(68,323);   // Wall Sign -> Sign
+    BI(176,425);  // Standing Banner -> Banner
+    BI(177,425);  // Wall Banner -> Banner
+
+    BI(26,355);   // Bed
+
+    BI(64,324);   // Oak Door
+    BI(193,427);  // Spruce Door
+    BI(194,428);  // Birch Door
+    BI(195,429);  // Jungle Door
+    BI(196,430);  // Acacia Door
+    BI(197,431);  // Dark Oak Door
+    BI(71,330);   // Iron Door
+
+    BI(75,76);    // Redstone Torch (inactive -> active)
+    BI(93,356);   // Redstone Repeater (inactive)
+    BI(94,356);   // Redstone Repeater (active)
+    BI(149,404);  // Redstone Comparator
 
     mat.meta = get_base_meta(mat.bid, mat.meta);
     return mat;
