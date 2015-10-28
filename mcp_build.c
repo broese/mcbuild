@@ -931,14 +931,11 @@ void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     //TODO: detect when player accesses chests/etc
 
     // send a BlockChange to the client to remove the fake block it thinks it just placed
-    bid_t blocks[256];
-    export_cuboid(x>>4,1,z>>4,1,y,1,blocks);
-
     NEWPACKET(SP_BlockChange, bc);
     tbc->pos.x = x;
     tbc->pos.y = y;
     tbc->pos.z = z;
-    tbc->block = blocks[(x&15)+((z&15)<<4)];
+    tbc->block = get_block_at(x,z,y);
     queue_packet(bc, cq);
 
     // send a SetSlot to the client for the held item to restore item count
