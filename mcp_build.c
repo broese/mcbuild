@@ -485,11 +485,6 @@ static void build_update_placed() {
 
     extent_t ex = { { build.xmin, build.ymin, build.zmin },
                     { build.xmax, build.ymax, build.zmax } };
-
-    int32_t xsz = build.xmax-build.xmin+1;
-    int32_t ysz = build.ymax-build.ymin+1;
-    int32_t zsz = build.zmax-build.zmin+1;
-
     cuboid_t c = export_cuboid_extent(ex);
 
     int i;
@@ -502,6 +497,7 @@ static void build_update_placed() {
         b->empty  = ISEMPTY(bl.bid) && !b->placed;
         b->current = bl;
     }
+    free_cuboid(c);
 }
 
 // called when player position or look have changed - update our placeable blocks list
@@ -554,24 +550,17 @@ void build_update() {
 
     // 2. extract the cuboid with the existing world blocks
 
-    //TODO: try to limit the extracted area to a bare minimum of
-    //      the reachable blocks, to limit the amount of data
+    int32_t xmin = (gs.own.x>>5)-12;
+    int32_t xmax = (gs.own.x>>5)+12;
+    int32_t ymin = (gs.own.y>>5)-12;
+    if (ymin<0) ymin=0;
+    int32_t ymax = (gs.own.y>>5)+12;
+    if (ymax>255) ymax=255;
+    int32_t zmin = (gs.own.z>>5)-12;
+    int32_t zmax = (gs.own.z>>5)+12;
 
-    // offset coords of the cuboid
-    int32_t Xo = (build.xmin-1)>>4;
-    int32_t Zo = (build.zmin-1)>>4;
-    int32_t xo = Xo<<4;
-    int32_t zo = Zo<<4;
-    int32_t yo = build.ymin-1;
-
-    // cuboid size
-    int32_t Xsz = ((build.xmax+1)>>4)-Xo+1;
-    int32_t Zsz = ((build.zmax+1)>>4)-Zo+1;
-    int32_t xsz = Xsz<<4;
-    int32_t zsz = Zsz<<4;
-    int32_t ysz = build.ymax-build.ymin+3;
-
-    bid_t * world = export_cuboid(Xo, Xsz, Zo, Zsz, yo, ysz, NULL);
+    extent_t ex = { { xmin, ymin, zmin }, { xmax, ymax, zmax } };
+    cuboid_t c = export_cuboid_extent(ex);
 
     // 3. determine which blocks are occupied and which neighbors are available
     build.nbq = 0;
@@ -580,9 +569,17 @@ void build_update() {
         b->rdir = DIR_ANY;
         if (!b->inreach) continue;
 
-        const item_id *it = &ITEMS[b->b.bid];
+        int x = b->x-xmin;
+        int y = b->y-ymin;
+        int z = b->z-zmin;
 
-        bid_t bl = world[OFF(b->x,b->z,b->y)];
+        bid_t *row   = c.data[y]+c.boff+z*c.sa.x;
+        bid_t *row_u = c.data[y+1]+c.boff+z*c.sa.x;
+        bid_t *row_d = c.data[y-1]+c.boff+z*c.sa.x;
+        bid_t *row_n = c.data[y]+c.boff+(z-1)*c.sa.x;
+        bid_t *row_s = c.data[y]+c.boff+(z+1)*c.sa.x;
+
+        bid_t bl = row[x];
 
         // check if this block is already correctly placed (including meta)
         //TODO: implement less restricted check for blocks with non-positional meta
@@ -592,6 +589,7 @@ void build_update() {
         // placed - this way we can support "empty" blocks like water in our buildplan
         b->empty  = ISEMPTY(bl.bid) && !b->placed;
 
+        const item_id *it = &ITEMS[b->b.bid];
         if (it->flags&I_DSLAB) {
             // we want to place doubleslab here and the block contains
             // a suitable slab - mark it as empty, so we can place the second slab
@@ -601,12 +599,12 @@ void build_update() {
         }
 
         // determine which neighbors do we have
-        b->n_yp = !ISEMPTY(world[OFF(b->x,b->z,b->y+1)].bid);
-        b->n_yn = !ISEMPTY(world[OFF(b->x,b->z,b->y-1)].bid);
-        b->n_xp = !ISEMPTY(world[OFF(b->x+1,b->z,b->y)].bid);
-        b->n_xn = !ISEMPTY(world[OFF(b->x-1,b->z,b->y)].bid);
-        b->n_zp = !ISEMPTY(world[OFF(b->x,b->z+1,b->y)].bid);
-        b->n_zn = !ISEMPTY(world[OFF(b->x,b->z-1,b->y)].bid);
+        b->n_yp = !ISEMPTY(row_u[x].bid);
+        b->n_yn = !ISEMPTY(row_d[x].bid);
+        b->n_zp = !ISEMPTY(row_s[x].bid);
+        b->n_zn = !ISEMPTY(row_n[x].bid);
+        b->n_xp = !ISEMPTY(row[x+1].bid);
+        b->n_xn = !ISEMPTY(row[x-1].bid);
         //TODO: skip faces looking away from us
 
         // skip the blocks we can't place
@@ -729,8 +727,7 @@ void build_update() {
        - remove the dots obstructed by other blocks
        - make the various obstruction checking options configurable
     */
-
-    free(world);
+    free_cuboid(c);
 }
 
 // randomly choose which of the suitable dots we are going to use to place the block
