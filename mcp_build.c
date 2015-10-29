@@ -186,6 +186,10 @@ struct {
                            // blocked on some, including 2b2t
     int bjump;             // build while jumping/flying/swimming - this is disabled by default
                            // but useful in some situations, e.g. when building under water
+    int preview_retain;    // by default preview is automatically removed when the buildtask
+                           // is canceled, otherwise phantom blocks will stay there until
+                           // chunks are removed. This option overrides this behavior and
+                           // retains the phantom blocks.
 } buildopts = { 0 };
 
 typedef struct {
@@ -208,6 +212,7 @@ bopt_t OPTIONS[] = {
     { "sm", "seal mode - limit placement to blocks in front of player", &buildopts.sealmode, 0},
     { "anyface", "place on any faces even if they look away from player",   &buildopts.anyface, 0},
     { "bjump", "build while jumping/falling/swimming",                  &buildopts.bjump, 0},
+    { "preview_retain", "Retain preview when buildtask is canceled",    &buildopts.preview_retain, 0},
     { NULL, NULL, NULL, 0 }, //list terminator
 };
 
@@ -854,13 +859,13 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 // Pivot placement
 
 // a pivot block has been placed (using whatever method)
-void place_pivot(pivot_t pv) {
+void place_pivot(pivot_t pv, MCPacketQueue *sq, MCPacketQueue *cq) {
     assert(build.bp);
 
     // cancel the placement mode, unless "place many" is active
     if (build.placemode == 1) {
         build.placemode = 0;
-        build_cancel();
+        build_cancel(sq, cq);
     }
 
     // create a new buildtask from our buildplan
@@ -917,7 +922,7 @@ void build_placemode(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     int dir = player_direction();
 
     pivot_t pv = { {x,y,z}, dir};
-    place_pivot(pv);
+    place_pivot(pv, sq, cq);
 
     char reply[4096];
     sprintf(reply, "Placing pivot at %d,%d (%d), dir=%s\n",x,z,y,DIRNAME[dir]);
@@ -1299,8 +1304,8 @@ void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq, int mode) {
 // Canceling Build
 
 // cancel building and completely erase the buildplan
-void build_clear() {
-    build_cancel();
+void build_clear(MCPacketQueue *sq, MCPacketQueue *cq) {
+    build_cancel(sq, cq);
     bplan_free(build.bp);
     lh_clear_obj(build);
 
@@ -1309,7 +1314,9 @@ void build_clear() {
 }
 
 // cancel and delete the buildtask, leaving the buildplan
-void build_cancel() {
+void build_cancel(MCPacketQueue *sq, MCPacketQueue *cq) {
+    if (!buildopts.preview_retain)
+        build_show_preview(sq, cq, PREVIEW_REMOVE);
     build.active = 0;
     lh_arr_free(BTASK);
     build.bq[0] = -1;
@@ -1436,7 +1443,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     CMD2(floor,fl) {
         ARGREQ(size, NULL, sz);
         ARGMAT(NULL, mat, ad.mat);
-        build_clear();
+        build_clear(sq, cq);
         build.bp = bplan_floor(sz.x, sz.z, mat);
         sprintf(reply, "Floor size=%d,%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
         goto Place;
@@ -1445,7 +1452,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     CMD2(wall,wa) {
         ARGREQ(size, NULL, sz);
         ARGMAT(NULL, mat, ad.mat);
-        build_clear();
+        build_clear(sq, cq);
         build.bp = bplan_wall(sz.x, sz.z, mat);
         sprintf(reply, "Wall size=%d,%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
         goto Place;
@@ -1455,7 +1462,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
         ARGREQ(size, dwords, sz);
         ARGMAT(NULL, mat, ad.mat);
-        build_clear();
+        build_clear(sq, cq);
         build.bp = bplan_disk(sz.x, mat);
         sprintf(reply, "Disk diam=%d material=%s",sz.x,get_bid_name(buf, mat));
         goto Place;
@@ -1465,7 +1472,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
         ARGREQ(size, dwords, sz);
         ARGMAT(NULL, mat, ad.mat);
-        build_clear();
+        build_clear(sq, cq);
         build.bp = bplan_ball(sz.x, mat);
         sprintf(reply, "Ball diam=%d material=%s",sz.x,get_bid_name(buf, mat));
         goto Place;
@@ -1475,7 +1482,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
         ARGREQ(size, dwords, sz);
         ARGMAT(NULL, mat, ad.mat);
-        build_clear();
+        build_clear(sq, cq);
         build.bp = bplan_disk(sz.x, mat);
         bplan_hollow(build.bp, 1, 0);
         sprintf(reply, "Ring diam=%d material=%s",sz.x,get_bid_name(buf, mat));
@@ -1486,7 +1493,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
         ARGREQ(size, dwords, sz);
         ARGMAT(NULL, mat, ad.mat);
-        build_clear();
+        build_clear(sq, cq);
         build.bp = bplan_ball(sz.x, mat);
         bplan_hollow(build.bp, 0, 0);
         sprintf(reply, "Ball diam=%d material=%s",sz.x,get_bid_name(buf, mat));
@@ -1496,7 +1503,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     CMD2(rectangle,rect) {
         ARGREQ(size, NULL, sz);
         ARGMAT(NULL, mat, ad.mat);
-        build_clear();
+        build_clear(sq, cq);
         build.bp = bplan_floor(sz.x, sz.z, mat);
         bplan_hollow(build.bp, 1, 0);
         sprintf(reply, "Rectangle size=%dx%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
@@ -1507,7 +1514,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         bid_t dirt = BLOCKTYPE(3,0);
         ARGREQ(size, NULL, sz);
         ARGMAT(NULL, mat, dirt);
-        build_clear();
+        build_clear(sq, cq);
         if (argflag(words, WORDLIST("ladder","l","2"))) {
             build.bp = bplan_scaffolding(sz.x, sz.z, mat,1);
             sprintf(reply, "Scaffolding (ladder) width=%d floors=%d material=%s",
@@ -1526,7 +1533,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     CMD2(stairs,stair) {
         ARGREQ(size, NULL, sz);
         ARGMAT(NULL, mat, ad.mat);
-        build_clear();
+        build_clear(sq, cq);
         int base = 1,ex=1;
         if (argflag(words, WORDLIST("none","n","bn"))) base=0;
         if (argflag(words, WORDLIST("minimal","min","m","bm"))) base=1;
@@ -1682,7 +1689,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         bplan *bp = bplan_load(words[0]);
 
         if (bp) {
-            build_clear();
+            build_clear(sq, cq);
             build.bp = bp;
             sprintf(reply, "Loaded %zd blocks from %s.bplan\n", C(bp->plan),words[0]);
             goto Place;
@@ -1717,7 +1724,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         bplan *bp = bplan_sload(words[0]);
 
         if (bp) {
-            build_clear();
+            build_clear(sq, cq);
             build.bp = bp;
             sprintf(reply, "Loaded %zd blocks from %s.schematic\n", C(bp->plan),words[0]);
             goto Place;
@@ -1752,7 +1759,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         bplan *bp = bplan_csvload(words[0]);
 
         if (bp) {
-            build_clear();
+            build_clear(sq, cq);
             build.bp = bp;
             sprintf(reply, "Loaded %zd blocks from %s.csv\n", C(bp->plan),words[0]);
             goto Place;
@@ -1771,7 +1778,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         bplan *bp = bplan_pngload(words[0],words[1]);
 
         if (bp) {
-            build_clear();
+            build_clear(sq, cq);
             build.bp = bp;
             sprintf(reply, "Loaded %zd blocks from %s.png\n", C(bp->plan),words[0]);
             goto Place;
@@ -1784,7 +1791,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     CMD2(record,rec) {
         char *rcmd = words[0];
         if (!rcmd || !strcmp(rcmd, "start")) {
-            build_clear();
+            build_clear(sq, cq);
             lh_alloc_obj(build.bp);
             build.recording = 1;
             lh_clear_obj(build.pv);
@@ -1817,7 +1824,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         extent_t ex = ps2extent(pv, sz);
         cuboid_t c = export_cuboid_extent(ex);
 
-        build_clear();
+        build_clear(sq, cq);
         lh_alloc_obj(build.bp);
 
         int x,y,z;
@@ -1863,7 +1870,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
                 if (!build.pv.dir)
                     sprintf(reply, "No pivot was set previously");
                 else
-                    place_pivot(build.pv);
+                    place_pivot(build.pv, sq, cq);
                 goto Error;
             }
         }
@@ -1876,16 +1883,16 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         }
 
         // abort current buildtask
-        build_cancel();
+        build_cancel(sq, cq);
 
         sprintf(reply, "Placing pivot at %d,%d (%d), dir=%s\n",
                 pv.pos.x,pv.pos.z,pv.pos.y,DIRNAME[pv.dir]);
-        place_pivot(pv);
+        place_pivot(pv, sq, cq);
         goto Error;
     }
 
     CMD(cancel) {
-        build_cancel();
+        build_cancel(sq, cq);
         build.placemode=0;
         goto Error;
     }

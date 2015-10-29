@@ -905,11 +905,9 @@
       builds with more than 10000 blocks or try to limit the preview size by using
       <a href="#ctrl_limit">limit</a> or <a href="#mani_trim">trim</a>.</p>
 
-    <p>If you cancel your buildtask while a preview is still active, you will lose
-      the ability to remove it. The phantom blocks will remain until destroyed or
-      removed by chunk reloading. You can fix the issue by generating exactly same
-      buildtask (i.e. by using <tt>#build place again</tt>) and then removing the
-      preview.</p>
+    <p>If you cancel your buildtask while a preview is still active, by default
+      it is automatically removed. You can override this behavior with the build
+      option <a href="#build_opts">preview_retain</a>.</p>
 
     <p>The phantom blocks may disappear because of the block updates in adjacent
       blocks, or because of the build attempts not accepted by the server.
