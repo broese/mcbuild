@@ -131,8 +131,8 @@ const item_id ITEMS[] = {
     [0x5a] = { "Portal",                I_MPOS },
     [0x5b] = { "Jack-o-Lantern",        I_MPOS|I_OPAQUE },
     [0x5c] = { "Cake",                  I_STATE },                      // S: level
-    [0x5d] = { "Repeater (off)",        I_MPOS|I_STATE },               // P: dir, S: delay setting
-    [0x5e] = { "Repeater (on)",         I_MPOS|I_STATE },               // P: dir, S: delay setting
+    [0x5d] = { "Repeater (off)",        I_MPOS|I_STATE|I_RSRC },        // P: dir, S: delay setting
+    [0x5e] = { "Repeater (on)",         I_MPOS|I_STATE|I_RSRC },        // P: dir, S: delay setting
     [0x5f] = { "Stained Glass",         I_MTYPE, MNAMES_COLOR },
 
     [0x60] = { "Trapdoor",              I_MPOS|I_STATE },               // P: dir,u/d, S: open/close
@@ -197,8 +197,8 @@ const item_id ITEMS[] = {
     [0x92] = { "Trapped Chest",         I_MPOS },                       // P: dir
     [0x93] = { "Pressure Plate Lt",     I_STATE },                      // S: pressed
     [0x94] = { "Pressure Plate Hv",     I_STATE },                      // S: pressed
-    [0x95] = { "Comparator (off)",      I_MPOS|I_STATE },               // P: dir, S: mode/power
-    [0x96] = { "Comparator (on)",       I_MPOS|I_STATE },               // P: dir, S: mode/power
+    [0x95] = { "Comparator (off)",      I_MPOS|I_STATE|I_RSRC },        // P: dir, S: mode/power
+    [0x96] = { "Comparator (on)",       I_MPOS|I_STATE|I_RSRC },        // P: dir, S: mode/power
     [0x97] = { "Daylight Sensor" },
     [0x98] = { "Redstone Block",        I_OPAQUE },
     [0x99] = { "Quartz Ore",            I_OPAQUE },
@@ -828,6 +828,26 @@ static metagroup MM_ONWALL[16] = {
     METAO(5,3,2,5,4),
 };
 
+// Redstone repeaters and comparators
+static metagroup MM_RSRC[16] = {
+    METAO(0,2,0,1,3),
+    METAO(1,2,0,1,3),
+    METAO(2,2,0,1,3),
+    METAO(3,2,0,1,3),
+    METAO(4,6,4,5,7),
+    METAO(5,6,4,5,7),
+    METAO(6,6,4,5,7),
+    METAO(7,6,4,5,7),
+    METAO(8,10,8,9,11),
+    METAO(9,10,8,9,11),
+    METAO(10,10,8,9,11),
+    METAO(11,10,8,9,11),
+    METAO(12,14,12,13,15),
+    METAO(13,14,12,13,15),
+    METAO(14,14,12,13,15),
+    METAO(15,14,12,13,15),
+};
+
 #define GETMETAGROUP(mmname) mmname[b.meta].inuse ? mmname[b.meta].meta : NULL
 static inline int8_t *get_metagroup(bid_t b) {
     uint64_t flags = ITEMS[b.bid].flags;
@@ -835,6 +855,8 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (flags&I_TORCH)  return GETMETAGROUP(MM_TORCH);
     if (flags&I_LOG)    return GETMETAGROUP(MM_LOG);
     if (flags&I_ONWALL) return GETMETAGROUP(MM_ONWALL);
+    if (flags&I_RSRC)   return GETMETAGROUP(MM_RSRC);
+
     return NULL; // default - no orientation mapping
 }
 

@@ -678,6 +678,15 @@ void build_update() {
                 default: PLACE_NONE(b); break;
             }
         }
+        else if (it->flags&I_RSRC) {
+            // Redstone Repeater / Comparator
+
+            // required look direction for the correct block placement
+            b->rdir = (b->b.meta&1) ?
+                ((b->b.meta&2) ? DIR_WEST  : DIR_EAST ) :
+                ((b->b.meta&2) ? DIR_SOUTH : DIR_NORTH);
+            PLACE_ALL(b);
+        }
         else {
             // Blocks that don't have I_MPOS or not supported
             PLACE_ALL(b);
