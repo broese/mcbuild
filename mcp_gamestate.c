@@ -218,7 +218,7 @@ void dump_overworld() {
 ////////////////////////////////////////////////////////////////////////////////
 
 cuboid_t export_cuboid_extent(extent_t ex) {
-    int x,y,z;
+    int X,Z,y,k;
 
     // calculate extent sizes in chunks
     int32_t Xl=ex.min.x>>4, Xh=ex.max.x>>4, Xs=Xh-Xl+1;
@@ -237,7 +237,6 @@ cuboid_t export_cuboid_extent(extent_t ex) {
         lh_alloc_num(c.data[y],Xs*Zs*256);
     }
 
-    int X,Z,j,k;
     for(X=Xl; X<=Xh; X++) {
         for(Z=Zl; Z<=Zh; Z++) {
             // get the chunk data
@@ -1131,7 +1130,7 @@ void gs_packet(MCPacket *pkt) {
                     .x = x&0xf,
                     .z = z&0xf,
                     .y = (uint8_t)y,
-                    .bid = 0,
+                    .bid = BLOCKTYPE(0,0),
                 };
 #endif
                 modify_blocks(x>>4,z>>4,&block,1);
@@ -1260,7 +1259,7 @@ void gs_packet(MCPacket *pkt) {
                 printf("Warning: action %d not found!\n",tpkt->aid);
                 break;
             }
-            invact a = pIAQ[idx];
+            //invact a = pIAQ[idx];
             lh_arr_delete(IAQ, idx);
 
             if (!tpkt->accepted) {

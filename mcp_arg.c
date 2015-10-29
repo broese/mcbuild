@@ -3,6 +3,7 @@
 #include <string.h>
 #include <strings.h>
 #include <stdarg.h>
+#include <ctype.h>
 
 #include "mcp_arg.h"
 #include "mcp_ids.h"
@@ -163,7 +164,7 @@ int argf_pivot(arg_defaults *ad, char **words, char **names, pivot_t *pivot) {
                                  "%5$d");
 
     char dir[256];
-    int32_t x,z,y,dist;
+    int32_t dist;
 
     int fi = argparse(words, names, fmt_pivot, &pivot->pos.x, &pivot->pos.z, &pivot->pos.y, dir, &dist);
     switch (fi) {
@@ -294,7 +295,7 @@ int argf_pos(arg_defaults *ad, char **words, char **names, off3_t *pos) {
                                "%d,%d",
                                "%4$d");
 
-    int32_t x,z,y,dist;
+    int32_t dist;
 
     int fi = argparse(words, names, fmt_pos, &pos->x, &pos->z, &pos->y, &dist);
     switch (fi) {

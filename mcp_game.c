@@ -152,7 +152,7 @@ static void autoshear(MCPacketQueue *sq) {
     // calculate list of usable entities in range
     uint32_t hent[MAX_ENTITIES];
 
-    int i,j,hi=0;
+    int i,hi=0;
     for(i=0; i<C(gs.entity) && hi<MAX_ENTITIES; i++) {
         entity *e = P(gs.entity)+i;
 

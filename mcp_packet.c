@@ -27,7 +27,7 @@ static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
 }
 
 static inline int count_bits(uint16_t bitmask) {
-    int i,c=0;
+    int c=0;
     for(c=0; bitmask; bitmask>>=1)
         c += (bitmask&1);
     return c;
@@ -934,7 +934,6 @@ DECODE_BEGIN(SP_ChunkData,_1_8_1) {
 
     if (tpkt->chunk.mask) {
         int nblk = count_bits(tpkt->chunk.mask);
-        int bpc  = (size-256)/nblk;
         tpkt->skylight = ((size-256)/nblk == 3*4096);
     }
 

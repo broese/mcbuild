@@ -22,8 +22,6 @@
 #define STATE_LOGIN    2
 #define STATE_PLAY     3
 
-static char * states = "ISLP";
-
 ////////////////////////////////////////////////////////////////////////////////
 
 int o_help                      = 0;
@@ -180,7 +178,6 @@ void track_spawners(SP_UpdateBlockEntity_pkt *ube) {
 
 static void find_spawners() {
     int i,j,k;
-    int ts[4096][3], mts=0;
 
     for(i=0; i<C(spawners); i++) {
         for(j=i+1; j<C(spawners); j++) {
@@ -279,6 +276,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 // this packet is compressed, unpack and move the decoding pointer to the decoded buffer
                 arr_resize(GAR(udata), usize);
                 ssize_t usize_ret = zlib_decode_to(p, data+size-p, AR(udata));
+                if (usize_ret < 0) { printf("failed to decompress packet\n"); break;}
                 p = P(udata);
                 lim = p+usize;
             }
@@ -300,7 +298,6 @@ void parse_mcp(uint8_t *data, ssize_t size) {
             free_packet(pkt);
         }
 
-        uint8_t *ptr = p;
         // pkt will point at the start of packet (specifically at the type field)
         // while p will move to the next field to be parsed.
 
@@ -448,4 +445,6 @@ int main(int ac, char **av) {
         search_blocks(o_dimension, o_block_id, o_block_meta);
 
     gs_destroy();
+
+    return 0;
 }

@@ -354,7 +354,7 @@ int bplan_hollow(bplan *bp, int flat, int opaque) {
     assert(bp);
     bplan_update(bp);
 
-    int i,j;
+    int i;
 
     // size of a single "slice" with additional 1-block border
     int32_t size_xz = (bp->sx+2)*(bp->sz+2);
@@ -584,7 +584,7 @@ void bplan_shrink(bplan *bp) {
     assert(bp);
     bplan_update(bp);
 
-    int i,j;
+    int i;
 
     // size of a single "slice" with additional 1-block border
     int32_t size_xz = bp->sx*bp->sz;
@@ -718,7 +718,7 @@ int bplan_ssave(bplan *bp, const char *name) {
     char fname[256];
     sprintf(fname, "schematic/%s.schematic", name);
 
-    int i,j;
+    int i;
 
     // create Blocks and Data arrays from the buildplan
     int32_t size_xz = bp->sx*bp->sz;

@@ -12,6 +12,9 @@
 #include <assert.h>
 #include <time.h>
 #include <math.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
 
 #include <openssl/rsa.h>
 #include <openssl/x509.h>
@@ -441,10 +444,10 @@ void process_play_packet(int is_client, struct timeval ts,
                          uint8_t *ptr, uint8_t *lim,
                          lh_buf_t *tx, lh_buf_t *bx) {
 
-    char comp = ' ';
+    char comp=' ';
 
     uint8_t *raw_ptr = ptr;       // start of the raw packet (with the complen field)
-    uint8_t *raw_lim = lim;       // limit ptr of the raw data
+    //uint8_t *raw_lim = lim;       // limit ptr of the raw data
     ssize_t  raw_len = lim-ptr;   // and its length
 
     uint8_t *p       = ptr;       // decoding pointer, after passing the decomp code
@@ -1033,7 +1036,6 @@ int proxy_pump() {
         LH_ERROR(1,"Failed to set sigaction\n");
 
     // main event loop
-    int i;
     while(!signal_caught) {
         lh_poll(&pa, 1000); // poll all sockets
 
@@ -1102,8 +1104,8 @@ void print_usage() {
     printf("Usage:\n"
            "%s [options] [server[:port]]\n"
            "  -h                      : print this help\n"
-           "  -b [bindaddr:]bindport] : address and port to bind the proxy socket to. Default: 127.0.0.1:25565\n"
-           "  -w [bindaddr:]bindport] : address and port to bind the webserver socket to. Default: 127.0.0.1:8080\n"
+           "  -b [bindaddr:]bindport] : address and port to bind the proxy socket to. Default: %s:%d\n"
+           "  -w [bindaddr:]bindport] : address and port to bind the webserver socket to. Default: %s:%d\n"
            "  [server[:port]]         : remote Minecraft server address and port. Default: 2b2t.org:25565\n",
            o_appname,DEFAULT_BIND_ADDR, DEFAULT_BIND_PORT, DEFAULT_REMOTE_ADDR, DEFAULT_REMOTE_PORT);
 }
@@ -1120,7 +1122,7 @@ int parse_args(int ac, char **av) {
     o_rport = DEFAULT_REMOTE_PORT;
     o_help = 0;
 
-    int opt,error=0,i;
+    int opt,error=0;
     char addr[256];
     int port;
 
