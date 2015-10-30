@@ -17,7 +17,6 @@ HDR_ALL=$(addsuffix .h, mcp_packet mcp_ids mcp_types nbt mcp_game mcp_gamestate 
 DEPFILE=make.depend
 
 ifeq ($(shell uname -s),SunOS)
-	DEFS += -DBUG_UNNAMED_INITIALIZER=1
 	INC  += -I$(HOME)/include
 	LIBS += -lsocket -lnsl -lmd5 -L$(HOME)/lib
 	CC   = gcc

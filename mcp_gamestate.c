@@ -1086,21 +1086,11 @@ void gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(SP_BlockChange) {
-#ifdef BUG_UNNAMED_INITIALIZER
             blkrec block = {
+                {{ tpkt->pos.z&0xf, tpkt->pos.x&0xf }},
                 .y = (uint8_t)tpkt->pos.y,
                 .bid = tpkt->block,
             };
-            block.x = tpkt->pos.x&0xf;
-            block.z = tpkt->pos.z&0xf;
-#else
-            blkrec block = {
-                .x = tpkt->pos.x&0xf,
-                .z = tpkt->pos.z&0xf,
-                .y = (uint8_t)tpkt->pos.y,
-                .bid = tpkt->block,
-            };
-#endif
             modify_blocks(tpkt->pos.x>>4,tpkt->pos.z>>4,&block,1);
         } _GSP;
 
@@ -1118,21 +1108,11 @@ void gs_packet(MCPacket *pkt) {
                 int x = xc +tpkt->blocks[i].dx;
                 int y = yc +tpkt->blocks[i].dy;
                 int z = zc +tpkt->blocks[i].dz;
-#ifdef BUG_UNNAMED_INITIALIZER
                 blkrec block = {
-                    .y = (uint8_t)y,
-                    .bid = 0,
-                };
-                block.x = x&0xf;
-                block.z = z&0xf;
-#else
-                blkrec block = {
-                    .x = x&0xf,
-                    .z = z&0xf,
+                    {{ .x = x&0xf, .z = z&0xf }},
                     .y = (uint8_t)y,
                     .bid = BLOCKTYPE(0,0),
                 };
-#endif
                 modify_blocks(x>>4,z>>4,&block,1);
             }
         } _GSP;

@@ -31,20 +31,16 @@ typedef uint8_t angle_t;
 
 typedef struct {
     union {
-        uint64_t p;
         struct {
             int64_t z : 26;
             int64_t y : 12;
             int64_t x : 26;
         };
+        uint64_t p;
     };
 } pos_t;
 
-#ifdef BUG_UNNAMED_INITIALIZER
-#define POS(X,Y,Z) (pos_t){ (((int64_t)X)<<38)|(((int64_t)Y)<<26)|Z }
-#else
-#define POS(X,Y,Z) (pos_t){ .x=X, .y=Y, .z=Z }
-#endif
+#define POS(X,Y,Z) (pos_t){ { { .x=X, .y=Y, .z=Z } } }
 
 ////////////////////////////////////////////////////////////////////////////////
 // coordinates
@@ -160,11 +156,11 @@ typedef struct {
 
 typedef struct {
     union {
-        uint8_t pos;
         struct {
             uint8_t z : 4;
             uint8_t x : 4;
         };
+        uint8_t pos;
     };
     uint8_t y;
     bid_t bid;
