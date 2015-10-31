@@ -513,6 +513,93 @@ static void build_update_placed() {
 #define PLACE_NONE(b)  setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
 #define PLACE_ALL(b)   setdots(b, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL);
 
+void set_block_dots(blk *b) {
+    // determine usable dots on the neighbor faces
+    lh_clear_obj(b->dots);
+
+    //TODO: provide support for ALL position-dependent blocks
+
+    const item_id *it = &ITEMS[b->b.bid];
+
+    if (it->flags&I_SLAB) { // Halfslabs
+        // Slabs
+        if (b->b.meta&8) // upper half placement
+            setdots(b, DOTS_ALL, DOTS_NONE, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER);
+        else // lower half placement
+            setdots(b, DOTS_NONE, DOTS_ALL, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER);
+    }
+
+    else if (it->flags&I_STAIR) { // Stairs
+        // Stairs
+
+        // determine the required look direction for the correct block placement
+        b->rdir = (b->b.meta&2) ?
+            ((b->b.meta&1) ? DIR_NORTH : DIR_SOUTH ) :
+            ((b->b.meta&1) ? DIR_WEST  : DIR_EAST );
+        // the direction will be checked for each dot in remove_distant_dots()
+
+        if (b->b.meta&4) // upside-down placement
+            setdots(b, DOTS_ALL, DOTS_NONE, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER);
+        else // straight placement
+            setdots(b, DOTS_NONE, DOTS_ALL, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER);
+    }
+
+    else if (it->flags&I_LOG) { // Wood Logs and Hay Bales
+        switch((b->b.meta>>2)&3) {
+            case 0: // Up-Down
+            case 3: // All-bark (not possible, but we just assume up-down)
+                setdots(b, DOTS_ALL, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
+                break;
+            case 1: // East-West
+                setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_ALL);
+                break;
+            case 2: // North-South
+                setdots(b, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_ALL, DOTS_NONE, DOTS_NONE);
+                break;
+        }
+    }
+
+    else if (it->flags&I_TORCH) { // Torches and Redstone Torches
+        switch(b->b.meta) {
+            case 1: PLACE_EAST(b); break;
+            case 2: PLACE_WEST(b); break;
+            case 3: PLACE_SOUTH(b); break;
+            case 4: PLACE_NORTH(b); break;
+            case 5: PLACE_FLOOR(b); break;
+            default: PLACE_NONE(b); break;
+        }
+    }
+
+    else if (it->flags&I_ONWALL) { // Ladder, Wall Signs and Banners
+        switch(b->b.meta) {
+            case 2: PLACE_NORTH(b); break;
+            case 3: PLACE_SOUTH(b); break;
+            case 4: PLACE_WEST(b); break;
+            case 5: PLACE_EAST(b); break;
+            default: PLACE_NONE(b); break;
+        }
+    }
+
+    else if (it->flags&I_RSRC) { // Redstone Repeater / Comparator
+        // required look direction for the correct block placement
+        b->rdir = (b->b.meta&1) ?
+            ((b->b.meta&2) ? DIR_WEST  : DIR_EAST ) :
+            ((b->b.meta&2) ? DIR_SOUTH : DIR_NORTH);
+        PLACE_ALL(b);
+    }
+
+    else {
+        // Blocks that don't have I_MPOS or not supported
+        PLACE_ALL(b);
+    }
+
+    // disable the faces where there is no neighbor
+    int f;
+    for (f=0; f<6; f++)
+        if (!((b->neigh>>f)&1))
+            memset(b->dots[f], 0, sizeof(DOTS_ALL));
+}
+
 // called when player position or look have changed - update our placeable blocks list
 void build_update() {
     if (!build.active) return;
@@ -611,6 +698,9 @@ void build_update() {
                 b->empty = 1;
         }
 
+        //TODO: when placing a double slab, prevent obstruction - place the slab further away first
+        //TODO: take care when placing a slab over a slab - prevent a doubleslab creation
+
         // determine which neighbors do we have
         b->n_yp = !ISEMPTY(row_u[x].bid);
         b->n_yn = !ISEMPTY(row_d[x].bid);
@@ -623,84 +713,7 @@ void build_update() {
         // skip the blocks we can't place
         if (b->placed || !b->empty || !b->neigh) continue;
 
-        // determine usable dots on the neighbor faces
-        lh_clear_obj(b->dots);
-
-        //TODO: provide support for ALL position-dependent blocks
-        //TODO: when placing a double slab, prevent obstruction - place the slab further away first
-        //TODO: take care when placing a slab over a slab - prevent a doubleslab creation
-        if (it->flags&I_SLAB) {
-            // Slabs
-            if (b->b.meta&8) // upper half placement
-                setdots(b, DOTS_ALL, DOTS_NONE, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER);
-            else // lower half placement
-                setdots(b, DOTS_NONE, DOTS_ALL, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER);
-        }
-        else if (it->flags&I_STAIR) {
-            // Stairs
-
-            // determine the required look direction for the correct block placement
-            b->rdir = (b->b.meta&2) ?
-                ((b->b.meta&1) ? DIR_NORTH : DIR_SOUTH ) :
-                ((b->b.meta&1) ? DIR_WEST  : DIR_EAST );
-            // the direction will be checked for each dot in remove_distant_dots()
-
-            if (b->b.meta&4) // upside-down placement
-                setdots(b, DOTS_ALL, DOTS_NONE, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER, DOTS_UPPER);
-            else // straight placement
-                setdots(b, DOTS_NONE, DOTS_ALL, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER, DOTS_LOWER);
-        }
-        else if (it->flags&I_LOG) {
-            switch((b->b.meta>>2)&3) {
-                case 0: // Up-Down
-                case 3: // All-bark (not possible, but we just assume up-down)
-                    setdots(b, DOTS_ALL, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
-                    break;
-                case 1: // East-West
-                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_ALL);
-                    break;
-                case 2: // North-South
-                    setdots(b, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_ALL, DOTS_NONE, DOTS_NONE);
-                    break;
-            }
-        }
-        else if (it->flags&I_TORCH) {
-            switch(b->b.meta) {
-                case 1: PLACE_EAST(b); break;
-                case 2: PLACE_WEST(b); break;
-                case 3: PLACE_SOUTH(b); break;
-                case 4: PLACE_NORTH(b); break;
-                case 5: PLACE_FLOOR(b); break;
-                default: PLACE_NONE(b); break;
-            }
-        }
-        else if (it->flags&I_ONWALL) {
-            switch(b->b.meta) {
-                case 2: PLACE_NORTH(b); break;
-                case 3: PLACE_SOUTH(b); break;
-                case 4: PLACE_WEST(b); break;
-                case 5: PLACE_EAST(b); break;
-                default: PLACE_NONE(b); break;
-            }
-        }
-        else if (it->flags&I_RSRC) {
-            // Redstone Repeater / Comparator
-
-            // required look direction for the correct block placement
-            b->rdir = (b->b.meta&1) ?
-                ((b->b.meta&2) ? DIR_WEST  : DIR_EAST ) :
-                ((b->b.meta&2) ? DIR_SOUTH : DIR_NORTH);
-            PLACE_ALL(b);
-        }
-        else {
-            // Blocks that don't have I_MPOS or not supported
-            PLACE_ALL(b);
-        }
-
-        // disable the faces where there is no neighbor
-        for (f=0; f<6; f++)
-            if (!((b->neigh>>f)&1))
-                memset(b->dots[f], 0, sizeof(DOTS_ALL));
+        set_block_dots(b);
 
         // disable faces looking away from you
         if (!buildopts.anyface) {
