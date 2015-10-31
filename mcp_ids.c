@@ -46,10 +46,10 @@ const item_id ITEMS[] = {
     [0x14] = { "Glass" },
     [0x15] = { "Lapis ore",             I_OPAQUE },
     [0x16] = { "Lapis block",           I_OPAQUE },
-    [0x17] = { "Dispenser",             I_MPOS|I_STATE|I_OPAQUE },      // P: dir, S: active
+    [0x17] = { "Dispenser",             I_MPOS|I_STATE|I_OPAQUE|I_CONT },      // P: dir, S: active
     [0x18] = { "Sandstone",             I_MTYPE|I_OPAQUE,
                { NULL, "Chiseled", "Smooth"} },
-    [0x19] = { "Noteblock",             I_OPAQUE },
+    [0x19] = { "Noteblock",             I_OPAQUE|I_ADJ },
     [0x1a] = { "Bed",                   I_MPOS|I_STATE },               // P: dir, S: occupied
     [0x1b] = { "Powered Rail",          I_MPOS|I_STATE },               // P: dir, S: active
     [0x1c] = { "Detector Rail",         I_MPOS|I_STATE },               // P: dir, S: active
@@ -90,15 +90,15 @@ const item_id ITEMS[] = {
     [0x33] = { "Fire",                  I_STATE },                      // S: age
     [0x34] = { "Spawner" },
     [0x35] = { "Wooden Stairs",         I_MPOS|I_STAIR },               // P: dir
-    [0x36] = { "Chest",                 I_MPOS },                       // P: dir
+    [0x36] = { "Chest",                 I_MPOS|I_CONT },                // P: dir
     [0x37] = { "Redstone Wire",         I_STATE },                      // S: power level
     [0x38] = { "Diamond Ore",           I_OPAQUE },
     [0x39] = { "Diamond Block",         I_OPAQUE },
-    [0x3a] = { "Workbench",             I_OPAQUE },
+    [0x3a] = { "Workbench",             I_OPAQUE|I_CONT },
     [0x3b] = { "Wheat",                 I_STATE },                      // S: level
     [0x3c] = { "Farmland",              I_STATE },                      // S: wetness
-    [0x3d] = { "Furnace",               I_MPOS|I_OPAQUE },              // P: dir
-    [0x3e] = { "Lit Furnace",           I_MPOS|I_OPAQUE },              // P: dir
+    [0x3d] = { "Furnace",               I_MPOS|I_OPAQUE|I_CONT },       // P: dir
+    [0x3e] = { "Lit Furnace",           I_MPOS|I_OPAQUE|I_CONT },       // P: dir
     [0x3f] = { "Standing Sign",         I_MPOS },                       // P: dir
 
     [0x40] = { "Wooden Door",           I_MPOS|I_STATE },               // P: dir, S: open/close
@@ -130,12 +130,12 @@ const item_id ITEMS[] = {
     [0x59] = { "Glowstone Block",       I_OPAQUE },
     [0x5a] = { "Portal",                I_MPOS },
     [0x5b] = { "Jack-o-Lantern",        I_MPOS|I_OPAQUE },
-    [0x5c] = { "Cake",                  I_STATE },                      // S: level
-    [0x5d] = { "Repeater (off)",        I_MPOS|I_STATE|I_RSRC },        // P: dir, S: delay setting
-    [0x5e] = { "Repeater (on)",         I_MPOS|I_STATE|I_RSRC },        // P: dir, S: delay setting
+    [0x5c] = { "Cake",                  I_STATE|I_ADJ },                // S: level
+    [0x5d] = { "Repeater (off)",        I_MPOS|I_STATE|I_RSRC|I_ADJ },  // P: dir, S: delay setting
+    [0x5e] = { "Repeater (on)",         I_MPOS|I_STATE|I_RSRC|I_ADJ },  // P: dir, S: delay setting
     [0x5f] = { "Stained Glass",         I_MTYPE, MNAMES_COLOR },
 
-    [0x60] = { "Trapdoor",              I_MPOS|I_STATE },               // P: dir,u/d, S: open/close
+    [0x60] = { "Trapdoor",              I_MPOS|I_STATE|I_ADJ },         // P: dir,u/d, S: open/close
     [0x61] = { "Silverfish Block",      I_MTYPE|I_OPAQUE,
                { "Stone", "Cobblestone", "Stonebrick", "Mossy Stonebrick",
                  "Cracked Stonebrick", "Chiseled Stonebrick" }, },
@@ -159,9 +159,9 @@ const item_id ITEMS[] = {
     [0x71] = { "Netherbrick Fence" },
     [0x72] = { "Netherbrick Stairs",    I_MPOS|I_STAIR },               // P: dir
     [0x73] = { "Nether Wart",           I_STATE },                      // S: level
-    [0x74] = { "Enchantment Table" },
-    [0x75] = { "Brewing Stand",         I_STATE },                      // S: bottles
-    [0x76] = { "Cauldron",              I_STATE },                      // S: level
+    [0x74] = { "Enchantment Table",     I_CONT },
+    [0x75] = { "Brewing Stand",         I_STATE|I_CONT },               // S: bottles
+    [0x76] = { "Cauldron",              I_STATE|I_ADJ },                // S: level
     [0x77] = { "End Portal",            I_MPOS },
     [0x78] = { "End Portal Block",      I_MPOS },                       // P: dir
     [0x79] = { "End Stone",             I_OPAQUE },
@@ -176,38 +176,38 @@ const item_id ITEMS[] = {
 
     [0x80] = { "Sandstone Stairs",      I_MPOS|I_STAIR },               // P: dir
     [0x81] = { "Emerald Ore",           I_OPAQUE },
-    [0x82] = { "Ender Chest",           I_MPOS },                       // P: dir
+    [0x82] = { "Ender Chest",           I_MPOS|I_CONT },                // P: dir
     [0x83] = { "Tripwire Hook",         I_MPOS|I_STATE },               // P: dir, S: connected,active
     [0x84] = { "Tripwire",              I_STATE },                      // S: act/susp/att/arm
     [0x85] = { "Emerald Block",         I_OPAQUE },
     [0x86] = { "Spruce Stairs",         I_MPOS|I_STAIR },               // P: dir
     [0x87] = { "Birch Stairs",          I_MPOS|I_STAIR },               // P: dir
     [0x88] = { "Jungle Stairs",         I_MPOS|I_STAIR },               // P: dir
-    [0x89] = { "Command Block",         I_OPAQUE },
-    [0x8a] = { "Beacon" },
+    [0x89] = { "Command Block",         I_OPAQUE|I_CONT },
+    [0x8a] = { "Beacon",                I_CONT },
     [0x8b] = { "Cobblestone Wall",      I_MTYPE,
                { NULL, "Mossy" } },
     [0x8c] = { "Flower Pot" },
     [0x8d] = { "Carrot Plant",          I_STATE },                      // S: level
     [0x8e] = { "Potato Plant",          I_STATE },                      // S: level
-    [0x8f] = { "Wooden Button",         I_MPOS|I_STATE },               // P: dir, S: pressed
+    [0x8f] = { "Wooden Button",         I_MPOS|I_STATE|I_ADJ },         // P: dir, S: pressed
 
-    [0x90] = { "Skull",                 I_MPOS }, //FIXME: different block/item metas
-    [0x91] = { "Anvil",                 I_MPOS }, //FIXME: different block/item metas
-    [0x92] = { "Trapped Chest",         I_MPOS },                       // P: dir
+    [0x90] = { "Skull",                 I_MPOS },
+    [0x91] = { "Anvil",                 I_MPOS|I_CONT },
+    [0x92] = { "Trapped Chest",         I_MPOS|I_CONT },                        // P: dir
     [0x93] = { "Pressure Plate Lt",     I_STATE },                      // S: pressed
     [0x94] = { "Pressure Plate Hv",     I_STATE },                      // S: pressed
-    [0x95] = { "Comparator (off)",      I_MPOS|I_STATE|I_RSRC },        // P: dir, S: mode/power
-    [0x96] = { "Comparator (on)",       I_MPOS|I_STATE|I_RSRC },        // P: dir, S: mode/power
-    [0x97] = { "Daylight Sensor" },
+    [0x95] = { "Comparator (off)",      I_MPOS|I_STATE|I_RSRC|I_ADJ },  // P: dir, S: mode/power
+    [0x96] = { "Comparator (on)",       I_MPOS|I_STATE|I_RSRC|I_ADJ },  // P: dir, S: mode/power
+    [0x97] = { "Daylight Sensor",       I_ADJ },
     [0x98] = { "Redstone Block",        I_OPAQUE },
     [0x99] = { "Quartz Ore",            I_OPAQUE },
-    [0x9a] = { "Hopper",                I_MPOS|I_STATE },               // P: dir, S: active
+    [0x9a] = { "Hopper",                I_MPOS|I_STATE|I_CONT },        // P: dir, S: active
     [0x9b] = { "Quartz Block",          I_MTYPE|I_MPOS|I_OPAQUE,        // P: dir (pillar only)
                { NULL, "Chiseled", "Pillar" } },
     [0x9c] = { "Quartz Stairs",         I_MPOS|I_STAIR },               // P: dir
     [0x9d] = { "Activator Rail",        I_MPOS|I_STATE },               // P: dir, S: active
-    [0x9e] = { "Dropper",               I_MPOS|I_STATE|I_OPAQUE },      // P: dir, S: active
+    [0x9e] = { "Dropper",               I_MPOS|I_STATE|I_OPAQUE|I_CONT },       // P: dir, S: active
     [0x9f] = { "Stained Clay",          I_MTYPE|I_OPAQUE,
                MNAMES_COLOR },
 
@@ -237,29 +237,29 @@ const item_id ITEMS[] = {
 
     [0xb0] = { "Standing Banner",       I_MPOS },                       // P: dir
     [0xb1] = { "Wall Banner",           I_MPOS|I_ONWALL },              // P: dir
-    [0xb2] = { "Inv. Daylight Sensor" },
+    [0xb2] = { "Inv. Daylight Sensor",  I_ADJ },
     [0xb3] = { "Red Sandstone",         I_MTYPE|I_OPAQUE,
                { NULL, "Chiseled", "Smooth"} },
     [0xb4] = { "Red Sandstone Stairs",  I_MPOS|I_STAIR },               // P: dir
     [0xb5] = { "Red Sandstone D-Slab",  I_MTYPE|I_DSLAB|I_OPAQUE,
                { [8]="Chiseled" }, },
     [0xb6] = { "Red Sandstone Slab",    I_MPOS|I_SLAB },                // P: up/down
-    [0xb7] = { "Spruce Fence Gate",     I_MPOS|I_STATE },               // P: dir, S: open/close
-    [0xb8] = { "Birch Fence Gate",      I_MPOS|I_STATE },               // P: dir, S: open/close
-    [0xb9] = { "Jungle Fence Gate",     I_MPOS|I_STATE },               // P: dir, S: open/close
-    [0xba] = { "Dark Oak Fence Gate",   I_MPOS|I_STATE },               // P: dir, S: open/close
-    [0xbb] = { "Acacia Fence Gate",     I_MPOS|I_STATE },               // P: dir, S: open/close
+    [0xb7] = { "Spruce Fence Gate",     I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
+    [0xb8] = { "Birch Fence Gate",      I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
+    [0xb9] = { "Jungle Fence Gate",     I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
+    [0xba] = { "Dark Oak Fence Gate",   I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
+    [0xbb] = { "Acacia Fence Gate",     I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
     [0xbc] = { "Spruce Fence" },
     [0xbd] = { "Birch Fence" },
     [0xbe] = { "Jungle Fence" },
     [0xbf] = { "Dark Oak Fence" },
 
     [0xc0] = { "Acacia Fence" },
-    [0xc1] = { "Spruce Door",           I_MPOS|I_STATE },               // P: dir, S: open/close
-    [0xc2] = { "Birch Door",            I_MPOS|I_STATE },               // P: dir, S: open/close
-    [0xc3] = { "Jungle Door",           I_MPOS|I_STATE },               // P: dir, S: open/close
-    [0xc4] = { "Dark Oak Door",         I_MPOS|I_STATE },               // P: dir, S: open/close
-    [0xc5] = { "Acacia Door",           I_MPOS|I_STATE },               // P: dir, S: open/close
+    [0xc1] = { "Spruce Door",           I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
+    [0xc2] = { "Birch Door",            I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
+    [0xc3] = { "Jungle Door",           I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
+    [0xc4] = { "Dark Oak Door",         I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
+    [0xc5] = { "Acacia Door",           I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
 
     ////////////////////////////////////////////////////////////////////////
     // Items

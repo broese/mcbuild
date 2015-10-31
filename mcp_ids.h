@@ -194,26 +194,32 @@
 // flag and define a separate one (like I_SLAB)
 #define I_MPOS   (1<<8)
 
+// Container blocks (chests, furnaces, hoppers, etc.)
+#define I_CONT   (1<<9)
+
+// Blocks with adjustable setting (through right-click)
+#define I_ADJ    (1<<10)
+
 // slab-type block - I_MPOS lower/upper placement in the meta bit 3
-#define I_SLAB   (1<<9)
+#define I_SLAB   (1<<16)
 
 // stair-type block - I_MPOS straight/upside-down in the meta bit 2, direction in bits 0-1
-#define I_STAIR (1<<10)
+#define I_STAIR (1<<17)
 
 // wood log type blocks
-#define I_LOG (1<<11)
+#define I_LOG (1<<18)
 
 // torches and redstone torches
-#define I_TORCH (1<<12)
+#define I_TORCH (1<<19)
 
 // ladders, wall signs and wall banners
-#define I_ONWALL (1<<13)
+#define I_ONWALL (1<<20)
 
 // double-slabs
-#define I_DSLAB (1<<14)
+#define I_DSLAB (1<<21)
 
 // redstone switches
-#define I_RSRC (1<<15)
+#define I_RSRC (1<<22)
 
 // macros to determine armor type
 #define I_HELMET(id)     ((id)==0x12a || (id)==0x12e || (id)==0x132 || (id)==0x136 || (id)==0x13a)
