@@ -1065,6 +1065,16 @@ void gs_packet(MCPacket *pkt) {
             gs.own.food   = tpkt->food;
         } _GSP;
 
+        GSP(CP_EntityAction) {
+            if (tpkt->eid == gs.own.eid) {
+                switch (tpkt->action) {
+                    case 0: gs.own.crouched = 1; break;
+                    case 1: gs.own.crouched = 0; break;
+                    //TODO: other actions
+                }
+            }
+        } _GSP;
+
         ////////////////////////////////////////////////////////////////
         // Chunks
 

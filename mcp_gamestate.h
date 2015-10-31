@@ -86,6 +86,8 @@ typedef struct _gamestate {
         uint8_t     onground;
         float       yaw,pitch;
 
+        int         crouched;
+
         // position change tracking for functions like holeradar
         int32_t     lx,ly,lz,lo;
         int         pos_change;
