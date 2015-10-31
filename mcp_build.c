@@ -834,17 +834,32 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         float yaw, pitch;
         int ldir = calculate_yaw_pitch(tx, tz, ty, &yaw, &pitch);
 
+        int needcrouch=0;
+        const item_id *nit = &ITEMS[b->nblocks[face].bid];
+        if (nit->flags&(I_CONT|I_ADJ) && !gs.own.crouched)
+            needcrouch=1;
+
         printf("Placing Block: %d,%d,%d (%s)  On: %d,%d,%d (%02x, %s) "
                "Face:%d Cursor:%d,%d,%d  "
                "Player: %.1f,%.1f,%.1f  Dot: %.1f,%.1f,%.1f  "
-               "Rot=%.2f,%.2f  Dir=%d (%s)\n",
+               "Rot=%.2f,%.2f  Dir=%d (%s) %s\n",
                b->x,b->y,b->z, get_item_name(buf, hslot),
                b->x+NOFF[face][0],b->z+NOFF[face][1],b->y+NOFF[face][2],
                b->nblocks[face].bid, get_bid_name(buf2, b->nblocks[face]),
                face, cx, cy, cz,
                (float)gs.own.x/32, (float)(gs.own.y+EYEHEIGHT)/32, (float)gs.own.z/32,
                (float)b->x+(float)cx/16,(float)b->y+(float)cy/16,(float)b->z+(float)cz/16,
-               yaw, pitch, ldir, DIRNAME[ldir]);
+               yaw, pitch, ldir, DIRNAME[ldir],
+               needcrouch?"(need to crouch)":"");
+
+        // crouch if we have to place block on a block that reacts to right-click
+        if (needcrouch) {
+            NEWPACKET(CP_EntityAction, crouch);
+            tcrouch->eid = gs.own.eid;
+            tcrouch->action = 0;
+            tcrouch->jumpboost = 0;
+            queue_packet(crouch,sq);
+        }
 
         // turn player look to the dot
         NEWPACKET(CP_PlayerLook, pl);
@@ -867,6 +882,15 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         // Wave arm
         NEWPACKET(CP_Animation, anim);
         queue_packet(anim, sq);
+
+        // uncrouch again
+        if (needcrouch) {
+            NEWPACKET(CP_EntityAction, uncrouch);
+            tuncrouch->eid = gs.own.eid;
+            tuncrouch->action = 1;
+            tuncrouch->jumpboost = 0;
+            queue_packet(uncrouch,sq);
+        }
 
         // restore the former look direction
         NEWPACKET(CP_PlayerLook, pl2);
