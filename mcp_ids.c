@@ -848,6 +848,14 @@ static metagroup MM_RSRC[16] = {
     METAO(15,14,12,13,15),
 };
 
+// Hoppers
+static metagroup MM_HOPPER[16] = {
+    METAO(2,3,2,5,4),
+    METAO(3,3,2,5,4),
+    METAO(4,3,2,5,4),
+    METAO(5,3,2,5,4),
+};
+
 #define GETMETAGROUP(mmname) mmname[b.meta].inuse ? mmname[b.meta].meta : NULL
 static inline int8_t *get_metagroup(bid_t b) {
     uint64_t flags = ITEMS[b.bid].flags;
@@ -856,6 +864,7 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (flags&I_LOG)    return GETMETAGROUP(MM_LOG);
     if (flags&I_ONWALL) return GETMETAGROUP(MM_ONWALL);
     if (flags&I_RSRC)   return GETMETAGROUP(MM_RSRC);
+    if (b.bid == 154)   return GETMETAGROUP(MM_HOPPER);
 
     return NULL; // default - no orientation mapping
 }
