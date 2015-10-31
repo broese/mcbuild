@@ -46,20 +46,20 @@ const item_id ITEMS[] = {
     [0x14] = { "Glass" },
     [0x15] = { "Lapis ore",             I_OPAQUE },
     [0x16] = { "Lapis block",           I_OPAQUE },
-    [0x17] = { "Dispenser",             I_MPOS|I_STATE|I_OPAQUE|I_CONT },      // P: dir, S: active
+    [0x17] = { "Dispenser",             I_MPOS|I_STATE|I_OPAQUE|I_CONT|I_RSDEV },       // P: dir, S: active
     [0x18] = { "Sandstone",             I_MTYPE|I_OPAQUE,
                { NULL, "Chiseled", "Smooth"} },
     [0x19] = { "Noteblock",             I_OPAQUE|I_ADJ },
     [0x1a] = { "Bed",                   I_MPOS|I_STATE },               // P: dir, S: occupied
     [0x1b] = { "Powered Rail",          I_MPOS|I_STATE },               // P: dir, S: active
     [0x1c] = { "Detector Rail",         I_MPOS|I_STATE },               // P: dir, S: active
-    [0x1d] = { "Sticky Piston",         I_MPOS|I_STATE },               // P: dir, S: extended
+    [0x1d] = { "Sticky Piston",         I_MPOS|I_STATE|I_RSDEV },       // P: dir, S: extended
     [0x1e] = { "Cobweb", },
     [0x1f] = { "Tallgrass",             I_MTYPE,
                { "Shrub", NULL, "Fern", }, },
 
     [0x20] = { "Deadbush" },
-    [0x21] = { "Piston",                I_MPOS|I_STATE },               // P: dir, S: extended
+    [0x21] = { "Piston",                I_MPOS|I_STATE|I_RSDEV },       // P: dir, S: extended
     [0x22] = { "Piston Head",           I_MPOS|I_STATE },               // P: dir, S: extended
     [0x23] = { "Wool",                  I_MTYPE, MNAMES_COLOR },
     [0x24] = { "Pushed block", },
@@ -207,7 +207,7 @@ const item_id ITEMS[] = {
                { NULL, "Chiseled", "Pillar" } },
     [0x9c] = { "Quartz Stairs",         I_MPOS|I_STAIR },               // P: dir
     [0x9d] = { "Activator Rail",        I_MPOS|I_STATE },               // P: dir, S: active
-    [0x9e] = { "Dropper",               I_MPOS|I_STATE|I_OPAQUE|I_CONT },       // P: dir, S: active
+    [0x9e] = { "Dropper",               I_MPOS|I_STATE|I_OPAQUE|I_CONT|I_RSDEV },       // P: dir, S: active
     [0x9f] = { "Stained Clay",          I_MTYPE|I_OPAQUE,
                MNAMES_COLOR },
 
@@ -820,7 +820,8 @@ static metagroup MM_LOG[16] = {
     METAO(11,11,11,7,7),
 };
 
-// I_ONWALL (ladders/banners/signs)
+// I_ONWALL (ladders/banners/signs), but also
+// Hoppers, Pistons, Droppers and Dispensers
 static metagroup MM_ONWALL[16] = {
     METAO(2,3,2,5,4),
     METAO(3,3,2,5,4),
@@ -848,14 +849,6 @@ static metagroup MM_RSRC[16] = {
     METAO(15,14,12,13,15),
 };
 
-// Hoppers
-static metagroup MM_HOPPER[16] = {
-    METAO(2,3,2,5,4),
-    METAO(3,3,2,5,4),
-    METAO(4,3,2,5,4),
-    METAO(5,3,2,5,4),
-};
-
 #define GETMETAGROUP(mmname) mmname[b.meta].inuse ? mmname[b.meta].meta : NULL
 static inline int8_t *get_metagroup(bid_t b) {
     uint64_t flags = ITEMS[b.bid].flags;
@@ -864,7 +857,9 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (flags&I_LOG)    return GETMETAGROUP(MM_LOG);
     if (flags&I_ONWALL) return GETMETAGROUP(MM_ONWALL);
     if (flags&I_RSRC)   return GETMETAGROUP(MM_RSRC);
-    if (b.bid == 154)   return GETMETAGROUP(MM_HOPPER);
+
+    if ((flags&I_RSDEV) || b.bid==154)
+        return GETMETAGROUP(MM_ONWALL);
 
     return NULL; // default - no orientation mapping
 }
