@@ -132,6 +132,8 @@ typedef struct {
         };
     };
 
+    bid_t nblocks[6];           // types of blocks at the neighbor positions
+
     uint16_t dots[6][15];       // usable dots on the 6 neighbor faces to place the block
     int ndots;                  // number of dots on this block we can use to place it correctly
 
@@ -713,13 +715,19 @@ void build_update() {
         //TODO: take care when placing a slab over a slab - prevent a doubleslab creation
 
         // determine which neighbors do we have
-        b->n_yp = !ISEMPTY(row_u[x].bid);
-        b->n_yn = !ISEMPTY(row_d[x].bid);
-        b->n_zp = !ISEMPTY(row_s[x].bid);
-        b->n_zn = !ISEMPTY(row_n[x].bid);
-        b->n_xp = !ISEMPTY(row[x+1].bid);
-        b->n_xn = !ISEMPTY(row[x-1].bid);
-        //TODO: skip faces looking away from us
+        bid_t nbl;
+        nbl = b->nblocks[DIR_UP] = row_u[x];
+        b->n_yp = !ISEMPTY(nbl.bid);
+        nbl = b->nblocks[DIR_DOWN] = row_d[x];
+        b->n_yn = !ISEMPTY(nbl.bid);
+        nbl = b->nblocks[DIR_SOUTH] = row_s[x];
+        b->n_zp = !ISEMPTY(nbl.bid);
+        nbl = b->nblocks[DIR_NORTH] = row_n[x];
+        b->n_zn = !ISEMPTY(nbl.bid);
+        nbl = b->nblocks[DIR_EAST]  = row[x+1];
+        b->n_xp = !ISEMPTY(nbl.bid);
+        nbl = b->nblocks[DIR_WEST]  = row[x-1];
+        b->n_xn = !ISEMPTY(nbl.bid);
 
         // skip the blocks we can't place
         if (b->placed || !b->empty || !b->neigh) continue;
@@ -813,6 +821,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         slot_t * hslot = &gs.inv.slots[islot+36];
 
         char buf[4096];
+        char buf2[4096];
 
         int8_t face, cx, cy, cz;
         choose_dot(b, &face, &cx, &cy, &cz);
@@ -825,12 +834,13 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         float yaw, pitch;
         int ldir = calculate_yaw_pitch(tx, tz, ty, &yaw, &pitch);
 
-        printf("Placing Block: %d,%d,%d (%s)  On: %d,%d,%d  "
+        printf("Placing Block: %d,%d,%d (%s)  On: %d,%d,%d (%02x, %s) "
                "Face:%d Cursor:%d,%d,%d  "
                "Player: %.1f,%.1f,%.1f  Dot: %.1f,%.1f,%.1f  "
                "Rot=%.2f,%.2f  Dir=%d (%s)\n",
                b->x,b->y,b->z, get_item_name(buf, hslot),
                b->x+NOFF[face][0],b->z+NOFF[face][1],b->y+NOFF[face][2],
+               b->nblocks[face].bid, get_bid_name(buf2, b->nblocks[face]),
                face, cx, cy, cz,
                (float)gs.own.x/32, (float)(gs.own.y+EYEHEIGHT)/32, (float)gs.own.z/32,
                (float)b->x+(float)cx/16,(float)b->y+(float)cy/16,(float)b->z+(float)cz/16,
