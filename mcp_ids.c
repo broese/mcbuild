@@ -106,7 +106,7 @@ const item_id ITEMS[] = {
     [0x42] = { "Rail",                  I_MPOS },                       // P: dir
     [0x43] = { "Cobblestone Stairs",    I_MPOS|I_STAIR },               // P: dir
     [0x44] = { "Wall Sign",             I_MPOS|I_ONWALL },              // P: dir
-    [0x45] = { "Lever",                 I_MPOS|I_STATE },               // P: dir, S: up/down
+    [0x45] = { "Lever",                 I_MPOS|I_STATE|I_ADJ },         // P: dir, S: up/down
     [0x46] = { "Stone Pressure Plate",  I_STATE },                      // S: pressed
     [0x47] = { "Iron Door",             I_MPOS|I_STATE|I_DOOR|I_ADJ },  // P: dir, S: open/close
     [0x48] = { "Wooden Pressure Plate", I_STATE },                      // S: pressed
@@ -114,7 +114,7 @@ const item_id ITEMS[] = {
     [0x4a] = { "Glowing Redstone Ore" },
     [0x4b] = { "Redstone Torch (off)",  I_MPOS|I_TORCH },               // P: dir
     [0x4c] = { "Redstone Torch (on)",   I_MPOS|I_TORCH },               // P: dir
-    [0x4d] = { "Stone Button",          I_MPOS|I_STATE },               // P: dir, S: pressed
+    [0x4d] = { "Stone Button",          I_MPOS|I_STATE|I_ADJ },         // P: dir, S: pressed
     [0x4e] = { "Snow Layer",            I_STATE },                      // P: level
     [0x4f] = { "Ice" },
 
