@@ -135,7 +135,7 @@ const item_id ITEMS[] = {
     [0x5e] = { "Repeater (on)",         I_MPOS|I_STATE|I_RSRC|I_ADJ },  // P: dir, S: delay setting
     [0x5f] = { "Stained Glass",         I_MTYPE, MNAMES_COLOR },
 
-    [0x60] = { "Trapdoor",              I_MPOS|I_STATE|I_ADJ },         // P: dir,u/d, S: open/close
+    [0x60] = { "Trapdoor",              I_MPOS|I_STATE|I_ADJ|I_TDOOR }, // P: dir,u/d, S: open/close
     [0x61] = { "Silverfish Block",      I_MTYPE|I_OPAQUE,
                { "Stone", "Cobblestone", "Stonebrick", "Mossy Stonebrick",
                  "Cracked Stonebrick", "Chiseled Stonebrick" }, },
@@ -221,7 +221,7 @@ const item_id ITEMS[] = {
     [0xa4] = { "Dark Oak Stairs",       I_MPOS|I_STAIR },               // P: dir
     [0xa5] = { "Slime Block" },
     [0xa6] = { "Barrier" },
-    [0xa7] = { "Iron Trapdoor",         I_MPOS|I_STATE },               // P: dir,u/d, S: open/close
+    [0xa7] = { "Iron Trapdoor",         I_MPOS|I_STATE|I_TDOOR },       // P: dir,u/d, S: open/close
     [0xa8] = { "Prismarine",            I_MTYPE|I_OPAQUE,
                { NULL, "Brick", "Dark" }, },
     [0xa9] = { "Sea Lantern",           I_OPAQUE },
@@ -862,6 +862,25 @@ static metagroup MM_DOOR[16] = {
     METAO(9,9,9,9,9), // top half, hinges on the right
 };
 
+static metagroup MM_TRAPDOOR[16] = {
+    METAO(0,0,1,2,3),
+    METAO(1,0,1,2,3),
+    METAO(2,0,1,2,3),
+    METAO(3,0,1,2,3),
+    METAO(4,4,5,6,7),
+    METAO(5,4,5,6,7),
+    METAO(6,4,5,6,7),
+    METAO(7,4,5,6,7),
+    METAO(8,8,9,10,11),
+    METAO(9,8,9,10,11),
+    METAO(10,8,9,10,11),
+    METAO(11,8,9,10,11),
+    METAO(12,12,13,14,15),
+    METAO(13,12,13,14,15),
+    METAO(14,12,13,14,15),
+    METAO(15,12,13,14,15),
+};
+
 #define GETMETAGROUP(mmname) mmname[b.meta].inuse ? mmname[b.meta].meta : NULL
 static inline int8_t *get_metagroup(bid_t b) {
     uint64_t flags = ITEMS[b.bid].flags;
@@ -871,6 +890,7 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (flags&I_ONWALL) return GETMETAGROUP(MM_ONWALL);
     if (flags&I_RSRC)   return GETMETAGROUP(MM_RSRC);
     if (flags&I_DOOR)   return GETMETAGROUP(MM_DOOR);
+    if (flags&I_TDOOR)  return GETMETAGROUP(MM_TRAPDOOR);
 
     if ((flags&I_RSDEV) || b.bid==154)
         return GETMETAGROUP(MM_ONWALL);

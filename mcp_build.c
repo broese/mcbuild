@@ -654,6 +654,19 @@ void set_block_dots(blk *b) {
         // by default. For this we need access to the top half meta value though
     }
 
+    else if (it->flags&I_TDOOR) {
+        switch (b->b.meta&11) { // ignore the open state bit
+            case 0:  setdots(b, DOTS_NONE, DOTS_NONE, DOTS_LOWER, DOTS_NONE, DOTS_NONE, DOTS_NONE); break;
+            case 1:  setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_LOWER, DOTS_NONE, DOTS_NONE); break;
+            case 2:  setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_LOWER, DOTS_NONE); break;
+            case 3:  setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_LOWER); break;
+            case 8:  setdots(b, DOTS_NONE, DOTS_NONE, DOTS_UPPER, DOTS_NONE, DOTS_NONE, DOTS_NONE); break;
+            case 9:  setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_UPPER, DOTS_NONE, DOTS_NONE); break;
+            case 10: setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_UPPER, DOTS_NONE); break;
+            case 11: setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_UPPER); break;
+        };
+    }
+
     else {
         // Blocks that don't have I_MPOS or not supported
         PLACE_ALL(b);
