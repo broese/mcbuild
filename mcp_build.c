@@ -667,6 +667,21 @@ void set_block_dots(blk *b) {
         };
     }
 
+    else if (b->b.bid == 26) { // bed
+        if (b->b.meta < 8) { // only place the foot of the bed
+            switch (b->b.meta&3) { // ignore the occupied bit
+                case 0: b->rdir = DIR_SOUTH; break;
+                case 1: b->rdir = DIR_WEST; break;
+                case 2: b->rdir = DIR_NORTH; break;
+                case 3: b->rdir = DIR_EAST; break;
+            }
+            PLACE_FLOOR(b);
+        }
+        else {
+            PLACE_NONE(b);
+        }
+    }
+
     else {
         // Blocks that don't have I_MPOS or not supported
         PLACE_ALL(b);

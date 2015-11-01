@@ -881,6 +881,25 @@ static metagroup MM_TRAPDOOR[16] = {
     METAO(15,12,13,14,15),
 };
 
+static metagroup MM_BED[16] = {
+    METAO(0,0,2,3,1),
+    METAO(1,0,2,3,1),
+    METAO(2,0,2,3,1),
+    METAO(3,0,2,3,1),
+    METAO(4,4,6,7,5),
+    METAO(5,4,6,7,5),
+    METAO(6,4,6,7,5),
+    METAO(7,4,6,7,5),
+    METAO(8,8,10,11,9),
+    METAO(9,8,10,11,9),
+    METAO(10,8,10,11,9),
+    METAO(11,8,10,11,9),
+    METAO(12,12,14,15,13),
+    METAO(13,12,14,15,13),
+    METAO(14,12,14,15,13),
+    METAO(15,12,14,15,13),
+};
+
 #define GETMETAGROUP(mmname) mmname[b.meta].inuse ? mmname[b.meta].meta : NULL
 static inline int8_t *get_metagroup(bid_t b) {
     uint64_t flags = ITEMS[b.bid].flags;
@@ -891,6 +910,7 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (flags&I_RSRC)   return GETMETAGROUP(MM_RSRC);
     if (flags&I_DOOR)   return GETMETAGROUP(MM_DOOR);
     if (flags&I_TDOOR)  return GETMETAGROUP(MM_TRAPDOOR);
+    if (b.bid == 26)    return GETMETAGROUP(MM_BED);
 
     if ((flags&I_RSDEV) || b.bid==154)
         return GETMETAGROUP(MM_ONWALL);
