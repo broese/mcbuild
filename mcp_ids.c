@@ -23,7 +23,7 @@ const item_id ITEMS[] = {
     [0x04] = { "Cobblestone",           I_OPAQUE },
     [0x05] = { "Woodplanks",            I_MTYPE|I_OPAQUE,
                MNAMES_WOOD },
-    [0x06] = { "Sapling",               I_MTYPE|I_STATE,                // S: growth
+    [0x06] = { "Sapling",               I_MTYPE|I_STATE|I_PLANT,        // S: growth
                MNAMES_WOOD },
     [0x07] = { "Bedrock",               I_OPAQUE },
     [0x08] = { "Waterflow",             I_STATE },                      // S: level/drop
@@ -64,12 +64,12 @@ const item_id ITEMS[] = {
     [0x23] = { "Wool",                  I_MTYPE, MNAMES_COLOR },
     [0x24] = { "Pushed block", },
     [0x25] = { "Dandelion", },
-    [0x26] = { "Flower",                I_MTYPE,
+    [0x26] = { "Flower",                I_MTYPE|I_PLANT,
                { "Poppy", "Blue orchid", "Allium", "Azure Bluet", 
                  "Red Tulip", "Orange Tulip", "White Tulip", "Pink Tulip",
                  "Oxeye Daisy", }, },
-    [0x27] = { "Brown Mushroom" },
-    [0x28] = { "Red Mushroom" },
+    [0x27] = { "Brown Mushroom",        I_PLANT },
+    [0x28] = { "Red Mushroom",          I_PLANT },
     [0x29] = { "Gold Block",            I_OPAQUE },
     [0x2a] = { "Iron Block",            I_OPAQUE },
     [0x2b] = { "Double Slab",           I_MTYPE|I_DSLAB|I_OPAQUE,
@@ -95,7 +95,7 @@ const item_id ITEMS[] = {
     [0x38] = { "Diamond Ore",           I_OPAQUE },
     [0x39] = { "Diamond Block",         I_OPAQUE },
     [0x3a] = { "Workbench",             I_OPAQUE|I_CONT },
-    [0x3b] = { "Wheat",                 I_STATE },                      // S: level
+    [0x3b] = { "Wheat",                 I_STATE|I_PLANT },              // S: level
     [0x3c] = { "Farmland",              I_STATE },                      // S: wetness
     [0x3d] = { "Furnace",               I_MPOS|I_OPAQUE|I_CONT },       // P: dir
     [0x3e] = { "Lit Furnace",           I_MPOS|I_OPAQUE|I_CONT },       // P: dir
@@ -119,9 +119,9 @@ const item_id ITEMS[] = {
     [0x4f] = { "Ice" },
 
     [0x50] = { "Snow",                  I_OPAQUE },
-    [0x51] = { "Cactus",                I_STATE },                      // S: grow
+    [0x51] = { "Cactus",                I_STATE|I_PLANT },              // S: grow
     [0x52] = { "Clay Block",            I_OPAQUE },
-    [0x53] = { "Sugar Cane",            I_STATE },                      // S: grow
+    [0x53] = { "Sugar Cane",            I_STATE|I_PLANT },              // S: grow
     [0x54] = { "Jukebox",               I_STATE|I_OPAQUE },             // S: has a disc
     [0x55] = { "Fence" },
     [0x56] = { "Pumpkin",               I_MPOS|I_OPAQUE },              // P: dir
@@ -146,8 +146,8 @@ const item_id ITEMS[] = {
     [0x65] = { "Iron Bars" },
     [0x66] = { "Glass Pane" },
     [0x67] = { "Melon Block",           I_OPAQUE },
-    [0x68] = { "Pumpkin Stem",          I_STATE },                      // S: level
-    [0x69] = { "Melon Stem",            I_STATE },                      // S: level
+    [0x68] = { "Pumpkin Stem",          I_STATE|I_PLANT },              // S: level
+    [0x69] = { "Melon Stem",            I_STATE|I_PLANT },              // S: level
     [0x6a] = { "Vine",                  I_MPOS },                       // P: dir
     [0x6b] = { "Fence Gate",            I_MPOS|I_STATE },               // P: dir, S: open/close
     [0x6c] = { "Brick Stairs",          I_MPOS|I_STAIR },               // P: dir
@@ -188,8 +188,8 @@ const item_id ITEMS[] = {
     [0x8b] = { "Cobblestone Wall",      I_MTYPE,
                { NULL, "Mossy" } },
     [0x8c] = { "Flower Pot" },
-    [0x8d] = { "Carrot Plant",          I_STATE },                      // S: level
-    [0x8e] = { "Potato Plant",          I_STATE },                      // S: level
+    [0x8d] = { "Carrot Plant",          I_STATE|I_PLANT },              // S: level
+    [0x8e] = { "Potato Plant",          I_STATE|I_PLANT },              // S: level
     [0x8f] = { "Wooden Button",         I_MPOS|I_STATE|I_ADJ },         // P: dir, S: pressed
 
     [0x90] = { "Skull",                 I_MPOS },
@@ -231,7 +231,7 @@ const item_id ITEMS[] = {
     [0xac] = { "Hardened Clay",         I_MTYPE|I_OPAQUE },
     [0xad] = { "Coal Block",            I_OPAQUE },
     [0xae] = { "Packed Ice",            I_OPAQUE },
-    [0xaf] = { "Large Flower",          I_MTYPE|I_STATE,                // S: top/bottom
+    [0xaf] = { "Large Flower",          I_MTYPE|I_STATE|I_PLANT,        // S: top/bottom
                { "Sunflower", "Lilac", "DblTallgrass", "Large Fern",
                  "Rose Bush", "Peony", NULL, NULL }, },
 

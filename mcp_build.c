@@ -682,6 +682,39 @@ void set_block_dots(blk *b) {
         }
     }
 
+    else if (it->flags&I_PLANT) {
+        PLACE_FLOOR(b);
+        int fl = b->nblocks[DIR_DOWN].bid;
+
+        switch (b->b.bid) {
+            case 0x06: // Sapling
+            case 0x26: // Flower
+            case 0xaf: // Large flower
+                if (fl!=0x02 && fl!=0x03 && fl!=0x3c)
+                    PLACE_NONE(b);
+                break;
+
+            case 0x3b: // Wheat
+            case 0x68: // Pumpkin stem
+            case 0x69: // Melon stem
+            case 0x8d: // Crrot plant
+            case 0x8e: // Potato plant
+                if (fl!=0x3c)
+                    PLACE_NONE(b);
+                break;
+
+            case 0x51: // Cactus
+                if (fl!=0x0c)
+                    PLACE_NONE(b);
+                break;
+
+            case 0x53: // Sugar Cane
+                if (fl!=0x0c && fl!=0x02 && fl!=0x03)
+                    PLACE_NONE(b);
+                break;
+        }
+    }
+
     else {
         // Blocks that don't have I_MPOS or not supported
         PLACE_ALL(b);
