@@ -601,6 +601,40 @@ void set_block_dots(blk *b) {
         }
     }
 
+    else if (it->flags&I_RSDEV) { // Pistons, Dispensers and Droppers
+        int px = gs.own.x>>5;
+        int pz = gs.own.z>>5;
+        int py = (gs.own.y>>5)+((gs.own.y>>4)&1); // rounded
+
+        int dx = b->x - (gs.own.x>>5);
+        int dz = b->z - (gs.own.z>>5);
+
+        if (dx>=-1 && dx<=1 && dz>=-1 && dz<=1) {
+            // placing in a 3x3 block zone around the player
+            int py = (gs.own.y>>5)+((gs.own.y>>4)&1); // block position rounded
+            switch(b->b.meta&7) {
+                case 0: if (b->y>=py+2) { PLACE_ALL(b); } else { PLACE_NONE(b); } break;
+                case 1: if (b->y<py) { PLACE_ALL(b); } else { PLACE_NONE(b); } break;
+                case 2: PLACE_SOUTH(b); break;
+                case 3: PLACE_NORTH(b); break;
+                case 4: PLACE_EAST(b); break;
+                case 5: PLACE_WEST(b); break;
+                default: PLACE_NONE(b); break;
+            }
+        }
+        else if (dx<-2 || dx>2 || dz<-2 || dz>2) {
+            switch(b->b.meta&7) {
+                case 2:  PLACE_ALL(b);  b->rdir=DIR_SOUTH; break;
+                case 3:  PLACE_ALL(b);  b->rdir=DIR_NORTH; break;
+                case 4:  PLACE_ALL(b);  b->rdir=DIR_EAST;  break;
+                case 5:  PLACE_ALL(b);  b->rdir=DIR_WEST;  break;
+                default: PLACE_NONE(b); break;
+            }
+        }
+        // this function creates a "dead zone" at a distance of 2 blocks
+        // from player, but otherwise calculation of placement rules becomes too complex
+    }
+
     else {
         // Blocks that don't have I_MPOS or not supported
         PLACE_ALL(b);
