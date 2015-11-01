@@ -512,6 +512,7 @@ static void build_update_placed() {
 #define PLACE_NORTH(b) setdots(b, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE);
 #define PLACE_SOUTH(b) setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE);
 #define PLACE_FLOOR(b) setdots(b, DOTS_NONE, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
+#define PLACE_CEIL(b)  setdots(b, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
 #define PLACE_NONE(b)  setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
 #define PLACE_ALL(b)   setdots(b, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL, DOTS_ALL);
 
@@ -723,6 +724,21 @@ void set_block_dots(blk *b) {
             case 5: b->rdir = DIR_WEST; break;
         }
         PLACE_ALL(b);
+    }
+
+    else if (b->b.bid == 69) { // Lever
+        switch(b->b.meta&7) {
+            case 0: PLACE_CEIL(b); b->rdir=DIR_SOUTH; break;
+            case 7: PLACE_CEIL(b); b->rdir=DIR_EAST; break;
+
+            case 5: PLACE_FLOOR(b); b->rdir=DIR_SOUTH; break;
+            case 6: PLACE_FLOOR(b); b->rdir=DIR_EAST; break;
+
+            case 1: PLACE_EAST(b); break;
+            case 2: PLACE_WEST(b); break;
+            case 3: PLACE_SOUTH(b); break;
+            case 4: PLACE_NORTH(b); break;
+        }
     }
 
     else {
