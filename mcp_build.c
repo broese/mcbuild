@@ -741,6 +741,18 @@ void set_block_dots(blk *b) {
         }
     }
 
+    else if (b->b.bid==77 || b->b.bid==143) { // Buttons
+        switch(b->b.meta) {
+            case 0: PLACE_CEIL(b); break;
+            case 1: PLACE_EAST(b); break;
+            case 2: PLACE_WEST(b); break;
+            case 3: PLACE_SOUTH(b); break;
+            case 4: PLACE_NORTH(b); break;
+            case 5: PLACE_FLOOR(b); break;
+            default: PLACE_NONE(b); break;
+        }
+    }
+
     else {
         // Blocks that don't have I_MPOS or not supported
         PLACE_ALL(b);
