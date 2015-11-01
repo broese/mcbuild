@@ -149,7 +149,7 @@ const item_id ITEMS[] = {
     [0x68] = { "Pumpkin Stem",          I_STATE|I_PLANT },              // S: level
     [0x69] = { "Melon Stem",            I_STATE|I_PLANT },              // S: level
     [0x6a] = { "Vine",                  I_MPOS },                       // P: dir
-    [0x6b] = { "Fence Gate",            I_MPOS|I_STATE },               // P: dir, S: open/close
+    [0x6b] = { "Fence Gate",            I_MPOS|I_STATE|I_ADJ|I_GATE },  // P: dir, S: open/close
     [0x6c] = { "Brick Stairs",          I_MPOS|I_STAIR },               // P: dir
     [0x6d] = { "Stone Brick Stairs",    I_MPOS|I_STAIR },               // P: dir
     [0x6e] = { "Mycelium",              I_OPAQUE },
@@ -244,11 +244,11 @@ const item_id ITEMS[] = {
     [0xb5] = { "Red Sandstone D-Slab",  I_MTYPE|I_DSLAB|I_OPAQUE,
                { [8]="Chiseled" }, },
     [0xb6] = { "Red Sandstone Slab",    I_MPOS|I_SLAB },                // P: up/down
-    [0xb7] = { "Spruce Fence Gate",     I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
-    [0xb8] = { "Birch Fence Gate",      I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
-    [0xb9] = { "Jungle Fence Gate",     I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
-    [0xba] = { "Dark Oak Fence Gate",   I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
-    [0xbb] = { "Acacia Fence Gate",     I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
+    [0xb7] = { "Spruce Fence Gate",     I_MPOS|I_STATE|I_ADJ|I_GATE },  // P: dir, S: open/close
+    [0xb8] = { "Birch Fence Gate",      I_MPOS|I_STATE|I_ADJ|I_GATE },  // P: dir, S: open/close
+    [0xb9] = { "Jungle Fence Gate",     I_MPOS|I_STATE|I_ADJ|I_GATE },  // P: dir, S: open/close
+    [0xba] = { "Dark Oak Fence Gate",   I_MPOS|I_STATE|I_ADJ|I_GATE },  // P: dir, S: open/close
+    [0xbb] = { "Acacia Fence Gate",     I_MPOS|I_STATE|I_ADJ|I_GATE },  // P: dir, S: open/close
     [0xbc] = { "Spruce Fence" },
     [0xbd] = { "Birch Fence" },
     [0xbe] = { "Jungle Fence" },
@@ -925,6 +925,7 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (flags&I_CHEST)  return GETMETAGROUP(MM_ONWALL);
     if (b.bid == 69)    return GETMETAGROUP(MM_LEVER);
     if (b.bid==77 || b.bid==143) return GETMETAGROUP(MM_TORCH);
+    if (flags&I_GATE)   return GETMETAGROUP(MM_BED);
 
     if ((flags&I_RSDEV) || b.bid==154)
         return GETMETAGROUP(MM_ONWALL);

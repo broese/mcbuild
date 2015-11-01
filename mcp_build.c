@@ -753,6 +753,16 @@ void set_block_dots(blk *b) {
         }
     }
 
+    else if (it->flags&I_GATE) {
+        switch (b->b.meta&3) {
+            case 0: b->rdir = DIR_SOUTH; break;
+            case 1: b->rdir = DIR_WEST;  break;
+            case 2: b->rdir = DIR_NORTH; break;
+            case 3: b->rdir = DIR_EAST;  break;
+        }
+        PLACE_ALL(b);
+    }
+
     else {
         // Blocks that don't have I_MPOS or not supported
         PLACE_ALL(b);
