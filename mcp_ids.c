@@ -90,15 +90,15 @@ const item_id ITEMS[] = {
     [0x33] = { "Fire",                  I_STATE },                      // S: age
     [0x34] = { "Spawner" },
     [0x35] = { "Wooden Stairs",         I_MPOS|I_STAIR },               // P: dir
-    [0x36] = { "Chest",                 I_MPOS|I_CONT },                // P: dir
+    [0x36] = { "Chest",                 I_MPOS|I_CONT|I_CHEST },        // P: dir
     [0x37] = { "Redstone Wire",         I_STATE },                      // S: power level
     [0x38] = { "Diamond Ore",           I_OPAQUE },
     [0x39] = { "Diamond Block",         I_OPAQUE },
     [0x3a] = { "Workbench",             I_OPAQUE|I_CONT },
     [0x3b] = { "Wheat",                 I_STATE|I_PLANT },              // S: level
     [0x3c] = { "Farmland",              I_STATE },                      // S: wetness
-    [0x3d] = { "Furnace",               I_MPOS|I_OPAQUE|I_CONT },       // P: dir
-    [0x3e] = { "Lit Furnace",           I_MPOS|I_OPAQUE|I_CONT },       // P: dir
+    [0x3d] = { "Furnace",               I_MPOS|I_OPAQUE|I_CONT|I_CHEST },       // P: dir
+    [0x3e] = { "Lit Furnace",           I_MPOS|I_OPAQUE|I_CONT|I_CHEST },       // P: dir
     [0x3f] = { "Standing Sign",         I_MPOS },                       // P: dir
 
     [0x40] = { "Wooden Door",           I_MPOS|I_STATE|I_DOOR|I_ADJ },  // P: dir, S: open/close
@@ -176,7 +176,7 @@ const item_id ITEMS[] = {
 
     [0x80] = { "Sandstone Stairs",      I_MPOS|I_STAIR },               // P: dir
     [0x81] = { "Emerald Ore",           I_OPAQUE },
-    [0x82] = { "Ender Chest",           I_MPOS|I_CONT },                // P: dir
+    [0x82] = { "Ender Chest",           I_MPOS|I_CONT|I_CHEST },        // P: dir
     [0x83] = { "Tripwire Hook",         I_MPOS|I_STATE },               // P: dir, S: connected,active
     [0x84] = { "Tripwire",              I_STATE },                      // S: act/susp/att/arm
     [0x85] = { "Emerald Block",         I_OPAQUE },
@@ -194,7 +194,7 @@ const item_id ITEMS[] = {
 
     [0x90] = { "Skull",                 I_MPOS },
     [0x91] = { "Anvil",                 I_MPOS|I_CONT },
-    [0x92] = { "Trapped Chest",         I_MPOS|I_CONT },                        // P: dir
+    [0x92] = { "Trapped Chest",         I_MPOS|I_CONT|I_CHEST },        // P: dir
     [0x93] = { "Pressure Plate Lt",     I_STATE },                      // S: pressed
     [0x94] = { "Pressure Plate Hv",     I_STATE },                      // S: pressed
     [0x95] = { "Comparator (off)",      I_MPOS|I_STATE|I_RSRC|I_ADJ },  // P: dir, S: mode/power
@@ -900,6 +900,7 @@ static metagroup MM_BED[16] = {
     METAO(15,12,14,15,13),
 };
 
+
 #define GETMETAGROUP(mmname) mmname[b.meta].inuse ? mmname[b.meta].meta : NULL
 static inline int8_t *get_metagroup(bid_t b) {
     uint64_t flags = ITEMS[b.bid].flags;
@@ -911,6 +912,7 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (flags&I_DOOR)   return GETMETAGROUP(MM_DOOR);
     if (flags&I_TDOOR)  return GETMETAGROUP(MM_TRAPDOOR);
     if (b.bid == 26)    return GETMETAGROUP(MM_BED);
+    if (flags&I_CHEST)  return GETMETAGROUP(MM_ONWALL);
 
     if ((flags&I_RSDEV) || b.bid==154)
         return GETMETAGROUP(MM_ONWALL);
