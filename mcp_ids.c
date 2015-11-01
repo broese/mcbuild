@@ -101,14 +101,14 @@ const item_id ITEMS[] = {
     [0x3e] = { "Lit Furnace",           I_MPOS|I_OPAQUE|I_CONT },       // P: dir
     [0x3f] = { "Standing Sign",         I_MPOS },                       // P: dir
 
-    [0x40] = { "Wooden Door",           I_MPOS|I_STATE },               // P: dir, S: open/close
+    [0x40] = { "Wooden Door",           I_MPOS|I_STATE|I_DOOR|I_ADJ },  // P: dir, S: open/close
     [0x41] = { "Ladder",                I_MPOS|I_ONWALL },              // P: dir
     [0x42] = { "Rail",                  I_MPOS },                       // P: dir
     [0x43] = { "Cobblestone Stairs",    I_MPOS|I_STAIR },               // P: dir
     [0x44] = { "Wall Sign",             I_MPOS|I_ONWALL },              // P: dir
     [0x45] = { "Lever",                 I_MPOS|I_STATE },               // P: dir, S: up/down
     [0x46] = { "Stone Pressure Plate",  I_STATE },                      // S: pressed
-    [0x47] = { "Iron Door",             I_MPOS|I_STATE },               // P: dir, S: open/close
+    [0x47] = { "Iron Door",             I_MPOS|I_STATE|I_DOOR|I_ADJ },  // P: dir, S: open/close
     [0x48] = { "Wooden Pressure Plate", I_STATE },                      // S: pressed
     [0x49] = { "Redstone Ore",          I_OPAQUE },
     [0x4a] = { "Glowing Redstone Ore" },
@@ -255,11 +255,11 @@ const item_id ITEMS[] = {
     [0xbf] = { "Dark Oak Fence" },
 
     [0xc0] = { "Acacia Fence" },
-    [0xc1] = { "Spruce Door",           I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
-    [0xc2] = { "Birch Door",            I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
-    [0xc3] = { "Jungle Door",           I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
-    [0xc4] = { "Dark Oak Door",         I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
-    [0xc5] = { "Acacia Door",           I_MPOS|I_STATE|I_ADJ },         // P: dir, S: open/close
+    [0xc1] = { "Spruce Door",           I_MPOS|I_STATE|I_ADJ|I_DOOR },  // P: dir, S: open/close
+    [0xc2] = { "Birch Door",            I_MPOS|I_STATE|I_ADJ|I_DOOR },  // P: dir, S: open/close
+    [0xc3] = { "Jungle Door",           I_MPOS|I_STATE|I_ADJ|I_DOOR },  // P: dir, S: open/close
+    [0xc4] = { "Dark Oak Door",         I_MPOS|I_STATE|I_ADJ|I_DOOR },  // P: dir, S: open/close
+    [0xc5] = { "Acacia Door",           I_MPOS|I_STATE|I_ADJ|I_DOOR },  // P: dir, S: open/close
 
     ////////////////////////////////////////////////////////////////////////
     // Items
@@ -849,6 +849,19 @@ static metagroup MM_RSRC[16] = {
     METAO(15,14,12,13,15),
 };
 
+static metagroup MM_DOOR[16] = {
+    METAO(0,3,1,2,0), // bottom half, closed doors
+    METAO(1,3,1,2,0),
+    METAO(2,3,1,2,0),
+    METAO(3,3,1,2,0),
+    METAO(4,7,5,6,4), // bootom half, opened doors
+    METAO(5,7,5,6,4),
+    METAO(6,7,5,6,4),
+    METAO(7,7,5,6,4),
+    METAO(8,8,8,8,8), // top half, hinges on the left
+    METAO(9,9,9,9,9), // top half, hinges on the right
+};
+
 #define GETMETAGROUP(mmname) mmname[b.meta].inuse ? mmname[b.meta].meta : NULL
 static inline int8_t *get_metagroup(bid_t b) {
     uint64_t flags = ITEMS[b.bid].flags;
@@ -857,6 +870,7 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (flags&I_LOG)    return GETMETAGROUP(MM_LOG);
     if (flags&I_ONWALL) return GETMETAGROUP(MM_ONWALL);
     if (flags&I_RSRC)   return GETMETAGROUP(MM_RSRC);
+    if (flags&I_DOOR)   return GETMETAGROUP(MM_DOOR);
 
     if ((flags&I_RSDEV) || b.bid==154)
         return GETMETAGROUP(MM_ONWALL);

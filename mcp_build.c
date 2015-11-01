@@ -635,6 +635,25 @@ void set_block_dots(blk *b) {
         // from player, but otherwise calculation of placement rules becomes too complex
     }
 
+    else if (it->flags&I_DOOR) { // Doors
+        if (b->b.meta&8) {
+            // top half can't be placed
+            PLACE_NONE(b);
+        }
+        else {
+            b->rdir = (b->b.meta&1) ?
+                ((b->b.meta&2) ? DIR_NORTH : DIR_SOUTH) :
+                ((b->b.meta&2) ? DIR_WEST  : DIR_EAST );
+
+            PLACE_FLOOR(b);
+        }
+
+        //TODO: check if the door we are trying to place is right-hinged
+        // in that case we need to place it only if there is a block
+        // on the right side, otherwise the door will become left-hinged
+        // by default. For this we need access to the top half meta value though
+    }
+
     else {
         // Blocks that don't have I_MPOS or not supported
         PLACE_ALL(b);
