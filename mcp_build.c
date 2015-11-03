@@ -111,6 +111,7 @@ typedef struct {
         struct {
             int8_t empty   : 1; // true if the block is free to place blocks into
                                 // (contains air or some non-solid blocks)
+            int8_t needadj : 1; // true if the block has correct placement, but need adjustment
             int8_t placed  : 1; // true if this block is already in place
             int8_t blocked : 1; // true if this block is obstructed by something else
             int8_t inreach : 1; // this block is close enough to place
@@ -382,7 +383,7 @@ static void remove_distant_dots(blk *b) {
 
     int f;
     for(f=0; f<6; f++) {
-        if (!((b->neigh>>f)&1)) continue; // no neighbor - skip this face
+        if (!((b->neigh>>f)&1) && !b->needadj) continue; // no neighbor - skip this face
         uint16_t *dots = b->dots[f];
         dotpos_t dotpos = DOTPOS[f];
 
@@ -788,6 +789,7 @@ void build_update() {
     int num_inreach = 0;
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
+        b->state = 0;
         b->inreach = 1;
 
         // avoid building blocks above the player in wall and limit mode
@@ -860,6 +862,7 @@ void build_update() {
         //TODO: implement less restricted check for blocks with non-positional meta
         b->placed = (bl.raw == b->b.raw);
 
+
         // check if the block is empty, but ignore those that are already
         // placed - this way we can support "empty" blocks like water in our buildplan
         b->empty  = ISEMPTY(bl.bid) && !b->placed;
@@ -872,6 +875,10 @@ void build_update() {
             if (bm.bid==bl.bid && bm.meta==(bl.meta&7))
                 b->empty = 1;
         }
+
+        // check if this block needs state adjustment (e.g. repeaters)
+        if (bl.bid==b->b.bid && bl.meta!=b->b.meta && (it->flags&I_ADJ))
+            b->needadj = 1;
 
         //TODO: when placing a double slab, prevent obstruction - place the slab further away first
         //TODO: take care when placing a slab over a slab - prevent a doubleslab creation
@@ -891,19 +898,38 @@ void build_update() {
         nbl = b->nblocks[DIR_WEST]  = row[x-1];
         b->n_xn = !ISEMPTY(nbl.bid);
 
-        // skip the blocks we can't place
-        if (b->placed || !b->empty || !b->neigh) continue;
+        if (b->needadj) {
+            // we can handle adjustment clicks on the block itself in similar fashion
+            // but instead of clicking on the neightbors, we need to click on the
+            // block itself. We set all dots on all faces as clickable.
+            b->neigh = 0x3f; // pretend we have all neighbors
+            PLACE_ALL(b);
 
-        set_block_dots(b);
+            // disable faces looking away from you
+            if (!buildopts.anyface) {
+                if (b->y > (gs.own.y>>5)+1) memset(b->dots[DIR_UP], 0, sizeof(DOTS_ALL));
+                if (b->y < (gs.own.y>>5)+2) memset(b->dots[DIR_DOWN], 0, sizeof(DOTS_ALL));
+                if (b->x > (gs.own.x>>5)) memset(b->dots[DIR_EAST], 0, sizeof(DOTS_ALL));
+                if (b->x < (gs.own.x>>5)) memset(b->dots[DIR_WEST], 0, sizeof(DOTS_ALL));
+                if (b->z > (gs.own.z>>5)) memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
+                if (b->z < (gs.own.z>>5)) memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
+            }
+        }
+        else {
+            // skip the blocks we can't place
+            if (b->placed || !b->empty || !b->neigh) continue;
 
-        // disable faces looking away from you
-        if (!buildopts.anyface) {
-            if (b->y < (gs.own.y>>5)+1) memset(b->dots[DIR_UP], 0, sizeof(DOTS_ALL));
-            if (b->y > (gs.own.y>>5)+2) memset(b->dots[DIR_DOWN], 0, sizeof(DOTS_ALL));
-            if (b->x < (gs.own.x>>5)) memset(b->dots[DIR_EAST], 0, sizeof(DOTS_ALL));
-            if (b->x > (gs.own.x>>5)) memset(b->dots[DIR_WEST], 0, sizeof(DOTS_ALL));
-            if (b->z < (gs.own.z>>5)) memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
-            if (b->z > (gs.own.z>>5)) memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
+            set_block_dots(b);
+
+            // disable faces looking away from you
+            if (!buildopts.anyface) {
+                if (b->y < (gs.own.y>>5)+1) memset(b->dots[DIR_UP], 0, sizeof(DOTS_ALL));
+                if (b->y > (gs.own.y>>5)+2) memset(b->dots[DIR_DOWN], 0, sizeof(DOTS_ALL));
+                if (b->x < (gs.own.x>>5)) memset(b->dots[DIR_EAST], 0, sizeof(DOTS_ALL));
+                if (b->x > (gs.own.x>>5)) memset(b->dots[DIR_WEST], 0, sizeof(DOTS_ALL));
+                if (b->z < (gs.own.z>>5)) memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
+                if (b->z > (gs.own.z>>5)) memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
+            }
         }
 
         // calculate exact distance to each of the dots and remove those out of reach
@@ -970,6 +996,9 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
     int held=gs.inv.held;
 
     for(i=0; i<build.nbq && bc<buildopts.blkmax; i++) {
+        char buf[4096];
+        char buf2[4096];
+
         blk *b = P(build.task)+build.bq[i];
         if (ts-b->last < buildopts.blkint) continue;
 
@@ -981,9 +1010,6 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         // silently switch to this slot
         gmi_change_held(sq, cq, islot, 1);
         slot_t * hslot = &gs.inv.slots[islot+36];
-
-        char buf[4096];
-        char buf2[4096];
 
         int8_t face, cx, cy, cz;
         choose_dot(b, &face, &cx, &cy, &cz);
@@ -997,22 +1023,29 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         int ldir = calculate_yaw_pitch(tx, tz, ty, &yaw, &pitch);
 
         int needcrouch=0;
-        const item_id *nit = &ITEMS[b->nblocks[face].bid];
-        if (nit->flags&(I_CONT|I_ADJ) && !gs.own.crouched)
-            needcrouch=1;
 
-        printf("Placing Block: %d,%d,%d (%s)  On: %d,%d,%d (%02x, %s) "
-               "Face:%d Cursor:%d,%d,%d  "
-               "Player: %.1f,%.1f,%.1f  Dot: %.1f,%.1f,%.1f  "
-               "Rot=%.2f,%.2f  Dir=%d (%s) %s\n",
-               b->x,b->y,b->z, get_item_name(buf, hslot),
-               b->x+NOFF[face][0],b->z+NOFF[face][1],b->y+NOFF[face][2],
-               b->nblocks[face].bid, get_bid_name(buf2, b->nblocks[face]),
-               face, cx, cy, cz,
-               (float)gs.own.x/32, (float)(gs.own.y+EYEHEIGHT)/32, (float)gs.own.z/32,
-               (float)b->x+(float)cx/16,(float)b->y+(float)cy/16,(float)b->z+(float)cz/16,
-               yaw, pitch, ldir, DIRNAME[ldir],
-               needcrouch?"(need to crouch)":"");
+        if (b->needadj) {
+            printf("Adjusting Block: %d,%d,%d (%s)\n",
+                   b->x,b->y,b->z, get_item_name(buf, hslot));
+        }
+        else {
+            const item_id *nit = &ITEMS[b->nblocks[face].bid];
+            if (nit->flags&(I_CONT|I_ADJ) && !gs.own.crouched)
+                needcrouch=1;
+
+            printf("Placing Block: %d,%d,%d (%s)  On: %d,%d,%d (%02x, %s) "
+                   "Face:%d Cursor:%d,%d,%d  "
+                   "Player: %.1f,%.1f,%.1f  Dot: %.1f,%.1f,%.1f  "
+                   "Rot=%.2f,%.2f  Dir=%d (%s) %s\n",
+                   b->x,b->y,b->z, get_item_name(buf, hslot),
+                   b->x+NOFF[face][0],b->z+NOFF[face][1],b->y+NOFF[face][2],
+                   b->nblocks[face].bid, get_bid_name(buf2, b->nblocks[face]),
+                   face, cx, cy, cz,
+                   (float)gs.own.x/32, (float)(gs.own.y+EYEHEIGHT)/32, (float)gs.own.z/32,
+                   (float)b->x+(float)cx/16,(float)b->y+(float)cy/16,(float)b->z+(float)cz/16,
+                   yaw, pitch, ldir, DIRNAME[ldir],
+                   needcrouch?"(need to crouch)":"");
+        }
 
         // crouch if we have to place block on a block that reacts to right-click
         if (needcrouch) {
@@ -1032,7 +1065,21 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
         // place block
         NEWPACKET(CP_PlayerBlockPlacement, pbp);
-        tpbp->bpos = POS(b->x+NOFF[face][0],b->y+NOFF[face][2],b->z+NOFF[face][1]);
+        if (b->needadj) {
+            // When adjusting a block, click on the block itself, not on a neighbor
+            tpbp->bpos = POS(b->x, b->y, b->z);
+            switch(face) {
+                case DIR_UP: face=DIR_DOWN; break;
+                case DIR_DOWN: face=DIR_UP; break;
+                case DIR_NORTH: face=DIR_SOUTH; break;
+                case DIR_SOUTH: face=DIR_NORTH; break;
+                case DIR_EAST: face=DIR_WEST; break;
+                case DIR_WEST: face=DIR_EAST; break;
+            }
+        }
+        else {
+            tpbp->bpos = POS(b->x+NOFF[face][0],b->y+NOFF[face][2],b->z+NOFF[face][1]);
+        }
         tpbp->face = face;
         tpbp->cx = cx;
         tpbp->cy = cy;
