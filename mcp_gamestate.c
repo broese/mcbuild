@@ -229,7 +229,7 @@ cuboid_t export_cuboid_extent(extent_t ex) {
     cuboid_t c;
     lh_clear_obj(c);
     c.sr = (size3_t) { ex.max.x-ex.min.x+1, ex.max.y-ex.min.y+1, ex.max.z-ex.min.z+1 };
-    c.sa = (size3_t) { Xs*16, Zs*16, ys };
+    c.sa = (size3_t) { Xs*16, ys, Zs*16 };
     c.boff = (ex.min.x-Xl*16) + (ex.min.z-Zl*16)*(Xs*16);
 
     // allocate memory for the block slices
