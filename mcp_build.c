@@ -611,9 +611,10 @@ void set_block_dots(blk *b) {
         int dx = b->x-px;
         int dz = b->z-pz;
 
-        if (dx>-3 && dx<3 && dz>-3 && dz<3) {
-            // placing in a 5x5 block zone around the player
-            printf("Dead zone dx=%d, dz=%d, by=%d py=%d\n", dx, dz, b->y, py);
+        if (dx>-2 && dx<3 && dz>-2 && dz<3) {
+            // placing in a 4x4 block zone around the player
+            // (1 block to the north and west, 2 blocks to south and east)
+            // printf("Dead zone dx=%d, dz=%d, by=%d py=%d\n", dx, dz, b->y, py);
             switch(b->b.meta&7) {
                 case 0: if (b->y>=py+2) { PLACE_ALL(b); } else { PLACE_NONE(b); } break;
                 case 1: if (b->y<py) { PLACE_ALL(b); } else { PLACE_NONE(b); } break;
