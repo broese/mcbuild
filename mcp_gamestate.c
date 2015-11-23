@@ -439,6 +439,11 @@ static void inv_click(int button, int16_t sid) {
                            s->count, get_item_name(name,s));
             }
             else {
+                slot_t pr;
+                pr.item = s->item;
+                pr.count = s->count;
+                int recipe_valid = 1;
+
                 slot_transfer(s, d, s->count);
 
                 // remove 1x of each source items from the crafting grid
@@ -448,11 +453,22 @@ static void inv_click(int button, int16_t sid) {
                         printf("  => remove 1 item from slot %d :\n",i);
                         printf("    Was: "); dump_slot(&gs.inv.slots[i]); printf("\n");
                     }
-                    if (gs.inv.slots[i].item >= 0)
+                    if (gs.inv.slots[i].item >= 0) {
                         gs.inv.slots[i].count --;
+                        if (gs.inv.slots[i].count<=0) recipe_valid = 0;
+                    }
                     prune_slot(&gs.inv.slots[i]);
                     if (DEBUG_INVENTORY) {
                         printf("    Now: "); dump_slot(&gs.inv.slots[i]); printf("\n");
+                    }
+                }
+
+                // if our recipe is still valid, restore the product slot
+                if (recipe_valid) {
+                    s->count = pr.count;
+                    s->item  = pr.item;
+                    if (DEBUG_INVENTORY) {
+                        printf("    Restored product slot:"); dump_slot(s); printf("\n");
                     }
                 }
             }
