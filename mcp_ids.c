@@ -61,7 +61,8 @@ const item_id ITEMS[] = {
     [0x20] = { "Deadbush" },
     [0x21] = { "Piston",                I_MPOS|I_STATE|I_RSDEV },       // P: dir, S: extended
     [0x22] = { "Piston Head",           I_MPOS|I_STATE },               // P: dir, S: extended
-    [0x23] = { "Wool",                  I_MTYPE, MNAMES_COLOR },
+    [0x23] = { "Wool",                  I_MTYPE|I_OPAQUE,
+               MNAMES_COLOR },
     [0x24] = { "Pushed block", },
     [0x25] = { "Dandelion", },
     [0x26] = { "Flower",                I_MTYPE|I_PLANT,
