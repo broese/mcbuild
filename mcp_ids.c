@@ -828,6 +828,10 @@ static metagroup MM_ONWALL[16] = {
     METAO(3,3,2,5,4),
     METAO(4,3,2,5,4),
     METAO(5,3,2,5,4),
+    METAO(10,11,10,13,12),
+    METAO(11,11,10,13,12),
+    METAO(12,11,10,13,12),
+    METAO(13,11,10,13,12),
 };
 
 // Redstone repeaters and comparators
