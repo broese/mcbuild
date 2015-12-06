@@ -200,7 +200,7 @@ bplan * bplan_disk(float diam, bid_t mat, int edge) {
     for(x=min; x<=max; x++) {
         for(z=min; z<=max; z++) {
             float sqdist = SQ((float)x-c)+SQ((float)z-c);
-            if (sqdist <= SQ(((float)diam)/2)) {
+            if (sqdist <= SQ(diam/2)) {
                 b = lh_arr_new(BP);
                 b->b = mat;
                 b->y = 0;
@@ -212,31 +212,22 @@ bplan * bplan_disk(float diam, bid_t mat, int edge) {
     return bp;
 }
 
-bplan * bplan_ball(int32_t diam, bid_t mat) {
+bplan * bplan_ball(float diam, bid_t mat, int edge) {
     lh_create_obj(bplan, bp);
 
     int x,y,z,min,max;
     blkr *b;
     float c;
 
-    if (diam&1) {
-        // odd diameter - pivot block is in the center
-        max = diam/2;
-        min = -max;
-        c=0.0;
-    }
-    else {
-        // even diameter - pivot is the SE block of the 4 in the center
-        max = diam/2-1;
-        min = -max-1;
-        c=-0.5;
-    }
+    max = (int)ceilf(diam/2);
+    min = -max;
+    c=edge?-0.5:0.0;
 
     for(y=min; y<=max; y++) {
         for(x=min; x<=max; x++) {
             for(z=min; z<=max; z++) {
                 float sqdist = SQ((float)x-c)+SQ((float)y-c)+SQ((float)z-c);
-                if (sqdist < SQ(((float)diam)/2)) {
+                if (sqdist <= SQ(diam/2)) {
                     b = lh_arr_new(BP);
                     b->b = mat;
                     b->y = y;
