@@ -1,5 +1,6 @@
 #include <assert.h>
 #include <errno.h>
+#include <math.h>
 
 #include <lh_bytes.h>
 #include <lh_files.h>
@@ -185,30 +186,21 @@ bplan * bplan_wall(int32_t wd, int32_t hg, bid_t mat) {
     return bp;
 }
 
-bplan * bplan_disk(int32_t diam, bid_t mat) {
+bplan * bplan_disk(float diam, bid_t mat, int edge) {
     lh_create_obj(bplan, bp);
 
     int x,z,min,max;
     blkr *b;
     float c;
 
-    if (diam&1) {
-        // odd diameter - pivot block is in the center
-        max = diam/2;
-        min = -max;
-        c=0.0;
-    }
-    else {
-        // even diameter - pivot is the SE block of the 4 in the center
-        max = diam/2-1;
-        min = -max-1;
-        c=-0.5;
-    }
+    max = (int)ceilf(diam/2);
+    min = -max;
+    c=edge?-0.5:0.0;
 
     for(x=min; x<=max; x++) {
         for(z=min; z<=max; z++) {
             float sqdist = SQ((float)x-c)+SQ((float)z-c);
-            if (sqdist < SQ(((float)diam)/2)) {
+            if (sqdist <= SQ(((float)diam)/2)) {
                 b = lh_arr_new(BP);
                 b->b = mat;
                 b->y = 0;

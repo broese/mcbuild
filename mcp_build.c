@@ -1697,6 +1697,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     size3_t     sz;
     bid_t       mat,mat1,mat2;
     int         count;
+    float       diam;
 
     char buf[256];
 
@@ -1725,12 +1726,13 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
     CMD2(disk,di) {
-        char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
-        ARGREQ(size, dwords, sz);
+        ARGREQ(diam, NULL, diam);
         ARGMAT(NULL, mat, ad.mat);
+        int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
-        build.bp = bplan_disk(sz.x, mat);
-        sprintf(reply, "Disk diam=%d material=%s",sz.x,get_bid_name(buf, mat));
+        build.bp = bplan_disk(diam, mat, edge);
+        sprintf(reply, "Disk diam=%f material=%s%s",
+                diam,edge?"(edge) ":"",get_bid_name(buf, mat));
         goto Place;
     }
 
@@ -1745,13 +1747,14 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
     CMD2(ring,ri) {
-        char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
-        ARGREQ(size, dwords, sz);
+        ARGREQ(diam, NULL, diam);
         ARGMAT(NULL, mat, ad.mat);
+        int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
-        build.bp = bplan_disk(sz.x, mat);
+        build.bp = bplan_disk(diam, mat, edge);
         bplan_hollow(build.bp, 1, 0);
-        sprintf(reply, "Ring diam=%d material=%s",sz.x,get_bid_name(buf, mat));
+        sprintf(reply, "Ring diam=%f material=%s%s",
+                diam,edge?"(edge) ":"",get_bid_name(buf, mat));
         goto Place;
     }
 
