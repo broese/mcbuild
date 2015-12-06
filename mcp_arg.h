@@ -105,6 +105,9 @@ int argflag(char **words, char **names);
 int argf_size(arg_defaults *ad, char **words, char **names, size3_t *sz);
 extern const char *argfmt_size;
 
+int argf_diam(arg_defaults *ad, char **words, char **names, float *diam);
+extern const char *argfmt_diam;
+
 int argf_pivot(arg_defaults *ad, char **words, char **names, pivot_t *pivot);
 extern const char *argfmt_pivot;
 

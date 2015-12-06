@@ -152,6 +152,33 @@ const char *argfmt_size = "size=x[,z[,y]]";
 
 ////////////////////
 
+int argf_diam(arg_defaults *ad, char **words, char **names, float *diam) {
+    // default name list
+    if (!names) names = WORDLIST("diameter","diam","d");
+
+    // possible option formats
+    char ** fmt_diam = WORDLIST("%f");
+
+    int fi = argparse(words, names, fmt_diam, diam);
+    switch (fi) {
+        case 0:
+            break;
+
+        case MCPARG_NOT_FOUND:
+        case MCPARG_NOT_PARSED:
+            return fi;
+        default:
+            assert(0);
+    }
+    printf("Matched format >%s<, diam=%f\n", fmt_diam[fi], *diam);
+
+    return 0;
+}
+
+const char *argfmt_diam = "diam=d";
+
+////////////////////
+
 int argf_pivot(arg_defaults *ad, char **words, char **names, pivot_t *pivot) {
     // default name list
     if (!names) names = WORDLIST("pivot","pv","p","from","pos","at");
