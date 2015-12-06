@@ -251,6 +251,8 @@ void gmi_change_held(MCPacketQueue *sq, MCPacketQueue *cq, int sid, int notify_c
     }
 }
 
+int aid=10000;
+
 // swap the contents of two slots - will also transfer item from a slot into
 // empty slot if one of them is empty
 void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
@@ -268,7 +270,7 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
     tpick->wid = 0;
     tpick->sid = sa;
     tpick->button = 0; // Left-click, mode 0 - pick up all items
-    tpick->aid = 10000;
+    tpick->aid = aid;
     tpick->mode = 0;
     clone_slot(a, &tpick->slot);
     queue_packet(pick, sq);
@@ -279,7 +281,7 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
     tswap->wid = 0;
     tswap->sid = sb;
     tswap->button = 0;
-    tswap->aid = 10001;
+    tswap->aid = aid+1;
     tswap->mode = 0;
     clone_slot(b, &tswap->slot);
     queue_packet(swap, sq);
@@ -290,7 +292,7 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
     tput->wid = 0;
     tput->sid = sa;
     tput->button = 0;
-    tput->aid = 10002;
+    tput->aid = aid+2;
     tput->mode = 0;
     clone_slot(a, &tput->slot);
     queue_packet(put, sq);
@@ -315,6 +317,9 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
     tclb->sid = sb;
     clone_slot(b, &tclb->slot);
     queue_packet(clb, cq);
+
+    aid += 3;
+    if (aid>60000) aid = 10000;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
