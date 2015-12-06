@@ -162,43 +162,47 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Block type flags
 
+// bitmasks of the meta bits used as a state (i.e. affected by the game
+// but not directly adjustable by the player)
+#define I_STATE_MASK  15
+
+#define I_STATE_1 1
+#define I_STATE_4 4
+#define I_STATE_8 8
+#define I_STATE_C 12
+#define I_STATE_F 15
+
 // the ID is an item, i.e. cannot be placed as a block
-#define I_ITEM   (1<<0)
+#define I_ITEM   (1<<4)
 
 // Item does not stack (or stack size=1)
-#define I_NSTACK (1<<1)
+#define I_NSTACK (1<<5)
 
 // item stacks only by 16 (e.g. enderpearls)
-#define I_S16    (1<<2)
+#define I_S16    (1<<6)
 
-// (blocks or inventory) the metadata defines the subtype likr type, color or
+// (blocks or inventory) the metadata defines the subtype like type, color or
 // material. The subtype names are available in mname array
-#define I_MTYPE  (1<<3)
-
-// the metadata defines the block's state - e.g. gate open/close
-#define I_STATE  (1<<4)
+#define I_MTYPE  (1<<7)
 
 // the block type normally has a block entity data attached to it, e.g. signs
-#define I_BENTITY (1<<5)
+#define I_BENTITY (1<<8)
 
 // blocks that are completely opaque - i.e. fill out the entire block
 // and do not have transparent areas
-#define I_OPAQUE (1<<6)
+#define I_OPAQUE (1<<9)
 
 // edible (and preferred) foods
-#define I_FOOD (1<<7)
+#define I_FOOD (1<<10)
 
-// (placed blocks only) - metadata defines the placement orientation, but we
-// provide no specific support for it, so it can be ignored
-// Once support for certain block positioning is implemented, remove I_MPOS
-// flag and define a separate one (like I_SLAB)
-#define I_MPOS   (1<<8)
+// metadata defines the placement orientation
+#define I_MPOS   (1<<11)
 
-// Container blocks (chests, furnaces, hoppers, etc.)
-#define I_CONT   (1<<9)
+// Container blocks (chests, furnaces, hoppers, etc. - dialog opens if right-clicked)
+#define I_CONT   (1<<12)
 
 // Blocks with adjustable setting (through right-click)
-#define I_ADJ    (1<<10)
+#define I_ADJ    (1<<13)
 
 // slab-type block - I_MPOS lower/upper placement in the meta bit 3
 #define I_SLAB   (1<<16)

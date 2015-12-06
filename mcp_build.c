@@ -1236,7 +1236,7 @@ static void dump_brec_pending() {
 static void brec_blockupdate_blk(blkr b) {
     // keep only orientation and material-related meta bits
     // clear the state-related bits
-    b.b.meta &= ~(get_state_mask(b.b.bid));
+    b.b.meta &= ~(ITEMS[b.b.bid].flags&I_STATE_MASK);
 
     int i;
     for(i=0; i<build.nbrp; i++) {
