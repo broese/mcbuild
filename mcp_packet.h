@@ -293,6 +293,13 @@ typedef struct {
     slot_t   slot;
 } SP_SetSlot_pkt;
 
+// 0x30
+typedef struct {
+    uint8_t  wid;
+    int16_t  count;
+    slot_t   slots[256];
+} SP_WindowItems_pkt;
+
 // 0x32
 typedef struct {
     uint8_t  wid;
@@ -507,6 +514,7 @@ typedef struct {
         PKT(SP_OpenWindow);
         PKT(SP_CloseWindow);
         PKT(SP_SetSlot);
+        PKT(SP_WindowItems);
         PKT(SP_ConfirmTransaction);
         PKT(SP_UpdateBlockEntity);
         PKT(SP_SetCompression);

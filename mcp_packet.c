@@ -1237,6 +1237,44 @@ FREE_BEGIN(SP_SetSlot) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x30 SP_WindowItems
+
+DECODE_BEGIN(SP_WindowItems,_1_8_1) {
+    Pchar(wid);
+    Pshort(count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        p = read_slot(p, &tpkt->slots[i]);
+    }
+} DECODE_END;
+
+ENCODE_BEGIN(SP_WindowItems,_1_8_1) {
+    Wchar(wid);
+    Wshort(count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        w = write_slot(w, &tpkt->slots[i]);
+    }
+} ENCODE_END;
+
+DUMP_BEGIN(SP_WindowItems) {
+    printf("wid=%d count=%d\n",tpkt->wid,tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        printf("  %d : ",i);
+        dump_slot(&tpkt->slots[i]);
+        printf("\n");
+    }
+} DUMP_END;
+
+FREE_BEGIN(SP_WindowItems) {
+    int i;
+    for(i=0; i<tpkt->count; i++)
+        clear_slot(&tpkt->slots[i]);
+} FREE_END;
+
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x32 SP_ConfirmTransaction
 
 DECODE_BEGIN(SP_ConfirmTransaction,_1_8_1) {
@@ -1594,6 +1632,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_OpenWindow,_1_8_1),
         SUPPORT_DE  (SP_CloseWindow,_1_8_1),
         SUPPORT_DEF (SP_SetSlot,_1_8_1),
+        SUPPORT_DEF (SP_WindowItems,_1_8_1),
         SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
@@ -1611,7 +1650,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (CP_Animation,_1_8_1),
         SUPPORT_DE  (CP_EntityAction,_1_8_1),
         SUPPORT_DE  (CP_CloseWindow,_1_8_1),
-        SUPPORT_DEF (CP_ClickWindow,_1_8_1),
+        SUPPORT_DEDF (CP_ClickWindow,_1_8_1),
     },
 };
 
