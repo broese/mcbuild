@@ -104,6 +104,12 @@ typedef struct _gamestate {
         int         windowopen;         // nonzero if the client has an open window
     } inv;
 
+    struct {
+        slot_t      slots[64];  // slots active only while crafting table window is open
+        slot_t      drag;
+        int         wid;        // ID of the opened crafting table window, 0 otherwise
+    } craft;
+
     // tracked entities
     lh_arr_declare(entity, entity);
 

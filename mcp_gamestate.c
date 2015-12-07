@@ -1179,11 +1179,25 @@ void gs_packet(MCPacket *pkt) {
                     break;
                 }
                 default: { // some block with inventory capabilities
+                    if (gs.craft.wid == tpkt->wid) {
+                        // Crafting Table
+                        assert(tpkt->sid>=0 && tpkt->sid<46);
+                        copy_slot(&tpkt->slot, &gs.craft.slots[tpkt->sid]);
+
+                        if (DEBUG_INVENTORY) {
+                            printf("*** CT set slot wid=%d sid=%d: ", tpkt->wid, tpkt->sid);
+                            dump_slot(&tpkt->slot);
+                            printf("\n");
+                        }
+                        break;
+                    }
+
                     if (DEBUG_INVENTORY) {
                         printf("*** !!! set slot wid=%d sid=%d: ", tpkt->wid, tpkt->sid);
                         dump_slot(&tpkt->slot);
                         printf("\n");
                     }
+
                 }
             }
         } _GSP;
@@ -1254,6 +1268,16 @@ void gs_packet(MCPacket *pkt) {
                 printf("*** Open Window wid=%d type=%s\n",
                        tpkt->wid, tpkt->wtype);
             }
+
+            if (!strcmp(tpkt->wtype, "minecraft:crafting_table")) {
+                // support auto-crafting
+                lh_clear_obj(gs.craft);
+                gs.craft.wid = tpkt->wid;
+
+                if (DEBUG_INVENTORY) {
+                    printf("*** Crafting Table mode wid=%d\n", gs.craft.wid);
+                }
+            }
         } _GSP;
 
         case CP_CloseWindow:
@@ -1289,6 +1313,19 @@ void gs_packet(MCPacket *pkt) {
             }
 
             gs.inv.windowopen = 0;
+
+            if (gs.craft.wid == tpkt->wid) {
+                // Crafting Table window closes - clear the slots
+                for(i=0; i<64; i++) {
+                    gs.craft.slots[i].item = -1;
+                    prune_slot(&gs.craft.slots[i]);
+                    lh_clear_obj(gs.craft);
+                }
+                if (DEBUG_INVENTORY) {
+                    printf("*** Crafting Table closed\n");
+                }
+            }
+
             break;
         }
     }
