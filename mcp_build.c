@@ -1731,18 +1731,19 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
         build.bp = bplan_disk(diam, mat, edge);
-        sprintf(reply, "Disk diam=%f material=%s%s",
+        sprintf(reply, "Disk diam=%f%s material=%s",
                 diam,edge?"(edge) ":"",get_bid_name(buf, mat));
         goto Place;
     }
 
     CMD2(ball,ba) {
-        char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
-        ARGREQ(size, dwords, sz);
+        ARGREQ(diam, NULL, diam);
         ARGMAT(NULL, mat, ad.mat);
+        int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
-        build.bp = bplan_ball(sz.x, mat);
-        sprintf(reply, "Ball diam=%d material=%s",sz.x,get_bid_name(buf, mat));
+        build.bp = bplan_ball(diam, mat, edge);
+        sprintf(reply, "Ball diam=%f%s material=%s",
+                diam,edge?"(edge) ":"",get_bid_name(buf, mat));
         goto Place;
     }
 
@@ -1753,19 +1754,20 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         build_clear(sq, cq);
         build.bp = bplan_disk(diam, mat, edge);
         bplan_hollow(build.bp, 1, 0);
-        sprintf(reply, "Ring diam=%f material=%s%s",
+        sprintf(reply, "Ring diam=%f%s material=%s",
                 diam,edge?"(edge) ":"",get_bid_name(buf, mat));
         goto Place;
     }
 
     CMD2(sphere,sp) {
-        char ** dwords = WORDLIST("diameter","diam","d","size","sz","s");
-        ARGREQ(size, dwords, sz);
+        ARGREQ(diam, NULL, diam);
         ARGMAT(NULL, mat, ad.mat);
+        int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
-        build.bp = bplan_ball(sz.x, mat);
+        build.bp = bplan_ball(diam, mat, edge);
         bplan_hollow(build.bp, 0, 0);
-        sprintf(reply, "Ball diam=%d material=%s",sz.x,get_bid_name(buf, mat));
+        sprintf(reply, "Sphere diam=%f%s material=%s",
+                diam,edge?"(edge) ":"",get_bid_name(buf, mat));
         goto Place;
     }
 
