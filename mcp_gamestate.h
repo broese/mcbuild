@@ -59,13 +59,6 @@ typedef struct {
     gschunk **chunks;   // chunk storage
 } gsworld;
 
-typedef struct {
-    int8_t   mode;
-    int8_t   button;
-    int16_t  sid;
-    int16_t  aid;
-} invact;
-
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef struct _gamestate {
@@ -100,8 +93,6 @@ typedef struct _gamestate {
         uint8_t     held;
         slot_t      slots[64];
         slot_t      drag;
-
-        lh_arr_declare(invact, iaq);    // window action queue
 
         // set when the inventory tracking fails to keep the inventory consistent
         int         inconsistent;

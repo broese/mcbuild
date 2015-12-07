@@ -335,18 +335,6 @@ void dump_inventory() {
     }
 }
 
-#define IAQ  GAR1(gs.inv.iaq)
-#define pIAQ P(gs.inv.iaq)
-#define cIAQ C(gs.inv.iaq)
-
-static int find_invaction(int aid) {
-    int i;
-    for (i=0; i<cIAQ; i++)
-        if (pIAQ[i].aid == aid)
-            return i;
-    return -1;
-}
-
 // ensure that an emptied slot is in a consistent state
 static inline void prune_slot(slot_t *s) {
     if (s->count <= 0 || s->item == -1)
@@ -1214,43 +1202,37 @@ void gs_packet(MCPacket *pkt) {
                 dump_packet(pkt);
             if (tpkt->wid != 0) break;
 
-            invact * a = lh_arr_new(IAQ);
-            a->aid    = tpkt->aid;
-            a->mode   = tpkt->mode;
-            a->button = tpkt->button;
-            a->sid    = tpkt->sid;
-
-            switch (a->mode) {
+            switch (tpkt->mode) {
                 case 0:
                     if (DEBUG_INVENTORY)
                         printf("Inventory Click aid=%d, mode=%d, button=%d, sid=%d\n",
-                               a->aid, a->mode, a->button, a->sid);
-                    inv_click(a->button, a->sid);
+                               tpkt->aid, tpkt->mode, tpkt->button, tpkt->sid);
+                    inv_click(tpkt->button, tpkt->sid);
                     break;
 
                 case 1:
                     if (DEBUG_INVENTORY)
                         printf("Inventory Shift-Click aid=%d, mode=%d, button=%d, sid=%d\n",
-                               a->aid, a->mode, a->button, a->sid);
-                    inv_shiftclick(a->button, a->sid);
+                               tpkt->aid, tpkt->mode, tpkt->button, tpkt->sid);
+                    inv_shiftclick(tpkt->button, tpkt->sid);
                     break;
 
                 case 4:
                     if (DEBUG_INVENTORY)
                         printf("Inventory Throw aid=%d, mode=%d, button=%d, sid=%d\n",
-                               a->aid, a->mode, a->button, a->sid);
-                    inv_throw(a->button, a->sid);
+                               tpkt->aid, tpkt->mode, tpkt->button, tpkt->sid);
+                    inv_throw(tpkt->button, tpkt->sid);
                     break;
 
                 case 5:
                     if (DEBUG_INVENTORY)
                         printf("Inventory Paint aid=%d, mode=%d, button=%d, sid=%d\n",
-                               a->aid, a->mode, a->button, a->sid);
-                    inv_paint(a->button, a->sid);
+                               tpkt->aid, tpkt->mode, tpkt->button, tpkt->sid);
+                    inv_paint(tpkt->button, tpkt->sid);
                     break;
 
                 default:
-                    printf("Unsupported inventory action mode %d\n",a->mode);
+                    printf("Unsupported inventory action mode %d\n",tpkt->mode);
                     gs.inv.inconsistent = 1;
             }
         } _GSP;
@@ -1259,14 +1241,6 @@ void gs_packet(MCPacket *pkt) {
             if (!gs.opt.track_inventory) break;
             dump_packet(pkt);
             if (tpkt->wid != 0) break;
-
-            int idx = find_invaction(tpkt->aid);
-            if (idx < 0) {
-                printf("Warning: action %d not found!\n",tpkt->aid);
-                break;
-            }
-            //invact a = pIAQ[idx];
-            lh_arr_delete(IAQ, idx);
 
             if (!tpkt->accepted) {
                 printf("Warning: action %d was not accepted!\n",tpkt->aid);
@@ -1357,8 +1331,6 @@ void gs_destroy() {
     free_chunks(&gs.overworld);
     free_chunks(&gs.nether);
     free_chunks(&gs.end);
-
-    lh_arr_free(IAQ);
 }
 
 int gs_setopt(int optid, int value) {
