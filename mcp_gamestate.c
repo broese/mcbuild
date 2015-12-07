@@ -1254,7 +1254,7 @@ void gs_packet(MCPacket *pkt) {
         GSP(SP_ConfirmTransaction) {
             if (!gs.opt.track_inventory) break;
             dump_packet(pkt);
-            if (tpkt->wid != 0) break;
+            //if (tpkt->wid != 0) break;
 
             if (!tpkt->accepted) {
                 printf("Warning: action %d was not accepted!\n",tpkt->aid);
@@ -1272,6 +1272,10 @@ void gs_packet(MCPacket *pkt) {
             if (!strcmp(tpkt->wtype, "minecraft:crafting_table")) {
                 // support auto-crafting
                 lh_clear_obj(gs.craft);
+                int i;
+                for(i=0; i<64; i++) {
+                    gs.craft.slots[i].item = -1;
+                }
                 gs.craft.wid = tpkt->wid;
 
                 if (DEBUG_INVENTORY) {
