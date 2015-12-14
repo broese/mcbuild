@@ -1843,7 +1843,8 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         char **mw2 = WORDLIST("material2","mat2","m2");
         ARGREQ(mat, mw1, mat1);
         ARGREQ(mat, mw2, mat2);
-        int count = bplan_replace(build.bp, mat1, mat2);
+        int anymeta = argflag(words, WORDLIST("anymeta","a"));
+        int count = bplan_replace(build.bp, mat1, mat2, anymeta);
         char buf2[256];
         if (mat2.bid == 0) {
             // blocks were removed

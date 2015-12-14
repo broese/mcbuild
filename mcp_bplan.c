@@ -428,7 +428,7 @@ void bplan_extend(bplan *bp, int ox, int oz, int oy, int count) {
     }
 }
 
-int bplan_replace(bplan *bp, bid_t mat1, bid_t mat2) {
+int bplan_replace(bplan *bp, bid_t mat1, bid_t mat2, int anymeta) {
     // TODO: handle material replacement for the orientation-dependent metas
 
     // if mat2=Air, blocks will be removed.
@@ -437,14 +437,17 @@ int bplan_replace(bplan *bp, bid_t mat1, bid_t mat2) {
 
     int i, count=0;
     for(i=0; i<BPC; i++) {
-        if (BPP[i].b.raw == mat1.raw) {
+        int match = anymeta ? (BPP[i].b.bid == mat1.bid) : (BPP[i].b.raw == mat1.raw);
+
+        if (match) {
             count++;
             if (mat2.bid != 0) {
                 blkr *k = lh_arr_new(GAR(keep));
                 *k = BPP[i];
-                k->b = mat2;
+                k->b.bid = mat2.bid;
+                k->b.meta = anymeta ? BPP[i].b.meta : mat2.meta;
             }
-            // else - the block will be removed
+            // else - block will be removed
         }
         else {
             blkr *k = lh_arr_new(GAR(keep));
