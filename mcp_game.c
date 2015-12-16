@@ -553,6 +553,7 @@ void chunk_bright(chunk_t * chunk, int bincr) {
 ////////////////////////////////////////////////////////////////////////////////
 // Auto-crafting
 
+#if 0
 typedef struct {
     const char *name;
     bid_t grid[9];
@@ -726,6 +727,7 @@ void autocraft(MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
@@ -850,11 +852,13 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"Hole radar is %s",opt.holeradar?"ON":"OFF");
         rpos = 2;
     }
+#if 0
     else if (!strcmp(words[0],"craft")) {
         opt.autocraft = !opt.autocraft;
         sprintf(reply,"Autocrafting is %s",opt.autocraft?"ON":"OFF");
         rpos = 2;
     }
+#endif
     else if (!strcmp(words[0],"align")) {
         face_direction(tq, bq, player_direction());
         //TODO: should be possible to specify direction as argument
@@ -1203,7 +1207,7 @@ void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (opt.antiafk)   antiafk(sq, cq);
     if (opt.autoshear) autoshear(sq);
     if (opt.autoeat)   autoeat(sq, cq);
-    if (opt.autocraft) autocraft(sq, cq);
+    //    if (opt.autocraft) autocraft(sq, cq);
 
     build_progress(sq, cq);
 }
