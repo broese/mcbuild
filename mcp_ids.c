@@ -154,7 +154,7 @@ const item_id ITEMS[] = {
     [0x6c] = { "Brick Stairs",          I_MPOS|I_STAIR },               // P: dir
     [0x6d] = { "Stone Brick Stairs",    I_MPOS|I_STAIR },               // P: dir
     [0x6e] = { "Mycelium",              I_OPAQUE },
-    [0x6f] = { "Lilypad",               I_MPOS },
+    [0x6f] = { "Lilypad",               I_PLANT },
 
     [0x70] = { "Netherbrick",           I_OPAQUE },
     [0x71] = { "Netherbrick Fence" },

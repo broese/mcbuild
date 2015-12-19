@@ -714,6 +714,11 @@ void set_block_dots(blk *b) {
                 if (fl!=0x0c && fl!=0x02 && fl!=0x03)
                     PLACE_NONE(b);
                 break;
+
+            case 0x6f: // Lily pads
+                if (fl!=8 && fl!=9)
+                    PLACE_NONE(b);
+                break;
         }
     }
 
@@ -889,7 +894,7 @@ void build_update() {
         nbl = b->nblocks[DIR_UP] = row_u[x];
         b->n_yp = !ISEMPTY(nbl.bid);
         nbl = b->nblocks[DIR_DOWN] = row_d[x];
-        b->n_yn = !ISEMPTY(nbl.bid);
+        b->n_yn = nbl.bid!=0; //!ISEMPTY(nbl.bid);
         nbl = b->nblocks[DIR_SOUTH] = row_s[x];
         b->n_zp = !ISEMPTY(nbl.bid);
         nbl = b->nblocks[DIR_NORTH] = row_n[x];
