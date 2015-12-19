@@ -876,7 +876,8 @@ void build_update() {
         }
 
         // check if this block needs state adjustment (e.g. repeaters)
-        if (bl.bid==b->b.bid && bl.meta!=b->b.meta && (it->flags&I_ADJ))
+        int smask = (it->flags&I_STATE_MASK)^15;
+        if (bl.bid==b->b.bid && (bl.meta&smask)!=(b->b.meta&smask) && (it->flags&I_ADJ))
             b->needadj = 1;
 
         //TODO: when placing a double slab, prevent obstruction - place the slab further away first
