@@ -564,6 +564,23 @@ void set_block_dots(blk *b) {
         }
     }
 
+    else if (b->b.bid == 155) { // Quartz Blocks
+        switch(b->b.meta) {
+            case 2: // Up-Down
+                setdots(b, DOTS_ALL, DOTS_ALL, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE);
+                break;
+            case 3: // East-West
+                setdots(b, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_ALL);
+                break;
+            case 4: // North-South
+                setdots(b, DOTS_NONE, DOTS_NONE, DOTS_ALL, DOTS_ALL, DOTS_NONE, DOTS_NONE);
+                break;
+            default: // Plain and Chiseled
+                PLACE_ALL(b);
+                break;
+        }
+    }
+
     else if (it->flags&I_TORCH) { // Torches and Redstone Torches
         switch(b->b.meta) {
             case 1: PLACE_EAST(b); break;

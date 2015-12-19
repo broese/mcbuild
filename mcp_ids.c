@@ -867,6 +867,11 @@ static metagroup MM_LEVER[16] = {
     METAO(6,5,5,6,6),
 };
 
+static metagroup MM_QUARTZ[16] = {
+    METAO(3,4,4,3,3), // East-West
+    METAO(4,4,4,3,3), // North-South
+};
+
 #define GETMETAGROUP(mmname) mmname[b.meta].inuse ? mmname[b.meta].meta : NULL
 static inline int8_t *get_metagroup(bid_t b) {
     uint64_t flags = ITEMS[b.bid].flags;
@@ -881,6 +886,7 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (flags&I_CHEST)  return GETMETAGROUP(MM_ONWALL);
     if (b.bid == 69)    return GETMETAGROUP(MM_LEVER);
     if (b.bid==77 || b.bid==143) return GETMETAGROUP(MM_TORCH);
+    if (b.bid==155)     return GETMETAGROUP(MM_QUARTZ);
     if (flags&I_GATE)   return GETMETAGROUP(MM_BED);
 
     if ((flags&I_RSDEV) || b.bid==154)
