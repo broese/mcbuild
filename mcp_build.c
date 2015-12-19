@@ -501,7 +501,8 @@ static void build_update_placed() {
         bid_t *slice = c.data[b->y-build.ymin]+c.boff;
         bid_t *row = slice+(b->z-build.zmin)*c.sa.x;
         bid_t bl = row[b->x-build.xmin];
-        b->placed = (bl.raw == b->b.raw);
+        int smask = (ITEMS[b->b.bid].flags&I_STATE_MASK)^15;
+        b->placed = (bl.bid == b->b.bid && (bl.meta&smask)==(b->b.meta&smask) );
         b->empty  = ISEMPTY(bl.bid) && !b->placed;
         b->current = bl;
     }
