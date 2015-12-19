@@ -1094,9 +1094,22 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         queue_packet(pbp,sq);
         //dump_packet(pbp);
 
-        // Wave arm
-        NEWPACKET(CP_Animation, anim);
-        queue_packet(anim, sq);
+        if (hslot->item == 326 || hslot->item == 327) {
+            // Placing a water or lava - requires a different procedure
+            NEWPACKET(CP_PlayerBlockPlacement, pbucket);
+            tpbucket->bpos = POS(-1,-1,-1);
+            tpbucket->face = -1;
+            tpbucket->cx = 0;
+            tpbucket->cy = 0;
+            tpbucket->cz = 0;
+            clone_slot(hslot,&tpbucket->item);
+            queue_packet(pbucket,sq);
+        }
+        else {
+            // Wave arm
+            NEWPACKET(CP_Animation, anim);
+            queue_packet(anim, sq);
+        }
 
         // uncrouch again
         if (needcrouch) {

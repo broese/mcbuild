@@ -564,6 +564,11 @@ bid_t get_base_material(bid_t mat) {
     BI(94,356);   // Redstone Repeater (active)
     BI(149,404);  // Redstone Comparator
 
+    BI(8,326);    // Flowing Water -> Water Bucket
+    BI(9,326);    // Water -> Water Bucket
+    BI(10,327);   // Flowing Lava -> Lava Bucket
+    BI(11,327);   // Lava -> Lava Bucket
+
     mat.meta = get_base_meta(mat.bid, mat.meta);
     return mat;
 }
