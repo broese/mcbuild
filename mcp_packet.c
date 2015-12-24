@@ -1172,7 +1172,7 @@ DECODE_BEGIN(SP_OpenWindow,_1_8_1) {
     Pstr(wtype);
     Rstr(title);
     tpkt->title = strdup(title);
-    Pshort(nslots);
+    Pchar(nslots);
     if (!strcmp(tpkt->wtype, "EntityHorse")) {
         Pint(eid);
     }
@@ -1182,7 +1182,7 @@ ENCODE_BEGIN(SP_OpenWindow,_1_8_1) {
     Wchar(wid);
     Wstr(wtype);
     Wstr(title);
-    Wshort(nslots);
+    Wchar(nslots);
     if (!strcmp(tpkt->wtype, "EntityHorse")) {
         Wint(eid);
     }
