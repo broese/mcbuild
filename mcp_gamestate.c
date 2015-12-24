@@ -1277,7 +1277,7 @@ void gs_packet(MCPacket *pkt) {
                 // we can use the direct offset specified in the packet
 
                 if (!strcmp(tpkt->wtype, "minecraft:beacon")) {
-                    // except when it's a beacon
+                    // except when it's a beacon :/
                     gs.inv.woffset = 1;
                 }
                 else {
@@ -1301,9 +1301,9 @@ void gs_packet(MCPacket *pkt) {
                 }
             }
 
-            //if (DEBUG_INVENTORY) {
+            if (DEBUG_INVENTORY) {
                 printf("*** Inventory offset=%d\n",gs.inv.woffset);
-            //}
+            }
 
             if (!strcmp(tpkt->wtype, "minecraft:crafting_table")) {
                 // support auto-crafting
@@ -1370,6 +1370,33 @@ void gs_packet(MCPacket *pkt) {
 
             break;
         }
+
+        GSP(SP_WindowItems) {
+            // Ignore this update if the window was not opened yet
+            // This happens when accessing villagers - it sends me
+            // SP_WindowItems first, and then SP_OpenWindow
+            if (tpkt->wid != gs.inv.wid) break;
+
+            int woffset = (tpkt->wid == 0) ? 0 : gs.inv.woffset;
+            int ioffset = (tpkt->wid == 0) ? 0 : 9;
+            int nslots  = (tpkt->wid == 0) ? 45 : 36;
+
+            int i;
+            for(i=0; i<nslots; i++) {
+                slot_t * islot = &gs.inv.slots[i+ioffset];
+                slot_t * wslot = &tpkt->slots[i+woffset];
+
+                if (islot->item != wslot->item) {
+                    printf("Correcting slot %d ",i+ioffset);
+                    dump_slot(islot);
+                    printf(" => ");
+                    dump_slot(wslot);
+                    printf("\n");
+                }
+                clear_slot(islot);
+                clone_slot(wslot, islot);
+            }
+        } _GSP;
     }
 }
 
