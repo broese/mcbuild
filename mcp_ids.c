@@ -66,7 +66,7 @@ const item_id ITEMS[] = {
     [0x24] = { "Pushed block", },
     [0x25] = { "Dandelion", },
     [0x26] = { "Flower",                I_MTYPE|I_PLANT,
-               { "Poppy", "Blue orchid", "Allium", "Azure Bluet", 
+               { "Poppy", "Blue orchid", "Allium", "Azure Bluet",
                  "Red Tulip", "Orange Tulip", "White Tulip", "Pink Tulip",
                  "Oxeye Daisy", }, },
     [0x27] = { "Brown Mushroom",        I_PLANT },
@@ -559,9 +559,11 @@ bid_t get_base_material(bid_t mat) {
     BI(197,431);  // Dark Oak Door
     BI(71,330);   // Iron Door
 
+    BI(74,73);    // Redstone Ore (lit -> unlit)
     BI(75,76);    // Redstone Torch (inactive -> active)
     BI(93,356);   // Redstone Repeater (inactive)
     BI(94,356);   // Redstone Repeater (active)
+    BI(124,123);  // Redstone Lamp (lit -> unlit)
     BI(149,404);  // Redstone Comparator
 
     BI(8,326);    // Flowing Water -> Water Bucket
