@@ -41,7 +41,7 @@ void dump_entities() {
 ////////////////////////////////////////////////////////////////////////////////
 // chunk storage
 
-// extend world in blocks of this many chunks 
+// extend world in blocks of this many chunks
 #define WORLDALLOC (1<<4)
 
 int32_t find_chunk(gsworld *w, int32_t X, int32_t Z) {
@@ -1269,6 +1269,42 @@ void gs_packet(MCPacket *pkt) {
                        tpkt->wid, tpkt->wtype);
             }
 
+            gs.inv.windowopen = 1;
+            gs.inv.wid = tpkt->wid;
+
+            if (tpkt->nslots) {
+                // this is a window with storable slots
+                // we can use the direct offset specified in the packet
+
+                if (!strcmp(tpkt->wtype, "minecraft:beacon")) {
+                    // except when it's a beacon
+                    gs.inv.woffset = 1;
+                }
+                else {
+                    gs.inv.woffset = tpkt->nslots;
+                }
+            }
+            else {
+                // otherwise we need to determine the number of slots from
+                // the window type. Mojang.... sigh
+                if (!strcmp(tpkt->wtype, "minecraft:crafting_table")) {
+                    gs.inv.woffset = 10;
+                }
+                else if (!strcmp(tpkt->wtype, "minecraft:enchanting_table")) {
+                    gs.inv.woffset = 2;
+                }
+                else if (!strcmp(tpkt->wtype, "minecraft:anvil")) {
+                    gs.inv.woffset = 3;
+                }
+                else {
+                    printf("*** Unknown window type %s, inventory offset is likely incorrect\n",tpkt->wtype);
+                }
+            }
+
+            //if (DEBUG_INVENTORY) {
+                printf("*** Inventory offset=%d\n",gs.inv.woffset);
+            //}
+
             if (!strcmp(tpkt->wtype, "minecraft:crafting_table")) {
                 // support auto-crafting
                 lh_clear_obj(gs.craft);
@@ -1317,6 +1353,8 @@ void gs_packet(MCPacket *pkt) {
             }
 
             gs.inv.windowopen = 0;
+            gs.inv.wid = 0;
+            gs.inv.woffset = 0;
 
             if (gs.craft.wid == tpkt->wid) {
                 // Crafting Table window closes - clear the slots

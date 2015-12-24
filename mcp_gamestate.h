@@ -102,6 +102,8 @@ typedef struct _gamestate {
         int         ptype;
 
         int         windowopen;         // nonzero if the client has an open window
+        int         wid;                // ID of the currently opened window
+        int         woffset;            // main inventory starts in the window from this offset
     } inv;
 
     struct {
