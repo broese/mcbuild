@@ -903,6 +903,10 @@ void build_update() {
         if (bl.bid==b->b.bid && (bl.meta&smask)!=(b->b.meta&smask) && (it->flags&I_ADJ))
             b->needadj = 1;
 
+        // special case - daylight sensor
+        if ((bl.bid == 0x97 && b->b.bid == 0xb2) || (bl.bid == 0xb2 && b->b.bid == 0x97))
+            b->needadj = 1;
+
         //TODO: when placing a double slab, prevent obstruction - place the slab further away first
         //TODO: take care when placing a slab over a slab - prevent a doubleslab creation
 

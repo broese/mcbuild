@@ -565,6 +565,7 @@ bid_t get_base_material(bid_t mat) {
     BI(94,356);   // Redstone Repeater (active)
     BI(124,123);  // Redstone Lamp (lit -> unlit)
     BI(149,404);  // Redstone Comparator
+    BI(178,151);  // Daylight Sensor (inverted -> normal)
 
     BI(8,326);    // Flowing Water -> Water Bucket
     BI(9,326);    // Water -> Water Bucket
