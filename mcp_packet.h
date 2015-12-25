@@ -307,6 +307,26 @@ typedef struct {
     uint8_t  accepted;
 } SP_ConfirmTransaction_pkt;
 
+// 0x34
+typedef struct {
+    uint8_t  type;
+    uint8_t  x;
+    uint8_t  z;
+} map_icon;
+
+typedef struct {
+    uint32_t mapid;
+    uint8_t  scale;
+    uint32_t nicons;
+    map_icon *icons;
+    uint8_t  ncols;
+    uint8_t  nrows;
+    uint8_t  X;
+    uint8_t  Z;
+    uint32_t len;
+    uint8_t  *data;
+} SP_Maps_pkt;
+
 // 0x35
 typedef struct {
     pos_t    loc;
@@ -516,6 +536,7 @@ typedef struct {
         PKT(SP_SetSlot);
         PKT(SP_WindowItems);
         PKT(SP_ConfirmTransaction);
+        PKT(SP_Maps);
         PKT(SP_UpdateBlockEntity);
         PKT(SP_SetCompression);
 

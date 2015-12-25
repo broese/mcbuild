@@ -1288,6 +1288,42 @@ DUMP_BEGIN(SP_ConfirmTransaction) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x34 SP_Map
+
+DECODE_BEGIN(SP_Maps,_1_8_1) {
+    Pvarint(mapid);
+    Pchar(scale);
+    Pvarint(nicons);
+    lh_alloc_num(tpkt->icons, tpkt->nicons);
+    int i;
+    for(i=0; i<tpkt->nicons; i++) {
+        Pchar(icons[i].type);
+        Pchar(icons[i].x);
+        Pchar(icons[i].z);
+    }
+    Pchar(ncols);
+    if (tpkt->ncols > 0) {
+        Pchar(nrows);
+        Pchar(X);
+        Pchar(Z);
+        Pvarint(len);
+        lh_alloc_num(tpkt->data, tpkt->len);
+        Pdata(data, tpkt->len);
+    }
+} DECODE_END;
+
+DUMP_BEGIN(SP_Maps) {
+    printf("id=%d, scale=%d, icons=%d, size=%d,%d, at=%d,%d, len=%d",
+           tpkt->mapid, tpkt->scale, tpkt->nicons,
+           tpkt->ncols, tpkt->nrows, tpkt->X, tpkt->Z, tpkt->len);
+} DUMP_END;
+
+FREE_BEGIN(SP_Maps) {
+    lh_free(tpkt->icons);
+    lh_free(tpkt->data);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x35 SP_UpdateBlockEntity
 
 DECODE_BEGIN(SP_UpdateBlockEntity,_1_8_1) {
@@ -1634,6 +1670,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_SetSlot,_1_8_1),
         SUPPORT_DEF (SP_WindowItems,_1_8_1),
         SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
+        SUPPORT_DF  (SP_Maps,_1_8_1),
         SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),
         SUPPORT_DED (SP_SetCompression,_1_8_1),
     },
