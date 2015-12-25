@@ -1622,7 +1622,7 @@ void build_clear(MCPacketQueue *sq, MCPacketQueue *cq) {
 
 // cancel and delete the buildtask, leaving the buildplan
 void build_cancel(MCPacketQueue *sq, MCPacketQueue *cq) {
-    if (!buildopts.preview_retain)
+    if (!buildopts.preview_retain && sq && cq)
         build_show_preview(sq, cq, PREVIEW_REMOVE);
     build.active = 0;
     lh_arr_free(BTASK);

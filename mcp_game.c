@@ -1197,7 +1197,7 @@ void read_uuids() {
 void gm_reset() {
     lh_clear_obj(opt);
 
-    build_clear();
+    build_clear(NULL,NULL);
     readbases();
     read_uuids();
 }

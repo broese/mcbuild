@@ -1,8 +1,8 @@
 #pragma once
 
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq);
-void build_clear();
-void build_cancel();
+void build_clear(MCPacketQueue *sq, MCPacketQueue *cq);
+void build_cancel(MCPacketQueue *sq, MCPacketQueue *cq);
 void build_update();
 void build_progress(MCPacketQueue *sq, MCPacketQueue *cq);
 int  build_packet(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq);
