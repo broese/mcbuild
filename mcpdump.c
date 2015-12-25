@@ -11,6 +11,7 @@
 #include <lh_bytes.h>
 #include <lh_files.h>
 #include <lh_compress.h>
+#include <lh_image.h>
 
 #include "mcp_gamestate.h"
 #include "mcp_game.h"
@@ -31,6 +32,7 @@ int o_spawner_mult              = 0;
 int o_spawner_single            = 0;
 int o_track_inventory           = 0;
 int o_track_thunder             = 0;
+int o_extract_maps              = 0;
 int o_dump_packets              = 0;
 int o_dimension                 = 0;
 
@@ -43,6 +45,7 @@ void print_usage() {
            "  -S                        : search for single spawner locations\n"
            "  -i                        : track inventory transactions and dump inventory\n"
            "  -t                        : track thunder sounds\n"
+           "  -m                        : extract in-game maps\n"
            "  -d                        : dump packets\n"
            "  -D dimension              : specify dimension (0:overworld, -1:nether, 1:end)\n"
     );
@@ -51,7 +54,7 @@ void print_usage() {
 int parse_args(int ac, char **av) {
     int opt,error=0;
 
-    while ( (opt=getopt(ac,av,"b:D:sSihdt")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:D:sSihmdt")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -67,6 +70,9 @@ int parse_args(int ac, char **av) {
                 break;
             case 't':
                 o_track_thunder = 1;
+                break;
+            case 'm':
+                o_extract_maps = 1;
                 break;
             case 'd':
                 o_dump_packets = 1;
@@ -217,9 +223,86 @@ static void find_spawners() {
                                c->loc.x,c->loc.y,c->loc.z,
                                da,db,dc);
                     }
-                }                
+                }
             }
         }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+uint8_t * maps[65536];
+
+uint8_t map_colors[256][3] = {
+    {0, 0, 0},
+    {127, 178, 56},
+    {247, 233, 163},
+    {167, 167, 167},
+    {255, 0, 0},
+    {160, 160, 255},
+    {167, 167, 167},
+    {0, 124, 0},
+    {255, 255, 255},
+    {164, 168, 184},
+    {183, 106, 47},
+    {112, 112, 112},
+    {64, 64, 255},
+    {104, 83, 50},
+    {255, 252, 245},
+    {216, 127, 51},
+    {178, 76, 216},
+    {102, 153, 216},
+    {229, 229, 51},
+    {127, 204, 25},
+    {242, 127, 165},
+    {76, 76, 76},
+    {153, 153, 153},
+    {76, 127, 153},
+    {127, 63, 178},
+    {51, 76, 178},
+    {102, 76, 51},
+    {102, 127, 51},
+    {153, 51, 51},
+    {25, 25, 25},
+    {250, 238, 77},
+    {92, 219, 213},
+    {74, 128, 255},
+    {0, 217, 58},
+    {21, 20, 31},
+    {112, 2, 0},
+    {126, 84, 48},
+};
+
+void extract_maps() {
+    int id;
+    for (id=0; id<65536; id++) {
+        if (!maps[id]) continue;
+        printf("Extracting map #%d\n",id);
+        lhimage * img = allocate_image(128, 128, -1);
+
+        int x,z;
+        for(z=0; z<128; z++) {
+            uint8_t *row = maps[id]+z*128;
+            for(x=0; x<128; x++) {
+                float f;
+                switch(row[x]&3) {
+                    case 0: f=180.0/255.0; break;
+                    case 1: f=220.0/255.0; break;
+                    case 2: f=1.0; break;
+                    case 3: f=135.0/255.0; break;
+                }
+                float r = (float)map_colors[row[x]>>2][0]*f;
+                float g = (float)map_colors[row[x]>>2][1]*f;
+                float b = (float)map_colors[row[x]>>2][2]*f;
+                uint32_t color = (((uint32_t)r)<<16)|(((uint32_t)g)<<8)|((uint32_t)b);
+                IMGDOT(img,x,z) = color;
+            }
+        }
+
+        char fname[256];
+        sprintf(fname, "map_%04d.png", id);
+        ssize_t sz = export_png_file(img, fname);
+        destroy_image(img);
     }
 }
 
@@ -240,6 +323,17 @@ void mcpd_packet(MCPacket *pkt) {
                 fixp tx = tpkt->x*4;
                 fixp tz = tpkt->z*4;
                 track_remote_sounds(tx, tz, tpkt->y/8, pkt->ts);
+            }
+            break;
+        }
+
+        case SP_Maps: {
+            if (!o_extract_maps) break;
+            SP_Maps_pkt *tpkt = (SP_Maps_pkt *)&pkt->_SP_Maps;
+            if (tpkt->ncols == 128 && tpkt->nrows == 128) {
+                if (!maps[tpkt->mapid])
+                    lh_alloc_buf(maps[tpkt->mapid], 16384);
+                memmove(maps[tpkt->mapid], tpkt->data, 16384);
             }
             break;
         }
@@ -306,7 +400,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
         uint32_t stype = ((state<<24)|(is_client<<28)|(type&0xffffff));
 
-        
+
         //if (state == STATE_PLAY)
         //    import_packet(pkt, len, is_client);
 
@@ -328,7 +422,7 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 break;
             }
         }
-    
+
         hdr += 16+len; // advance header pointer to the next packet
     }
 
@@ -443,6 +537,9 @@ int main(int ac, char **av) {
 
     if (o_block_id >=0)
         search_blocks(o_dimension, o_block_id, o_block_meta);
+
+    if (o_extract_maps)
+        extract_maps();
 
     gs_destroy();
 
