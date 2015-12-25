@@ -153,7 +153,7 @@ typedef struct {
     int16_t  vx;
     int16_t  vy;
     int16_t  vz;
-} SP_EntityVelocity_pkt;    
+} SP_EntityVelocity_pkt;
 
 // 0x13
 typedef struct {

@@ -164,7 +164,7 @@ void write_packet_raw(uint8_t *ptr, ssize_t len, lh_buf_t *buf) {
     ssize_t ll = lh_place_varint(hbuf,len) - hbuf;
 
     ssize_t widx = buf->C(data);
-    
+
     lh_arr_add(GAR4(buf->data),(len+ll));
 
     memmove(P(buf->data)+widx, hbuf, ll);
@@ -179,10 +179,10 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
     memmove(mitm.s_token,pkt.token,pkt.tlen);
 
     printf("Encryption Request\n");
-                
+
     sprintf(mitm.s_id,"%s",pkt.serverID);
     mitm.s_pklen = pkt.klen;
-                
+
     // decode server PUBKEY to an RSA struct
     unsigned char *pp = mitm.s_pkey;
     d2i_RSA_PUBKEY(&mitm.s_rsa, (const unsigned char **)&pp, pkt.klen);
@@ -204,7 +204,7 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
         exit(1);
     }
     //RSA_print_fp(stdout, mitm.c_rsa, 4);
-    
+
     // encode the client-side pubkey as DER
     pp = mitm.c_pkey;
     mitm.c_pklen = i2d_RSA_PUBKEY(mitm.c_rsa, &pp);
@@ -231,7 +231,7 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
     write_varint(w, 4);
     memmove(w, mitm.c_token, 4);
     w+=4;
-    
+
     //printf("Sending to client %zd bytes:\n",w-output);
     //hexdump(output, w-output);
     write_packet_raw(output, w-output, forw);
@@ -250,7 +250,7 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
     //printf("Decrypted client shared key, keylen=%d ",dklen);
     //hexprint(buf, dklen);
     memcpy(mitm.c_skey, buf, 16);
-    
+
     int dtlen = RSA_private_decrypt(pkt.tklen, pkt.token, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
     if (dtlen < 0) {
         printf("Failed to decrypt the verification token received from the client\n");
@@ -264,7 +264,7 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
         printf("Token does not match!\n");
         exit(1);
     }
-            
+
     uint8_t output[65536];
     uint8_t *w = output;
 
@@ -281,12 +281,12 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
     write_varint(w,(short)eklen);
     memcpy(w, buf, eklen);
     w += eklen;
-            
+
     int etlen = RSA_public_encrypt(sizeof(mitm.s_token), mitm.s_token, buf, mitm.s_rsa, RSA_PKCS1_PADDING);
     write_varint(w,(short)etlen);
     memcpy(w, buf, etlen);
     w += etlen;
-                
+
     query_auth_server();
     //hexdump(output, w-output);
     write_packet_raw(output, w-output, forw);
@@ -649,12 +649,12 @@ ssize_t handle_proxy(lh_conn *conn) {
                 AES_cfb8_encrypt(tx->P(data), tx->P(data), tx->C(data),
                                  &mitm.c_aes, mitm.c_enc_iv, &num, AES_ENCRYPT);
         }
-        
+
         // send everything
         lh_conn_write(is_client?mitm.ms_conn:mitm.cs_conn, AR(tx->data));
         tx->C(data) = tx->ridx = 0;
     }
-    
+
     // if there's data in the response buffer, encrypt it if needed and send off
     if (bx->C(data) > 0) {
         if (mitm.encryption_active) {
@@ -672,7 +672,7 @@ ssize_t handle_proxy(lh_conn *conn) {
         lh_conn_write(is_client?mitm.cs_conn:mitm.ms_conn, AR(bx->data));
         bx->C(data) = bx->ridx = 0;
     }
-    
+
     if (mitm.enable_encryption) {
         // Set up the encryption. This is delayed so the last auth phase packet
         // CL_EncryptionResponse can go out unencrypted
@@ -722,7 +722,7 @@ void drop_connection() {
   using a hexeditor. With this neat trick we can avoid having to MITM an
   HTTPS connection, which would be a pain in the ass to implement.
 
-*/                                                                                                                                             
+*/
 
 #if 0
 //Example of the HTTP conversation:
@@ -739,12 +739,12 @@ void drop_connection() {
 
 //{"accessToken":"bbc3cae3264e4ad0b446fd9bb852519a","selectedProfile":"962c6718688448d4a35c249f8d30428b","serverId":"bd651042ec97910e449e11a3991e1274e3e67e5"}HTTP/1.1 401 Authorization Required
 
-//HTTP/1.1 204 No Content                                                                                                    
-//Accept-Ranges: bytes                                                                                                       
-//Content-length: 0                                                                                                                     
-//Date: Mon, 21 Apr 2014 13:13:54 GMT                                                                                                   
-//Server: Restlet-Framework/2.2.0                                                                                                       
-//Connection: keep-alive                                                                                                                
+//HTTP/1.1 204 No Content
+//Accept-Ranges: bytes
+//Content-length: 0
+//Date: Mon, 21 Apr 2014 13:13:54 GMT
+//Server: Restlet-Framework/2.2.0
+//Connection: keep-alive
 #endif
 
 
@@ -854,7 +854,7 @@ void print_hex(char *buf, const char *data, ssize_t len) {
             if (i<len-1)
                 d--;
         }
-        
+
         sprintf(w,"%02x",(unsigned char)d);
         w+=2;
     }
@@ -874,13 +874,13 @@ int query_auth_server() {
     // the final touch - send the authentication token to the session server
     unsigned char md[SHA_DIGEST_LENGTH];
     SHA_CTX sha; CLEAR(sha);
-    
+
     SHA1_Init(&sha);
     SHA1_Update(&sha, mitm.s_id, strlen(mitm.s_id));
     SHA1_Update(&sha, mitm.s_skey, sizeof(mitm.s_skey));
     SHA1_Update(&sha, mitm.s_pkey, mitm.s_pklen);
     SHA1_Final(md, &sha);
-    
+
     char auth[4096];
     //hexdump(md, SHA_DIGEST_LENGTH);
     print_hex(auth, (char *)md, SHA_DIGEST_LENGTH);
@@ -901,7 +901,7 @@ int query_auth_server() {
     // set header options
     curl_easy_setopt(curl, CURLOPT_URL, "https://sessionserver.mojang.com/session/minecraft/join");
     curl_easy_setopt(curl, CURLOPT_USERAGENT, "Java/1.6.0_27");
-    
+
     struct curl_slist *headerlist=NULL;
     headerlist = curl_slist_append(headerlist, "Content-Type: application/json; charset=utf-8");
     curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headerlist);
@@ -933,7 +933,7 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
 
     printf("Accepted from %s:%d\n",
            inet_ntoa(cadr.sin_addr),ntohs(cadr.sin_port));
-    
+
     // open connection to the remote server (the real MC server)
     int ms = lh_connect_tcp4(ip, port);
     if (ms < 0) {
@@ -942,8 +942,7 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     }
 
     // both client-side and server-side connections are now established
-    printf("New connection: cs=%d ms=%d\n", cs, ms);
-    
+
     // initialize mitm struct, terminate old state if any
     if (mitm.output) fclose(mitm.output);
     if (mitm.dbg)    fclose(mitm.dbg);
@@ -1190,9 +1189,9 @@ int parse_args(int ac, char **av) {
         }
     }
 
-    printf("Proxy address     :  %s:%d\n"
-           "Webserver address :  %s:%d\n"
-           "Remote address    :  %s:%d\n",
+    printf("MC Proxy address   :  %s:%d\n"
+           "Auth Proxy address :  %s:%d\n"
+           "Remote server      :  %s:%d\n",
            o_baddr,o_bport,o_waddr,o_wport,o_raddr,o_rport);
 
     return error==0;

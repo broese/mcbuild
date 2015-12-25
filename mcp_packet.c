@@ -1809,7 +1809,7 @@ void dump_packet(MCPacket *pkt) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
- 
+
 void free_packet(MCPacket *pkt) {
     lh_free(pkt->raw);
 
