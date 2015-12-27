@@ -1159,6 +1159,10 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         gmi_change_held(sq, cq, held, 1);
 }
 
+void build_pause() {
+    build.active = 0;
+}
+
 
 
 
