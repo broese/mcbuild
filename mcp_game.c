@@ -231,6 +231,228 @@ static void hole_radar(MCPacketQueue *cq) {
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory Handling
 
+int aid=10000;
+
+#define IASTATE_NONE            0
+#define IASTATE_START           1
+#define IASTATE_PICK_SENT       2
+#define IASTATE_PICK_ACCEPTED   3
+#define IASTATE_SWAP_SENT       4
+#define IASTATE_SWAP_ACCEPTED   5
+#define IASTATE_PUT_SENT        6
+#define IASTATE_PUT_ACCEPTED    7
+
+struct {
+    int     state;          // current state of the invaction queue
+    int     base_aid;       // action id of the first transaction
+    int     sid_a;          // slot A ID
+    int     sid_b;          // slot B ID
+    slot_t  drag;           // temp drag slot
+    int64_t start;          // timestamp when the action has started
+} invq;
+
+void gmi_click(MCPacketQueue *sq, int sid, int aid) {
+    assert(sid>=9 && sid<45);
+
+    slot_t *s = &gs.inv.slots[sid];
+
+    NEWPACKET(CP_ClickWindow, click);
+    tclick->wid = 0;
+    tclick->sid = sid;
+    tclick->button = 0; // Left-click, mode 0 - pick/put up all items
+    tclick->aid = aid;
+    tclick->mode = 0;
+    clone_slot(s, &tclick->slot);
+    queue_packet(click, sq);
+
+    printf("ClickWindow aid=%d, sid=%d, state=%d\n",
+           aid, sid, invq.state);
+}
+
+#define INVQ_TIMEOUT 2000000
+
+void gmi_failed(MCPacketQueue *sq, MCPacketQueue *cq) {
+    // Close window
+    NEWPACKET(CP_CloseWindow, cwin);
+    tcwin->wid=0;
+    queue_packet(cwin, sq);
+
+    slot_t *a = &gs.inv.slots[invq.sid_a];
+    slot_t *b = &gs.inv.slots[invq.sid_b];
+
+    // Update Client (Slot A)
+    NEWPACKET(SP_SetSlot, cla);
+    tcla->wid = 0;
+    tcla->sid = invq.sid_a;
+    clone_slot(a, &tcla->slot);
+    queue_packet(cla, cq);
+
+    // Update Client (Slot B)
+    NEWPACKET(SP_SetSlot, clb);
+    tclb->wid = 0;
+    tclb->sid = invq.sid_b;
+    clone_slot(b, &tclb->slot);
+    queue_packet(clb, cq);
+
+    // Inventory action failed, inventory state might be corrupt
+    clear_slot(&invq.drag);
+    lh_clear_obj(invq);
+    aid+=3;
+    if (aid>60000) aid=10000;
+
+    // Abort the building process for safety and notify user
+    build_pause();
+    chat_message("INV ACTION FAILED!!! Buildtask paused!", cq, "green", 2);
+    chat_message("An inventory action has failed or timed out, inventory state may be inconsistent", cq, "green", 0);
+    chat_message("Access any dialog (container/crafting table/etc.) to refresh the inventory", cq, "green", 0);
+}
+
+void gmi_process_queue(MCPacketQueue *sq, MCPacketQueue *cq) {
+    assert(invq.state);
+
+    // Watchdog for the timeouted tasks
+    if (invq.state != IASTATE_START && gettimestamp()-invq.start > INVQ_TIMEOUT) {
+        gmi_failed(sq, cq);
+        return;
+    }
+
+    slot_t *a = &gs.inv.slots[invq.sid_a];
+    slot_t *b = &gs.inv.slots[invq.sid_b];
+
+    switch (invq.state) {
+        case IASTATE_START: {
+            invq.base_aid = aid;
+            gmi_click(sq, invq.sid_a, invq.base_aid);
+            invq.state = IASTATE_PICK_SENT;
+            invq.start = gettimestamp();
+            printf("*GMI: START -> PICK_SENT\n");
+            dump_inventory();
+            printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+            printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+            printf("  D: "); dump_slot(&invq.drag); printf("\n");
+            break;
+        }
+        case IASTATE_PICK_ACCEPTED: {
+            gmi_click(sq, invq.sid_b, invq.base_aid+1);
+            clone_slot(a, &invq.drag);
+            clear_slot(a);
+            invq.state = IASTATE_SWAP_SENT;
+            printf("*GMI: PICK_ACCEPTED -> SWAP_SENT\n");
+            dump_inventory();
+            printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+            printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+            printf("  D: "); dump_slot(&invq.drag); printf("\n");
+            break;
+        }
+        case IASTATE_SWAP_ACCEPTED: {
+            gmi_click(sq, invq.sid_a, invq.base_aid+2);
+            slot_t temp;
+            clone_slot(b, &temp);
+            clear_slot(b);
+            clone_slot(&invq.drag, b);
+            clear_slot(&invq.drag);
+            clone_slot(&temp,&invq.drag);
+            clear_slot(&temp);
+            invq.state = IASTATE_PUT_SENT;
+            printf("*GMI: SWAP_ACCEPTED -> PUT_SENT\n");
+            dump_inventory();
+            printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+            printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+            printf("  D: "); dump_slot(&invq.drag); printf("\n");
+            break;
+        }
+        case IASTATE_PUT_ACCEPTED: {
+            // Swap action complete, update client
+
+            // Swap slots in our inventory state
+            clone_slot(&invq.drag, a);
+            clear_slot(&invq.drag);
+
+            // Close window
+            NEWPACKET(CP_CloseWindow, cwin);
+            tcwin->wid=0;
+            queue_packet(cwin, sq);
+
+            // Update Client (Slot A)
+            NEWPACKET(SP_SetSlot, cla);
+            tcla->wid = 0;
+            tcla->sid = invq.sid_a;
+            clone_slot(a, &tcla->slot);
+            queue_packet(cla, cq);
+
+            // Update Client (Slot B)
+            NEWPACKET(SP_SetSlot, clb);
+            tclb->wid = 0;
+            tclb->sid = invq.sid_b;
+            clone_slot(b, &tclb->slot);
+            queue_packet(clb, cq);
+
+            // Clear the state
+            aid+=3;
+            if (aid>60000) aid=10000;
+            lh_clear_obj(invq); // This also sets the state to IASTATE_NONE
+
+            printf("*GMI: PUT_ACCEPTED -> IDLE\n");
+            dump_inventory();
+            printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+            printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+            printf("  D: "); dump_slot(&invq.drag); printf("\n");
+
+            break;
+        }
+    }
+}
+
+int gmi_confirm(SP_ConfirmTransaction_pkt *tpkt, MCPacketQueue *sq, MCPacketQueue *cq) {
+    if ( !invq.state || tpkt->wid != 0) return 1;
+
+    if (!tpkt->accepted) {
+        printf("Inventory action not accepted (wid=%d aid=%d base_aid=%d sid_a=%d sid_b=%d)\n",
+               tpkt->wid, tpkt->aid, invq.base_aid, invq.sid_a, invq.sid_b);
+        printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+        printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+        printf("  D: "); dump_slot(&invq.drag); printf("\n");
+        dump_inventory();
+
+        gmi_failed(sq, cq);
+    }
+    else {
+        switch (invq.state) {
+            case IASTATE_PICK_SENT:
+                if(tpkt->aid != invq.base_aid) return 1;
+                invq.state = IASTATE_PICK_ACCEPTED;
+                printf("*GMI: PICK_SENT -> PICK_ACCEPTED, aid=%d base_aid=%d sid_a=%d sid_b=%d\n",
+                       tpkt->aid, invq.base_aid, invq.sid_a, invq.sid_b);
+                dump_inventory();
+                printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+                printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+                printf("  D: "); dump_slot(&invq.drag); printf("\n");
+                break;
+            case IASTATE_SWAP_SENT:
+                if(tpkt->aid != invq.base_aid+1) return 1;
+                invq.state = IASTATE_SWAP_ACCEPTED;
+                printf("*GMI: SWAP_SENT -> SWAP_ACCEPTED, aid=%d base_aid=%d sid_a=%d sid_b=%d\n",
+                       tpkt->aid, invq.base_aid, invq.sid_a, invq.sid_b);
+                dump_inventory();
+                printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+                printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+                printf("  D: "); dump_slot(&invq.drag); printf("\n");
+                break;
+            case IASTATE_PUT_SENT:
+                if(tpkt->aid != invq.base_aid+2) return 1;
+                invq.state = IASTATE_PUT_ACCEPTED;
+                printf("*GMI: PUT_SENT -> PUT_ACCEPTED, aid=%d base_aid=%d sid_a=%d sid_b=%d\n",
+                       tpkt->aid, invq.base_aid, invq.sid_a, invq.sid_b);
+                dump_inventory();
+                printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+                printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+                printf("  D: "); dump_slot(&invq.drag); printf("\n");
+                break;
+        }
+    }
+    return 0;
+}
+
 // change the currently selected quickbar slot
 void gmi_change_held(MCPacketQueue *sq, MCPacketQueue *cq, int sid, int notify_client) {
     assert(sid>=0 && sid<=8);
@@ -251,11 +473,8 @@ void gmi_change_held(MCPacketQueue *sq, MCPacketQueue *cq, int sid, int notify_c
     }
 }
 
-int aid=10000;
-
-// swap the contents of two slots - will also transfer item from a slot into
-// empty slot if one of them is empty
 void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
+    assert(invq.state == IASTATE_NONE);
     assert(sa>=9 && sa<45);
     assert(sb>=9 && sb<45);
 
@@ -265,61 +484,10 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
     assert(!sameitem(a,b)); // ensure the items are not same (or not stackable),
                             // so our clickery will actually swap them
 
-    // 1. Click on the first slot
-    NEWPACKET(CP_ClickWindow, pick);
-    tpick->wid = 0;
-    tpick->sid = sa;
-    tpick->button = 0; // Left-click, mode 0 - pick up all items
-    tpick->aid = aid;
-    tpick->mode = 0;
-    clone_slot(a, &tpick->slot);
-    queue_packet(pick, sq);
-    gs_packet(pick);
-
-    // 2. Click on the second slot - swap items
-    NEWPACKET(CP_ClickWindow, swap);
-    tswap->wid = 0;
-    tswap->sid = sb;
-    tswap->button = 0;
-    tswap->aid = aid+1;
-    tswap->mode = 0;
-    clone_slot(b, &tswap->slot);
-    queue_packet(swap, sq);
-    gs_packet(swap);
-
-    // 3. Click again on the first slot - drop the swapped items
-    NEWPACKET(CP_ClickWindow, put);
-    tput->wid = 0;
-    tput->sid = sa;
-    tput->button = 0;
-    tput->aid = aid+2;
-    tput->mode = 0;
-    clone_slot(a, &tput->slot);
-    queue_packet(put, sq);
-    gs_packet(put);
-
-    // 4. Close window
-    NEWPACKET(CP_CloseWindow, cwin);
-    tcwin->wid=0;
-    queue_packet(cwin, sq);
-    dump_packet(cwin);
-
-    // 5. Update Client (Slot A)
-    NEWPACKET(SP_SetSlot, cla);
-    tcla->wid = 0;
-    tcla->sid = sa;
-    clone_slot(a, &tcla->slot);
-    queue_packet(cla, cq);
-
-    // 6. Update Client (Slot B)
-    NEWPACKET(SP_SetSlot, clb);
-    tclb->wid = 0;
-    tclb->sid = sb;
-    clone_slot(b, &tclb->slot);
-    queue_packet(clb, cq);
-
-    aid += 3;
-    if (aid>60000) aid = 10000;
+    invq.state = IASTATE_START;
+    invq.sid_a = sa;
+    invq.sid_b = sb;
+    clear_slot(&invq.drag);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -871,6 +1039,14 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         }
 
         ////////////////////////////////////////////////////////////////
+        // Inventory
+
+        GMP(SP_ConfirmTransaction) {
+            gmi_confirm(tpkt, sq, cq);
+            queue_packet(pkt, tq);
+        } _GMP;
+
+        ////////////////////////////////////////////////////////////////
         // Map data
 
         GMP(SP_ChunkData) {
@@ -1009,6 +1185,8 @@ void read_uuids() {
 
 void gm_reset() {
     lh_clear_obj(opt);
+    clear_slot(&invq.drag);
+    lh_clear_obj(invq);
 
     build_clear(NULL,NULL);
     readbases();
@@ -1016,6 +1194,12 @@ void gm_reset() {
 }
 
 void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
+    if (invq.state) {
+        // do not attempt to do other things while inventory is handled
+        gmi_process_queue(sq, cq);
+        return;
+    }
+
     if (opt.autokill)  autokill(sq);
     if (opt.antiafk)   antiafk(sq, cq);
     if (opt.autoshear) autoshear(sq);

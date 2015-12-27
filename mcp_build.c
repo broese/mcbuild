@@ -274,7 +274,7 @@ int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
     //printf("swapping slots: %d %d\n", mslot, eslot+36);
     gmi_swap_slots(sq, cq, mslot, eslot+36);
 
-    return eslot;
+    return -2; //material being fetched
 }
 
 // print a table of required materials for the buildplan (if plan=1) or buildtask
@@ -1031,7 +1031,8 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
         // fetch block's material into quickbar slot
         int islot = prefetch_material(sq, cq, get_base_material(b->b));
-        if (islot<0) continue; // we don't have this material
+        if (islot==-1) continue; // we don't have this material
+        if (islot==-2) return; // inventory action is in progress, postpone building
         //TODO: notify user about missing materials
 
         // silently switch to this slot
