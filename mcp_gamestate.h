@@ -106,12 +106,6 @@ typedef struct _gamestate {
         int         woffset;            // main inventory starts in the window from this offset
     } inv;
 
-    struct {
-        slot_t      slots[64];  // slots active only while crafting table window is open
-        slot_t      drag;
-        int         wid;        // ID of the opened crafting table window, 0 otherwise
-    } craft;
-
     // tracked entities
     lh_arr_declare(entity, entity);
 

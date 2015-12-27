@@ -32,7 +32,6 @@ struct {
     int autoshear;
     int autoeat;
     int bright;
-    int autocraft;
 } opt;
 
 // loaded base locations - for thunder protection
@@ -551,185 +550,6 @@ void chunk_bright(chunk_t * chunk, int bincr) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Auto-crafting
-
-#if 0
-typedef struct {
-    const char *name;
-    bid_t grid[9];
-} recipe;
-
-recipe recipes[] = {
-    { "Gold Ingot",
-      BLOCKTYPE(0x173,0), BLOCKTYPE(0x173,0), BLOCKTYPE(0x173,0),
-      BLOCKTYPE(0x173,0), BLOCKTYPE(0x173,0), BLOCKTYPE(0x173,0),
-      BLOCKTYPE(0x173,0), BLOCKTYPE(0x173,0), BLOCKTYPE(0x173,0),
-    },
-#if 0
-    { "Gold Block",
-      BLOCKTYPE(0x10a,0), BLOCKTYPE(0x10a,0), BLOCKTYPE(0x10a,0),
-      BLOCKTYPE(0x10a,0), BLOCKTYPE(0x10a,0), BLOCKTYPE(0x10a,0),
-      BLOCKTYPE(0x10a,0), BLOCKTYPE(0x10a,0), BLOCKTYPE(0x10a,0),
-    },
-#endif
-    { NULL },
-};
-
-int find_rawmat(bid_t b, int64_t *mask) {
-    int i;
-    for(i=10; i<46; i++) {
-        if (!(*mask & (1LL<<i))) continue;
-        if (gs.craft.slots[i].item != b.bid) continue;
-        if (gs.craft.slots[i].damage != b.meta) continue;
-        *mask &= (~(1LL<<i));
-        return i;
-    }
-
-    return -1;
-}
-
-uint64_t ak_last_craft = 0;
-
-void autocraft(MCPacketQueue *sq, MCPacketQueue *cq) {
-    // only attempt to auto-craft when the crafting table window is opened
-    if (!gs.craft.wid) return;
-
-    // skip if we used autokill less than MIN_ATTACK_DELAY us ago
-    uint64_t ts = gettimestamp();
-    if ((ts-ak_last_craft)<250000) return;
-    ak_last_craft = ts;
-
-    // Check which recipe is suitable
-    int i,j;
-    recipe *r = NULL;
-    int slots[9];
-
-    for (i=0; recipes[i].name; i++) {
-        printf("Checking if we can craft %s\n",recipes[i].name);
-        r = &recipes[i];
-
-        int cmask = 0; // bitmask - which slots are set correctly
-        int wmask = 0; // bitmask - which slots are set incorrectly - preventing a successful recipe
-        int lmask = 0; // bitmask - which slots are empty and need an item
-
-        for (j=0; j<9; j++) {
-            int gmask = (1<<j);
-            slot_t *gslot = &gs.craft.slots[j+1];
-            bid_t gb = (gslot->item>0) ? BLOCKTYPE(gslot->item, gslot->damage) : BLOCKTYPE(0,0);
-
-            if (r->grid[j].raw == gb.raw) {
-                // this grid slot already has the correct item
-                cmask |= gmask;
-            }
-            else if (gb.raw) {
-                // this grid slot has a wrong item - we cannot craft
-                wmask |= gmask;
-            }
-            else {
-                lmask |= gmask;
-            }
-        }
-
-        if (wmask) {
-            printf("Cannot craft - other items in the grid wmask=%02x\n",wmask);
-            continue; // try the next recipe
-        }
-
-        if (cmask == 0x1ff) {
-            // all grid slots are set correctly - we should be able to retrieve the item
-            if (gs.craft.slots[0].item <= 0) {
-                printf("Nothing in the product slot - incorrect recipe?\n");
-                return;
-            }
-
-            NEWPACKET(CP_ClickWindow, retr);
-            tretr->wid = gs.craft.wid;
-            tretr->sid = 0;
-            tretr->button = 0; // Shift-Left-click, mode 0 - retr up all items
-            tretr->aid = aid;
-            tretr->mode = 1;
-            queue_packet(retr, sq);
-
-            aid++;
-            return;
-        }
-
-        // look up all required raw materials in the crafting inventory
-        // slots will be set to zero if empty, -1 if unsatisfied and to inventory
-        // slot number otherwise.
-        int64_t smask = (0xfffffffffLL<<10);
-        int satisfied = 1;
-        lh_clear_obj(slots);
-
-        for (j=0; j<9; j++) {
-            if (! (lmask&(1<<j))) continue;
-
-            slots[j] = find_rawmat(r->grid[j],&smask);
-            if (slots[j] < 0) {
-                lh_clear_obj(slots);
-                satisfied = 0;
-                printf("Cannot craft - no source materials in the inventory\n");
-                r = NULL;
-                break;
-            }
-        }
-
-        if (!satisfied) continue;
-
-        printf("Found everything for %s: ", recipes[i].name);
-        for(j=0; j<9; j++) printf(" %d", slots[j]);
-        printf("\n");
-        break;
-    }
-
-    if (!r) return; // no suitable recipe found
-
-    // put the next item into the grid
-    for(j=0; j<9; j++) {
-        if (!slots[j]) continue;
-
-        slot_t *a = &gs.craft.slots[slots[j]];
-        slot_t *b = &gs.craft.slots[j+1];
-
-        printf("Moving items from slot %d to %d\n",slots[j],j+1);
-
-        // 1. Click on the first slot
-        NEWPACKET(CP_ClickWindow, pick);
-        tpick->wid = gs.craft.wid;
-        tpick->sid = slots[j];
-        tpick->button = 0; // Left-click, mode 0 - pick up all items
-        tpick->aid = aid;
-        tpick->mode = 0;
-        clone_slot(a, &tpick->slot);
-        dump_packet(pick);
-        queue_packet(pick, sq);
-
-        // 2. Click on the second slot - swap items
-        NEWPACKET(CP_ClickWindow, swap);
-        tswap->wid = gs.craft.wid;
-        tswap->sid = j+1;
-        tswap->button = 0;
-        tswap->aid = aid+1;
-        tswap->mode = 0;
-        clone_slot(b, &tswap->slot);
-        dump_packet(swap);
-        queue_packet(swap, sq);
-
-        // update our crafting table inventory state
-        clone_slot(a, b);
-        clear_slot(a);
-
-        //TODO: update client?
-        aid += 2;
-        if (aid>60000) aid = 10000;
-
-        return;
-    }
-
-}
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
 
 void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {
@@ -852,13 +672,6 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"Hole radar is %s",opt.holeradar?"ON":"OFF");
         rpos = 2;
     }
-#if 0
-    else if (!strcmp(words[0],"craft")) {
-        opt.autocraft = !opt.autocraft;
-        sprintf(reply,"Autocrafting is %s",opt.autocraft?"ON":"OFF");
-        rpos = 2;
-    }
-#endif
     else if (!strcmp(words[0],"align")) {
         face_direction(tq, bq, player_direction());
         //TODO: should be possible to specify direction as argument
@@ -1207,7 +1020,6 @@ void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (opt.antiafk)   antiafk(sq, cq);
     if (opt.autoshear) autoshear(sq);
     if (opt.autoeat)   autoeat(sq, cq);
-    //    if (opt.autocraft) autocraft(sq, cq);
 
     build_progress(sq, cq);
 }
