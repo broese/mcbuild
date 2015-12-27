@@ -1238,18 +1238,6 @@ void gs_packet(MCPacket *pkt) {
             }
         } _GSP;
 
-        GSP(SP_ConfirmTransaction) {
-            if (!gs.opt.track_inventory) break;
-            dump_packet(pkt);
-            //if (tpkt->wid != 0) break;
-
-            if (!tpkt->accepted) {
-                printf("Warning: action %d was not accepted!\n",tpkt->aid);
-                gs.inv.inconsistent = 1;
-                break;
-            }
-        } _GSP;
-
         GSP(SP_OpenWindow) {
             if (DEBUG_INVENTORY) {
                 printf("*** Open Window wid=%d type=%s\n",

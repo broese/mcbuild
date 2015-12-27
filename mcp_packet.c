@@ -1635,15 +1635,15 @@ FREE_BEGIN(CP_ClickWindow) {
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_D   (SP_KeepAlive,_1_8_1),
-        SUPPORT_DD  (SP_JoinGame,_1_8_1),
+        SUPPORT_D   (SP_JoinGame,_1_8_1),
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
         SUPPORT_DF  (SP_EntityEquipment,_1_8_1),
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),
-        SUPPORT_DD  (SP_Respawn,_1_8_1),
+        SUPPORT_D   (SP_Respawn,_1_8_1),
         SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),
-        SUPPORT_DDF (SP_SpawnPlayer,_1_8_1),
+        SUPPORT_DF  (SP_SpawnPlayer,_1_8_1),
         SUPPORT_DE  (SP_CollectItem,_1_8_1),
         SUPPORT_D   (SP_SpawnObject,_1_8_1),
         SUPPORT_DF  (SP_SpawnMob,_1_8_1),
@@ -1672,7 +1672,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DF  (SP_Maps,_1_8_1),
         SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),
-        SUPPORT_DED (SP_SetCompression,_1_8_1),
+        SUPPORT_DE  (SP_SetCompression,_1_8_1),
     },
     {
         SUPPORT_D   (CP_ChatMessage,_1_8_1),
