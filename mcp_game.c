@@ -511,7 +511,7 @@ void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, int dir) {
     int x=gs.own.x&0xfffffff0; x|=0x00000010;
     int z=gs.own.z&0xfffffff0; z|=0x00000010;
 
-    // packet to the server
+    // packet to the client
     NEWPACKET(CP_PlayerPositionLook, s);
     ts->x = (double)x/32.0;
     ts->z = (double)z/32.0;

@@ -202,9 +202,9 @@ typedef struct {
     int defvalue;
 } bopt_t;
 
-#define BUILD_BLKINT 1000000
-#define BUILD_BLDINT  150000
-#define BUILD_BLKMAX       1
+#define BUILD_BLKINT  1000000
+#define BUILD_BLDINT   150000
+#define BUILD_BLKMAX        1
 
 bopt_t OPTIONS[] = {
     { "blkint", "interval (us) between attempting to place same block", &buildopts.blkint, BUILD_BLKINT},
@@ -1060,6 +1060,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
             if (nit->flags&(I_CONT|I_ADJ) && !gs.own.crouched)
                 needcrouch=1;
 
+#if 0
             printf("Placing Block: %d,%d,%d (%s)  On: %d,%d,%d (%02x, %s) "
                    "Face:%d Cursor:%d,%d,%d  "
                    "Player: %.1f,%.1f,%.1f  Dot: %.1f,%.1f,%.1f  "
@@ -1072,6 +1073,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
                    (float)b->x+(float)cx/16,(float)b->y+(float)cy/16,(float)b->z+(float)cz/16,
                    yaw, pitch, ldir, DIRNAME[ldir],
                    needcrouch?"(need to crouch)":"");
+#endif
         }
 
         // crouch if we have to place block on a block that reacts to right-click
@@ -1604,7 +1606,7 @@ void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq, int mode) {
     for(i=0; i<npackets; i++)
         queue_packet(packets[i], cq);
 
-    printf("Created %d packets\n",npackets);
+    //printf("Created %d packets\n",npackets);
 }
 
 

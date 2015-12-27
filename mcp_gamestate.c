@@ -1381,18 +1381,21 @@ void gs_packet(MCPacket *pkt) {
             int ioffset = (tpkt->wid == 0) ? 0 : 9;
             int nslots  = (tpkt->wid == 0) ? 45 : 36;
 
+            if (DEBUG_INVENTORY)
+                printf("*** WindowItems, woffset=%d, ioffset=%d, nslots=%d\n",
+                       woffset, ioffset, nslots);
+
             int i;
             for(i=0; i<nslots; i++) {
                 slot_t * islot = &gs.inv.slots[i+ioffset];
                 slot_t * wslot = &tpkt->slots[i+woffset];
 
-                if (islot->item != wslot->item) {
-                    printf("Correcting slot %d ",i+ioffset);
-                    dump_slot(islot);
-                    printf(" => ");
+                if (DEBUG_INVENTORY) {
+                    printf("  %2d => %2d : ",i+woffset,i+ioffset);
                     dump_slot(wslot);
                     printf("\n");
                 }
+
                 clear_slot(islot);
                 clone_slot(wslot, islot);
             }

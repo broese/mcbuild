@@ -51,7 +51,7 @@ void dump_slot(slot_t *s) {
         printf(", count=%d, damage=%d", s->count, s->damage);
         if (s->nbt) {
             printf(", nbt=available:\n");
-            nbt_dump(s->nbt);
+            //nbt_dump(s->nbt);
         }
     }
 }
