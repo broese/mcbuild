@@ -40,7 +40,7 @@ void print_usage() {
     printf("Usage:\n"
            "mcpdump [options] file.mcs...\n"
            "  -h                        : print this help\n"
-           "  -b id[:meta]              : search for blocks by block ID and optionally meta value\n"
+           //"  -b id[:meta]              : search for blocks by block ID and optionally meta value\n"
            "  -s                        : search for multiple-spawner locations\n"
            "  -S                        : search for single spawner locations\n"
            "  -i                        : track inventory transactions and dump inventory\n"
@@ -458,6 +458,7 @@ void extract_cuboid(int X, int Z, int y) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#if 0
 void search_blocks(int dim, int bid, int meta) {
     gsworld *w;
     switch (dim) {
@@ -490,6 +491,7 @@ void search_blocks(int dim, int bid, int meta) {
         }
     }
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -535,8 +537,10 @@ int main(int ac, char **av) {
     if (o_spawner_mult)
         find_spawners();
 
+#if 0
     if (o_block_id >=0)
         search_blocks(o_dimension, o_block_id, o_block_meta);
+#endif
 
     if (o_extract_maps)
         extract_maps();

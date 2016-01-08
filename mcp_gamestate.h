@@ -43,6 +43,7 @@ typedef struct _entity {
 } entity;
 
 ////////////////////////////////////////////////////////////////////////////////
+// chunk storage
 
 typedef struct {
     bid_t blocks[65536];
@@ -51,12 +52,25 @@ typedef struct {
     uint8_t  biome[256];
 } gschunk;
 
-#define CHUNKIDX(w,X,Z) ((X)-(w)->Xo)+((Z)-(w)->Zo)*((w)->Xs)
+// chunk coord -> offset within region (1x1 regions, 32x32 chunks, 512x512 blocks)
+#define CC_0(X,Z)   (uint32_t)((((uint64_t)(X))&0x1f)|((((uint64_t)(Z))&0x1f)<<5))
+
+// chunk coord -> region offset within a super-region (256x256 regions, 8kx8k chunks, 128kx128k blocks)
+#define CC_1(X,Z)   (uint32_t)(((((uint64_t)(X))>>5)&0xff)|(((((uint64_t)(Z))>>5)&0xff)<<8))
+
+// chunk coord -> super-region offset within world (512x512 superregions, 128kx128k regions, 4Mx4M chunks, 64Mx64M blocks)
+#define CC_2(X,Z)   (uint32_t)(((((uint64_t)(X))>>13)&0x1ff)|(((((uint64_t)(Z))>>13)&0x1ff)<<9))
 
 typedef struct {
-    int32_t Xo, Zo;     // chunk coordinate offset
-    int32_t Xs, Zs;     // size of the chunk storage
-    gschunk **chunks;   // chunk storage
+    gschunk *chunk[32*32];
+} gsregion;
+
+typedef struct {
+    gsregion *region[256*256];
+} gssreg;
+
+typedef struct {
+    gssreg *sreg[512*512];
 } gsworld;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -129,10 +143,9 @@ void gs_packet(MCPacket *pkt);
 void dump_entities();
 void dump_inventory();
 
+gschunk * find_chunk(gsworld *w, int32_t X, int32_t Z, int allocate);
 cuboid_t export_cuboid_extent(extent_t ex);
 bid_t get_block_at(int32_t x, int32_t z, int32_t y);
 
 int player_direction();
 int sameitem(slot_t *a, slot_t *b);
-
-void dump_overworld();

@@ -41,86 +41,37 @@ void dump_entities() {
 ////////////////////////////////////////////////////////////////////////////////
 // chunk storage
 
-// extend world in blocks of this many chunks
-#define WORLDALLOC (1<<4)
-
-int32_t find_chunk(gsworld *w, int32_t X, int32_t Z) {
-    if (w->Xs==0 || w->Zs==0) {
-        //printf("%d,%d\n",X,Z);
-        // this is the very first allocation, just set our offset coords
-        w->Xo = X&~(WORLDALLOC-1);
-        w->Zo = Z&~(WORLDALLOC-1);
-        w->Xs = WORLDALLOC;
-        w->Zs = WORLDALLOC;
-        lh_alloc_num(w->chunks,w->Xs*w->Zs);
-        return CHUNKIDX(w, X, Z);
+// return pointer to a gschunk with chunk coords X,Z
+// NULL, if chunk, or its region/superregion are not allocated
+gschunk * find_chunk(gsworld *w, int32_t X, int32_t Z, int allocate) {
+    int32_t si = CC_2(X,Z);
+    if (!w->sreg[si]) {
+        if (!allocate) return NULL;
+        lh_alloc_obj(w->sreg[si]);
     }
+    gssreg * sreg = w->sreg[si];
 
-    int nXo=w->Xo,nZo=w->Zo;
-    int nXs=w->Xs,nZs=w->Zs;
-
-    // check if we need to extend our world westward
-    if (X < w->Xo) {
-        nXo = X&~(WORLDALLOC-1);
-        nXs+=(w->Xo-nXo);
-        printf("extending WEST: X=%d: %d->%d , %d->%d\n",X,w->Xo,nXo,w->Xs,nXs);
+    int32_t ri = CC_1(X,Z);
+    if (!sreg->region[ri]) {
+        if (!allocate) return NULL;
+        lh_alloc_obj(sreg->region[ri]);
     }
+    gsregion * region = sreg->region[ri];
 
-    // extending eastwards
-    else if (X >= w->Xo+w->Xs) {
-        nXs = (X|(WORLDALLOC-1))+1 - w->Xo;
-        printf("extending EAST: X=%d: %d->%d , %d->%d\n",X,w->Xo,nXo,w->Xs,nXs);
+    int32_t ci = CC_0(X,Z);
+    if (!region->chunk[ci]) {
+        if (!allocate) return NULL;
+        lh_alloc_obj(region->chunk[ci]);
     }
+    gschunk * chunk = region->chunk[ci];
 
-    // extending to the north
-    if (Z < w->Zo) {
-        nZo = Z&~(WORLDALLOC-1);
-        nZs+=(w->Zo-nZo);
-        printf("extending NORTH: Z=%d: %d->%d , %d->%d\n",Z,w->Zo,nZo,w->Zs,nZs);
-    }
-
-    // extending to the south
-    else if (Z >= w->Zo+w->Zs) {
-        nZs = (Z|(WORLDALLOC-1))+1 - w->Zo;
-        printf("extending SOUTH: Z=%d: %d->%d , %d->%d\n",Z,w->Zo,nZo,w->Zs,nZs);
-    }
-
-    // if the size has changed, we need to resize the chunks array
-    if (w->Xs != nXs || w->Zs != nZs) {
-        //printf("%d,%d\n",X,Z);
-        // allocate a new array for the chunk pointers
-        lh_create_num(gschunk *, chunks, nXs*nZs);
-
-        // this is the offset in the _new_ array, from
-        // where we will start copying the chunks from the old one
-        int32_t offset = (w->Xo-nXo) + (w->Zo-nZo)*nXs;
-
-        int i;
-        for(i=0; i<w->Zs; i++) {
-            //printf("row %d, offset=%d\n",i,offset);
-            gschunk ** oldrow = w->chunks+i*w->Xs;
-            //printf("moving %d*%zd bytes from %p (w->chunks[%d]) to %p (chunks[%d])\n",
-            //       w->Xs,sizeof(gschunk *),oldrow,i*w->Xs,chunks+offset,offset);
-            memmove(chunks+offset, oldrow, w->Xs*sizeof(gschunk *));
-            offset += nXs;
-        }
-        lh_free(w->chunks);
-        w->chunks = chunks;
-
-        w->Xo = nXo; w->Xs = nXs;
-        w->Zo = nZo; w->Zs = nZs;
-    }
-
-    return CHUNKIDX(w, X, Z);
+    return chunk;
 }
 
-static void insert_chunk(chunk_t *c) {
-    gsworld *w = gs.world;
-    int32_t idx = find_chunk(w, c->X, c->Z);
-
-    if (!w->chunks[idx])
-        lh_alloc_obj(w->chunks[idx]);
-    gschunk *gc = w->chunks[idx];
+// add/replace chunk data, allocating storage if necessary
+// return pointer to the chunk
+static gschunk * insert_chunk(chunk_t *c) {
+    gschunk * gc = find_chunk(gs.world, c->X, c->Z, 1);
 
     int i;
     for(i=0; i<16; i++) {
@@ -136,39 +87,44 @@ static void insert_chunk(chunk_t *c) {
         }
         memmove(gc->biome, c->biome, 256);
     }
+
+    return gc;
 }
 
 static void remove_chunk(int32_t X, int32_t Z) {
-    int32_t idx = find_chunk(gs.world, X, Z);
-    lh_free(gs.world->chunks[idx]);
-    //TODO: resize the chunk array
+    gsworld *w = gs.world;
+
+    int32_t si = CC_2(X,Z);
+    if (!w->sreg[si]) return;
+    gssreg * sreg = w->sreg[si];
+
+    int32_t ri = CC_1(X,Z);
+    if (!sreg->region[ri]) return;
+    gsregion * region = sreg->region[ri];
+
+    int32_t ci = CC_0(X,Z);
+    lh_free(region->chunk[ci]);
+
+    //TODO: deallocate regions/superregions that become empty
 }
 
 static void free_chunks(gsworld *w) {
     if (!w) return;
 
-    if (w->chunks) {
-        int32_t sz = w->Xs*w->Zs;
-        int i;
-        for(i=0; i<sz; i++)
-            lh_free(w->chunks[i]);
+    int si,ri,ci;
+    for(si=0; si<512*512; si++) {
+        if (w->sreg[si]) {
+            gssreg * sreg = w->sreg[si];
 
-        lh_free(w->chunks);
-        w->Xs = 0;
-        w->Zs = 0;
-    }
-}
+            for(ri=0; ri<256*256; ri++) {
+                if (sreg->region[ri]) {
+                    gsregion * region = sreg->region[ri];
 
-static void dump_chunks(gsworld *w) {
-    if (!w) return;
-    if (w->chunks) {
-        int x,z;
-        for(z=0; z<w->Zs; z++) {
-            int32_t off = w->Xs*z;
-            printf("%4d ",z+w->Zo);
-            for(x=0; x<w->Xs; x++)
-                printf("%c", w->chunks[off+x]?'#':'.');
-            printf("\n");
+                    for(ci=0; ci<32*32; ci++) {
+                        lh_free(region->chunk[ci]);
+                    }
+                }
+            }
         }
     }
 }
@@ -188,31 +144,14 @@ static void change_dimension(int dimension) {
 }
 
 static void modify_blocks(int32_t X, int32_t Z, blkrec *blocks, int32_t count) {
-    int32_t idx = find_chunk(gs.world, X, Z);
-
-    // get the chunk and allocate if it's not allocated yet
-    gschunk * gc = gs.world->chunks[idx];
-    if (!gc) {
-        lh_alloc_obj(gs.world->chunks[idx]);
-        gc = gs.world->chunks[idx];
-    }
+    gschunk * gc = find_chunk(gs.world, X, Z, 1);
 
     int i;
     for(i=0; i<count; i++) {
         blkrec *b = blocks+i;
         int32_t boff = ((int32_t)b->y<<8)+(b->z<<4)+b->x;
-#if 0
-        printf("Modify Block @ %d,%d,%d   %d(%d) => %d(%d)\n",
-               (X<<4)+b->x,(Z<<4)+b->z,b->y,
-               gc->blocks[boff].bid, gc->blocks[boff].meta,
-               b->bid.bid, b->bid.meta);
-#endif
         gc->blocks[boff] = b->bid;
     }
-}
-
-void dump_overworld() {
-    dump_chunks(&gs.overworld);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -240,8 +179,7 @@ cuboid_t export_cuboid_extent(extent_t ex) {
     for(X=Xl; X<=Xh; X++) {
         for(Z=Zl; Z<=Zh; Z++) {
             // get the chunk data
-            int idx = find_chunk(gs.world,X,Z);
-            gschunk *gc = gs.world->chunks[idx];
+            gschunk *gc = find_chunk(gs.world, X, Z, 0);
             if (!gc) continue;
 
             // offset of this chunk's data (in blocks)
@@ -267,8 +205,7 @@ cuboid_t export_cuboid_extent(extent_t ex) {
 
 // get just a single block value at given coordinates
 bid_t get_block_at(int32_t x, int32_t z, int32_t y) {
-    int idx = find_chunk(gs.world,x>>4,z>>4);
-    gschunk *gc = gs.world->chunks[idx];
+    gschunk *gc = find_chunk(gs.world, x>>4, z>>4, 0);
     if (!gc) return BLOCKTYPE(0,0);
 
     return gc->blocks[y*256+(z&15)*16+(x&15)];
