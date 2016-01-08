@@ -7,6 +7,7 @@ void build_pause();
 void build_update();
 void build_progress(MCPacketQueue *sq, MCPacketQueue *cq);
 int  build_packet(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq);
+void build_preview_transmit(MCPacketQueue *cq);
 
 void build_sload(const char *name, char *reply);
 void build_dump_plan();

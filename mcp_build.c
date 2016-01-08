@@ -169,6 +169,8 @@ struct {
 
     int32_t     xmin,xmax,ymin,ymax,zmin,zmax;
 
+    int64_t preview_last_ts;
+    MCPacketQueue preview_queue;
 } build;
 
 #define BTASK GAR(build.task)
@@ -1539,6 +1541,7 @@ void build_dump_queue() {
 #define PREVIEW_REMOVE  0
 #define PREVIEW_MISSING 1
 #define PREVIEW_TRUE    2
+#define PREVIEW_REMOVE_NOQUEUE  3
 
 void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq, int mode) {
     if (C(build.task)<=0) return;
@@ -1585,6 +1588,7 @@ void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq, int mode) {
         bid_t bid;
         switch (mode) {
             case PREVIEW_REMOVE:
+            case PREVIEW_REMOVE_NOQUEUE:
                 bid = b->current;
                 break;
             case PREVIEW_MISSING:
@@ -1605,12 +1609,33 @@ void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq, int mode) {
     }
 
     for(i=0; i<npackets; i++)
-        queue_packet(packets[i], cq);
+        queue_packet(packets[i], (mode==PREVIEW_REMOVE_NOQUEUE) ? cq : &build.preview_queue);
 
     //printf("Created %d packets\n",npackets);
 }
 
+// rate-limited sending of preview packets to the client
+#define PREVIEW_MAXPACKETS 5
+#define PREVIEW_INTERVAL   1000000
 
+
+void build_preview_transmit(MCPacketQueue *cq) {
+    MCPacketQueue *pq = &build.preview_queue;
+
+    if (!C(pq->queue)) return; // no preview packets queued
+
+    int64_t ts = gettimestamp();
+    if (ts - build.preview_last_ts < PREVIEW_INTERVAL) return;
+    build.preview_last_ts = ts;
+
+    int i;
+    printf("build_preview_transmit: transmitting %zd packets to the client\n",
+           C(pq->queue)>PREVIEW_MAXPACKETS ? PREVIEW_MAXPACKETS : C(pq->queue));
+    for(i=0; i<PREVIEW_MAXPACKETS && C(pq->queue)>0; i++) {
+        queue_packet(P(pq->queue)[0], cq);
+        lh_arr_delete(GAR(pq->queue),0);
+    }
+}
 
 
 
@@ -1630,7 +1655,7 @@ void build_clear(MCPacketQueue *sq, MCPacketQueue *cq) {
 // cancel and delete the buildtask, leaving the buildplan
 void build_cancel(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (!buildopts.preview_retain && sq && cq)
-        build_show_preview(sq, cq, PREVIEW_REMOVE);
+        build_show_preview(sq, cq, PREVIEW_REMOVE_NOQUEUE);
     build.active = 0;
     lh_arr_free(BTASK);
     build.bq[0] = -1;

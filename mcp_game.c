@@ -1205,5 +1205,6 @@ void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (opt.autoshear) autoshear(sq);
     if (opt.autoeat)   autoeat(sq, cq);
 
+    build_preview_transmit(cq);
     build_progress(sq, cq);
 }
