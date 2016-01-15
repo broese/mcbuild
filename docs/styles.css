@@ -1,3 +1,8 @@
+html {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
 table, th, td {
   border: 1px solid gray;
   border-collapse: collapse;
@@ -30,3 +35,40 @@ tt {
   font-weight: bold;
   padding: 5px;
 }
+
+.shell {
+    background-color: #333;
+    color: #3F3;
+    border-radius: 4px;
+    padding: 4px;
+    margin-bottom: 10px;
+    overflow: auto;
+}
+
+h1 {
+    background-color: #ffd;
+    color: #002;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 10px;
+    overflow: auto;
+}
+
+h2 {
+    background-color: #fdf;
+    color: #020;
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 10px;
+    overflow: auto;
+}
+
+h3 {
+    background-color: #dff;
+    color: #200;
+    border-radius: 4px;
+    padding: 4px;
+    margin-bottom: 10px;
+    overflow: auto;
+}
+
