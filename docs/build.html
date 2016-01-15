@@ -7,11 +7,17 @@
   </head>
 
   <body>
+
+    <a name="top">
+    <a href="index.html">Table of Contents</a> | 
+    <a href="interface.html">Previous: Interface</a> | 
+    <a href="safety.html">Next: Safety tips</a>
+    <hr>
+
     <h1>Building Guide</h1>
 
     <p>This chapter covers the building process in more detail,
-      describes the available building functions and provides
-      tips for building in difficult conditions.</p>
+      describes the available building functions and their parameters.</p>
 
     <a name="principles">
     <h2>Building Process Principles</h2>
@@ -195,7 +201,7 @@
       and the cobblestone block was used for the base.</p>
 
     <a name="commonparam">
-    <h2>Common Parameter</h2>
+    <h2>Common Parameters</h2>
 
     <p>A reference for some common parameter value formats used in multiple
       commands.</p>
@@ -451,8 +457,6 @@
     <p><tt>#build scaf 15,5 -l</tt> - scaffolding 15 blocks wide and 5 floors high</p>
 
 
-
-
     <a name="build_manipulate">
     <h2>Buildplan Manipulation</h2>
 
@@ -492,8 +496,8 @@
     <p>Examples and usage tips:</p>
 
     <p><tt>#build floor 1 torch:5</tt></p>
-    <p><tt>#build extend o=8 c=10</tt></p>
-    <p><tt>#build extend o=0,-8 c=10</tt></p>
+    <p><tt>#build extend o=8 c=9</tt></p>
+    <p><tt>#build extend o=0,-8 c=9</tt></p>
     <p>Create a 10x10 grid of torches 8 blocks apart. Note that we have to
       use meta=5 when specifying the torch as material to obtain torches
       standing on the ground.</p>
@@ -952,8 +956,116 @@
 
 
     
-    
+    <a name="build_vars">
+    <h2>Options and Variables</h2>
 
+    <p>Some of parameters in the building process can be controlled by the
+      user through a set of variables.</p>
+
+    <p>Format:</p>
+    <p><tt>#build opt</tt> or <tt>#build opt list</tt> - display the list of
+      current variable values and their meaning.</p>
+    <p><tt>#build opt reset</tt> - reset the variables to their default values</p>
+    <p><tt>#build opt &lt;name&gt;</tt> - display the value of a specific
+      variable</p>
+    <p><tt>#build opt &lt;name&gt; &lt;value&gt;</tt><br>
+       <tt>#build opt &lt;name&gt;=&lt;value&gt;</tt> - set a variable to
+      a new value</p>
+    
+    <p>Following variables are awailable:</p>
+    <table>
+        <tr>
+          <th>Name</th>
+          <th>Meaning</th>
+          <th>Default</th>
+        </tr>
+        <tr>
+          <td>blkint</td>
+          <td>Interval (&mu;s) between attempting to place the same block.</td>
+          <td>1000000</td>
+        </tr>
+        <tr>
+          <td>bldint</td>
+          <td>Interval (&mu;s) between attempting to place any block</td>
+          <td>150000</td>
+        </tr>
+        <tr>
+          <td>blkmax</td>
+          <td>Maximum number of blocks to place at once</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td>placemode</td>
+          <td>What type of placement mode is automatically activated when
+            creating/loading/manipulating a buildplan:<br>
+            0:don't activate placement<br>
+            1:placing once<br>
+            2:placing multiple times</td>
+          <td>1 (once)</td>
+        </tr>
+        <tr>
+          <td>wm</td>
+          <td>Wall Mode: if 1 (on), only blocks located below player are placed. May be
+            useful when building tall, narrow structures like walls layer-by-layer, but
+            there are better methods.</td>
+          <td>0 (off)</td>
+        </tr>
+        <tr>
+          <td>sm</td>
+          <td>Seal Mode: if 1 (on), only blocks located in front of player are placed.
+            May be useful when sealing tunnels or similar.</td>
+          <td>0 (off)</td>
+        </tr>
+        <tr>
+          <td>anyface</td>
+          <td>When 1 (on), MCBuild does not check if the placement point is located
+            on a block face looking away from the player. Anticheat checks for it,
+            but some servers do not, so you can speed up building and make it more
+            convenient if it works.</td>
+          <td>0 (off)</td>
+        </tr>
+        <tr>
+          <td>bjump</td>
+          <td>When 0 (off), MCBuild will not attempt to place blocks while player is
+            jumping of falling (i.e. player is not &quot;OnGround&quot;). </td>
+          <td>0</td>
+        </tr>
+        <tr>
+          <td>preview_retain</td>
+          <td>When 0 (don't retain), MCBuild will automatically cancel any existing
+            preview and remove blocks spawned by it, when the buildtask is canceled.
+            Otherwise the fantom preview blocks would stay until something else
+            removes them (i.e. chunk reloads).</td>
+          <td>0</td>
+        </tr>
+    </table>
+
+    <p>The intervals for the block placements are chosen to provide a reasonable
+      placement rate on a laggy server. If your server has a good performance
+      and does not limit block placement with Anticheat (e.g. running creative
+      mode) you can lower the interval values (blkint, bldint) to get building
+      faster. Beware however that a low blkint may lead to problems when placing
+      slabs, as you may accidentally place double-slabs.</p>
+
+    <p>The bjump option is important to know. It was introduced to prevent annoying
+      situations where you jump or fall down, but an attempt by MCBuild to place
+      block that comes in range causes you to teleport back, potentially creating
+      a dangerous situation. In one particular case, this caught me in a "loop of
+      death" once - I fell down from 10-15 blocks height, which itself did not cause
+      a major damage. But by a chance there was a vacant block near the ground that
+      MCBuild attempted to place. I took fall damage, block placement was not accepted
+      by the server and I was teleported back to the top, fell again, ... and ended
+      up dead after a couple loops.</p>
+
+    <p>However, bjump=0 also blocks building when flying or swimming, since the player
+      in not OnGround in these situations. In order to be able to build in water or
+      while flying on creative, you need to set <tt>#build opt bjump 1</tt> .</p>
+
+    <hr>
+    <a href="#top">Top of page</a> | 
+    <a href="index.html">Table of Contents</a> | 
+    <a href="interface.html">Previous: Interface</a> | 
+    <a href="safety.html">Next: Safety tips</a>
       
   </body>
 </html>
