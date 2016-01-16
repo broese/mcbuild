@@ -663,17 +663,7 @@ void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
 
 #define DEFAULT_PITCH 20
 
-void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, int dir) {
-    printf("Facing to %d\n", dir);
-
-    float yaw = 0;
-    switch(dir) {
-        case DIR_NORTH: yaw = 180; break;
-        case DIR_SOUTH: yaw = 0;   break;
-        case DIR_EAST:  yaw = 270; break;
-        case DIR_WEST:  yaw = 90;  break;
-    }
-
+void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, float yaw) {
     // coordinates are adjusted so we stand exactly in the middle of the block
     int x=gs.own.x&0xfffffff0; x|=0x00000010;
     int z=gs.own.z&0xfffffff0; z|=0x00000010;
@@ -841,8 +831,17 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         rpos = 2;
     }
     else if (!strcmp(words[0],"align")) {
-        face_direction(tq, bq, player_direction());
-        //TODO: should be possible to specify direction as argument
+        float yaw = 0;
+        if (!(words[1] && sscanf(words[1], "%f", &yaw) == 1)) {
+            switch(player_direction()) {
+                case DIR_NORTH: yaw = 180; break;
+                case DIR_SOUTH: yaw = 0;   break;
+                case DIR_EAST:  yaw = 270; break;
+                case DIR_WEST:  yaw = 90;  break;
+            }
+        }
+
+        face_direction(tq, bq, yaw);
     }
     else if (!strcmp(words[0],"br") || !strcmp(words[0],"bright")) {
         int bright = -1;
