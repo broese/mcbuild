@@ -1,3 +1,13 @@
+/*
+ Authors:
+ Copyright 2012-2015 by Eduard Broese <ed.broese@gmx.de>
+
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ as published by the Free Software Foundation; either version
+ 2 of the License, or (at your option) any later version.
+*/
+
 #pragma once
 
 #include "mcp_packet.h"
@@ -5,7 +15,7 @@
 // error codes
 #define MCPARG_NOT_FOUND     (-1)   // option not found
 #define MCPARG_NOT_PARSED    (-2)   // option found but has wrong format
-#define MCPARG_LOOKUP_FAILED (-3)   // option found and has correct format, but the 
+#define MCPARG_LOOKUP_FAILED (-3)   // option found and has correct format, but the
                                     // specified ID (e.g. material name) is incorrect
 
 #define MCPARG_MAXNAMES 256

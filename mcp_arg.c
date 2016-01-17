@@ -1,3 +1,13 @@
+/*
+ Authors:
+ Copyright 2012-2015 by Eduard Broese <ed.broese@gmx.de>
+
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ as published by the Free Software Foundation; either version
+ 2 of the License, or (at your option) any later version.
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -238,7 +248,7 @@ int argf_pivot(arg_defaults *ad, char **words, char **names, pivot_t *pivot) {
         default:
             assert(0);
     }
-    printf("Matched format >%s<, coords=%d,%d,%d dir=%d (%s)\n", fmt_pivot[fi], 
+    printf("Matched format >%s<, coords=%d,%d,%d dir=%d (%s)\n", fmt_pivot[fi],
            pivot->pos.x, pivot->pos.z, pivot->pos.y, pivot->dir, DIRNAME[pivot->dir] );
 
     return 0;
@@ -303,7 +313,7 @@ int argf_offset(arg_defaults *ad, char **words, char **names, off3_t *offset) {
     offset->y = y;
     offset->z = z;
 
-    printf("Matched format >%s<, offset=%d,%d,%d\n", fmt_offset[fi], 
+    printf("Matched format >%s<, offset=%d,%d,%d\n", fmt_offset[fi],
            offset->x, offset->z, offset->y );
 
     return 0;
@@ -449,7 +459,7 @@ int argf_mat(arg_defaults *ad, char **words, char **names, bid_t *mat) {
     *mat = BLOCKTYPE(bid, meta);
 
     char buf[256];
-    printf("Matched format >%s<, material=%d:%d (%s)\n", fmt_mat[fi], 
+    printf("Matched format >%s<, material=%d:%d (%s)\n", fmt_mat[fi],
            bid, meta, get_bid_name(buf, *mat));
 
     return 0;

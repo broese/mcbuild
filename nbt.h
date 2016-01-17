@@ -1,3 +1,13 @@
+/*
+ Authors:
+ Copyright 2012-2015 by Eduard Broese <ed.broese@gmx.de>
+
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ as published by the Free Software Foundation; either version
+ 2 of the License, or (at your option) any later version.
+*/
+
 #pragma once
 
 #include <stdint.h>
@@ -18,25 +28,25 @@ M     payload   size and format depends on tag type
 
 Tags
 
-0 	TAG_End         0  This tag serves no purpose but to signify the end of an
+0   TAG_End         0  This tag serves no purpose but to signify the end of an
                        open TAG_Compound. In most libraries, this type is
                        abstracted away and never seen. TAG_End is not named.
-1 	TAG_Byte        1  A single signed byte
-2 	TAG_Short       2  A single signed short
-3 	TAG_Int         4  A single signed integer
-4 	TAG_Long        8  A single signed long (typically long long in C/C++)
-5 	TAG_Float       4  A single IEEE-754 single-precision floating point number
-6 	TAG_Double      8  A single IEEE-754 double-precision floating point number
-7 	TAG_Byte_Array ... A length-prefixed array of signed bytes. The prefix is
+1   TAG_Byte        1  A single signed byte
+2   TAG_Short       2  A single signed short
+3   TAG_Int         4  A single signed integer
+4   TAG_Long        8  A single signed long (typically long long in C/C++)
+5   TAG_Float       4  A single IEEE-754 single-precision floating point number
+6   TAG_Double      8  A single IEEE-754 double-precision floating point number
+7   TAG_Byte_Array ... A length-prefixed array of signed bytes. The prefix is
                        a signed integer (thus 4 bytes)
-8 	TAG_String     ... A length-prefixed UTF-8 string. The prefix is an
+8   TAG_String     ... A length-prefixed UTF-8 string. The prefix is an
                        unsigned short (thus 2 bytes)
-9 	TAG_List       ... A list of nameless tags, all of the same type. The list
+9   TAG_List       ... A list of nameless tags, all of the same type. The list
                        is prefixed with the Type ID of the items it contains
                        (thus 1 byte), and the length of the list as a signed
                        integer (a further 4 bytes).
-10 	TAG_Compound   ... Effectively a list of a named tags
-11 	TAG_Int_Array  ... A length-prefixed array of signed integers. The prefix
+10  TAG_Compound   ... Effectively a list of a named tags
+11  TAG_Int_Array  ... A length-prefixed array of signed integers. The prefix
                        is a signed integer (thus 4 bytes) and indicates the
                        number of 4 byte integers.
 

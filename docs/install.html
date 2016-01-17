@@ -97,7 +97,6 @@
       <li>Devel/makedepend</li>
       <li>Archive/unzip</li>
       <li>Archive/zip</li>
-      <li>Editors/hexedit</li>
     </ul>
 
     <p>The simplest way to locate them, is to type the name of the
@@ -213,6 +212,11 @@ mcb_update
       connect through MCBuild. Specifically, we need to redirect the
       three-way authentication process when you're joining a server
       through MCBuild.</p>
+    <p>Before running the mcb_install and mcb_remove scripts described
+      below, make sure you exit your Minecraft client! On Windows, an
+      attempt to patch or remove files will fail because they are still
+      locked, and on Linux changes will take effect only after restarting
+      the client, as it still has the old library version loaded.</p>
 
 <div class="shell"><pre>
 mcb_install
