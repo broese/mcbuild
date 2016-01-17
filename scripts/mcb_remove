@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ -z "$APPDATA" ]; then export APPDATA="$HOME" ; fi
+AUTHLIB_DIR="$APPDATA/.minecraft/libraries/com/mojang/authlib/"
+
+rm -rf "$AUTHLIB_DIR"/*
+
+echo "Patched libraries are now deleted. Restart Minecraft to restore libraries to original versions."

@@ -1,0 +1,12 @@
+#!/bin/bash
+
+find ~/libhelper/ -type f -exec chmod -x {} \;
+cd ~/libhelper
+git pull && make
+
+find ~/mcbuild/ -type f -exec chmod -x {} \;
+cd ~/mcbuild
+git pull && make
+
+echo "MCBuild updated"
+

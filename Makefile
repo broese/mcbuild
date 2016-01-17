@@ -65,6 +65,13 @@ $(DEPFILE): $(SRC_ALL) $(HDR_ALL)
 	@touch $(DEPFILE)
 	makedepend -Y -f $(DEPFILE) $(SRC_ALL) 2> /dev/null
 
+install: $(ALLBIN)
+	test -d $(HOME)/bin || mkdir $(HOME)/bin
+	cp -a scripts/* $(HOME)/bin
+	chmod +x $(HOME)/bin/mcb*
+	echo 'PATH="$$PATH:~/bin"' >> ~/.bashrc
+	. ~/.bashrc
+
 clean:
 	rm -f *.o *~ $(ALLBIN) $(TSTBIN) $(DEPFILE)
 

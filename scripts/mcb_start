@@ -1,0 +1,5 @@
+#!/bin/bash
+
+find ~/mcbuild/ -name "*.exe" -exec chmod +x {} \;
+cd ~/mcbuild
+./mcproxy.exe "$@"
