@@ -69,7 +69,7 @@ install: $(ALLBIN)
 	test -d $(HOME)/bin || mkdir $(HOME)/bin
 	cp -a scripts/* $(HOME)/bin
 	chmod +x $(HOME)/bin/mcb*
-	echo 'PATH="$$PATH:~/bin"' >> ~/.bashrc
+	echo 'export PATH="$$PATH:~/bin"' >> ~/.bashrc
 	. ~/.bashrc
 
 clean:

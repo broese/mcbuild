@@ -6,7 +6,7 @@ git pull && make
 
 find ~/mcbuild/ -type f -exec chmod -x {} \;
 cd ~/mcbuild
-git pull && make
+git pull && make clean && make
 
 echo "MCBuild updated"
 
