@@ -1639,8 +1639,8 @@ void build_preview_transmit(MCPacketQueue *cq) {
     build.preview_last_ts = ts;
 
     int i;
-    printf("build_preview_transmit: transmitting %zd packets to the client\n",
-           C(pq->queue)>PREVIEW_MAXPACKETS ? PREVIEW_MAXPACKETS : C(pq->queue));
+    //printf("build_preview_transmit: transmitting %zd packets to the client\n",
+    //       C(pq->queue)>PREVIEW_MAXPACKETS ? PREVIEW_MAXPACKETS : C(pq->queue));
     for(i=0; i<PREVIEW_MAXPACKETS && C(pq->queue)>0; i++) {
         queue_packet(P(pq->queue)[0], cq);
         lh_arr_delete(GAR(pq->queue),0);

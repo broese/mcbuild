@@ -153,7 +153,7 @@ int argf_size(arg_defaults *ad, char **words, char **names, size3_t *sz) {
         default:
             assert(0);
     }
-    printf("Matched format >%s<, size=%d,%d,%d\n", fmt_size[fi], sz->x,sz->z,sz->y);
+    //printf("Matched format >%s<, size=%d,%d,%d\n", fmt_size[fi], sz->x,sz->z,sz->y);
 
     return 0;
 }

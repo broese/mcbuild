@@ -1144,11 +1144,13 @@ void readbases() {
         nbases++;
     }
 
+#if 0
     int i;
     for(i=0; i<nbases; i++) {
         printf("%3d : %+6d,%+6d %5d %s\n",
                i,bases[i].x,bases[i].z,bases[i].r,bases[i].name);
     }
+#endif
     fflush(stdout);
 }
 
@@ -1186,10 +1188,12 @@ void read_uuids() {
         nuuids++;
     }
 
+#if 0
     for(i=0; i<nuuids; i++) {
         printf("%3d : %d %-40s ",i,uuids[i].status,uuids[i].name);
         hexprint(uuids[i].uuid, 16);
     }
+#endif
 }
 
 void gm_reset() {

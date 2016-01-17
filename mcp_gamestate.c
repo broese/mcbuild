@@ -140,7 +140,7 @@ static void free_chunks(gsworld *w) {
 }
 
 static void change_dimension(int dimension) {
-    printf("Switching to dimension %d\n",dimension);
+    //printf("Switching to dimension %d\n",dimension);
 
     // prune all chunks of the current dimension
     if (gs.opt.prune_chunks)

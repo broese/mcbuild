@@ -330,7 +330,7 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
     uint32_t stype = ((mitm.state<<24)|(is_client<<28)|(type&0xffffff));
 
     char *states = "ISLP";
-    printf("%c %c type=%02x, len=%zd\n", is_client?'C':'S', states[mitm.state],type,len);
+    //printf("%c %c type=%02x, len=%zd\n", is_client?'C':'S', states[mitm.state],type,len);
     //hexdump(ptr, len);
 
     uint8_t output[65536];
@@ -344,8 +344,8 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
             CI_Handshake_pkt pkt;
             decode_handshake(&pkt, p);
             mitm.state = pkt.nextState;
-            printf("C %-30s protocol=%d server=%s:%d nextState=%d\n","Handshake",
-                   pkt.protocolVer,pkt.serverAddr,pkt.serverPort,pkt.nextState);
+            //printf("C %-30s protocol=%d server=%s:%d nextState=%d\n","Handshake",
+            //       pkt.protocolVer,pkt.serverAddr,pkt.serverPort,pkt.nextState);
 
             // replace the server address in the message with our proper server
             // some servers refuse to accept connections for "127.0.0.1"
@@ -371,14 +371,14 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
             break;
 
         case SL_SetCompression: {
-            printf("SetCompression during login phase!\n");
+            //printf("SetCompression during login phase!\n");
             mitm.comptr = lh_read_varint(p);
             write_packet_raw(ptr, len, tx);
             break;
         }
 
         case SL_LoginSuccess:
-            printf("S Login Success\n");
+            //printf("S Login Success\n");
             mitm.state = STATE_PLAY;
             write_packet_raw(ptr, len, tx);
             break;
