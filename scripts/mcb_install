@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -z "$APPDATA" ]; then export APPDATA="$HOME" ; fi
+if [ -z "$APPDATA" ]; then APPDATA="$HOME" ; fi
 AUTHLIB_DIR="$APPDATA/.minecraft/libraries/com/mojang/authlib/"
 
 ORIG_URL="https://sessionserver.mojang.com/session/minecraft/join"
