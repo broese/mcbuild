@@ -894,7 +894,7 @@ int query_auth_server() {
     char auth[4096];
     //hexdump(md, SHA_DIGEST_LENGTH);
     print_hex(auth, (char *)md, SHA_DIGEST_LENGTH);
-    printf("sessionId : %s\n", auth);
+    //printf("sessionId : %s\n", auth);
 
     char buf[4096];
     sprintf(buf,"{\"accessToken\":\"%s\",\"selectedProfile\":\"%s\",\"serverId\":\"%s\"}",

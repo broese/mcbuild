@@ -1228,8 +1228,8 @@ void place_pivot(pivot_t pv, MCPacketQueue *sq, MCPacketQueue *cq) {
     // store the coordinates and direction so they can be reused for 'place again'
     build.pv = pv;
 
-    printf("Buildtask boundary: X: %d - %d   Z: %d - %d   Y: %d - %d\n",
-           build.xmin, build.xmax, build.zmin, build.zmax, build.ymin, build.ymax);
+    //printf("Buildtask boundary: X: %d - %d   Z: %d - %d   Y: %d - %d\n",
+    //       build.xmin, build.xmax, build.zmin, build.zmax, build.ymin, build.ymax);
     if (trimmed > 0)
         printf("Warning: %d blocks exceeded the y range and were trimmed\n", trimmed);
 
@@ -1425,7 +1425,7 @@ void buildopt_setdefault() {
         *OPTIONS[i].var = OPTIONS[i].defvalue;
     }
     buildopts.init = 1;
-    buildopt_print(BUILDOPT_STDOUT, NULL);
+    //buildopt_print(BUILDOPT_STDOUT, NULL);
 }
 
 // entry point for all command lines involving build options
