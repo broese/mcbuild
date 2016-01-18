@@ -1,12 +1,14 @@
 #!/bin/bash
 
-find ~/libhelper/ -type f -exec chmod -x {} \;
-cd ~/libhelper
-git pull && make
+if [ "$(uname -o)" == 'Cygwin' ] ; then
+    IGNORE_ATTR="-c core.filemode=false"
+fi
 
-find ~/mcbuild/ -type f -exec chmod -x {} \;
+cd ~/libhelper
+git $IGNORE_ATTR pull && make
+
 cd ~/mcbuild
-git pull && make clean && make
+git $IGNORE_ATTR pull && make
 
 echo "MCBuild updated"
 

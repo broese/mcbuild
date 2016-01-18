@@ -1,7 +1,7 @@
 #!/bin/bash
 
 APPNAME=mcproxy
-if [ $(uname -o) == "Cygwin" ]; then APPNAME="$APPNAME.exe" ; fi
+if [ "$(uname -o)" == "Cygwin" ]; then APPNAME="$APPNAME.exe" ; fi
 
 find ~/mcbuild/ -name "*.exe" -exec chmod +x {} \;
 cd ~/mcbuild

@@ -1,7 +1,15 @@
 #!/bin/bash
 
-if [ -z "$APPDATA" ]; then APPDATA="$HOME" ; fi
-AUTHLIB_DIR="$APPDATA/.minecraft/libraries/com/mojang/authlib/"
+PREF="$HOME"
+if [ "$(uname -o)" == 'Cygwin' ] ; then
+    PREF="$APPDATA"
+
+    # fix attributes damaged by unpacking/copying
+    chmod 755 /usr/bin/sha1sum.exe
+    chmod 755 /usr/bin/sed.exe
+fi
+
+AUTHLIB_DIR="$PREF/.minecraft/libraries/com/mojang/authlib/"
 
 ORIG_URL="https://sessionserver.mojang.com/session/minecraft/join"
 MOD_URL="http://127.0.0.1:8080/sssssssssssssssssssssssssssssssss"

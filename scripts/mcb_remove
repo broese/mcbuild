@@ -1,7 +1,11 @@
 #!/bin/bash
 
-if [ -z "$APPDATA" ]; then APPDATA="$HOME" ; fi
-AUTHLIB_DIR="$APPDATA/.minecraft/libraries/com/mojang/authlib/"
+PREF="$HOME"
+if [ "$(uname -o)" == 'Cygwin' ] ; then
+    PREF="$APPDATA"
+fi
+
+AUTHLIB_DIR="$PREF/.minecraft/libraries/com/mojang/authlib/"
 
 rm -rf "$AUTHLIB_DIR"/*
 
