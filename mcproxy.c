@@ -188,8 +188,6 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
     memmove(mitm.s_pkey,pkt.pkey,pkt.klen);
     memmove(mitm.s_token,pkt.token,pkt.tlen);
 
-    printf("Encryption Request\n");
-
     sprintf(mitm.s_id,"%s",pkt.serverID);
     mitm.s_pklen = pkt.klen;
 
