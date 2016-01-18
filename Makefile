@@ -70,7 +70,6 @@ install: $(ALLBIN)
 	cp -a scripts/* $(HOME)/bin
 	chmod +x $(HOME)/bin/mcb*
 	echo 'export PATH="$$PATH:~/bin"' >> ~/.bashrc
-	. ~/.bashrc
 
 clean:
 	rm -f *.o *~ $(ALLBIN) $(TSTBIN) $(DEPFILE)
