@@ -790,6 +790,7 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
     if (!strcmp(words[0],"test")) {
         sprintf(reply,"Chat test response");
     }
+#if 0
     else if (!strcmp(words[0],"entities")) {
         sprintf(reply,"Tracking %zd entities",gs.C(entity));
         printf("Tracking %zd entities",gs.C(entity));
@@ -909,6 +910,7 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
             gmi_swap_slots(tq, bq, atoi(words[1]), atoi(words[2]));
         }
     }
+#endif
 
     // send an immediate reply if any was given
     if (reply[0]) chat_message(reply, bq, "gold", rpos);

@@ -477,6 +477,43 @@ typedef struct {
         #name                                   \
     }
 
+// Server -> Client
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x0F SP_ChatMessage
+
+DECODE_BEGIN(SP_ChatMessage,_1_8_1) {
+    Rstr(json);
+    tpkt->json = strdup(json);
+    Pchar(pos);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_ChatMessage,_1_8_1) {
+    Wstr(json);
+    Wchar(pos);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_ChatMessage) {
+    printf("json=%s",tpkt->json);
+
+    char name[256], message[256];
+    if (decode_chat_json(tpkt->json, name, message)) {
+        printf(" name=%s message=\"%s\"",name,message);
+    }
+} DUMP_END;
+
+FREE_BEGIN(SP_ChatMessage) {
+    lh_free(tpkt->json);
+} FREE_END;
+
+
+
+
+
+
+
+#if 0
+
 ////////////////////////////////////////////////////////////////////////////////
 // 0x00 SP_KeepAlive
 
@@ -512,33 +549,6 @@ DUMP_BEGIN(SP_JoinGame) {
            DIM[tpkt->dimension&3], DIFF[tpkt->difficulty&3],
            tpkt->maxplayers, tpkt->leveltype, tpkt->reduced_debug_info?'T':'F');
 } DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x02 SP_ChatMessage
-
-DECODE_BEGIN(SP_ChatMessage,_1_8_1) {
-    Rstr(json);
-    tpkt->json = strdup(json);
-    Pchar(pos);
-} DECODE_END;
-
-ENCODE_BEGIN(SP_ChatMessage,_1_8_1) {
-    Wstr(json);
-    Wchar(pos);
-} ENCODE_END;
-
-DUMP_BEGIN(SP_ChatMessage) {
-    printf("json=%s",tpkt->json);
-
-    char name[256], message[256];
-    if (decode_chat_json(tpkt->json, name, message)) {
-        printf(" name=%s message=\"%s\"",name,message);
-    }
-} DUMP_END;
-
-FREE_BEGIN(SP_ChatMessage) {
-    lh_free(tpkt->json);
-} FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x03 SP_TimeUpdate
@@ -1369,7 +1379,7 @@ DUMP_BEGIN(SP_SetCompression) {
     printf("threshold=%d",tpkt->threshold);
 } DUMP_END;
 
-
+#endif
 
 
 
@@ -1381,7 +1391,7 @@ DUMP_BEGIN(SP_SetCompression) {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x01 CP_ChatMessage
+// 0x02 CP_ChatMessage
 
 DECODE_BEGIN(CP_ChatMessage,_1_8_1) {
     Pstr(str);
@@ -1390,6 +1400,13 @@ DECODE_BEGIN(CP_ChatMessage,_1_8_1) {
 DUMP_BEGIN(CP_ChatMessage) {
     printf("str=%s",tpkt->str);
 } DUMP_END;
+
+
+
+
+
+
+#if 0
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x02 CP_UseEntity
@@ -1639,14 +1656,12 @@ FREE_BEGIN(CP_ClickWindow) {
 
 
 
-
 ////////////////////////////////////////////////////////////////////////////////
 
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_D   (SP_KeepAlive,_1_8_1),
         SUPPORT_D   (SP_JoinGame,_1_8_1),
-        SUPPORT_DEF (SP_ChatMessage,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
         SUPPORT_DF  (SP_EntityEquipment,_1_8_1),
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),
@@ -1685,7 +1700,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_SetCompression,_1_8_1),
     },
     {
-        SUPPORT_D   (CP_ChatMessage,_1_8_1),
         SUPPORT_DE  (CP_UseEntity,_1_8_1),
         SUPPORT_D   (CP_Player,_1_8_1),
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),
@@ -1701,10 +1715,14 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     },
 };
 
+#endif
+
 const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
     {
+        SUPPORT_DEF (SP_ChatMessage,_1_8_1),
     },
     {
+        SUPPORT_D   (CP_ChatMessage,_1_8_1),
     },
 };
 
