@@ -506,7 +506,7 @@ void process_play_packet(int is_client, struct timeval ts,
     MCPacketQueue tq = {NULL,0}, bq = {NULL,0};
 
     // pass the packet to both gamestate and game
-    //gs_packet(pkt);
+    gs_packet(pkt);
     gm_packet(pkt, &tq, &bq);
 
     // transmit packets in the queues, if any

@@ -821,6 +821,9 @@ int player_direction() {
 #define _GSP break; }
 
 void gs_packet(MCPacket *pkt) {
+    // skip unimplemented packets
+    if (!pkt->ver) return;
+
     switch (pkt->pid) {
         ////////////////////////////////////////////////////////////////
         // Gamestate
