@@ -1085,16 +1085,6 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             queue_packet(pkt, tq);
         } _GMP;
 
-        GMP(SP_MapChunkBulk) {
-            if (opt.bright) {
-                int i;
-                for(i=0; i<tpkt->nchunks; i++)
-                    chunk_bright(&tpkt->chunk[i], opt.bright);
-                pkt->modified=1;
-            }
-            queue_packet(pkt, tq);
-        } _GMP;
-
         ////////////////////////////////////////////////////////////////
         // Other players
 

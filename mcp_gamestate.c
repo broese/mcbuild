@@ -1040,12 +1040,6 @@ void gs_packet(MCPacket *pkt) {
             }
         } _GSP;
 
-        GSP(SP_MapChunkBulk) {
-            int i;
-            for(i=0; i<tpkt->nchunks; i++)
-                insert_chunk(&tpkt->chunk[i]);
-        } _GSP;
-
         GSP(SP_BlockChange) {
             blkrec block = {
                 {{ tpkt->pos.z&0xf, tpkt->pos.x&0xf }},
