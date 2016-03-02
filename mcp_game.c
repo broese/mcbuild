@@ -126,7 +126,7 @@ static void autokill(MCPacketQueue *sq) {
 
     for(i=0; i<hi && i<MAX_ATTACK; i++) {
         entity *e = P(gs.entity)+hent[i];
-        printf("Attacking entity %08x\n",e->id);
+        //printf("Attacking entity %08x\n",e->id);
 
         e->lasthit = ts;
         ak_last_attack = ts;
@@ -192,7 +192,7 @@ static void autoshear(MCPacketQueue *sq) {
 
     for(i=0; i<hi && i<MAX_ATTACK; i++) {
         entity *e = P(gs.entity)+hent[i];
-        printf("Shearing entity %08x\n",e->id);
+        //printf("Shearing entity %08x\n",e->id);
 
         e->lasthit = ts;
         last_autoshear = ts;
@@ -241,6 +241,8 @@ static void hole_radar(MCPacketQueue *cq) {
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory Handling
 
+#define DEBUG_INVENTORY 0
+
 int aid=10000;
 
 #define IASTATE_NONE            0
@@ -275,8 +277,9 @@ void gmi_click(MCPacketQueue *sq, int sid, int aid) {
     clone_slot(s, &tclick->slot);
     queue_packet(click, sq);
 
-    printf("ClickWindow aid=%d, sid=%d, state=%d\n",
-           aid, sid, invq.state);
+    if (DEBUG_INVENTORY)
+        printf("ClickWindow aid=%d, sid=%d, state=%d\n",
+               aid, sid, invq.state);
 }
 
 #define INVQ_TIMEOUT 2000000
@@ -335,11 +338,13 @@ void gmi_process_queue(MCPacketQueue *sq, MCPacketQueue *cq) {
             gmi_click(sq, invq.sid_a, invq.base_aid);
             invq.state = IASTATE_PICK_SENT;
             invq.start = gettimestamp();
-            printf("*GMI: START -> PICK_SENT\n");
-            dump_inventory();
-            printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
-            printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
-            printf("  D: "); dump_slot(&invq.drag); printf("\n");
+            if (DEBUG_INVENTORY) {
+                printf("*GMI: START -> PICK_SENT\n");
+                dump_inventory();
+                printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+                printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+                printf("  D: "); dump_slot(&invq.drag); printf("\n");
+            }
             break;
         }
         case IASTATE_PICK_ACCEPTED: {
@@ -347,11 +352,13 @@ void gmi_process_queue(MCPacketQueue *sq, MCPacketQueue *cq) {
             clone_slot(a, &invq.drag);
             clear_slot(a);
             invq.state = IASTATE_SWAP_SENT;
-            printf("*GMI: PICK_ACCEPTED -> SWAP_SENT\n");
-            dump_inventory();
-            printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
-            printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
-            printf("  D: "); dump_slot(&invq.drag); printf("\n");
+            if (DEBUG_INVENTORY) {
+                printf("*GMI: PICK_ACCEPTED -> SWAP_SENT\n");
+                dump_inventory();
+                printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+                printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+                printf("  D: "); dump_slot(&invq.drag); printf("\n");
+            }
             break;
         }
         case IASTATE_SWAP_ACCEPTED: {
@@ -364,11 +371,13 @@ void gmi_process_queue(MCPacketQueue *sq, MCPacketQueue *cq) {
             clone_slot(&temp,&invq.drag);
             clear_slot(&temp);
             invq.state = IASTATE_PUT_SENT;
-            printf("*GMI: SWAP_ACCEPTED -> PUT_SENT\n");
-            dump_inventory();
-            printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
-            printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
-            printf("  D: "); dump_slot(&invq.drag); printf("\n");
+            if (DEBUG_INVENTORY) {
+                printf("*GMI: SWAP_ACCEPTED -> PUT_SENT\n");
+                dump_inventory();
+                printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+                printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+                printf("  D: "); dump_slot(&invq.drag); printf("\n");
+            }
             break;
         }
         case IASTATE_PUT_ACCEPTED: {
@@ -402,11 +411,13 @@ void gmi_process_queue(MCPacketQueue *sq, MCPacketQueue *cq) {
             if (aid>60000) aid=10000;
             lh_clear_obj(invq); // This also sets the state to IASTATE_NONE
 
-            printf("*GMI: PUT_ACCEPTED -> IDLE\n");
-            dump_inventory();
-            printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
-            printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
-            printf("  D: "); dump_slot(&invq.drag); printf("\n");
+            if (DEBUG_INVENTORY) {
+                printf("*GMI: PUT_ACCEPTED -> IDLE\n");
+                dump_inventory();
+                printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+                printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+                printf("  D: "); dump_slot(&invq.drag); printf("\n");
+            }
 
             break;
         }
@@ -419,10 +430,12 @@ int gmi_confirm(SP_ConfirmTransaction_pkt *tpkt, MCPacketQueue *sq, MCPacketQueu
     if (!tpkt->accepted) {
         printf("Inventory action not accepted (wid=%d aid=%d base_aid=%d sid_a=%d sid_b=%d)\n",
                tpkt->wid, tpkt->aid, invq.base_aid, invq.sid_a, invq.sid_b);
-        printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
-        printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
-        printf("  D: "); dump_slot(&invq.drag); printf("\n");
-        dump_inventory();
+        if (DEBUG_INVENTORY) {
+            printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+            printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+            printf("  D: "); dump_slot(&invq.drag); printf("\n");
+            dump_inventory();
+        }
 
         gmi_failed(sq, cq);
     }
@@ -431,32 +444,38 @@ int gmi_confirm(SP_ConfirmTransaction_pkt *tpkt, MCPacketQueue *sq, MCPacketQueu
             case IASTATE_PICK_SENT:
                 if(tpkt->aid != invq.base_aid) return 1;
                 invq.state = IASTATE_PICK_ACCEPTED;
-                printf("*GMI: PICK_SENT -> PICK_ACCEPTED, aid=%d base_aid=%d sid_a=%d sid_b=%d\n",
-                       tpkt->aid, invq.base_aid, invq.sid_a, invq.sid_b);
-                dump_inventory();
-                printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
-                printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
-                printf("  D: "); dump_slot(&invq.drag); printf("\n");
+                if (DEBUG_INVENTORY) {
+                    printf("*GMI: PICK_SENT -> PICK_ACCEPTED, aid=%d base_aid=%d sid_a=%d sid_b=%d\n",
+                           tpkt->aid, invq.base_aid, invq.sid_a, invq.sid_b);
+                    dump_inventory();
+                    printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+                    printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+                    printf("  D: "); dump_slot(&invq.drag); printf("\n");
+                }
                 break;
             case IASTATE_SWAP_SENT:
                 if(tpkt->aid != invq.base_aid+1) return 1;
                 invq.state = IASTATE_SWAP_ACCEPTED;
-                printf("*GMI: SWAP_SENT -> SWAP_ACCEPTED, aid=%d base_aid=%d sid_a=%d sid_b=%d\n",
-                       tpkt->aid, invq.base_aid, invq.sid_a, invq.sid_b);
-                dump_inventory();
-                printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
-                printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
-                printf("  D: "); dump_slot(&invq.drag); printf("\n");
+                if (DEBUG_INVENTORY) {
+                    printf("*GMI: SWAP_SENT -> SWAP_ACCEPTED, aid=%d base_aid=%d sid_a=%d sid_b=%d\n",
+                           tpkt->aid, invq.base_aid, invq.sid_a, invq.sid_b);
+                    dump_inventory();
+                    printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+                    printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+                    printf("  D: "); dump_slot(&invq.drag); printf("\n");
+                }
                 break;
             case IASTATE_PUT_SENT:
                 if(tpkt->aid != invq.base_aid+2) return 1;
                 invq.state = IASTATE_PUT_ACCEPTED;
-                printf("*GMI: PUT_SENT -> PUT_ACCEPTED, aid=%d base_aid=%d sid_a=%d sid_b=%d\n",
-                       tpkt->aid, invq.base_aid, invq.sid_a, invq.sid_b);
-                dump_inventory();
-                printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
-                printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
-                printf("  D: "); dump_slot(&invq.drag); printf("\n");
+                if (DEBUG_INVENTORY) {
+                    printf("*GMI: PUT_SENT -> PUT_ACCEPTED, aid=%d base_aid=%d sid_a=%d sid_b=%d\n",
+                           tpkt->aid, invq.base_aid, invq.sid_a, invq.sid_b);
+                    dump_inventory();
+                    printf("  A: "); dump_slot(&gs.inv.slots[invq.sid_a]);
+                    printf("  B: "); dump_slot(&gs.inv.slots[invq.sid_b]);
+                    printf("  D: "); dump_slot(&invq.drag); printf("\n");
+                }
                 break;
         }
     }

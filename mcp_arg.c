@@ -180,7 +180,7 @@ int argf_diam(arg_defaults *ad, char **words, char **names, float *diam) {
         default:
             assert(0);
     }
-    printf("Matched format >%s<, diam=%f\n", fmt_diam[fi], *diam);
+    //printf("Matched format >%s<, diam=%f\n", fmt_diam[fi], *diam);
 
     return 0;
 }
@@ -248,8 +248,8 @@ int argf_pivot(arg_defaults *ad, char **words, char **names, pivot_t *pivot) {
         default:
             assert(0);
     }
-    printf("Matched format >%s<, coords=%d,%d,%d dir=%d (%s)\n", fmt_pivot[fi],
-           pivot->pos.x, pivot->pos.z, pivot->pos.y, pivot->dir, DIRNAME[pivot->dir] );
+    //printf("Matched format >%s<, coords=%d,%d,%d dir=%d (%s)\n", fmt_pivot[fi],
+    //       pivot->pos.x, pivot->pos.z, pivot->pos.y, pivot->dir, DIRNAME[pivot->dir] );
 
     return 0;
 }
@@ -313,8 +313,8 @@ int argf_offset(arg_defaults *ad, char **words, char **names, off3_t *offset) {
     offset->y = y;
     offset->z = z;
 
-    printf("Matched format >%s<, offset=%d,%d,%d\n", fmt_offset[fi],
-           offset->x, offset->z, offset->y );
+    //printf("Matched format >%s<, offset=%d,%d,%d\n", fmt_offset[fi],
+    //       offset->x, offset->z, offset->y );
 
     return 0;
 }
@@ -369,8 +369,8 @@ int argf_pos(arg_defaults *ad, char **words, char **names, off3_t *pos) {
         default:
             assert(0);
     }
-    printf("Matched format >%s<, coords=%d,%d,%d\n", fmt_pos[fi],
-           pos->x, pos->z, pos->y);
+    //printf("Matched format >%s<, coords=%d,%d,%d\n", fmt_pos[fi],
+    //       pos->x, pos->z, pos->y);
 
     return 0;
 }
@@ -459,8 +459,8 @@ int argf_mat(arg_defaults *ad, char **words, char **names, bid_t *mat) {
     *mat = BLOCKTYPE(bid, meta);
 
     char buf[256];
-    printf("Matched format >%s<, material=%d:%d (%s)\n", fmt_mat[fi],
-           bid, meta, get_bid_name(buf, *mat));
+    //printf("Matched format >%s<, material=%d:%d (%s)\n", fmt_mat[fi],
+    //       bid, meta, get_bid_name(buf, *mat));
 
     return 0;
 }
@@ -495,8 +495,8 @@ int argf_dir(arg_defaults *ad, char **words, char **names, int *dir) {
             return fi;
     }
 
-    printf("Matched format >%s<, direction=%d (%s)\n", fmt_dir[fi],
-           *dir, DIRNAME[*dir]);
+    //printf("Matched format >%s<, direction=%d (%s)\n", fmt_dir[fi],
+    //       *dir, DIRNAME[*dir]);
 
     return 0;
 }
@@ -522,7 +522,7 @@ int argf_count(arg_defaults *ad, char **words, char **names, int *count) {
         default:
             assert(0);
     }
-    printf("Matched format >%s<, count=%d\n", fmt_count[fi], *count);
+    //printf("Matched format >%s<, count=%d\n", fmt_count[fi], *count);
 
     return 0;
 }
