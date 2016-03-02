@@ -1209,7 +1209,7 @@ int parse_args(int ac, char **av) {
         { printf("Failed to create directory '%s'\n", #name ); return 1; }
 
 int main(int ac, char **av) {
-    printf("MCBuild 1.0 for MC Protocol 1.8\n");
+    printf("MCBuild 1.1_dev for MC Protocol 1.9\n");
 
     // create directories if they don't exist yet
     MKDIR(saved);
