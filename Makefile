@@ -10,7 +10,7 @@ SRC_MCPDUMP=$(addsuffix .c, mcpdump mcp_gamestate) $(SRC_BASE)
 SRC_ALL=$(SRC_MCPROXY) mcpdump.c varint.c nbt.c spiral.c
 
 ALLBIN=mcproxy mcpdump
-TSTBIN=nbttest argtest spiral bptest varint
+TSTBIN=nbttest argtest bptest varint
 
 HDR_ALL=$(addsuffix .h, mcp_packet mcp_ids mcp_types nbt mcp_game mcp_gamestate mcp_build mcp_arg mcp_bplan)
 
@@ -50,9 +50,6 @@ nbttest: nbt.c
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
 
 varint: varint.c
-	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
-
-spiral: spiral.c
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
 
 
