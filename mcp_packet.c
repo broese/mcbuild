@@ -1701,6 +1701,13 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     },
 };
 
+const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
+    {
+    },
+    {
+    },
+};
+
 
 
 
@@ -1745,7 +1752,7 @@ void decode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *p) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define SUPPORT SUPPORT_1_8_1
+#define SUPPORT SUPPORT_1_9
 
 MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
 

@@ -369,8 +369,8 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
             break;
 
         case SL_SetCompression: {
-            //printf("SetCompression during login phase!\n");
             mitm.comptr = lh_read_varint(p);
+            //printf("SetCompression during login phase! threshold=%d\n", mitm.comptr);
             write_packet_raw(ptr, len, tx);
             break;
         }
@@ -501,29 +501,12 @@ void process_play_packet(int is_client, struct timeval ts,
     }
     pkt->ts = ts;
 
-    // Enable/update compression setting in Play state
-    if (pkt->pid == SP_SetCompression) {
-        mitm.comptr = pkt->_SP_SetCompression.threshold;
-        write_packet_raw(raw_ptr, raw_len, tx);
-        return;
-    }
-
-#if 0
-    printf("MCPacket @%p:\n",pkt);
-    printf("  type =%08x\n",pkt->type);
-    printf("  proto=%08x\n",pkt->protocol);
-    printf("    data=%p, len=%zd\n",pkt->p_UnknownPacket.data,pkt->p_UnknownPacket.length);
-
-    hexdump(pkt->p_UnknownPacket.data,LIM128(pkt->p_UnknownPacket.length));
-    printf("--------------------------------------------------------------------------------\n");
-#endif
-
     ////////////////////////////////////////////////////////////////////////////
 
     MCPacketQueue tq = {NULL,0}, bq = {NULL,0};
 
     // pass the packet to both gamestate and game
-    gs_packet(pkt);
+    //gs_packet(pkt);
     gm_packet(pkt, &tq, &bq);
 
     // transmit packets in the queues, if any
@@ -633,14 +616,15 @@ ssize_t handle_proxy(lh_conn *conn) {
 
         // decode and process packet - this will also put a forwarded
         // data and/or responses into tx and bx buffers respectively as needed
-        if ( mitm.state == STATE_PLAY )
+        if ( mitm.state == STATE_PLAY ) {
             // PLAY packets are processed in mcp_game module
             process_play_packet(is_client, tv, p, p+plen, tx, bx);
             //write_packet_raw(p, plen, tx);
-        else
+        }
+        else {
             // handle IDLE, STATUS and LOGIN packets here
             process_packet(is_client, p, plen, tx);
-
+        }
         // remove processed packet from the buffer
         lh_arr_delete_range(GAR4(rx->data),0,ll+plen);
     }
