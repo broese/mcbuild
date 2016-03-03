@@ -17,6 +17,7 @@
 #include <lh_debug.h>
 #include <lh_arr.h>
 
+#include "mcp_types.h"
 #include "mcp_packet.h"
 #include "mcp_ids.h"
 
