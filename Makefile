@@ -4,7 +4,7 @@ INC=-I../libhelper
 LIBS_LIBHELPER=-L../libhelper -lhelper
 LIBS=$(LIBS_LIBHELPER) -lm -lpng -lz -lcurl -lcrypto
 
-SRC_BASE=$(addsuffix .c, mcp_packet mcp_ids mcp_types nbt slot)
+SRC_BASE=$(addsuffix .c, mcp_packet mcp_ids mcp_types nbt slot entity)
 SRC_MCPROXY=$(addsuffix .c, mcproxy mcp_gamestate mcp_game mcp_build mcp_arg mcp_bplan) $(SRC_BASE)
 SRC_MCPDUMP=$(addsuffix .c, mcpdump mcp_gamestate) $(SRC_BASE)
 SRC_ALL=$(SRC_MCPROXY) mcpdump.c varint.c
@@ -12,7 +12,7 @@ SRC_ALL=$(SRC_MCPROXY) mcpdump.c varint.c
 ALLBIN=mcproxy mcpdump
 TSTBIN=nbttest argtest bptest varint
 
-HDR_ALL=$(addsuffix .h, mcp_packet mcp_ids mcp_types nbt mcp_game mcp_gamestate mcp_build mcp_arg mcp_bplan)
+HDR_ALL=$(addsuffix .h, mcp_packet mcp_ids mcp_types nbt mcp_game mcp_gamestate mcp_build mcp_arg mcp_bplan slot entity)
 
 DEPFILE=make.depend
 
