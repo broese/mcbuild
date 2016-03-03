@@ -327,7 +327,7 @@ void mcpd_packet(MCPacket *pkt) {
             break;
         }
 
-        case SP_Maps: {
+        case SP_Map: {
             if (!o_extract_maps) break;
             SP_Maps_pkt *tpkt = (SP_Maps_pkt *)&pkt->_SP_Maps;
             if (tpkt->ncols == 128 && tpkt->nrows == 128) {
@@ -416,7 +416,6 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 break;
             }
 
-            case SP_SetCompression:
             case SL_SetCompression: {
                 compression = 1;
                 break;
