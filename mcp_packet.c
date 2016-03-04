@@ -341,6 +341,65 @@ typedef struct {
 // Server -> Client
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x03 SP_SpawnMob
+
+DECODE_BEGIN(SP_SpawnMob,_1_9) {
+    //hexdump(pkt->raw, pkt->rawlen);
+    Pvarint(eid);
+    Puuid(uuid);
+    Pchar(mobtype);
+    Pdouble(x);
+    Pdouble(y);
+    Pdouble(z);
+    Pchar(yaw);
+    Pchar(pitch);
+    Pchar(headpitch);
+    Pshort(vx);
+    Pshort(vy);
+    Pshort(vz);
+    Pmeta(meta);
+} DECODE_END;
+
+DUMP_BEGIN(SP_SpawnMob) {
+    char buf[256];
+    printf("eid=%08x, mobtype=%d (%s), coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f,%.1f, vel=%d,%d,%d",
+           tpkt->eid, tpkt->mobtype, get_entity_name(buf, tpkt->mobtype),
+           tpkt->x,tpkt->y,tpkt->z,
+           (float)tpkt->yaw/256,(float)tpkt->pitch/256,(float)tpkt->headpitch/256,
+           tpkt->vx,tpkt->vy,tpkt->vz);
+    dump_metadata(tpkt->meta, tpkt->mobtype);
+} DUMP_END;
+
+FREE_BEGIN(SP_SpawnMob) {
+    free_metadata(tpkt->meta);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x05 SP_SpawnPlayer
+
+DECODE_BEGIN(SP_SpawnPlayer,_1_9) {
+    Pvarint(eid);
+    Puuid(uuid);
+    Pdouble(x);
+    Pdouble(y);
+    Pdouble(z);
+    Pchar(yaw);
+    Pchar(pitch);
+    Pmeta(meta);
+} DECODE_END;
+
+DUMP_BEGIN(SP_SpawnPlayer) {
+    printf("eid=%08x, uuid=%s, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, item=%d",
+           tpkt->eid, limhex(tpkt->uuid,16,16), tpkt->x, tpkt->y, tpkt->z,
+           (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->item);
+    dump_metadata(tpkt->meta, Human);
+} DUMP_END;
+
+FREE_BEGIN(SP_SpawnPlayer) {
+    free_metadata(tpkt->meta);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x0F SP_ChatMessage
 
 DECODE_BEGIN(SP_ChatMessage,_1_8_1) {
@@ -365,6 +424,30 @@ DUMP_BEGIN(SP_ChatMessage) {
 
 FREE_BEGIN(SP_ChatMessage) {
     lh_free(tpkt->json);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x30 SP_DestroyEntities
+
+DECODE_BEGIN(SP_DestroyEntities,_1_8_1) {
+    Pvarint(count);
+    lh_alloc_num(tpkt->eids,tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        Pvarint(eids[i]);
+    }
+} DECODE_END;
+
+DUMP_BEGIN(SP_DestroyEntities) {
+    printf("count=%d eids=[",tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        printf("%08x%s",tpkt->eids[i],(i==tpkt->count-1)?"]":",");
+    }
+} DUMP_END;
+
+FREE_BEGIN(SP_DestroyEntities) {
+    lh_free(tpkt->eids);
 } FREE_END;
 
 
@@ -521,33 +604,6 @@ DUMP_BEGIN(SP_HeldItemChange) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x0c SP_SpawnPlayer
-
-DECODE_BEGIN(SP_SpawnPlayer,_1_8_1) {
-    Pvarint(eid);
-    Puuid(uuid);
-    Pint(x);
-    Pint(y);
-    Pint(z);
-    Pchar(yaw);
-    Pchar(pitch);
-    Pshort(item);
-    Pmeta(meta);
-} DECODE_END;
-
-DUMP_BEGIN(SP_SpawnPlayer) {
-    printf("eid=%08x, uuid=%s, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, item=%d",
-           tpkt->eid, limhex(tpkt->uuid,16,16),
-           (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
-           (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->item);
-    dump_metadata(tpkt->meta, Human);
-} DUMP_END;
-
-FREE_BEGIN(SP_SpawnPlayer) {
-    free_metadata(tpkt->meta);
-} FREE_END;
-
-////////////////////////////////////////////////////////////////////////////////
 // 0x0d SP_CollectItem
 
 DECODE_BEGIN(SP_CollectItem,_1_8_1) {
@@ -584,38 +640,6 @@ DUMP_BEGIN(SP_SpawnObject) {
            (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
            (float)tpkt->yaw/256,(float)tpkt->pitch/256);
 } DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x0f SP_SpawnMob
-
-DECODE_BEGIN(SP_SpawnMob,_1_8_1) {
-    Pvarint(eid);
-    Pchar(mobtype);
-    Pint(x);
-    Pint(y);
-    Pint(z);
-    Pchar(yaw);
-    Pchar(pitch);
-    Pchar(headpitch);
-    Pshort(vx);
-    Pshort(vy);
-    Pshort(vz);
-    Pmeta(meta);
-} DECODE_END;
-
-DUMP_BEGIN(SP_SpawnMob) {
-    char buf[256];
-    printf("eid=%08x, mobtype=%d (%s), coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f,%.1f, vel=%d,%d,%d",
-           tpkt->eid, tpkt->mobtype, get_entity_name(buf, tpkt->mobtype),
-           (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
-           (float)tpkt->yaw/256,(float)tpkt->pitch/256,(float)tpkt->headpitch/256,
-           tpkt->vx,tpkt->vy,tpkt->vz);
-    dump_metadata(tpkt->meta, tpkt->mobtype);
-} DUMP_END;
-
-FREE_BEGIN(SP_SpawnMob) {
-    free_metadata(tpkt->meta);
-} FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x10 SP_SpawnPainting
@@ -665,30 +689,6 @@ DECODE_BEGIN(SP_EntityVelocity,_1_8_1) {
 DUMP_BEGIN(SP_EntityVelocity) {
     printf("eid=%08x, vel=%d,%d,%d", tpkt->eid, tpkt->vx,tpkt->vy,tpkt->vz);
 } DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x13 SP_DestroyEntities
-
-DECODE_BEGIN(SP_DestroyEntities,_1_8_1) {
-    Pvarint(count);
-    lh_alloc_num(tpkt->eids,tpkt->count);
-    int i;
-    for(i=0; i<tpkt->count; i++) {
-        Pvarint(eids[i]);
-    }
-} DECODE_END;
-
-DUMP_BEGIN(SP_DestroyEntities) {
-    printf("count=%d eids=[",tpkt->count);
-    int i;
-    for(i=0; i<tpkt->count; i++) {
-        printf("%08x%s",tpkt->eids[i],(i==tpkt->count-1)?"]":",");
-    }
-} DUMP_END;
-
-FREE_BEGIN(SP_DestroyEntities) {
-    lh_free(tpkt->eids);
-} FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x14 SP_Entity
@@ -1529,14 +1529,11 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_Respawn,_1_8_1),
         SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),
-        SUPPORT_DF  (SP_SpawnPlayer,_1_8_1),
         SUPPORT_DE  (SP_CollectItem,_1_8_1),
         SUPPORT_D   (SP_SpawnObject,_1_8_1),
-        SUPPORT_DF  (SP_SpawnMob,_1_8_1),
         SUPPORT_D   (SP_SpawnPainting,_1_8_1),
         SUPPORT_D   (SP_SpawnExperienceOrb,_1_8_1),
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
-        SUPPORT_DF  (SP_DestroyEntities,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
         SUPPORT_D   (SP_EntityRelMove,_1_8_1),
         SUPPORT_D   (SP_EntityLook,_1_8_1),
@@ -1580,7 +1577,10 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
 
 const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
     {
+        SUPPORT_DF  (SP_SpawnMob,_1_9),
+        SUPPORT_DF  (SP_SpawnPlayer,_1_9),
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),
+        SUPPORT_DF  (SP_DestroyEntities,_1_8_1),
     },
     {
         SUPPORT_D   (CP_ChatMessage,_1_8_1),

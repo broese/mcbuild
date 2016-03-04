@@ -33,6 +33,55 @@ int decode_chat_json(const char *json, char *name, char *message);
 ////////////////////////////////////////////////////////////////////////////////
 // Server -> Client
 
+
+
+// 0x03
+typedef struct {
+    uint32_t eid;
+    uuid_t   uuid;
+    uint8_t  mobtype;
+    double   x;
+    double   y;
+    double   z;
+    angle_t  yaw;
+    angle_t  pitch;
+    angle_t  headpitch;
+    int16_t  vx;
+    int16_t  vy;
+    int16_t  vz;
+    metadata *meta;
+} SP_SpawnMob_pkt;
+
+// 0x05
+typedef struct {
+    uint32_t eid;
+    uuid_t   uuid;
+    double   x;
+    double   y;
+    double   z;
+    angle_t  yaw;
+    angle_t  pitch;
+    int16_t  item;
+    metadata *meta;
+} SP_SpawnPlayer_pkt;
+
+// 0x0f
+typedef struct {
+    char    *json;
+    uint8_t  pos;
+} SP_ChatMessage_pkt;
+
+// 0x30
+typedef struct {
+    uint32_t count;
+    uint32_t *eids;
+} SP_DestroyEntities_pkt;
+
+
+
+
+
+
 // 0x00
 typedef struct {
     uint32_t id;
@@ -48,12 +97,6 @@ typedef struct {
     char     leveltype[32];
     uint8_t  reduced_debug_info;
 } SP_JoinGame_pkt;
-
-// 0x02
-typedef struct {
-    char    *json;
-    uint8_t  pos;
-} SP_ChatMessage_pkt;
 
 // 0x03
 typedef struct {
@@ -95,19 +138,6 @@ typedef struct {
     int8_t sid;
 } SP_HeldItemChange_pkt;
 
-// 0x0c
-typedef struct {
-    uint32_t eid;
-    uuid_t   uuid;
-    fixp     x;
-    fixp     y;
-    fixp     z;
-    angle_t  yaw;
-    angle_t  pitch;
-    int16_t  item;
-    metadata *meta;
-} SP_SpawnPlayer_pkt;
-
 // 0x0d
 typedef struct {
     uint32_t eid;
@@ -125,22 +155,6 @@ typedef struct {
     angle_t  yaw;
     //TODO: object data
 } SP_SpawnObject_pkt;
-
-// 0x0f
-typedef struct {
-    uint32_t eid;
-    uint8_t  mobtype;
-    fixp     x;
-    fixp     y;
-    fixp     z;
-    angle_t  yaw;
-    angle_t  pitch;
-    angle_t  headpitch;
-    int16_t  vx;
-    int16_t  vy;
-    int16_t  vz;
-    metadata *meta;
-} SP_SpawnMob_pkt;
 
 // 0x10
 typedef struct {
@@ -166,12 +180,6 @@ typedef struct {
     int16_t  vy;
     int16_t  vz;
 } SP_EntityVelocity_pkt;
-
-// 0x13
-typedef struct {
-    uint32_t count;
-    uint32_t *eids;
-} SP_DestroyEntities_pkt;
 
 // 0x14
 typedef struct {
@@ -354,10 +362,18 @@ typedef struct {
 ////////////////////////////////////////////////////////////////////////////////
 // Client -> Server
 
-// 0x01
+// 0x02
 typedef struct {
     char str[256];
 } CP_ChatMessage_pkt;
+
+
+
+
+
+
+
+
 
 // 0x02
 typedef struct {

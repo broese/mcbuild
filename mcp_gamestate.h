@@ -43,7 +43,7 @@ static char * ENTITY_TYPES[] = {
 
 typedef struct _entity {
     int32_t  id;        // EID
-    fixp     x,y,z;     // note: fixed-point coords, divide by 32
+    double   x,y,z;     // position
     int      type;      // one of the ENTITY_ variables
     EntityType mtype;   // mob/object type as used natively
     int      hostile;   // whether marked hostile

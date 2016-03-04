@@ -43,8 +43,7 @@ void dump_entities() {
     for(i=0; i<C(gs.entity); i++) {
         entity *e = P(gs.entity)+i;
         printf("  %4d eid=%08x type=%-7s coord=%.1f,%.1f,%.1f\n",
-               i,e->id, ENTITY_TYPES[e->type],
-               (float)e->x/32,(float)e->y/32,(float)e->z/32);
+               i,e->id, ENTITY_TYPES[e->type], e->x, e->y, e->z);
     }
 }
 
@@ -848,17 +847,6 @@ void gs_packet(MCPacket *pkt) {
             e->mdata = clone_metadata(tpkt->meta);
         } _GSP;
 
-        GSP(SP_SpawnObject) {
-            entity *e = lh_arr_new_c(GAR(gs.entity));
-            e->id = tpkt->eid;
-            e->x  = tpkt->x;
-            e->y  = tpkt->y;
-            e->z  = tpkt->z;
-            e->type = ENTITY_OBJECT;
-            e->mtype = Item;
-            e->mdata = NULL; //TODO: object metadata
-        } _GSP;
-
         GSP(SP_SpawnMob) {
             entity *e = lh_arr_new_c(GAR(gs.entity));
             e->id = tpkt->eid;
@@ -877,6 +865,28 @@ void gs_packet(MCPacket *pkt) {
                 e->hostile = 2;
 
             e->mdata = clone_metadata(tpkt->meta);
+        } _GSP;
+
+        GSP(SP_DestroyEntities) {
+            int i;
+            for(i=0; i<tpkt->count; i++) {
+                int idx = find_entity(tpkt->eids[i]);
+                if (idx<0) continue;
+                free_metadata(P(gs.entity)[idx].mdata);
+                lh_arr_delete(GAR(gs.entity),idx);
+            }
+        } _GSP;
+
+#if 0
+        GSP(SP_SpawnObject) {
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = tpkt->eid;
+            e->x  = tpkt->x;
+            e->y  = tpkt->y;
+            e->z  = tpkt->z;
+            e->type = ENTITY_OBJECT;
+            e->mtype = Item;
+            e->mdata = NULL; //TODO: object metadata
         } _GSP;
 
         GSP(SP_SpawnPainting) {
@@ -899,16 +909,6 @@ void gs_packet(MCPacket *pkt) {
             e->type = ENTITY_OTHER;
             e->mtype = Entity;
             e->mdata = NULL;
-        } _GSP;
-
-        GSP(SP_DestroyEntities) {
-            int i;
-            for(i=0; i<tpkt->count; i++) {
-                int idx = find_entity(tpkt->eids[i]);
-                if (idx<0) continue;
-                free_metadata(P(gs.entity)[idx].mdata);
-                lh_arr_delete(GAR(gs.entity),idx);
-            }
         } _GSP;
 
         GSP(SP_EntityRelMove) {
