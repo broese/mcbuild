@@ -14,8 +14,13 @@
 
 #include <stdio.h>
 
+#define LH_DECLARE_SHORT_NAMES 1
+#include <lh_buffers.h>
+#include <lh_bytes.h>
+
 #include "slot.h"
 #include "mcp_ids.h"
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Window slots
