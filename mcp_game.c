@@ -87,6 +87,7 @@ static inline int mydist(fixp x, fixp y, fixp z) {
     return SQ(gs.own.x-x)+SQ(HEADPOSY(gs.own.y)-y)+SQ(gs.own.z-z);
 }
 
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Autokill
 
@@ -237,7 +238,7 @@ static void hole_radar(MCPacketQueue *cq) {
         }
     }
 }
-
+#endif
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory Handling
 
@@ -519,6 +520,7 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
     clear_slot(&invq.drag);
 }
 
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Anti-AFK
 
@@ -735,6 +737,7 @@ void chunk_bright(chunk_t * chunk, int bincr) {
         }
     }
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
@@ -790,12 +793,12 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
     if (!strcmp(words[0],"test")) {
         sprintf(reply,"Chat test response");
     }
-#if 0
     else if (!strcmp(words[0],"entities")) {
         sprintf(reply,"Tracking %zd entities",gs.C(entity));
         printf("Tracking %zd entities",gs.C(entity));
         dump_entities();
     }
+#if 0
     else if (!strcmp(words[0],"ak") || !strcmp(words[0],"autokill")) {
         opt.autokill = !opt.autokill;
         sprintf(reply,"Autokill is %s",opt.autokill?"ON":"OFF");
@@ -951,7 +954,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 queue_packet(pkt, tq);
             }
         } _GMP;
-
+#if 0
         GMP(SP_ChatMessage) {
             char name[256], message[256];
             int isspam=0;
@@ -1123,6 +1126,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             if (pu && pu->status==UUID_DANGER)
                 drop_connection();
         } _GMP;
+#endif
 
         default:
             // by default - just forward the packet
@@ -1215,8 +1219,8 @@ void read_uuids() {
 
 void gm_reset() {
     lh_clear_obj(opt);
-    clear_slot(&invq.drag);
-    lh_clear_obj(invq);
+    //clear_slot(&invq.drag); //FIXME: uncomment
+    //lh_clear_obj(invq);     //FIXME: uncomment
 
     build_clear(NULL,NULL);
     readbases();
@@ -1224,6 +1228,8 @@ void gm_reset() {
 }
 
 void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
+//FIXME: uncomment
+#if 0
     if (invq.state) {
         // do not attempt to do other things while inventory is handled
         gmi_process_queue(sq, cq);
@@ -1234,6 +1240,7 @@ void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (opt.antiafk)   antiafk(sq, cq);
     if (opt.autoshear) autoshear(sq);
     if (opt.autoeat)   autoeat(sq, cq);
+#endif
 
     build_preview_transmit(cq);
     build_progress(sq, cq);

@@ -17,9 +17,7 @@
 #include <lh_debug.h>
 #include <lh_arr.h>
 
-#include "mcp_types.h"
 #include "mcp_packet.h"
-#include "mcp_ids.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
@@ -47,28 +45,6 @@ static inline int count_bits(uint16_t bitmask) {
 ////////////////////////////////////////////////////////////////////////////////
 // String
 
-/*
-  MCP string format:
-  varint length
-  char[length] string, no terminator
-*/
-
-static uint8_t * read_string(uint8_t *p, char *s) {
-    uint32_t len = lh_read_varint(p);
-    assert(len<MCP_MAXSTR);
-    memmove(s, p, len);
-    s[len] = 0;
-    return p+len;
-}
-
-static uint8_t * write_string(uint8_t *w, const char *s) {
-    uint32_t len = (uint32_t)strlen(s);
-    lh_write_varint(w, len);
-    memmove(w, s, len);
-    w+=len;
-    return w;
-}
-
 int decode_chat_json(const char *json, char *name, char *message) {
     if (strncmp(json, "{\"extra\":[\"\\u003c",17)) return 0;
 
@@ -87,91 +63,6 @@ int decode_chat_json(const char *json, char *name, char *message) {
         }
     }
     return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Entity Metadata
-
-static uint8_t * read_slot(uint8_t *p, slot_t *s);
-
-static uint8_t * read_metadata(uint8_t *p, metadata **meta) {
-    assert(meta);
-    assert(!*meta);
-    ssize_t mc = 0;
-
-    // allocate a whole set of 32 values
-    lh_alloc_num(*meta, 32);
-    metadata *m = *meta;
-
-    int i;
-
-    // mark all entries as not present - we use the same 0x7f value
-    // that Mojang uses as terminator
-    for(i=0; i<32; i++) m[i].h = 0x7f;
-
-    while (1) {
-        uint8_t kv = read_char(p);
-        if (kv == 0x7f) break; // terminator
-
-        uint8_t k = kv&31;
-        uint8_t type = (kv>>5)&7;
-        metadata *mm = &m[k];
-        mm->h = kv;
-
-        switch (mm->type) {
-            case META_BYTE:   mm->b = read_char(p);    break;
-            case META_SHORT:  mm->s = read_short(p);   break;
-            case META_INT:    mm->i = read_int(p);     break;
-            case META_FLOAT:  mm->f = read_float(p);   break;
-            case META_STRING: p = read_string(p,mm->str); break;
-            case META_SLOT:   p = read_slot(p,&mm->slot); break;
-            case META_COORD:
-                mm->x = read_int(p);
-                mm->y = read_int(p);
-                mm->z = read_int(p);
-                break;
-            case META_ROT:
-                mm->pitch = read_float(p);
-                mm->yaw   = read_float(p);
-                mm->roll  = read_float(p);
-                break;
-        }
-    }
-
-    return p;
-}
-
-static void dump_metadata(metadata *meta, EntityType et) {
-    if (!meta) return;
-
-    int i;
-    for (i=0; i<32; i++) {
-        metadata *mm = meta+i;
-        if (mm->h==0x7f) continue;
-
-        printf("\n    ");
-
-        const char * name = NULL;
-        EntityType ett = et;
-        while ((!name) && (ett!=IllegalEntityType)) {
-            name = METANAME[ett][mm->key];
-            ett = ENTITY_HIERARCHY[ett];
-        }
-
-        printf("%2d %-24s [%-6s] = ", mm->key, name?name:"Unknown",METATYPES[mm->type]);
-        switch (mm->type) {
-            case META_BYTE:   printf("%d",  mm->b);   break;
-            case META_SHORT:  printf("%d",  mm->s);   break;
-            case META_INT:    printf("%d",  mm->i);   break;
-            case META_FLOAT:  printf("%.1f",mm->f);   break;
-            case META_STRING: printf("\"%s\"", mm->str); break;
-            case META_SLOT:   dump_slot(&mm->slot); break;
-            case META_COORD:
-                printf("(%d,%d,%d)",mm->x,mm->y,mm->z); break;
-            case META_ROT:
-                printf("%.1f,%.1f,%.1f",mm->pitch,mm->yaw,mm->roll); break;
-        }
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -270,37 +161,6 @@ uint8_t * write_chunk(uint8_t *w, int8_t skylight, chunk_t *chunk) {
     // biome data (only once per chunk)
     memmove(w, chunk->biome, 256);
     w+=256;
-
-    return w;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Inventory Slot
-
-static uint8_t * read_slot(uint8_t *p, slot_t *s) {
-    s->item = lh_read_short_be(p);
-
-    if (s->item != -1) {
-        s->count  = lh_read_char(p);
-        s->damage = lh_read_short_be(p);
-        s->nbt    = nbt_parse(&p);
-    }
-    else {
-        s->count = 0;
-        s->damage= 0;
-        s->nbt = NULL;
-    }
-    return p;
-}
-
-static uint8_t * write_slot(uint8_t *w, slot_t *s) {
-    lh_write_short_be(w, s->item);
-    if (s->item == -1) return w;
-
-    lh_write_char(w, s->count);
-    lh_write_short_be(w, s->damage);
-
-    nbt_write(&w, s->nbt);
 
     return w;
 }
