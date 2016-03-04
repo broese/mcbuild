@@ -131,7 +131,7 @@ typedef struct {
         pos_t       pos;    // OPTPOS with missing position is encoded as (int64_t)-1
         int32_t     dir;
         uuid_t      uuid;   // missing UUID is encoded in all-zeros
-        bid_t       bid;
+        uint8_t     block;  // block ID only
     };
 } metadata;
 

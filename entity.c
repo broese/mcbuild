@@ -370,14 +370,14 @@ uint8_t * read_metadata(uint8_t *p, metadata **meta) {
                                     mm->pos.p = (uint64_t)-1;
                                 }
                                 break;
-            case META_DIR:      mm->dir = ead_varint(p);  break;
+            case META_DIR:      mm->dir = read_varint(p);  break;
             case META_OPTUUID:  bool = read_char(p); //VERIFY
                                 if (bool) {
                                     memmove(mm->uuid,p,sizeof(uuid_t));
                                     p+=sizeof(uuid_t);
                                 }
                                 break;
-            case META_BID:      mm->bid.raw = read_short(p); break;
+            case META_BID:      mm->block = read_char(p); break; // note- block ID only, no meta
         }
     }
 
@@ -415,7 +415,7 @@ void dump_metadata(metadata *meta, EntityType et) {
             case META_OPTPOS:   printf("%d,%d,%d", mm->pos.x, mm->pos.y, mm->pos.z); break;
             case META_DIR:      printf("%d",mm->dir);  break;
             case META_OPTUUID:  hexprint(mm->uuid, sizeof(uuid_t));
-            case META_BID:      printf("%3x:%1x", mm->bid.bid, mm->bid.meta); //TODO: print material name
+            case META_BID:      printf("%2x (%d)", mm->block, mm->block); //TODO: print material name
             default:            printf("<unknown type>"); break;
         }
     }
