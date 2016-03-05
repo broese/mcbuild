@@ -344,6 +344,22 @@ DUMP_BEGIN(SP_SpawnObject) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x11 SP_SpawnExperienceOrb
+
+DECODE_BEGIN(SP_SpawnExperienceOrb,_1_9) {
+    Pvarint(eid);
+    Pdouble(x);
+    Pdouble(y);
+    Pdouble(z);
+    Pshort(count);
+} DECODE_END;
+
+DUMP_BEGIN(SP_SpawnExperienceOrb) {
+    printf("eid=%08x, coord=%.1f,%.1f,%.1f, count=%d",
+           tpkt->eid, tpkt->x, tpkt->y, tpkt->z, tpkt->count);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x03 SP_SpawnMob
 
 DECODE_BEGIN(SP_SpawnMob,_1_9) {
@@ -637,24 +653,6 @@ DUMP_BEGIN(SP_SpawnPainting) {
            tpkt->eid, tpkt->title,
            tpkt->pos.x,  tpkt->pos.y,  tpkt->pos.z,
            tpkt->dir);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x11 SP_SpawnExperienceOrb
-
-DECODE_BEGIN(SP_SpawnExperienceOrb,_1_8_1) {
-    Pvarint(eid);
-    Pint(x);
-    Pint(y);
-    Pint(z);
-    Pshort(count);
-} DECODE_END;
-
-DUMP_BEGIN(SP_SpawnExperienceOrb) {
-    printf("eid=%08x, coord=%.1f,%.1f,%.1f, count=%d",
-           tpkt->eid,
-           (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
-           tpkt->count);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1512,7 +1510,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (SP_CollectItem,_1_8_1),
         SUPPORT_D   (SP_SpawnPainting,_1_8_1),
-        SUPPORT_D   (SP_SpawnExperienceOrb,_1_8_1),
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
         SUPPORT_D   (SP_EntityRelMove,_1_8_1),
@@ -1558,6 +1555,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
 const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
     {
         SUPPORT_D   (SP_SpawnObject,_1_9),          // 00
+        SUPPORT_D   (SP_SpawnExperienceOrb,_1_9),   // 01
         SUPPORT_DF  (SP_SpawnMob,_1_9),             // 03
         SUPPORT_DF  (SP_SpawnPlayer,_1_9),          // 05
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f

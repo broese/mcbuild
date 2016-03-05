@@ -888,6 +888,17 @@ void gs_packet(MCPacket *pkt) {
             e->mdata = NULL; //TODO: object metadata
         } _GSP;
 
+        GSP(SP_SpawnExperienceOrb) {
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = tpkt->eid;
+            e->x  = tpkt->x;
+            e->y  = tpkt->y;
+            e->z  = tpkt->z;
+            e->type = ENTITY_OTHER;
+            e->mtype = Entity;
+            e->mdata = NULL;
+        } _GSP;
+
 #if 0
         GSP(SP_SpawnPainting) {
             entity *e = lh_arr_new_c(GAR(gs.entity));
@@ -895,17 +906,6 @@ void gs_packet(MCPacket *pkt) {
             e->x  = tpkt->pos.x*32;
             e->y  = tpkt->pos.y*32;
             e->z  = tpkt->pos.z*32;
-            e->type = ENTITY_OTHER;
-            e->mtype = Entity;
-            e->mdata = NULL;
-        } _GSP;
-
-        GSP(SP_SpawnExperienceOrb) {
-            entity *e = lh_arr_new_c(GAR(gs.entity));
-            e->id = tpkt->eid;
-            e->x  = tpkt->x;
-            e->y  = tpkt->y;
-            e->z  = tpkt->z;
             e->type = ENTITY_OTHER;
             e->mtype = Entity;
             e->mdata = NULL;

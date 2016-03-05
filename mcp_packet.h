@@ -46,6 +46,15 @@ typedef struct {
     //TODO: object data
 } SP_SpawnObject_pkt;
 
+// 0x01
+typedef struct {
+    uint32_t eid;
+    double      x;
+    double      y;
+    double      z;
+    uint16_t count;
+} SP_SpawnExperienceOrb_pkt;
+
 // 0x03
 typedef struct {
     uint32_t    eid;
@@ -162,15 +171,6 @@ typedef struct {
     pos_t    pos;
     uint8_t  dir;
 } SP_SpawnPainting_pkt;
-
-// 0x11
-typedef struct {
-    uint32_t eid;
-    fixp     x;
-    fixp     y;
-    fixp     z;
-    uint16_t count;
-} SP_SpawnExperienceOrb_pkt;
 
 // 0x12
 typedef struct {
@@ -528,6 +528,7 @@ typedef struct {
     // various packet types depending on pid
     union {
         PKT(SP_SpawnObject);        // 00
+        PKT(SP_SpawnExperienceOrb); // 01
         PKT(SP_SpawnMob);           // 03
         PKT(SP_SpawnPlayer);        // 05
         PKT(SP_ChatMessage);        // 0f
@@ -543,7 +544,6 @@ typedef struct {
         PKT(SP_HeldItemChange);
         PKT(SP_CollectItem);
         PKT(SP_SpawnPainting);
-        PKT(SP_SpawnExperienceOrb);
         PKT(SP_EntityVelocity);
         PKT(SP_Entity);
         PKT(SP_EntityRelMove);
