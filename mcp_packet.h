@@ -72,6 +72,15 @@ typedef struct {
     metadata *meta;
 } SP_SpawnMob_pkt;
 
+// 0x04
+typedef struct {
+    uint32_t    eid;
+    uuid_t      uuid;
+    char        title[32];
+    pos_t       pos;
+    uint8_t     dir;
+} SP_SpawnPainting_pkt;
+
 // 0x05
 typedef struct {
     uint32_t    eid;
@@ -163,14 +172,6 @@ typedef struct {
     uint32_t eid;
     uint32_t collector;
 } SP_CollectItem_pkt;
-
-// 0x10
-typedef struct {
-    uint32_t eid;
-    char     title[32];
-    pos_t    pos;
-    uint8_t  dir;
-} SP_SpawnPainting_pkt;
 
 // 0x12
 typedef struct {
@@ -530,6 +531,7 @@ typedef struct {
         PKT(SP_SpawnObject);        // 00
         PKT(SP_SpawnExperienceOrb); // 01
         PKT(SP_SpawnMob);           // 03
+        PKT(SP_SpawnPainting);      // 04
         PKT(SP_SpawnPlayer);        // 05
         PKT(SP_ChatMessage);        // 0f
         PKT(SP_DestroyEntities);    // 30
@@ -543,7 +545,6 @@ typedef struct {
         PKT(SP_PlayerPositionLook);
         PKT(SP_HeldItemChange);
         PKT(SP_CollectItem);
-        PKT(SP_SpawnPainting);
         PKT(SP_EntityVelocity);
         PKT(SP_Entity);
         PKT(SP_EntityRelMove);

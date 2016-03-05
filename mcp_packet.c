@@ -393,6 +393,24 @@ FREE_BEGIN(SP_SpawnMob) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x04 SP_SpawnPainting
+
+DECODE_BEGIN(SP_SpawnPainting,_1_9) {
+    Pvarint(eid);
+    Puuid(uuid);
+    Pstr(title);
+    Plong(pos.p);
+    Pchar(dir);
+} DECODE_END;
+
+DUMP_BEGIN(SP_SpawnPainting) {
+    printf("eid=%08x, title=%s, location=%d,%d,%d direction=%d",
+           tpkt->eid, tpkt->title,
+           tpkt->pos.x,  tpkt->pos.y,  tpkt->pos.z,
+           tpkt->dir);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x05 SP_SpawnPlayer
 
 DECODE_BEGIN(SP_SpawnPlayer,_1_9) {
@@ -636,23 +654,6 @@ ENCODE_BEGIN(SP_CollectItem,_1_8_1) {
 
 DUMP_BEGIN(SP_CollectItem) {
     printf("eid=%08x, collector=%d", tpkt->eid, tpkt->collector);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x10 SP_SpawnPainting
-
-DECODE_BEGIN(SP_SpawnPainting,_1_8_1) {
-    Pvarint(eid);
-    Pstr(title);
-    Plong(pos.p);
-    Pchar(dir);
-} DECODE_END;
-
-DUMP_BEGIN(SP_SpawnPainting) {
-    printf("eid=%08x, title=%s, location=%d,%d,%d direction=%d",
-           tpkt->eid, tpkt->title,
-           tpkt->pos.x,  tpkt->pos.y,  tpkt->pos.z,
-           tpkt->dir);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1509,7 +1510,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (SP_CollectItem,_1_8_1),
-        SUPPORT_D   (SP_SpawnPainting,_1_8_1),
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
         SUPPORT_D   (SP_EntityRelMove,_1_8_1),
@@ -1557,6 +1557,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_SpawnObject,_1_9),          // 00
         SUPPORT_D   (SP_SpawnExperienceOrb,_1_9),   // 01
         SUPPORT_DF  (SP_SpawnMob,_1_9),             // 03
+        SUPPORT_D   (SP_SpawnPainting,_1_9),        // 04
         SUPPORT_DF  (SP_SpawnPlayer,_1_9),          // 05
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30

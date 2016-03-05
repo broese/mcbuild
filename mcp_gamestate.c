@@ -899,18 +899,18 @@ void gs_packet(MCPacket *pkt) {
             e->mdata = NULL;
         } _GSP;
 
-#if 0
         GSP(SP_SpawnPainting) {
             entity *e = lh_arr_new_c(GAR(gs.entity));
             e->id = tpkt->eid;
-            e->x  = tpkt->pos.x*32;
-            e->y  = tpkt->pos.y*32;
-            e->z  = tpkt->pos.z*32;
+            e->x  = (double)tpkt->pos.x;
+            e->y  = (double)tpkt->pos.y;
+            e->z  = (double)tpkt->pos.z;
             e->type = ENTITY_OTHER;
             e->mtype = Entity;
             e->mdata = NULL;
         } _GSP;
 
+#if 0
         GSP(SP_EntityRelMove) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
