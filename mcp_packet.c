@@ -463,6 +463,41 @@ FREE_BEGIN(SP_ChatMessage) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x25 SP_EntityRelMove
+
+DECODE_BEGIN(SP_EntityRelMove,_1_9) {
+    Pvarint(eid);
+    Pshort(dx);
+    Pshort(dy);
+    Pshort(dz);
+    Pchar(onground);
+} DECODE_END;
+
+DUMP_BEGIN(SP_EntityRelMove) {
+    printf("eid=%08x, delta=%.1f,%.1f,%.1f, onground=%d",tpkt->eid,
+           (float)tpkt->dx/32,(float)tpkt->dy/32,(float)tpkt->dz/32,tpkt->onground);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x26 SP_EntityLookRelMove
+
+DECODE_BEGIN(SP_EntityLookRelMove,_1_9) {
+    Pvarint(eid);
+    Pshort(dx);
+    Pshort(dy);
+    Pshort(dz);
+    Pchar(yaw);
+    Pchar(pitch);
+    Pchar(onground);
+} DECODE_END;
+
+DUMP_BEGIN(SP_EntityLookRelMove) {
+    printf("eid=%08x, delta=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",tpkt->eid,
+           (float)tpkt->dx/32,(float)tpkt->dy/32,(float)tpkt->dz/32,
+           (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->onground);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x30 SP_DestroyEntities
 
 DECODE_BEGIN(SP_DestroyEntities,_1_8_1) {
@@ -485,6 +520,25 @@ DUMP_BEGIN(SP_DestroyEntities) {
 FREE_BEGIN(SP_DestroyEntities) {
     lh_free(tpkt->eids);
 } FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x4a SP_EntityTeleport
+
+DECODE_BEGIN(SP_EntityTeleport,_1_9) {
+    Pvarint(eid);
+    Pdouble(x);
+    Pdouble(y);
+    Pdouble(z);
+    Pchar(yaw);
+    Pchar(pitch);
+    Pchar(onground);
+} DECODE_END;
+
+DUMP_BEGIN(SP_EntityTeleport) {
+    printf("eid=%08x, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",tpkt->eid,
+           (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
+           (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->onground);
+} DUMP_END;
 
 
 
@@ -679,75 +733,6 @@ DECODE_BEGIN(SP_Entity,_1_8_1) {
 
 DUMP_BEGIN(SP_Entity) {
     printf("eid=%08x",tpkt->eid);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x15 SP_EntityRelMove
-
-DECODE_BEGIN(SP_EntityRelMove,_1_8_1) {
-    Pvarint(eid);
-    Pchar(dx);
-    Pchar(dy);
-    Pchar(dz);
-    Pchar(onground);
-} DECODE_END;
-
-DUMP_BEGIN(SP_EntityRelMove) {
-    printf("eid=%08x, delta=%.1f,%.1f,%.1f, onground=%d",tpkt->eid,
-           (float)tpkt->dx/32,(float)tpkt->dy/32,(float)tpkt->dz/32,tpkt->onground);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x16 SP_EntityLook
-
-DECODE_BEGIN(SP_EntityLook,_1_8_1) {
-    Pvarint(eid);
-    Pchar(yaw);
-    Pchar(pitch);
-    Pchar(onground);
-} DECODE_END;
-
-DUMP_BEGIN(SP_EntityLook) {
-    printf("eid=%08x, rot=%.1f,%.1f, onground=%d",tpkt->eid,
-           (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->onground);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x17 SP_EntityLookRelMove
-
-DECODE_BEGIN(SP_EntityLookRelMove,_1_8_1) {
-    Pvarint(eid);
-    Pchar(dx);
-    Pchar(dy);
-    Pchar(dz);
-    Pchar(yaw);
-    Pchar(pitch);
-    Pchar(onground);
-} DECODE_END;
-
-DUMP_BEGIN(SP_EntityLookRelMove) {
-    printf("eid=%08x, delta=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",tpkt->eid,
-           (float)tpkt->dx/32,(float)tpkt->dy/32,(float)tpkt->dz/32,
-           (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->onground);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x18 SP_EntityTeleport
-
-DECODE_BEGIN(SP_EntityTeleport,_1_8_1) {
-    Pvarint(eid);
-    Pint(x);
-    Pint(y);
-    Pint(z);
-    Pchar(yaw);
-    Pchar(pitch);
-    Pchar(onground);
-} DECODE_END;
-
-DUMP_BEGIN(SP_EntityTeleport) {
-    printf("eid=%08x, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",tpkt->eid,
-           (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
-           (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->onground);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1512,10 +1497,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_CollectItem,_1_8_1),
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
-        SUPPORT_D   (SP_EntityRelMove,_1_8_1),
-        SUPPORT_D   (SP_EntityLook,_1_8_1),
-        SUPPORT_D   (SP_EntityLookRelMove,_1_8_1),
-        SUPPORT_D   (SP_EntityTeleport,_1_8_1),
         SUPPORT_DF  (SP_EntityMetadata,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
         SUPPORT_DEF (SP_ChunkData,_1_8_1),
@@ -1560,7 +1541,10 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_SpawnPainting,_1_9),        // 04
         SUPPORT_DF  (SP_SpawnPlayer,_1_9),          // 05
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f
+        SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
+        SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
+        SUPPORT_D   (SP_EntityTeleport,_1_9),       // 4a
     },
     {
         SUPPORT_D   (CP_ChatMessage,_1_8_1),        // 02

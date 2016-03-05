@@ -100,11 +100,43 @@ typedef struct {
     uint8_t     pos;
 } SP_ChatMessage_pkt;
 
+// 0x25
+typedef struct {
+    uint32_t    eid;
+    int16_t     dx;
+    int16_t     dy;
+    int16_t     dz;
+    uint8_t     onground;
+} SP_EntityRelMove_pkt;
+
+// 0x26
+typedef struct {
+    uint32_t    eid;
+    int16_t     dx;
+    int16_t     dy;
+    int16_t     dz;
+    angle_t     yaw;
+    angle_t     pitch;
+    uint8_t     onground;
+} SP_EntityLookRelMove_pkt;
+
 // 0x30
 typedef struct {
     uint32_t    count;
     uint32_t   *eids;
 } SP_DestroyEntities_pkt;
+
+// 0x4a
+typedef struct {
+    uint32_t    eid;
+    double      x;
+    double      y;
+    double      z;
+    angle_t     yaw;
+    angle_t     pitch;
+    uint8_t     onground;
+} SP_EntityTeleport_pkt;
+
 
 
 
@@ -185,45 +217,6 @@ typedef struct {
 typedef struct {
     uint32_t eid;
 } SP_Entity_pkt;
-
-// 0x15
-typedef struct {
-    uint32_t eid;
-    int8_t   dx;
-    int8_t   dy;
-    int8_t   dz;
-    uint8_t  onground;
-} SP_EntityRelMove_pkt;
-
-// 0x16
-typedef struct {
-    uint32_t eid;
-    angle_t  yaw;
-    angle_t  pitch;
-    uint8_t  onground;
-} SP_EntityLook_pkt;
-
-// 0x17
-typedef struct {
-    uint32_t eid;
-    int8_t   dx;
-    int8_t   dy;
-    int8_t   dz;
-    angle_t  yaw;
-    angle_t  pitch;
-    uint8_t  onground;
-} SP_EntityLookRelMove_pkt;
-
-// 0x18
-typedef struct {
-    uint32_t eid;
-    fixp     x;
-    fixp     y;
-    fixp     z;
-    angle_t  yaw;
-    angle_t  pitch;
-    uint8_t  onground;
-} SP_EntityTeleport_pkt;
 
 // 0x1c
 typedef struct {
@@ -534,7 +527,10 @@ typedef struct {
         PKT(SP_SpawnPainting);      // 04
         PKT(SP_SpawnPlayer);        // 05
         PKT(SP_ChatMessage);        // 0f
+        PKT(SP_EntityRelMove);      // 25
+        PKT(SP_EntityLookRelMove);  // 26
         PKT(SP_DestroyEntities);    // 30
+        PKT(SP_EntityTeleport);     // 4a
 
         PKT(SP_KeepAlive);
         PKT(SP_JoinGame);
@@ -547,10 +543,6 @@ typedef struct {
         PKT(SP_CollectItem);
         PKT(SP_EntityVelocity);
         PKT(SP_Entity);
-        PKT(SP_EntityRelMove);
-        PKT(SP_EntityLook);
-        PKT(SP_EntityLookRelMove);
-        PKT(SP_EntityTeleport);
         PKT(SP_EntityMetadata);
         PKT(SP_SetExperience);
         PKT(SP_ChunkData);

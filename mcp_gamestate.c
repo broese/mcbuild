@@ -910,23 +910,22 @@ void gs_packet(MCPacket *pkt) {
             e->mdata = NULL;
         } _GSP;
 
-#if 0
         GSP(SP_EntityRelMove) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
             entity *e = P(gs.entity)+idx;
-            e->x += tpkt->dx;
-            e->y += tpkt->dy;
-            e->z += tpkt->dz;
+            e->x += (double)tpkt->dx/32.0;
+            e->y += (double)tpkt->dy/32.0;
+            e->z += (double)tpkt->dz/32.0;
         } _GSP;
 
         GSP(SP_EntityLookRelMove) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
             entity *e = P(gs.entity)+idx;
-            e->x += tpkt->dx;
-            e->y += tpkt->dy;
-            e->z += tpkt->dz;
+            e->x += (double)tpkt->dx/32.0;
+            e->y += (double)tpkt->dy/32.0;
+            e->z += (double)tpkt->dz/32.0;
         } _GSP;
 
         GSP(SP_EntityTeleport) {
@@ -938,6 +937,7 @@ void gs_packet(MCPacket *pkt) {
             e->z = tpkt->z;
         } _GSP;
 
+#if 0
         GSP(SP_EntityMetadata) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
