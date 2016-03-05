@@ -323,10 +323,30 @@ typedef struct {
 // Server -> Client
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x00 SP_SpawnObject
+
+DECODE_BEGIN(SP_SpawnObject,_1_9) {
+    Pvarint(eid);
+    Puuid(uuid);
+    Pchar(objtype);
+    Pdouble(x);
+    Pdouble(y);
+    Pdouble(z);
+    Pchar(pitch);
+    Pchar(yaw);
+    //TODO: object data
+} DECODE_END;
+
+DUMP_BEGIN(SP_SpawnObject) {
+    printf("eid=%08x, objtype=%d, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f",
+           tpkt->eid, tpkt->objtype, tpkt->x, tpkt->y, tpkt->z,
+           (float)tpkt->yaw/256,(float)tpkt->pitch/256);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x03 SP_SpawnMob
 
 DECODE_BEGIN(SP_SpawnMob,_1_9) {
-    //hexdump(pkt->raw, pkt->rawlen);
     Pvarint(eid);
     Puuid(uuid);
     Pchar(mobtype);
@@ -600,27 +620,6 @@ ENCODE_BEGIN(SP_CollectItem,_1_8_1) {
 
 DUMP_BEGIN(SP_CollectItem) {
     printf("eid=%08x, collector=%d", tpkt->eid, tpkt->collector);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x0e SP_SpawnObject
-
-DECODE_BEGIN(SP_SpawnObject,_1_8_1) {
-    Pvarint(eid);
-    Pchar(objtype);
-    Pint(x);
-    Pint(y);
-    Pint(z);
-    Pchar(pitch);
-    Pchar(yaw);
-    //TODO: object data
-} DECODE_END;
-
-DUMP_BEGIN(SP_SpawnObject) {
-    printf("eid=%08x, objtype=%d, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f",
-           tpkt->eid, tpkt->objtype,
-           (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
-           (float)tpkt->yaw/256,(float)tpkt->pitch/256);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1512,7 +1511,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (SP_CollectItem,_1_8_1),
-        SUPPORT_D   (SP_SpawnObject,_1_8_1),
         SUPPORT_D   (SP_SpawnPainting,_1_8_1),
         SUPPORT_D   (SP_SpawnExperienceOrb,_1_8_1),
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
@@ -1559,13 +1557,14 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
 
 const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
     {
-        SUPPORT_DF  (SP_SpawnMob,_1_9),
-        SUPPORT_DF  (SP_SpawnPlayer,_1_9),
-        SUPPORT_DEF (SP_ChatMessage,_1_8_1),
-        SUPPORT_DF  (SP_DestroyEntities,_1_8_1),
+        SUPPORT_D   (SP_SpawnObject,_1_9),          // 00
+        SUPPORT_DF  (SP_SpawnMob,_1_9),             // 03
+        SUPPORT_DF  (SP_SpawnPlayer,_1_9),          // 05
+        SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f
+        SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
     },
     {
-        SUPPORT_D   (CP_ChatMessage,_1_8_1),
+        SUPPORT_D   (CP_ChatMessage,_1_8_1),        // 02
     },
 };
 

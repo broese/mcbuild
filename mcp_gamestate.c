@@ -877,7 +877,6 @@ void gs_packet(MCPacket *pkt) {
             }
         } _GSP;
 
-#if 0
         GSP(SP_SpawnObject) {
             entity *e = lh_arr_new_c(GAR(gs.entity));
             e->id = tpkt->eid;
@@ -889,6 +888,7 @@ void gs_packet(MCPacket *pkt) {
             e->mdata = NULL; //TODO: object metadata
         } _GSP;
 
+#if 0
         GSP(SP_SpawnPainting) {
             entity *e = lh_arr_new_c(GAR(gs.entity));
             e->id = tpkt->eid;

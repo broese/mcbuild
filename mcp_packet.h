@@ -33,48 +33,59 @@ int decode_chat_json(const char *json, char *name, char *message);
 ////////////////////////////////////////////////////////////////////////////////
 // Server -> Client
 
-
+// 0x00
+typedef struct {
+    uint32_t    eid;
+    uuid_t      uuid;
+    uint8_t     objtype;
+    double      x;
+    double      y;
+    double      z;
+    angle_t     pitch;
+    angle_t     yaw;
+    //TODO: object data
+} SP_SpawnObject_pkt;
 
 // 0x03
 typedef struct {
-    uint32_t eid;
-    uuid_t   uuid;
-    uint8_t  mobtype;
-    double   x;
-    double   y;
-    double   z;
-    angle_t  yaw;
-    angle_t  pitch;
-    angle_t  headpitch;
-    int16_t  vx;
-    int16_t  vy;
-    int16_t  vz;
+    uint32_t    eid;
+    uuid_t      uuid;
+    uint8_t     mobtype;
+    double      x;
+    double      y;
+    double      z;
+    angle_t     yaw;
+    angle_t     pitch;
+    angle_t     headpitch;
+    int16_t     vx;
+    int16_t     vy;
+    int16_t     vz;
     metadata *meta;
 } SP_SpawnMob_pkt;
 
 // 0x05
 typedef struct {
-    uint32_t eid;
-    uuid_t   uuid;
-    double   x;
-    double   y;
-    double   z;
-    angle_t  yaw;
-    angle_t  pitch;
-    int16_t  item;
+    uint32_t    eid;
+    uuid_t      uuid;
+    double      x;
+    double      y;
+    double      z;
+    angle_t     yaw;
+    angle_t     pitch;
+    int16_t     item;
     metadata *meta;
 } SP_SpawnPlayer_pkt;
 
 // 0x0f
 typedef struct {
-    char    *json;
-    uint8_t  pos;
+    char       *json;
+    uint8_t     pos;
 } SP_ChatMessage_pkt;
 
 // 0x30
 typedef struct {
-    uint32_t count;
-    uint32_t *eids;
+    uint32_t    count;
+    uint32_t   *eids;
 } SP_DestroyEntities_pkt;
 
 
@@ -143,18 +154,6 @@ typedef struct {
     uint32_t eid;
     uint32_t collector;
 } SP_CollectItem_pkt;
-
-// 0x0e
-typedef struct {
-    uint32_t eid;
-    uint8_t  objtype;
-    fixp     x;
-    fixp     y;
-    fixp     z;
-    angle_t  pitch;
-    angle_t  yaw;
-    //TODO: object data
-} SP_SpawnObject_pkt;
 
 // 0x10
 typedef struct {
@@ -528,23 +527,24 @@ typedef struct {
 
     // various packet types depending on pid
     union {
+        PKT(SP_SpawnObject);        // 00
+        PKT(SP_SpawnMob);           // 03
+        PKT(SP_SpawnPlayer);        // 05
+        PKT(SP_ChatMessage);        // 0f
+        PKT(SP_DestroyEntities);    // 30
+
         PKT(SP_KeepAlive);
         PKT(SP_JoinGame);
-        PKT(SP_ChatMessage);
         PKT(SP_TimeUpdate);
         PKT(SP_EntityEquipment);
         PKT(SP_UpdateHealth);
         PKT(SP_Respawn);
         PKT(SP_PlayerPositionLook);
         PKT(SP_HeldItemChange);
-        PKT(SP_SpawnPlayer);
         PKT(SP_CollectItem);
-        PKT(SP_SpawnObject);
-        PKT(SP_SpawnMob);
         PKT(SP_SpawnPainting);
         PKT(SP_SpawnExperienceOrb);
         PKT(SP_EntityVelocity);
-        PKT(SP_DestroyEntities);
         PKT(SP_Entity);
         PKT(SP_EntityRelMove);
         PKT(SP_EntityLook);
@@ -568,7 +568,8 @@ typedef struct {
         PKT(SP_UpdateBlockEntity);
         PKT(SP_SetCompression);
 
-        PKT(CP_ChatMessage);
+        PKT(CP_ChatMessage);        // 02
+
         PKT(CP_UseEntity);
         PKT(CP_Player);
         PKT(CP_PlayerPosition);
