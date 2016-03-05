@@ -312,16 +312,6 @@ static inline int ISEMPTY(int bid) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// ANSI representation of blocks
-
-#define ANSI_CLEAR     "\x1b[0m"
-#define ANSI_PLAYER    "\x1b[5;32;44m$\x1b[0m"
-#define ANSI_UNKNOWN   "\x1b[45;36m#"
-#define ANSI_ILLBLOCK  "\x1b[5;32;44m#\x1b[0m"
-
-extern const char * ANSI_BLOCK[];
-
-////////////////////////////////////////////////////////////////////////////////
 
 #include "mcp_types.h"
 

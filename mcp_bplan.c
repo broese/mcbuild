@@ -1036,17 +1036,3 @@ bplan * bplan_pngload(const char *name, const char *setname) {
 
     return bp;
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-
-#if TEST
-
-int main(int ac, char **av) {
-    bplan *bp = bplan_floor(5,3,BLOCKTYPE(5,2));
-    bplan_update(bp);
-    bplan_dump(bp);
-    bplan_free(bp);
-}
-
-#endif

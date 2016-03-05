@@ -431,32 +431,6 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// print a single chunk slice (16x16x1 blocks) on the screen using ANSI_COLORS
-static void print_slice(bid_t * data,int Xs, int Zs) {
-    int x,z;
-    for(z=0; z<16*Zs; z++) {
-        printf("%s%3d ",ANSI_CLEAR,z);
-        bid_t * row = data+z*(Xs*16);
-        for(x=0; x<Xs*16; x++)
-            printf("%s",(row[x].bid<256) ?
-                   ANSI_BLOCK[row[x].bid] : ANSI_ILLBLOCK );
-        printf("%s\n",ANSI_CLEAR);
-    }
-}
-
-#if 0
-void extract_cuboid(int X, int Z, int y) {
-    int Xs=5,Zs=5;
-    bid_t * map = export_cuboid(X,Xs,Z,Zs,y,1,NULL);
-    //hexdump((char *)map,512);
-    printf("Slice y=%d\n",y);
-    print_slice(map,Xs,Zs);
-    free(map);
-}
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
-
 #if 0
 void search_blocks(int dim, int bid, int meta) {
     gsworld *w;
@@ -523,7 +497,6 @@ int main(int ac, char **av) {
     if (o_track_inventory)
         dump_inventory();
     //dump_entities();
-    //dump_overworld();
 
     if (o_spawner_single) {
         for(i=0; i<C(spawners); i++) {

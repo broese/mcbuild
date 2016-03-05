@@ -68,24 +68,6 @@ int decode_chat_json(const char *json, char *name, char *message) {
 ////////////////////////////////////////////////////////////////////////////////
 // Map Chunk
 
-// print block data slice-wise in hex and ANSI
-void blkdump(const bid_t * data, int count) {
-    int r,c;
-    for(r=0; r<count; r+=16) {
-        printf("%p %4d (%3d:%2d)   ", data+r, r>>4, r>>8, (r>>4)&15);
-
-        for(c=0; c<16; c++)
-            printf("%3x ",data[r+c].bid);
-
-        printf("   ");
-
-        for(c=0; c<16; c++)
-            printf("%s",(data[r+c].bid<256) ? ANSI_BLOCK[data[r+c].bid] : ANSI_ILLBLOCK );
-
-        printf("\n%s",((r&0xff) == 0xf0)?"\n":"");
-    }
-}
-
 uint8_t * read_chunk(uint8_t *p, int8_t skylight, chunk_t *chunk) {
     int i;
 
