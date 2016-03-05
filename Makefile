@@ -2,7 +2,7 @@ CFLAGS=-g
 DEFS=-D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE
 INC=-I../libhelper
 LIBS_LIBHELPER=-L../libhelper -lhelper
-LIBS=$(LIBS_LIBHELPER) -lm -lpng -lz -lcurl -lcrypto
+LIBS=$(LIBS_LIBHELPER) -lm -lpng -lz -lcurl -lcrypto -ljson-c
 
 SRC_BASE=$(addsuffix .c, mcp_packet mcp_ids mcp_types nbt slot entity)
 SRC_MCPROXY=$(addsuffix .c, mcproxy mcp_gamestate mcp_game mcp_build mcp_arg mcp_bplan) $(SRC_BASE)
