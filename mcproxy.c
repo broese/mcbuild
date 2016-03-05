@@ -738,7 +738,6 @@ void print_hex(char *buf, const char *data, ssize_t len) {
 
 
 #define PROFILE_PATH ".minecraft/launcher_profiles.json"
-//TODO: Windows support
 
 #define JSON_PARSE(json, key, var, type)                                       \
     if (!json_object_object_get_ex(json, key, &var) ||                         \
@@ -748,13 +747,24 @@ void print_hex(char *buf, const char *data, ssize_t len) {
     }
 
 int parse_profile(char *accessToken, char *userId, char *userName) {
-    const char * homedir = getenv("HOME");
-    assert(homedir);
+    const char * homedir = getenv("APPDATA");
+    if (!homedir) homedir = getenv("HOME");
+    if (!homedir) {
+        printf("Failed to locate Minecraft profile directory - check your environment\n");
+        return 0;
+    }
+
     char path[PATH_MAX];
     sprintf(path, "%s/%s",homedir,PROFILE_PATH);
 
     uint8_t * buf;
     ssize_t sz = lh_load_alloc(path, &buf);
+    if (sz<=0) {
+        printf("Failed to open launcher profile.\n"
+               "Make sure you have started Minecraft and logged in at least once\n");
+        return 0;
+    }
+
     lh_resize(buf, sz+1);
     buf[sz] = 0;
 
