@@ -90,6 +90,7 @@
       <li>Libs/libpng-devel</li>
       <li>Libs/libisl10</li>
       <li>Libs/libcloog-isl4</li>
+      <li>Libs/libjson-c-devel</li>
       <li>Devel/openssl-devel</li>
       <li>Devel/git</li>
       <li>Devel/gcc-core</li>
@@ -157,6 +158,7 @@
           <li>openssl</li>
           <li>zlib</li>
           <li>libpng</li>
+          <li>json-c</li>
         </ul>
     </ul>
 
@@ -202,47 +204,12 @@ export PATH=&quot;$HOME/bin:$PATH&quot;
 mcb_update
 </pre></div>
 
-    <p>If you happen to have installed Minecraft just now, and have never
-      ran it before (on this user account), please launch it, login into
-      your account and into some server at least once before proceeding.
-      This is necessary so your Minecraft directory (<i>%APPDATA%/.minecraft</i>
-      on Windows or <i>~/.minecraft</i> on Linux) is set up.</p>
+    <p>If you just happen to have a fresh installation of Minecraft,
+      and no profile has been set up yet, please login and launch the
+      client at least once before using MCBuild.</p>
 
-    <p>Before MCBuild can be used with your client, we need to patch a few
-      things in your Minecraft directory, so your client will be able to
-      connect through MCBuild. Specifically, we need to redirect the
-      three-way authentication process when you're joining a server
-      through MCBuild.</p>
-    <p>Before running the mcb_install and mcb_remove scripts described
-      below, make sure you exit your Minecraft client! On Windows, an
-      attempt to patch or remove files will fail because they are still
-      locked, and on Linux changes will take effect only after restarting
-      the client, as it still has the old library version loaded.</p>
-
-<div class="shell"><pre>
-mcb_install
-</pre></div>
-
-    <p>After running <i>mcb_install</i>, your Minecraft directory is patched
-      for use with MCBuild. This needs to be done only once before using
-      MCBuild for the first time, or after restoring your Minecraft directory
-      to original state. It won't do any harm to run it when your Minecraft
-      is already patched however.</p>
-
-    <p>This patch affects a library in your Minecraft directory and not the
-      actual client, so mcb_install is typically not required again if your
-      client gets an update, or if you install any mods or a custom client.</p>
-
-    <p>Note that once your Minecraft directory is patched, you will be only
-      able to connect through MCBuild! If you want to use your Minecraft client
-      without MCBuild, you need to remove the patch first:</p>
-
-<div class="shell"><pre>
-mcb_remove
-</pre></div>
-
-    <p>Finally, you need to add a new entry to your multiplayer server list,
-      through which you will be accessing MCBuild. Use address 127.0.0.1</p>
+    <p>Add a new entry to your multiplayer server list, through which you
+      will be accessing MCBuild. Use address 127.0.0.1</p>
 
     <img src="images/server_list.png">
 
@@ -259,7 +226,6 @@ mcb_start
 
     <p>When launched without parameters, MCBuild will connect to 2b2t.org.
       To connect to any other server, write the address as a parameter:</p>
-
 
 <div class="shell"><pre>
 mcb_start mc.example.com
