@@ -120,6 +120,12 @@ typedef struct {
     uint8_t     onground;
 } SP_EntityLookRelMove_pkt;
 
+// 0x27
+typedef struct {
+    uint32_t eid;
+    metadata *meta;
+} SP_EntityMetadata_pkt;
+
 // 0x30
 typedef struct {
     uint32_t    count;
@@ -217,12 +223,6 @@ typedef struct {
 typedef struct {
     uint32_t eid;
 } SP_Entity_pkt;
-
-// 0x1c
-typedef struct {
-    uint32_t eid;
-    metadata *meta;
-} SP_EntityMetadata_pkt;
 
 // 0x1f
 typedef struct {
@@ -529,6 +529,7 @@ typedef struct {
         PKT(SP_ChatMessage);        // 0f
         PKT(SP_EntityRelMove);      // 25
         PKT(SP_EntityLookRelMove);  // 26
+        PKT(SP_EntityMetadata);     // 27
         PKT(SP_DestroyEntities);    // 30
         PKT(SP_EntityTeleport);     // 4a
 
@@ -543,7 +544,6 @@ typedef struct {
         PKT(SP_CollectItem);
         PKT(SP_EntityVelocity);
         PKT(SP_Entity);
-        PKT(SP_EntityMetadata);
         PKT(SP_SetExperience);
         PKT(SP_ChunkData);
         PKT(SP_MultiBlockChange);

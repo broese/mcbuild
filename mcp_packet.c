@@ -498,6 +498,24 @@ DUMP_BEGIN(SP_EntityLookRelMove) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x27 SP_EntityMetadata
+
+DECODE_BEGIN(SP_EntityMetadata,_1_8_1) {
+    Pvarint(eid);
+    Pmeta(meta);
+} DECODE_END;
+
+DUMP_BEGIN(SP_EntityMetadata) {
+    printf("eid=%08x", tpkt->eid);
+    // unfortunately we don't have access to proper entity type here
+    dump_metadata(tpkt->meta, Entity);
+} DUMP_END;
+
+FREE_BEGIN(SP_EntityMetadata) {
+    free_metadata(tpkt->meta);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x30 SP_DestroyEntities
 
 DECODE_BEGIN(SP_DestroyEntities,_1_8_1) {
@@ -734,24 +752,6 @@ DECODE_BEGIN(SP_Entity,_1_8_1) {
 DUMP_BEGIN(SP_Entity) {
     printf("eid=%08x",tpkt->eid);
 } DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x1c SP_EntityMetadata
-
-DECODE_BEGIN(SP_EntityMetadata,_1_8_1) {
-    Pvarint(eid);
-    Pmeta(meta);
-} DECODE_END;
-
-DUMP_BEGIN(SP_EntityMetadata) {
-    printf("eid=%08x", tpkt->eid);
-    // unfortunately we don't have access to proper entity type here
-    dump_metadata(tpkt->meta, Entity);
-} DUMP_END;
-
-FREE_BEGIN(SP_EntityMetadata) {
-    free_metadata(tpkt->meta);
-} FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x1f SP_SetExperience
@@ -1497,7 +1497,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_CollectItem,_1_8_1),
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
-        SUPPORT_DF  (SP_EntityMetadata,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
         SUPPORT_DEF (SP_ChunkData,_1_8_1),
         SUPPORT_DEF (SP_MultiBlockChange,_1_8_1),
@@ -1543,6 +1542,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
         SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
+        SUPPORT_DF  (SP_EntityMetadata,_1_8_1),     // 27
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
         SUPPORT_D   (SP_EntityTeleport,_1_9),       // 4a
     },

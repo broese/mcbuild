@@ -914,18 +914,18 @@ void gs_packet(MCPacket *pkt) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
             entity *e = P(gs.entity)+idx;
-            e->x += (double)tpkt->dx/32.0;
-            e->y += (double)tpkt->dy/32.0;
-            e->z += (double)tpkt->dz/32.0;
+            e->x += (double)tpkt->dx/64.0; //FIXME: check factor
+            e->y += (double)tpkt->dy/64.0;
+            e->z += (double)tpkt->dz/64.0;
         } _GSP;
 
         GSP(SP_EntityLookRelMove) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
             entity *e = P(gs.entity)+idx;
-            e->x += (double)tpkt->dx/32.0;
-            e->y += (double)tpkt->dy/32.0;
-            e->z += (double)tpkt->dz/32.0;
+            e->x += (double)tpkt->dx/64.0; //FIXME: check factor
+            e->y += (double)tpkt->dy/64.0;
+            e->z += (double)tpkt->dz/64.0;
         } _GSP;
 
         GSP(SP_EntityTeleport) {
@@ -937,7 +937,6 @@ void gs_packet(MCPacket *pkt) {
             e->z = tpkt->z;
         } _GSP;
 
-#if 0
         GSP(SP_EntityMetadata) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
@@ -949,7 +948,7 @@ void gs_packet(MCPacket *pkt) {
             else {
                 int i;
                 for(i=0; i<32; i++) {
-                    if (tpkt->meta[i].h != 0x7f) {
+                    if (tpkt->meta[i].type != 0xff) {
                         // replace stored metadata with the one from the packet
                         if (e->mdata[i].type == META_SLOT)
                             clear_slot(&e->mdata[i].slot);
@@ -962,7 +961,6 @@ void gs_packet(MCPacket *pkt) {
                 }
             }
         } _GSP;
-#endif
 
         ////////////////////////////////////////////////////////////////
         // Player
