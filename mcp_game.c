@@ -81,13 +81,46 @@ uint64_t gettimestamp() {
     return ts;
 }
 
-#define HEADPOSY(y) ((y)+32*162/100)
+typedef struct {
+    uint64_t    last;       // last timestamp when an event was allowed by rate-limiting
+    uint64_t    level;      // current number of tokens
+    uint64_t    interval;   // average interval, in us
+    uint64_t    burst;      // burst size, in tokens
+} tokenbucket;
 
-static inline int mydist(fixp x, fixp y, fixp z) {
-    return SQ(gs.own.x-x)+SQ(HEADPOSY(gs.own.y)-y)+SQ(gs.own.z-z);
+#define TBDEF(name, i, b)                                                      \
+    tokenbucket name = { .last=0, .level=b, .interval=i, .burst=b };
+
+tokenbucket * tb_init(tokenbucket *tb, int64_t interval, int64_t burst) {
+    if (!tb) tb = (tokenbucket *)malloc(sizeof(tokenbucket));
+    assert(tb);
+
+    tb->last = gettimestamp();
+    tb->level = burst;
+    tb->interval = interval;
+    tb->burst = burst;
+
+    return tb;
 }
 
-#if 0
+int tb_event(tokenbucket *tb, uint64_t size) {
+    uint64_t ts = gettimestamp();
+    uint64_t level = tb->level + (ts-tb->last)/tb->interval; // currently available token level
+    if (level > tb->burst) level = tb->burst;
+
+    if (size > level) return 0; // disallow this event
+
+    tb->level = level-size;
+    tb->last = ts;
+    return size;
+}
+
+#define HEADPOSY(y) ((double)(y)+1.62)
+
+static inline double mydist(double x, double y, double z) {
+    return sqrt(SQ(gs.own.x-x)+SQ(HEADPOSY(gs.own.y)-y)+SQ(gs.own.z-z));
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Autokill
 
@@ -95,14 +128,12 @@ static inline int mydist(fixp x, fixp y, fixp z) {
 #define MIN_ENTITY_DELAY 250000  // minimum interval between hitting the same entity (us)
 #define MIN_ATTACK_DELAY 50000   // minimum interval between attacking any entity
 #define MAX_ATTACK       1       // how many entities to attack at once
-#define REACH_RANGE      4
+#define REACH_RANGE      4.5
 
-uint64_t ak_last_attack = 0;
+TBDEF(tb_ak, MIN_ATTACK_DELAY, MAX_ATTACK);
 
 static void autokill(MCPacketQueue *sq) {
-    // skip if we used autokill less than MIN_ATTACK_DELAY us ago
-    uint64_t ts = gettimestamp();
-    if ((ts-ak_last_attack)<MIN_ATTACK_DELAY) return;
+    if (!tb_event(&tb_ak, 1)) return;
 
     // calculate list of hostile entities in range
     uint32_t hent[MAX_ENTITIES];
@@ -115,22 +146,21 @@ static void autokill(MCPacketQueue *sq) {
         if (!e->hostile) continue;
 
         // skip entities we hit only recently
-        if ((ts-e->lasthit) < MIN_ENTITY_DELAY) continue;
+        if ((tb_ak.last-e->lasthit) < MIN_ENTITY_DELAY) continue;
 
         // only take entities that are within our reach
-        int sd = mydist(e->x, e->y, e->z) >> 10;
-        if (sd<=SQ(REACH_RANGE))
+        if (mydist(e->x, e->y, e->z)<=REACH_RANGE)
             hent[hi++] = i;
     }
     //TODO: sort entities by how dangerous and how close they are
     //TODO: check for obstruction
+    //TODO: adjust for cooldown time
 
     for(i=0; i<hi && i<MAX_ATTACK; i++) {
         entity *e = P(gs.entity)+hent[i];
         //printf("Attacking entity %08x\n",e->id);
 
-        e->lasthit = ts;
-        ak_last_attack = ts;
+        e->lasthit = tb_ak.last;
 
         // Attack entity
         NEWPACKET(CP_UseEntity, atk);
@@ -140,9 +170,12 @@ static void autokill(MCPacketQueue *sq) {
 
         // Wave arm
         NEWPACKET(CP_Animation, anim);
+        tanim->hand  = 0; // right hand
         queue_packet(anim, sq);
     }
 }
+
+#if 0
 
 ////////////////////////////////////////////////////////////////////////////////
 // Autoshear
@@ -798,12 +831,12 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         printf("Tracking %zd entities",gs.C(entity));
         dump_entities();
     }
-#if 0
     else if (!strcmp(words[0],"ak") || !strcmp(words[0],"autokill")) {
         opt.autokill = !opt.autokill;
         sprintf(reply,"Autokill is %s",opt.autokill?"ON":"OFF");
         rpos = 2;
     }
+#if 0
     else if (!strcmp(words[0],"afk") || !strcmp(words[0],"antiafk")) {
         opt.antiafk = !opt.antiafk;
         sprintf(reply,"Anti-AFK is %s",opt.antiafk?"ON":"OFF");
@@ -1235,8 +1268,10 @@ void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
         gmi_process_queue(sq, cq);
         return;
     }
+#endif
 
     if (opt.autokill)  autokill(sq);
+#if 0
     if (opt.antiafk)   antiafk(sq, cq);
     if (opt.autoshear) autoshear(sq);
     if (opt.autoeat)   autoeat(sq, cq);
