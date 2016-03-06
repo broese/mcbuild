@@ -358,60 +358,66 @@ typedef struct {
 
 // 0x02
 typedef struct {
-    char str[256];
+    char        str[256];
 } CP_ChatMessage_pkt;
+
+// 0x0a
+typedef struct {
+    uint32_t    target;
+    uint32_t    action;
+    float       x,y,z;
+    uint32_t    hand;
+} CP_UseEntity_pkt;
 
 // 0x0c
 typedef struct {
-    double x;
-    double y;
-    double z;
-    uint8_t onground;
+    double      x;
+    double      y;
+    double      z;
+    uint8_t     onground;
 } CP_PlayerPosition_pkt;
 
 // 0x0d
 typedef struct {
-    double x;
-    double y;
-    double z;
-    float  yaw;
-    float  pitch;
-    uint8_t onground;
+    double      x;
+    double      y;
+    double      z;
+    float       yaw;
+    float       pitch;
+    uint8_t     onground;
 } CP_PlayerPositionLook_pkt;
 
 // 0x0e
 typedef struct {
-    float  yaw;
-    float  pitch;
-    uint8_t onground;
+    float       yaw;
+    float       pitch;
+    uint8_t     onground;
 } CP_PlayerLook_pkt;
 
 // 0x0f
 typedef struct {
-    uint8_t onground;
+    uint8_t     onground;
 } CP_Player_pkt;
 
 // 0x14
 typedef struct {
-    uint32_t eid;
-    uint32_t action;
-    uint32_t jumpboost;
+    uint32_t    eid;
+    uint32_t    action;
+    uint32_t    jumpboost;
 } CP_EntityAction_pkt;
 
-
-
-
-
-
-
-
-
-// 0x02
+// 0x1a
 typedef struct {
-    uint32_t target;
-    uint32_t action;
-    float    x,y,z;
-} CP_UseEntity_pkt;
+    uint32_t    hand;
+} CP_Animation_pkt;
+
+
+
+
+
+
+
+
 
 // 0x07
 typedef struct {
@@ -432,10 +438,6 @@ typedef struct {
 typedef struct {
     int16_t sid;
 } CP_HeldItemChange_pkt;
-
-// 0x0a
-typedef struct {
-} CP_Animation_pkt;
 
 // 0x0d
 typedef struct {
@@ -563,17 +565,17 @@ typedef struct {
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);        // 02
+        PKT(CP_UseEntity);          // 0a
         PKT(CP_PlayerPosition);     // 0c
         PKT(CP_PlayerPositionLook); // 0d
         PKT(CP_PlayerLook);         // 0e
         PKT(CP_Player);             // 0f
         PKT(CP_EntityAction);       // 14
+        PKT(CP_Animation);          // 1a
 
-        PKT(CP_UseEntity);
         PKT(CP_PlayerDigging);
         PKT(CP_PlayerBlockPlacement);
         PKT(CP_HeldItemChange);
-        PKT(CP_Animation);
         PKT(CP_CloseWindow);
         PKT(CP_ClickWindow);
     };

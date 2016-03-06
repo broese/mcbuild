@@ -1230,6 +1230,54 @@ DUMP_BEGIN(CP_ChatMessage) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x0a CP_UseEntity
+
+DECODE_BEGIN(CP_UseEntity,_1_9) {
+    Pvarint(target);
+    Pvarint(action);
+    switch(tpkt->action) {
+        case 0:
+            Pvarint(hand);
+            break;
+        case 2:
+            Pfloat(x);
+            Pfloat(y);
+            Pfloat(z);
+            Pvarint(hand);
+            break;
+    }
+} DECODE_END;
+
+ENCODE_BEGIN(CP_UseEntity,_1_9) {
+    Wvarint(target);
+    Wvarint(action);
+    switch(tpkt->action) {
+        case 0:
+            Wvarint(hand);
+            break;
+        case 2:
+            Wfloat(x);
+            Wfloat(y);
+            Wfloat(z);
+            Wvarint(hand);
+            break;
+    }
+} ENCODE_END;
+
+DUMP_BEGIN(CP_UseEntity) {
+    printf("target=%08x action=%d", tpkt->target,tpkt->action);
+    switch(tpkt->action) {
+        case 0:
+            printf(" hand=%d", tpkt->hand);
+            break;
+        case 2:
+            printf(" coord=%.1f,%.1f,%.1f hand=%d",
+                   tpkt->x,tpkt->y,tpkt->z,tpkt->hand);
+            break;
+    }
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x0c CP_PlayerPosition
 
 DECODE_BEGIN(CP_PlayerPosition,_1_8_1) {
@@ -1321,41 +1369,27 @@ DUMP_BEGIN(CP_EntityAction) {
            tpkt->eid, tpkt->action, tpkt->jumpboost);
 } DUMP_END;
 
+////////////////////////////////////////////////////////////////////////////////
+// 0x1a CP_Animation
+
+DECODE_BEGIN(CP_Animation,_1_9) {
+    Pvarint(hand);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_Animation,_1_9) {
+    Wvarint(hand);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_Animation) {
+    printf("hand=%d", tpkt->hand);
+} DUMP_END;
+
 
 
 
 
 
 #if 0
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x02 CP_UseEntity
-
-DECODE_BEGIN(CP_UseEntity,_1_8_1) {
-    Pvarint(target);
-    Pvarint(action);
-    if (tpkt->action==2) {
-        Pfloat(x);
-        Pfloat(y);
-        Pfloat(z);
-    }
-} DECODE_END;
-
-ENCODE_BEGIN(CP_UseEntity,_1_8_1) {
-    Wvarint(target);
-    Wvarint(action);
-    if (tpkt->action==2) {
-        Wfloat(x);
-        Wfloat(y);
-        Wfloat(z);
-    }
-} ENCODE_END;
-
-DUMP_BEGIN(CP_UseEntity) {
-    printf("target=%08x action=%d", tpkt->target,tpkt->action);
-    if (tpkt->action == 2)
-        printf(" coord=%.1f,%.1f,%.1f", tpkt->x,tpkt->y,tpkt->z);
-} DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x07 CP_PlayerDigging
@@ -1422,18 +1456,6 @@ ENCODE_BEGIN(CP_HeldItemChange,_1_8_1) {
 
 DUMP_BEGIN(CP_HeldItemChange) {
     printf("sid=%d", tpkt->sid);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x0a CP_Animation
-
-DECODE_BEGIN(CP_Animation,_1_8_1) {
-} DECODE_END;
-
-ENCODE_BEGIN(CP_Animation,_1_8_1) {
-} ENCODE_END;
-
-DUMP_BEGIN(CP_Animation) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1513,11 +1535,9 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_SetCompression,_1_8_1),
     },
     {
-        SUPPORT_DE  (CP_UseEntity,_1_8_1),
         SUPPORT_DE  (CP_PlayerDigging,_1_8_1),
         SUPPORT_DEF (CP_PlayerBlockPlacement,_1_8_1),
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
-        SUPPORT_DE  (CP_Animation,_1_8_1),
         SUPPORT_DE  (CP_CloseWindow,_1_8_1),
         SUPPORT_DEF (CP_ClickWindow,_1_8_1),
     },
@@ -1545,11 +1565,13 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
     },
     {
         SUPPORT_D   (CP_ChatMessage,_1_8_1),        // 02
+        SUPPORT_DE  (CP_UseEntity,_1_9),            // 0a
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),     // 0c
         SUPPORT_DE  (CP_PlayerPositionLook,_1_8_1), // 0d
         SUPPORT_DE  (CP_PlayerLook,_1_8_1),         // 0e
         SUPPORT_D   (CP_Player,_1_8_1),             // 0f
         SUPPORT_DE  (CP_EntityAction,_1_8_1),       // 14
+        SUPPORT_DE  (CP_Animation,_1_9),            // 1a
     },
 };
 
