@@ -1229,6 +1229,78 @@ DUMP_BEGIN(CP_ChatMessage) {
     printf("str=%s",tpkt->str);
 } DUMP_END;
 
+////////////////////////////////////////////////////////////////////////////////
+// 0x0c CP_PlayerPosition
+
+DECODE_BEGIN(CP_PlayerPosition,_1_8_1) {
+    Pdouble(x);
+    Pdouble(y);
+    Pdouble(z);
+    Pchar(onground);
+} DECODE_END;
+
+DUMP_BEGIN(CP_PlayerPosition) {
+    printf("coord=%.1f,%.1f,%.1f, onground=%d",
+           tpkt->x,tpkt->y,tpkt->z,tpkt->onground);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x0d CP_PlayerPositionLook
+
+DECODE_BEGIN(CP_PlayerPositionLook,_1_8_1) {
+    Pdouble(x);
+    Pdouble(y);
+    Pdouble(z);
+    Pfloat(yaw);
+    Pfloat(pitch);
+    Pchar(onground);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_PlayerPositionLook,_1_8_1) {
+    Wdouble(x);
+    Wdouble(y);
+    Wdouble(z);
+    Wfloat(yaw);
+    Wfloat(pitch);
+    Wchar(onground);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_PlayerPositionLook) {
+    printf("coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",
+           tpkt->x,tpkt->y,tpkt->z,tpkt->yaw,tpkt->pitch,tpkt->onground);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x0e CP_PlayerLook
+
+DECODE_BEGIN(CP_PlayerLook,_1_8_1) {
+    Pfloat(yaw);
+    Pfloat(pitch);
+    Pchar(onground);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_PlayerLook,_1_8_1) {
+    Wfloat(yaw);
+    Wfloat(pitch);
+    Wchar(onground);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_PlayerLook) {
+    printf("rot=%.1f,%.1f, onground=%d",
+           tpkt->yaw,tpkt->pitch,tpkt->onground);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x0f CP_Player
+
+DECODE_BEGIN(CP_Player,_1_8_1) {
+    Pchar(onground);
+} DECODE_END;
+
+DUMP_BEGIN(CP_Player) {
+    printf("onground=%d",tpkt->onground);
+} DUMP_END;
+
 
 
 
@@ -1263,78 +1335,6 @@ DUMP_BEGIN(CP_UseEntity) {
     printf("target=%08x action=%d", tpkt->target,tpkt->action);
     if (tpkt->action == 2)
         printf(" coord=%.1f,%.1f,%.1f", tpkt->x,tpkt->y,tpkt->z);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x03 CP_Player
-
-DECODE_BEGIN(CP_Player,_1_8_1) {
-    Pchar(onground);
-} DECODE_END;
-
-DUMP_BEGIN(CP_Player) {
-    printf("onground=%d",tpkt->onground);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x04 CP_PlayerPosition
-
-DECODE_BEGIN(CP_PlayerPosition,_1_8_1) {
-    Pdouble(x);
-    Pdouble(y);
-    Pdouble(z);
-    Pchar(onground);
-} DECODE_END;
-
-DUMP_BEGIN(CP_PlayerPosition) {
-    printf("coord=%.1f,%.1f,%.1f, onground=%d",
-           tpkt->x,tpkt->y,tpkt->z,tpkt->onground);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x05 CP_PlayerLook
-
-DECODE_BEGIN(CP_PlayerLook,_1_8_1) {
-    Pfloat(yaw);
-    Pfloat(pitch);
-    Pchar(onground);
-} DECODE_END;
-
-ENCODE_BEGIN(CP_PlayerLook,_1_8_1) {
-    Wfloat(yaw);
-    Wfloat(pitch);
-    Wchar(onground);
-} ENCODE_END;
-
-DUMP_BEGIN(CP_PlayerLook) {
-    printf("rot=%.1f,%.1f, onground=%d",
-           tpkt->yaw,tpkt->pitch,tpkt->onground);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x06 CP_PlayerPositionLook
-
-DECODE_BEGIN(CP_PlayerPositionLook,_1_8_1) {
-    Pdouble(x);
-    Pdouble(y);
-    Pdouble(z);
-    Pfloat(yaw);
-    Pfloat(pitch);
-    Pchar(onground);
-} DECODE_END;
-
-ENCODE_BEGIN(CP_PlayerPositionLook,_1_8_1) {
-    Wdouble(x);
-    Wdouble(y);
-    Wdouble(z);
-    Wfloat(yaw);
-    Wfloat(pitch);
-    Wchar(onground);
-} ENCODE_END;
-
-DUMP_BEGIN(CP_PlayerPositionLook) {
-    printf("coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",
-           tpkt->x,tpkt->y,tpkt->z,tpkt->yaw,tpkt->pitch,tpkt->onground);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1514,10 +1514,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     },
     {
         SUPPORT_DE  (CP_UseEntity,_1_8_1),
-        SUPPORT_D   (CP_Player,_1_8_1),
-        SUPPORT_D   (CP_PlayerPosition,_1_8_1),
-        SUPPORT_DE  (CP_PlayerLook,_1_8_1),
-        SUPPORT_DE  (CP_PlayerPositionLook,_1_8_1),
         SUPPORT_DE  (CP_PlayerDigging,_1_8_1),
         SUPPORT_DEF (CP_PlayerBlockPlacement,_1_8_1),
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
@@ -1550,6 +1546,10 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
     },
     {
         SUPPORT_D   (CP_ChatMessage,_1_8_1),        // 02
+        SUPPORT_D   (CP_PlayerPosition,_1_8_1),     // 0c
+        SUPPORT_DE  (CP_PlayerPositionLook,_1_8_1), // 0d
+        SUPPORT_DE  (CP_PlayerLook,_1_8_1),         // 0e
+        SUPPORT_D   (CP_Player,_1_8_1),             // 0f
     },
 };
 
