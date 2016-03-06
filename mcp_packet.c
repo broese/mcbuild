@@ -463,6 +463,31 @@ FREE_BEGIN(SP_ChatMessage) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x23 SP_JoinGame
+
+DECODE_BEGIN(SP_JoinGame,_1_8_1) {
+    Pint(eid);
+    Pchar(gamemode);
+    Pchar(dimension);
+    Pchar(difficulty);
+    Pchar(maxplayers);
+    Pstr(leveltype);
+    Pchar(reduced_debug_info);
+} DECODE_END;
+
+DUMP_BEGIN(SP_JoinGame) {
+    const char *GM[]   = { "Survival", "Creative", "Adventure", "Spectator" };
+    const char *DIM[]  = { "Overworld", "End", "Unknown", "Nether" };
+    const char *DIFF[] = { "Peaceful", "Easy", "Normal", "Hard" };
+
+    printf("eid=%08x, gamemode=%s%s, dimension=%s, difficulty=%s, "
+           "maxplayers=%d, leveltype=%s, reduced_debug_info=%c",
+           tpkt->eid, GM[tpkt->gamemode&3], (tpkt->gamemode&8)?"(hardcore)":"",
+           DIM[tpkt->dimension&3], DIFF[tpkt->difficulty&3],
+           tpkt->maxplayers, tpkt->leveltype, tpkt->reduced_debug_info?'T':'F');
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x25 SP_EntityRelMove
 
 DECODE_BEGIN(SP_EntityRelMove,_1_9) {
@@ -516,6 +541,34 @@ FREE_BEGIN(SP_EntityMetadata) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x2e SP_PlayerPositionLook
+
+DECODE_BEGIN(SP_PlayerPositionLook,_1_9) {
+    Pdouble(x);
+    Pdouble(y);
+    Pdouble(z);
+    Pfloat(yaw);
+    Pfloat(pitch);
+    Pchar(flags);
+    Pvarint(tpid);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_PlayerPositionLook,_1_9) {
+    Wdouble(x);
+    Wdouble(y);
+    Wdouble(z);
+    Wfloat(yaw);
+    Wfloat(pitch);
+    Wchar(flags);
+    Wvarint(tpid);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_PlayerPositionLook) {
+    printf("coord=%.1f,%.1f,%.1f rot=%.1f,%.1f flags=%02x tpid=%08x",
+           tpkt->x,tpkt->y,tpkt->z,tpkt->yaw,tpkt->pitch,tpkt->flags,tpkt->tpid);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x30 SP_DestroyEntities
 
 DECODE_BEGIN(SP_DestroyEntities,_1_8_1) {
@@ -538,6 +591,41 @@ DUMP_BEGIN(SP_DestroyEntities) {
 FREE_BEGIN(SP_DestroyEntities) {
     lh_free(tpkt->eids);
 } FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x33 SP_Respawn
+
+DECODE_BEGIN(SP_Respawn,_1_8_1) {
+    Pint(dimension);
+    Pchar(difficulty);
+    Pchar(gamemode);
+    Pstr(leveltype);
+} DECODE_END;
+
+DUMP_BEGIN(SP_Respawn) {
+    const char *GM[]   = { "Survival", "Creative", "Adventure", "Spectator" };
+    const char *DIM[]  = { "Overworld", "End", "Unknown", "Nether" };
+    const char *DIFF[] = { "Peaceful", "Easy", "Normal", "Hard" };
+
+    printf("gamemode=%s%s, dimension=%s, difficulty=%s, leveltype=%s",
+           GM[tpkt->gamemode&3], (tpkt->gamemode&8)?"(hardcore)":"",
+           DIM[tpkt->dimension&3], DIFF[tpkt->difficulty&3],
+           tpkt->leveltype);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x3e SP_UpdateHealth
+
+DECODE_BEGIN(SP_UpdateHealth,_1_8_1) {
+    Pfloat(health);
+    Pvarint(food);
+    Pfloat(saturation);
+} DECODE_END;
+
+DUMP_BEGIN(SP_UpdateHealth) {
+    printf("health=%.1f, food=%d, saturation=%.1f",
+           tpkt->health, tpkt->food, tpkt->saturation);
+} DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x4a SP_EntityTeleport
@@ -578,31 +666,6 @@ DUMP_BEGIN(SP_KeepAlive) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x01 SP_JoinGame
-
-DECODE_BEGIN(SP_JoinGame,_1_8_1) {
-    Pint(eid);
-    Pchar(gamemode);
-    Pchar(dimension);
-    Pchar(difficulty);
-    Pchar(maxplayers);
-    Pstr(leveltype);
-    Pchar(reduced_debug_info);
-} DECODE_END;
-
-DUMP_BEGIN(SP_JoinGame) {
-    const char *GM[]   = { "Survival", "Creative", "Adventure", "Spectator" };
-    const char *DIM[]  = { "Overworld", "End", "Unknown", "Nether" };
-    const char *DIFF[] = { "Peaceful", "Easy", "Normal", "Hard" };
-
-    printf("eid=%08x, gamemode=%s%s, dimension=%s, difficulty=%s, "
-           "maxplayers=%d, leveltype=%s, reduced_debug_info=%c",
-           tpkt->eid, GM[tpkt->gamemode&3], (tpkt->gamemode&8)?"(hardcore)":"",
-           DIM[tpkt->dimension&3], DIFF[tpkt->difficulty&3],
-           tpkt->maxplayers, tpkt->leveltype, tpkt->reduced_debug_info?'T':'F');
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
 // 0x03 SP_TimeUpdate
 
 DECODE_BEGIN(SP_TimeUpdate,_1_8_1) {
@@ -634,67 +697,6 @@ DUMP_BEGIN(SP_EntityEquipment) {
 FREE_BEGIN(SP_EntityEquipment) {
     clear_slot(&tpkt->item);
 } FREE_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x06 SP_UpdateHealth
-
-DECODE_BEGIN(SP_UpdateHealth,_1_8_1) {
-    Pfloat(health);
-    Pvarint(food);
-    Pfloat(saturation);
-} DECODE_END;
-
-DUMP_BEGIN(SP_UpdateHealth) {
-    printf("health=%.1f, food=%d, saturation=%.1f",
-           tpkt->health, tpkt->food, tpkt->saturation);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x07 SP_Respawn
-
-DECODE_BEGIN(SP_Respawn,_1_8_1) {
-    Pint(dimension);
-    Pchar(difficulty);
-    Pchar(gamemode);
-    Pstr(leveltype);
-} DECODE_END;
-
-DUMP_BEGIN(SP_Respawn) {
-    const char *GM[]   = { "Survival", "Creative", "Adventure", "Spectator" };
-    const char *DIM[]  = { "Overworld", "End", "Unknown", "Nether" };
-    const char *DIFF[] = { "Peaceful", "Easy", "Normal", "Hard" };
-
-    printf("gamemode=%s%s, dimension=%s, difficulty=%s, leveltype=%s",
-           GM[tpkt->gamemode&3], (tpkt->gamemode&8)?"(hardcore)":"",
-           DIM[tpkt->dimension&3], DIFF[tpkt->difficulty&3],
-           tpkt->leveltype);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x08 SP_PlayerPositionLook
-
-DECODE_BEGIN(SP_PlayerPositionLook,_1_8_1) {
-    Pdouble(x);
-    Pdouble(y);
-    Pdouble(z);
-    Pfloat(yaw);
-    Pfloat(pitch);
-    Pchar(flags);
-} DECODE_END;
-
-ENCODE_BEGIN(SP_PlayerPositionLook,_1_8_1) {
-    Wdouble(x);
-    Wdouble(y);
-    Wdouble(z);
-    Wfloat(yaw);
-    Wfloat(pitch);
-    Wchar(flags);
-} ENCODE_END;
-
-DUMP_BEGIN(SP_PlayerPositionLook) {
-    printf("coord=%.1f,%.1f,%.1f rot=%.1f,%.1f flags=%02x",
-           tpkt->x,tpkt->y,tpkt->z,tpkt->yaw,tpkt->pitch,tpkt->flags);
-} DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x09 SP_HeldItemChange
@@ -1487,12 +1489,8 @@ FREE_BEGIN(CP_ClickWindow) {
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_D   (SP_KeepAlive,_1_8_1),
-        SUPPORT_D   (SP_JoinGame,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
         SUPPORT_DF  (SP_EntityEquipment,_1_8_1),
-        SUPPORT_D   (SP_UpdateHealth,_1_8_1),
-        SUPPORT_D   (SP_Respawn,_1_8_1),
-        SUPPORT_DE  (SP_PlayerPositionLook,_1_8_1),
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (SP_CollectItem,_1_8_1),
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
@@ -1540,10 +1538,14 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_SpawnPainting,_1_9),        // 04
         SUPPORT_DF  (SP_SpawnPlayer,_1_9),          // 05
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f
+        SUPPORT_D   (SP_JoinGame,_1_8_1),           // 23
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
         SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
         SUPPORT_DF  (SP_EntityMetadata,_1_8_1),     // 27
+        SUPPORT_DE  (SP_PlayerPositionLook,_1_9),   // 2E
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
+        SUPPORT_D   (SP_Respawn,_1_8_1),            // 33
+        SUPPORT_D   (SP_UpdateHealth,_1_8_1),       // 3e
         SUPPORT_D   (SP_EntityTeleport,_1_9),       // 4a
     },
     {

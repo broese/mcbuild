@@ -100,6 +100,17 @@ typedef struct {
     uint8_t     pos;
 } SP_ChatMessage_pkt;
 
+// 0x23
+typedef struct {
+    uint32_t eid;
+    uint8_t  gamemode;
+    int8_t   dimension;
+    uint8_t  difficulty;
+    uint8_t  maxplayers;
+    char     leveltype[32];
+    uint8_t  reduced_debug_info;
+} SP_JoinGame_pkt;
+
 // 0x25
 typedef struct {
     uint32_t    eid;
@@ -126,11 +137,34 @@ typedef struct {
     metadata *meta;
 } SP_EntityMetadata_pkt;
 
+// 0x2e
+typedef struct {
+    double      x,y,z;
+    float       yaw,pitch;
+    char        flags;
+    uint32_t    tpid;
+} SP_PlayerPositionLook_pkt;
+
 // 0x30
 typedef struct {
     uint32_t    count;
     uint32_t   *eids;
 } SP_DestroyEntities_pkt;
+
+// 0x33
+typedef struct {
+    int32_t dimension;
+    uint8_t difficulty;
+    uint8_t gamemode;
+    char    leveltype[32];
+} SP_Respawn_pkt;
+
+// 0x3e
+typedef struct {
+    float    health;
+    int32_t  food;
+    float    saturation;
+} SP_UpdateHealth_pkt;
 
 // 0x4a
 typedef struct {
@@ -154,17 +188,6 @@ typedef struct {
     uint32_t id;
 } SP_KeepAlive_pkt;
 
-// 0x01
-typedef struct {
-    uint32_t eid;
-    uint8_t  gamemode;
-    int8_t   dimension;
-    uint8_t  difficulty;
-    uint8_t  maxplayers;
-    char     leveltype[32];
-    uint8_t  reduced_debug_info;
-} SP_JoinGame_pkt;
-
 // 0x03
 typedef struct {
     uint64_t worldage;
@@ -177,28 +200,6 @@ typedef struct {
     int16_t  sid;
     slot_t   item;
 } SP_EntityEquipment_pkt;
-
-// 0x06
-typedef struct {
-    float    health;
-    int32_t  food;
-    float    saturation;
-} SP_UpdateHealth_pkt;
-
-// 0x07
-typedef struct {
-    int32_t dimension;
-    uint8_t difficulty;
-    uint8_t gamemode;
-    char    leveltype[32];
-} SP_Respawn_pkt;
-
-// 0x08
-typedef struct {
-    double x,y,z;
-    float  yaw,pitch;
-    char   flags;
-} SP_PlayerPositionLook_pkt;
 
 // 0x09
 typedef struct {
@@ -527,19 +528,19 @@ typedef struct {
         PKT(SP_SpawnPainting);      // 04
         PKT(SP_SpawnPlayer);        // 05
         PKT(SP_ChatMessage);        // 0f
+        PKT(SP_JoinGame);           // 23
         PKT(SP_EntityRelMove);      // 25
         PKT(SP_EntityLookRelMove);  // 26
         PKT(SP_EntityMetadata);     // 27
+        PKT(SP_PlayerPositionLook); // 2e
         PKT(SP_DestroyEntities);    // 30
+        PKT(SP_Respawn);            // 33
+        PKT(SP_UpdateHealth);       // 3e
         PKT(SP_EntityTeleport);     // 4a
 
         PKT(SP_KeepAlive);
-        PKT(SP_JoinGame);
         PKT(SP_TimeUpdate);
         PKT(SP_EntityEquipment);
-        PKT(SP_UpdateHealth);
-        PKT(SP_Respawn);
-        PKT(SP_PlayerPositionLook);
         PKT(SP_HeldItemChange);
         PKT(SP_CollectItem);
         PKT(SP_EntityVelocity);

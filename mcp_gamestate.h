@@ -99,7 +99,7 @@ typedef struct _gamestate {
 
     struct {
         uint32_t    eid;
-        fixp        x,y,z;
+        double      x,y,z;
         uint8_t     onground;
         float       yaw,pitch;
 

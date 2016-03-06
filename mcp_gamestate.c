@@ -971,9 +971,9 @@ void gs_packet(MCPacket *pkt) {
                 printf("SP_PlayerPositionLook with relative values, ignoring packet\n");
                 break;
             }
-            gs.own.x     = (int)(tpkt->x*32);
-            gs.own.y     = (int)(tpkt->y*32);
-            gs.own.z     = (int)(tpkt->z*32);
+            gs.own.x     = tpkt->x;
+            gs.own.y     = tpkt->y;
+            gs.own.z     = tpkt->z;
             gs.own.yaw   = tpkt->yaw;
             gs.own.pitch = tpkt->pitch;
         } _GSP;
@@ -1030,7 +1030,7 @@ void gs_packet(MCPacket *pkt) {
 
         ////////////////////////////////////////////////////////////////
         // Chunks
-
+#if 0
         GSP(SP_ChunkData) {
             if (!tpkt->chunk.mask) {
                 if (gs.opt.prune_chunks) {
@@ -1292,6 +1292,7 @@ void gs_packet(MCPacket *pkt) {
                 clone_slot(wslot, islot);
             }
         } _GSP;
+#endif
     }
 }
 

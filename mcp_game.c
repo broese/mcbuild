@@ -315,7 +315,7 @@ void gmi_failed(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (aid>60000) aid=10000;
 
     // Abort the building process for safety and notify user
-    build_pause();
+    //build_pause(); //TODO: uncomment
     chat_message("INV ACTION FAILED!!! Buildtask paused!", cq, "green", 2);
     chat_message("An inventory action has failed or timed out, inventory state may be inconsistent", cq, "green", 0);
     chat_message("Access any dialog (container/crafting table/etc.) to refresh the inventory", cq, "green", 0);
@@ -1067,7 +1067,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             if (opt.holeradar && gs.own.pos_change)
                 hole_radar(cq);
 
-            build_update();
+            //build_update(); //TODO: uncomment
 
             gs.own.pos_change = 0;
 
@@ -1222,7 +1222,7 @@ void gm_reset() {
     //clear_slot(&invq.drag); //FIXME: uncomment
     //lh_clear_obj(invq);     //FIXME: uncomment
 
-    build_clear(NULL,NULL);
+    //build_clear(NULL,NULL); //FIXME: uncomment
     readbases();
     read_uuids();
 }
@@ -1240,8 +1240,8 @@ void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (opt.antiafk)   antiafk(sq, cq);
     if (opt.autoshear) autoshear(sq);
     if (opt.autoeat)   autoeat(sq, cq);
-#endif
 
     build_preview_transmit(cq);
     build_progress(sq, cq);
+#endif
 }

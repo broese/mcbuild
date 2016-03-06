@@ -118,6 +118,7 @@ int parse_args(int ac, char **av) {
 #define THUNDERDIST (160000<<5)
 
 void track_remote_sounds(int32_t x, int32_t z, int32_t y, struct timeval tv) {
+#if 0
     fixp dx = x - gs.own.x;
     fixp dz = z - gs.own.z;
     int32_t sqdist = dx*dx+dz*dz;
@@ -130,7 +131,8 @@ void track_remote_sounds(int32_t x, int32_t z, int32_t y, struct timeval tv) {
     fixp rz = (fixp)((float)dz*scale)+gs.own.z;
 
     // process output with ./mcpdump | egrep '^thunder' | sed 's/thunder: //' > output.csv
-    printf("thunder: %ld,%d,%d,%d,%d,%d\n",tv.tv_sec,gs.own.x>>5,gs.own.z>>5,rx>>5,rz>>5,y);
+    printf("thunder: %ld,%d,%.1f,%.1f,%.1f,%d\n",tv.tv_sec,gs.own.x,gs.own.z,rx,rz,y);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -31,6 +31,7 @@
 #define EYEHEIGHT 52
 #define YAWMARGIN 0.5
 
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
 
@@ -2369,3 +2370,4 @@ int build_packet(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     return 1;
 }
+#endif
