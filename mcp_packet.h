@@ -391,6 +391,13 @@ typedef struct {
     uint8_t onground;
 } CP_Player_pkt;
 
+// 0x14
+typedef struct {
+    uint32_t eid;
+    uint32_t action;
+    uint32_t jumpboost;
+} CP_EntityAction_pkt;
+
 
 
 
@@ -429,13 +436,6 @@ typedef struct {
 // 0x0a
 typedef struct {
 } CP_Animation_pkt;
-
-// 0x0b
-typedef struct {
-    uint32_t eid;
-    uint32_t action;
-    uint32_t jumpboost;
-} CP_EntityAction_pkt;
 
 // 0x0d
 typedef struct {
@@ -567,13 +567,13 @@ typedef struct {
         PKT(CP_PlayerPositionLook); // 0d
         PKT(CP_PlayerLook);         // 0e
         PKT(CP_Player);             // 0f
+        PKT(CP_EntityAction);       // 14
 
         PKT(CP_UseEntity);
         PKT(CP_PlayerDigging);
         PKT(CP_PlayerBlockPlacement);
         PKT(CP_HeldItemChange);
         PKT(CP_Animation);
-        PKT(CP_EntityAction);
         PKT(CP_CloseWindow);
         PKT(CP_ClickWindow);
     };

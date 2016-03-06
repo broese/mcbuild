@@ -1301,6 +1301,26 @@ DUMP_BEGIN(CP_Player) {
     printf("onground=%d",tpkt->onground);
 } DUMP_END;
 
+////////////////////////////////////////////////////////////////////////////////
+// 0x14 CP_EntityAction
+
+DECODE_BEGIN(CP_EntityAction,_1_8_1) {
+    Pvarint(eid);
+    Pvarint(action);
+    Pvarint(jumpboost);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_EntityAction,_1_8_1) {
+    Wvarint(eid);
+    Wvarint(action);
+    Wvarint(jumpboost);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_EntityAction) {
+    printf("eid=%08x, action=%d, jumpboost=%d",
+           tpkt->eid, tpkt->action, tpkt->jumpboost);
+} DUMP_END;
+
 
 
 
@@ -1417,26 +1437,6 @@ DUMP_BEGIN(CP_Animation) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x0b CP_EntityAction
-
-DECODE_BEGIN(CP_EntityAction,_1_8_1) {
-    Pvarint(eid);
-    Pvarint(action);
-    Pvarint(jumpboost);
-} DECODE_END;
-
-ENCODE_BEGIN(CP_EntityAction,_1_8_1) {
-    Wvarint(eid);
-    Wvarint(action);
-    Wvarint(jumpboost);
-} ENCODE_END;
-
-DUMP_BEGIN(CP_EntityAction) {
-    printf("eid=%08x, action=%d, jumpboost=%d",
-           tpkt->eid, tpkt->action, tpkt->jumpboost);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
 // 0x0d CP_CloseWindow
 
 DECODE_BEGIN(CP_CloseWindow,_1_8_1) {
@@ -1518,7 +1518,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (CP_PlayerBlockPlacement,_1_8_1),
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (CP_Animation,_1_8_1),
-        SUPPORT_DE  (CP_EntityAction,_1_8_1),
         SUPPORT_DE  (CP_CloseWindow,_1_8_1),
         SUPPORT_DEF (CP_ClickWindow,_1_8_1),
     },
@@ -1550,6 +1549,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (CP_PlayerPositionLook,_1_8_1), // 0d
         SUPPORT_DE  (CP_PlayerLook,_1_8_1),         // 0e
         SUPPORT_D   (CP_Player,_1_8_1),             // 0f
+        SUPPORT_DE  (CP_EntityAction,_1_8_1),       // 14
     },
 };
 
