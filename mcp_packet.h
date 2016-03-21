@@ -159,6 +159,11 @@ typedef struct {
     char    leveltype[32];
 } SP_Respawn_pkt;
 
+// 0x37
+typedef struct {
+    int8_t sid;
+} SP_HeldItemChange_pkt;
+
 // 0x3e
 typedef struct {
     float    health;
@@ -200,11 +205,6 @@ typedef struct {
     int16_t  sid;
     slot_t   item;
 } SP_EntityEquipment_pkt;
-
-// 0x09
-typedef struct {
-    int8_t sid;
-} SP_HeldItemChange_pkt;
 
 // 0x0d
 typedef struct {
@@ -406,6 +406,11 @@ typedef struct {
     uint32_t    jumpboost;
 } CP_EntityAction_pkt;
 
+// 0x17
+typedef struct {
+    int16_t sid;
+} CP_HeldItemChange_pkt;
+
 // 0x1a
 typedef struct {
     uint32_t    hand;
@@ -433,11 +438,6 @@ typedef struct {
     slot_t  item;
     int8_t  cx,cy,cz;
 } CP_PlayerBlockPlacement_pkt;
-
-// 0x09
-typedef struct {
-    int16_t sid;
-} CP_HeldItemChange_pkt;
 
 // 0x0d
 typedef struct {
@@ -537,13 +537,13 @@ typedef struct {
         PKT(SP_PlayerPositionLook); // 2e
         PKT(SP_DestroyEntities);    // 30
         PKT(SP_Respawn);            // 33
+        PKT(SP_HeldItemChange);     // 37
         PKT(SP_UpdateHealth);       // 3e
         PKT(SP_EntityTeleport);     // 4a
 
         PKT(SP_KeepAlive);
         PKT(SP_TimeUpdate);
         PKT(SP_EntityEquipment);
-        PKT(SP_HeldItemChange);
         PKT(SP_CollectItem);
         PKT(SP_EntityVelocity);
         PKT(SP_Entity);
@@ -571,11 +571,11 @@ typedef struct {
         PKT(CP_PlayerLook);         // 0e
         PKT(CP_Player);             // 0f
         PKT(CP_EntityAction);       // 14
+        PKT(CP_HeldItemChange);     // 17
         PKT(CP_Animation);          // 1a
 
         PKT(CP_PlayerDigging);
         PKT(CP_PlayerBlockPlacement);
-        PKT(CP_HeldItemChange);
         PKT(CP_CloseWindow);
         PKT(CP_ClickWindow);
     };

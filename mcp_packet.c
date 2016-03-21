@@ -614,6 +614,21 @@ DUMP_BEGIN(SP_Respawn) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x37 SP_HeldItemChange
+
+DECODE_BEGIN(SP_HeldItemChange,_1_8_1) {
+    Pchar(sid);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_HeldItemChange,_1_8_1) {
+    Wchar(sid);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_HeldItemChange) {
+    printf("sid=%d", tpkt->sid);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x3e SP_UpdateHealth
 
 DECODE_BEGIN(SP_UpdateHealth,_1_8_1) {
@@ -697,21 +712,6 @@ DUMP_BEGIN(SP_EntityEquipment) {
 FREE_BEGIN(SP_EntityEquipment) {
     clear_slot(&tpkt->item);
 } FREE_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x09 SP_HeldItemChange
-
-DECODE_BEGIN(SP_HeldItemChange,_1_8_1) {
-    Pchar(sid);
-} DECODE_END;
-
-ENCODE_BEGIN(SP_HeldItemChange,_1_8_1) {
-    Wchar(sid);
-} ENCODE_END;
-
-DUMP_BEGIN(SP_HeldItemChange) {
-    printf("sid=%d", tpkt->sid);
-} DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x0d SP_CollectItem
@@ -1370,6 +1370,21 @@ DUMP_BEGIN(CP_EntityAction) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x17 CP_HeldItemChange
+
+DECODE_BEGIN(CP_HeldItemChange,_1_8_1) {
+    Pshort(sid);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_HeldItemChange,_1_8_1) {
+    Wshort(sid);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_HeldItemChange) {
+    printf("sid=%d", tpkt->sid);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x1a CP_Animation
 
 DECODE_BEGIN(CP_Animation,_1_9) {
@@ -1444,21 +1459,6 @@ FREE_BEGIN(CP_PlayerBlockPlacement) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x09 CP_HeldItemChange
-
-DECODE_BEGIN(CP_HeldItemChange,_1_8_1) {
-    Pshort(sid);
-} DECODE_END;
-
-ENCODE_BEGIN(CP_HeldItemChange,_1_8_1) {
-    Wshort(sid);
-} ENCODE_END;
-
-DUMP_BEGIN(CP_HeldItemChange) {
-    printf("sid=%d", tpkt->sid);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
 // 0x0d CP_CloseWindow
 
 DECODE_BEGIN(CP_CloseWindow,_1_8_1) {
@@ -1513,7 +1513,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_KeepAlive,_1_8_1),
         SUPPORT_D   (SP_TimeUpdate,_1_8_1),
         SUPPORT_DF  (SP_EntityEquipment,_1_8_1),
-        SUPPORT_DE  (SP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (SP_CollectItem,_1_8_1),
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
@@ -1537,7 +1536,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_DE  (CP_PlayerDigging,_1_8_1),
         SUPPORT_DEF (CP_PlayerBlockPlacement,_1_8_1),
-        SUPPORT_DE  (CP_HeldItemChange,_1_8_1),
         SUPPORT_DE  (CP_CloseWindow,_1_8_1),
         SUPPORT_DEF (CP_ClickWindow,_1_8_1),
     },
@@ -1560,6 +1558,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_PlayerPositionLook,_1_9),   // 2E
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
         SUPPORT_D   (SP_Respawn,_1_8_1),            // 33
+        SUPPORT_DED (SP_HeldItemChange,_1_8_1),     // 37
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),       // 3e
         SUPPORT_D   (SP_EntityTeleport,_1_9),       // 4a
     },
@@ -1571,6 +1570,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (CP_PlayerLook,_1_8_1),         // 0e
         SUPPORT_D   (CP_Player,_1_8_1),             // 0f
         SUPPORT_DE  (CP_EntityAction,_1_8_1),       // 14
+        SUPPORT_DED (CP_HeldItemChange,_1_8_1),     // 17
         SUPPORT_DE  (CP_Animation,_1_9),            // 1a
     },
 };
