@@ -463,6 +463,19 @@ FREE_BEGIN(SP_ChatMessage) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x11 SP_ConfirmTransaction
+
+DECODE_BEGIN(SP_ConfirmTransaction,_1_8_1) {
+    Pchar(wid);
+    Pshort(aid);
+    Pchar(accepted);
+} DECODE_END;
+
+DUMP_BEGIN(SP_ConfirmTransaction) {
+    printf("wid=%d action=%d accepted=%d", tpkt->wid, tpkt->aid, tpkt->accepted);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x12 SP_CloseWindow
 
 DECODE_BEGIN(SP_CloseWindow,_1_8_1) {
@@ -1122,19 +1135,6 @@ DUMP_BEGIN(SP_SoundEffect) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x32 SP_ConfirmTransaction
-
-DECODE_BEGIN(SP_ConfirmTransaction,_1_8_1) {
-    Pchar(wid);
-    Pshort(aid);
-    Pchar(accepted);
-} DECODE_END;
-
-DUMP_BEGIN(SP_ConfirmTransaction) {
-    printf("wid=%d action=%d accepted=%d", tpkt->wid, tpkt->aid, tpkt->accepted);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
 // 0x34 SP_Map
 
 DECODE_BEGIN(SP_Maps,_1_8_1) {
@@ -1227,6 +1227,37 @@ DECODE_BEGIN(CP_ChatMessage,_1_8_1) {
 DUMP_BEGIN(CP_ChatMessage) {
     printf("str=%s",tpkt->str);
 } DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x07 CP_ClickWindow
+
+DECODE_BEGIN(CP_ClickWindow,_1_8_1) {
+    Pchar(wid);
+    Pshort(sid);
+    Pchar(button);
+    Pshort(aid);
+    Pchar(mode);
+    p = read_slot(p, &tpkt->slot);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_ClickWindow,_1_8_1) {
+    Wchar(wid);
+    Wshort(sid);
+    Wchar(button);
+    Wshort(aid);
+    Wchar(mode);
+    w = write_slot(w, &tpkt->slot);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_ClickWindow) {
+    printf("wid=%d, sid=%d, aid=%d, button=%d, mode=%d, slot:",
+           tpkt->wid, tpkt->sid, tpkt->aid, tpkt->button, tpkt->mode);
+    dump_slot(&tpkt->slot);
+} DUMP_END;
+
+FREE_BEGIN(CP_ClickWindow) {
+    clear_slot(&tpkt->slot);
+} FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x08 CP_CloseWindow
@@ -1472,37 +1503,6 @@ FREE_BEGIN(CP_PlayerBlockPlacement) {
     clear_slot(&tpkt->item);
 } FREE_END;
 
-////////////////////////////////////////////////////////////////////////////////
-// 0x0e CP_ClickWindow
-
-DECODE_BEGIN(CP_ClickWindow,_1_8_1) {
-    Pchar(wid);
-    Pshort(sid);
-    Pchar(button);
-    Pshort(aid);
-    Pchar(mode);
-    p = read_slot(p, &tpkt->slot);
-} DECODE_END;
-
-ENCODE_BEGIN(CP_ClickWindow,_1_8_1) {
-    Wchar(wid);
-    Wshort(sid);
-    Wchar(button);
-    Wshort(aid);
-    Wchar(mode);
-    w = write_slot(w, &tpkt->slot);
-} ENCODE_END;
-
-DUMP_BEGIN(CP_ClickWindow) {
-    printf("wid=%d, sid=%d, aid=%d, button=%d, mode=%d, slot:",
-           tpkt->wid, tpkt->sid, tpkt->aid, tpkt->button, tpkt->mode);
-    dump_slot(&tpkt->slot);
-} DUMP_END;
-
-FREE_BEGIN(CP_ClickWindow) {
-    clear_slot(&tpkt->slot);
-} FREE_END;
-
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1523,7 +1523,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_Explosion,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
-        SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DF  (SP_Maps,_1_8_1),
         SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),
         SUPPORT_DE  (SP_SetCompression,_1_8_1),
@@ -1531,7 +1530,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_DE  (CP_PlayerDigging,_1_8_1),
         SUPPORT_DEF (CP_PlayerBlockPlacement,_1_8_1),
-        SUPPORT_DEF (CP_ClickWindow,_1_8_1),
     },
 };
 
@@ -1545,6 +1543,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_SpawnPainting,_1_9),        // 04
         SUPPORT_DF  (SP_SpawnPlayer,_1_9),          // 05
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f
+        SUPPORT_D   (SP_ConfirmTransaction,_1_8_1), // 11
         SUPPORT_DE  (SP_CloseWindow,_1_8_1),        // 12
         SUPPORT_DEF (SP_OpenWindow,_1_8_1),         // 13
         SUPPORT_DEF (SP_WindowItems,_1_8_1),        // 14
@@ -1562,6 +1561,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
     },
     {
         SUPPORT_D   (CP_ChatMessage,_1_8_1),        // 02
+        SUPPORT_DEF (CP_ClickWindow,_1_8_1),        // 07
         SUPPORT_DE  (CP_CloseWindow,_1_8_1),        // 08
         SUPPORT_DE  (CP_UseEntity,_1_9),            // 0a
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),     // 0c

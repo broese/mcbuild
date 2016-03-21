@@ -100,6 +100,13 @@ typedef struct {
     uint8_t     pos;
 } SP_ChatMessage_pkt;
 
+// 0x11
+typedef struct {
+    uint8_t  wid;
+    uint16_t aid;
+    uint8_t  accepted;
+} SP_ConfirmTransaction_pkt;
+
 // 0x12
 typedef struct {
     uint8_t wid;
@@ -314,13 +321,6 @@ typedef struct {
     uint8_t  pitch;
 } SP_SoundEffect_pkt;
 
-// 0x32
-typedef struct {
-    uint8_t  wid;
-    uint16_t aid;
-    uint8_t  accepted;
-} SP_ConfirmTransaction_pkt;
-
 // 0x34
 typedef struct {
     uint8_t  type;
@@ -360,6 +360,16 @@ typedef struct {
 typedef struct {
     char        str[256];
 } CP_ChatMessage_pkt;
+
+// 0x07
+typedef struct {
+    uint8_t  wid;
+    int16_t  sid;
+    uint8_t  button;
+    uint16_t aid;
+    uint8_t  mode;
+    slot_t   slot;
+} CP_ClickWindow_pkt;
 
 // 0x08
 typedef struct {
@@ -444,16 +454,6 @@ typedef struct {
     int8_t  cx,cy,cz;
 } CP_PlayerBlockPlacement_pkt;
 
-// 0x0e
-typedef struct {
-    uint8_t  wid;
-    int16_t  sid;
-    uint8_t  button;
-    uint16_t aid;
-    uint8_t  mode;
-    slot_t   slot;
-} CP_ClickWindow_pkt;
-
 
 
 
@@ -530,6 +530,7 @@ typedef struct {
         PKT(SP_SpawnPainting);      // 04
         PKT(SP_SpawnPlayer);        // 05
         PKT(SP_ChatMessage);        // 0f
+        PKT(SP_ConfirmTransaction); // 11
         PKT(SP_CloseWindow);        // 12
         PKT(SP_OpenWindow);         // 13
         PKT(SP_WindowItems);        // 14
@@ -559,12 +560,12 @@ typedef struct {
         PKT(SP_Explosion);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
-        PKT(SP_ConfirmTransaction);
         PKT(SP_Maps);
         PKT(SP_UpdateBlockEntity);
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);        // 02
+        PKT(CP_ClickWindow);        // 07
         PKT(CP_CloseWindow);        // 08
         PKT(CP_UseEntity);          // 0a
         PKT(CP_PlayerPosition);     // 0c
@@ -577,7 +578,6 @@ typedef struct {
 
         PKT(CP_PlayerDigging);
         PKT(CP_PlayerBlockPlacement);
-        PKT(CP_ClickWindow);
     };
 } MCPacket;
 
