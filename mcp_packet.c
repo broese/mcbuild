@@ -511,6 +511,67 @@ FREE_BEGIN(SP_OpenWindow) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x14 SP_WindowItems
+
+DECODE_BEGIN(SP_WindowItems,_1_8_1) {
+    Pchar(wid);
+    Pshort(count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        p = read_slot(p, &tpkt->slots[i]);
+    }
+} DECODE_END;
+
+ENCODE_BEGIN(SP_WindowItems,_1_8_1) {
+    Wchar(wid);
+    Wshort(count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        w = write_slot(w, &tpkt->slots[i]);
+    }
+} ENCODE_END;
+
+DUMP_BEGIN(SP_WindowItems) {
+    printf("wid=%d count=%d\n",tpkt->wid,tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        printf("  %d : ",i);
+        dump_slot(&tpkt->slots[i]);
+        printf("\n");
+    }
+} DUMP_END;
+
+FREE_BEGIN(SP_WindowItems) {
+    int i;
+    for(i=0; i<tpkt->count; i++)
+        clear_slot(&tpkt->slots[i]);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x16 SP_SetSlot
+
+DECODE_BEGIN(SP_SetSlot,_1_8_1) {
+    Pchar(wid);
+    Pshort(sid);
+    p = read_slot(p, &tpkt->slot);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_SetSlot,_1_8_1) {
+    Wchar(wid);
+    Wshort(sid);
+    w = write_slot(w, &tpkt->slot);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_SetSlot) {
+    printf("wid=%d sid=%d slot:",tpkt->wid,tpkt->sid);
+    dump_slot(&tpkt->slot);
+} DUMP_END;
+
+FREE_BEGIN(SP_SetSlot) {
+    clear_slot(&tpkt->slot);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x23 SP_JoinGame
 
 DECODE_BEGIN(SP_JoinGame,_1_8_1) {
@@ -1061,68 +1122,6 @@ DUMP_BEGIN(SP_SoundEffect) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x2f SP_SetSlot
-
-DECODE_BEGIN(SP_SetSlot,_1_8_1) {
-    Pchar(wid);
-    Pshort(sid);
-    p = read_slot(p, &tpkt->slot);
-} DECODE_END;
-
-ENCODE_BEGIN(SP_SetSlot,_1_8_1) {
-    Wchar(wid);
-    Wshort(sid);
-    w = write_slot(w, &tpkt->slot);
-} ENCODE_END;
-
-DUMP_BEGIN(SP_SetSlot) {
-    printf("wid=%d sid=%d slot:",tpkt->wid,tpkt->sid);
-    dump_slot(&tpkt->slot);
-} DUMP_END;
-
-FREE_BEGIN(SP_SetSlot) {
-    clear_slot(&tpkt->slot);
-} FREE_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x30 SP_WindowItems
-
-DECODE_BEGIN(SP_WindowItems,_1_8_1) {
-    Pchar(wid);
-    Pshort(count);
-    int i;
-    for(i=0; i<tpkt->count; i++) {
-        p = read_slot(p, &tpkt->slots[i]);
-    }
-} DECODE_END;
-
-ENCODE_BEGIN(SP_WindowItems,_1_8_1) {
-    Wchar(wid);
-    Wshort(count);
-    int i;
-    for(i=0; i<tpkt->count; i++) {
-        w = write_slot(w, &tpkt->slots[i]);
-    }
-} ENCODE_END;
-
-DUMP_BEGIN(SP_WindowItems) {
-    printf("wid=%d count=%d\n",tpkt->wid,tpkt->count);
-    int i;
-    for(i=0; i<tpkt->count; i++) {
-        printf("  %d : ",i);
-        dump_slot(&tpkt->slots[i]);
-        printf("\n");
-    }
-} DUMP_END;
-
-FREE_BEGIN(SP_WindowItems) {
-    int i;
-    for(i=0; i<tpkt->count; i++)
-        clear_slot(&tpkt->slots[i]);
-} FREE_END;
-
-
-////////////////////////////////////////////////////////////////////////////////
 // 0x32 SP_ConfirmTransaction
 
 DECODE_BEGIN(SP_ConfirmTransaction,_1_8_1) {
@@ -1524,8 +1523,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_Explosion,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
-        SUPPORT_DEF (SP_SetSlot,_1_8_1),
-        SUPPORT_DEF (SP_WindowItems,_1_8_1),
         SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DF  (SP_Maps,_1_8_1),
         SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),
@@ -1550,6 +1547,8 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f
         SUPPORT_DE  (SP_CloseWindow,_1_8_1),        // 12
         SUPPORT_DEF (SP_OpenWindow,_1_8_1),         // 13
+        SUPPORT_DEF (SP_WindowItems,_1_8_1),        // 14
+        SUPPORT_DEF (SP_SetSlot,_1_8_1),            // 16
         SUPPORT_D   (SP_JoinGame,_1_8_1),           // 23
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
         SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26

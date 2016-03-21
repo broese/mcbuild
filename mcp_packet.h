@@ -114,6 +114,20 @@ typedef struct {
     uint32_t eid;   // horse's ID - only used if the window type is a EntityHorse
 } SP_OpenWindow_pkt;
 
+// 0x14
+typedef struct {
+    uint8_t  wid;
+    int16_t  count;
+    slot_t   slots[256];
+} SP_WindowItems_pkt;
+
+// 0x16
+typedef struct {
+    uint8_t  wid;
+    int16_t  sid;
+    slot_t   slot;
+} SP_SetSlot_pkt;
+
 // 0x23
 typedef struct {
     uint32_t eid;
@@ -299,20 +313,6 @@ typedef struct {
     float    vol;
     uint8_t  pitch;
 } SP_SoundEffect_pkt;
-
-// 0x2f
-typedef struct {
-    uint8_t  wid;
-    int16_t  sid;
-    slot_t   slot;
-} SP_SetSlot_pkt;
-
-// 0x30
-typedef struct {
-    uint8_t  wid;
-    int16_t  count;
-    slot_t   slots[256];
-} SP_WindowItems_pkt;
 
 // 0x32
 typedef struct {
@@ -532,6 +532,8 @@ typedef struct {
         PKT(SP_ChatMessage);        // 0f
         PKT(SP_CloseWindow);        // 12
         PKT(SP_OpenWindow);         // 13
+        PKT(SP_WindowItems);        // 14
+        PKT(SP_SetSlot);            // 16
         PKT(SP_JoinGame);           // 23
         PKT(SP_EntityRelMove);      // 25
         PKT(SP_EntityLookRelMove);  // 26
@@ -557,8 +559,6 @@ typedef struct {
         PKT(SP_Explosion);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
-        PKT(SP_SetSlot);
-        PKT(SP_WindowItems);
         PKT(SP_ConfirmTransaction);
         PKT(SP_Maps);
         PKT(SP_UpdateBlockEntity);
