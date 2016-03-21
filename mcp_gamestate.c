@@ -1125,6 +1125,32 @@ void gs_packet(MCPacket *pkt) {
                 dump_packet(pkt);
             if (tpkt->wid != 0) break;
 
+            // Since MC1.9 we no longer receive SetSlot from the server to set
+            // our product slot when crafting something. Instead, we must rely
+            // on the slot data send by the real MC client when clicking on the
+            // slot and update our state.
+            // This should be only relevant for the product slot, but keep track
+            // if the corrections occur on other slots - may indicate corruption
+            if (tpkt->sid>=0 && tpkt->sid<=45) {
+                slot_t * s = &gs.inv.slots[tpkt->sid];
+                if (tpkt->slot.item != s->item ||
+                    tpkt->slot.count != s->count ||
+                    tpkt->slot.damage != s->damage ) {
+
+                    if (DEBUG_INVENTORY) {
+                        printf("Correcting clicked slot:\n");
+                        printf("  Packet slot:    ");
+                        dump_slot(&tpkt->slot);
+                        printf("\n");
+                        printf("  Inventory slot: ");
+                        dump_slot(s);
+                        printf("\n");
+                    }
+                }
+                clear_slot(s);
+                clone_slot(&tpkt->slot, s);
+            }
+
             switch (tpkt->mode) {
                 case 0:
                     if (DEBUG_INVENTORY)
