@@ -463,6 +463,54 @@ FREE_BEGIN(SP_ChatMessage) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x12 SP_CloseWindow
+
+DECODE_BEGIN(SP_CloseWindow,_1_8_1) {
+    Pchar(wid);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_CloseWindow,_1_8_1) {
+    Wchar(wid);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_CloseWindow) {
+    printf("wid=%d", tpkt->wid);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x13 SP_OpenWindow
+
+DECODE_BEGIN(SP_OpenWindow,_1_8_1) {
+    Pchar(wid);
+    Pstr(wtype);
+    Rstr(title);
+    tpkt->title = strdup(title);
+    Pchar(nslots);
+    if (!strcmp(tpkt->wtype, "EntityHorse")) {
+        Pint(eid);
+    }
+} DECODE_END;
+
+ENCODE_BEGIN(SP_OpenWindow,_1_8_1) {
+    Wchar(wid);
+    Wstr(wtype);
+    Wstr(title);
+    Wchar(nslots);
+    if (!strcmp(tpkt->wtype, "EntityHorse")) {
+        Wint(eid);
+    }
+} ENCODE_END;
+
+DUMP_BEGIN(SP_OpenWindow) {
+    printf("wid=%d wtype=%s title=%s nslots=%d eid=%d",
+           tpkt->wid,tpkt->wtype,tpkt->title,tpkt->nslots,tpkt->eid);
+} DUMP_END;
+
+FREE_BEGIN(SP_OpenWindow) {
+    lh_free(tpkt->title);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x23 SP_JoinGame
 
 DECODE_BEGIN(SP_JoinGame,_1_8_1) {
@@ -1013,54 +1061,6 @@ DUMP_BEGIN(SP_SoundEffect) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x2d SP_OpenWindow
-
-DECODE_BEGIN(SP_OpenWindow,_1_8_1) {
-    Pchar(wid);
-    Pstr(wtype);
-    Rstr(title);
-    tpkt->title = strdup(title);
-    Pchar(nslots);
-    if (!strcmp(tpkt->wtype, "EntityHorse")) {
-        Pint(eid);
-    }
-} DECODE_END;
-
-ENCODE_BEGIN(SP_OpenWindow,_1_8_1) {
-    Wchar(wid);
-    Wstr(wtype);
-    Wstr(title);
-    Wchar(nslots);
-    if (!strcmp(tpkt->wtype, "EntityHorse")) {
-        Wint(eid);
-    }
-} ENCODE_END;
-
-DUMP_BEGIN(SP_OpenWindow) {
-    printf("wid=%d wtype=%s title=%s nslots=%d eid=%d",
-           tpkt->wid,tpkt->wtype,tpkt->title,tpkt->nslots,tpkt->eid);
-} DUMP_END;
-
-FREE_BEGIN(SP_OpenWindow) {
-    lh_free(tpkt->title);
-} FREE_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x2e SP_CloseWindow
-
-DECODE_BEGIN(SP_CloseWindow,_1_8_1) {
-    Pchar(wid);
-} DECODE_END;
-
-ENCODE_BEGIN(SP_CloseWindow,_1_8_1) {
-    Wchar(wid);
-} ENCODE_END;
-
-DUMP_BEGIN(SP_CloseWindow) {
-    printf("wid=%d", tpkt->wid);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
 // 0x2f SP_SetSlot
 
 DECODE_BEGIN(SP_SetSlot,_1_8_1) {
@@ -1227,6 +1227,21 @@ DECODE_BEGIN(CP_ChatMessage,_1_8_1) {
 
 DUMP_BEGIN(CP_ChatMessage) {
     printf("str=%s",tpkt->str);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x08 CP_CloseWindow
+
+DECODE_BEGIN(CP_CloseWindow,_1_8_1) {
+    Pchar(wid);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_CloseWindow,_1_8_1) {
+    Wchar(wid);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_CloseWindow) {
+    printf("wid=%d", tpkt->wid);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1459,21 +1474,6 @@ FREE_BEGIN(CP_PlayerBlockPlacement) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x0d CP_CloseWindow
-
-DECODE_BEGIN(CP_CloseWindow,_1_8_1) {
-    Pchar(wid);
-} DECODE_END;
-
-ENCODE_BEGIN(CP_CloseWindow,_1_8_1) {
-    Wchar(wid);
-} ENCODE_END;
-
-DUMP_BEGIN(CP_CloseWindow) {
-    printf("wid=%d", tpkt->wid);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
 // 0x0e CP_ClickWindow
 
 DECODE_BEGIN(CP_ClickWindow,_1_8_1) {
@@ -1524,8 +1524,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_Explosion,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
-        SUPPORT_DEF (SP_OpenWindow,_1_8_1),
-        SUPPORT_DE  (SP_CloseWindow,_1_8_1),
         SUPPORT_DEF (SP_SetSlot,_1_8_1),
         SUPPORT_DEF (SP_WindowItems,_1_8_1),
         SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
@@ -1536,7 +1534,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_DE  (CP_PlayerDigging,_1_8_1),
         SUPPORT_DEF (CP_PlayerBlockPlacement,_1_8_1),
-        SUPPORT_DE  (CP_CloseWindow,_1_8_1),
         SUPPORT_DEF (CP_ClickWindow,_1_8_1),
     },
 };
@@ -1551,6 +1548,8 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_SpawnPainting,_1_9),        // 04
         SUPPORT_DF  (SP_SpawnPlayer,_1_9),          // 05
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f
+        SUPPORT_DE  (SP_CloseWindow,_1_8_1),        // 12
+        SUPPORT_DEF (SP_OpenWindow,_1_8_1),         // 13
         SUPPORT_D   (SP_JoinGame,_1_8_1),           // 23
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
         SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
@@ -1558,19 +1557,20 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_PlayerPositionLook,_1_9),   // 2E
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
         SUPPORT_D   (SP_Respawn,_1_8_1),            // 33
-        SUPPORT_DED (SP_HeldItemChange,_1_8_1),     // 37
+        SUPPORT_DE  (SP_HeldItemChange,_1_8_1),     // 37
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),       // 3e
         SUPPORT_D   (SP_EntityTeleport,_1_9),       // 4a
     },
     {
         SUPPORT_D   (CP_ChatMessage,_1_8_1),        // 02
+        SUPPORT_DE  (CP_CloseWindow,_1_8_1),        // 08
         SUPPORT_DE  (CP_UseEntity,_1_9),            // 0a
         SUPPORT_D   (CP_PlayerPosition,_1_8_1),     // 0c
         SUPPORT_DE  (CP_PlayerPositionLook,_1_8_1), // 0d
         SUPPORT_DE  (CP_PlayerLook,_1_8_1),         // 0e
         SUPPORT_D   (CP_Player,_1_8_1),             // 0f
         SUPPORT_DE  (CP_EntityAction,_1_8_1),       // 14
-        SUPPORT_DED (CP_HeldItemChange,_1_8_1),     // 17
+        SUPPORT_DE  (CP_HeldItemChange,_1_8_1),     // 17
         SUPPORT_DE  (CP_Animation,_1_9),            // 1a
     },
 };

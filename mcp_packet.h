@@ -100,6 +100,20 @@ typedef struct {
     uint8_t     pos;
 } SP_ChatMessage_pkt;
 
+// 0x12
+typedef struct {
+    uint8_t wid;
+} SP_CloseWindow_pkt;
+
+// 0x13
+typedef struct {
+    uint8_t  wid;
+    char     wtype[256];
+    char    *title;
+    uint8_t  nslots;
+    uint32_t eid;   // horse's ID - only used if the window type is a EntityHorse
+} SP_OpenWindow_pkt;
+
 // 0x23
 typedef struct {
     uint32_t eid;
@@ -286,20 +300,6 @@ typedef struct {
     uint8_t  pitch;
 } SP_SoundEffect_pkt;
 
-// 0x2d
-typedef struct {
-    uint8_t  wid;
-    char     wtype[256];
-    char    *title;
-    uint8_t  nslots;
-    uint32_t eid;   // horse's ID - only used if the window type is a EntityHorse
-} SP_OpenWindow_pkt;
-
-// 0x2e
-typedef struct {
-    uint8_t wid;
-} SP_CloseWindow_pkt;
-
 // 0x2f
 typedef struct {
     uint8_t  wid;
@@ -360,6 +360,11 @@ typedef struct {
 typedef struct {
     char        str[256];
 } CP_ChatMessage_pkt;
+
+// 0x08
+typedef struct {
+    uint8_t wid;
+} CP_CloseWindow_pkt;
 
 // 0x0a
 typedef struct {
@@ -438,11 +443,6 @@ typedef struct {
     slot_t  item;
     int8_t  cx,cy,cz;
 } CP_PlayerBlockPlacement_pkt;
-
-// 0x0d
-typedef struct {
-    uint8_t wid;
-} CP_CloseWindow_pkt;
 
 // 0x0e
 typedef struct {
@@ -530,6 +530,8 @@ typedef struct {
         PKT(SP_SpawnPainting);      // 04
         PKT(SP_SpawnPlayer);        // 05
         PKT(SP_ChatMessage);        // 0f
+        PKT(SP_CloseWindow);        // 12
+        PKT(SP_OpenWindow);         // 13
         PKT(SP_JoinGame);           // 23
         PKT(SP_EntityRelMove);      // 25
         PKT(SP_EntityLookRelMove);  // 26
@@ -555,8 +557,6 @@ typedef struct {
         PKT(SP_Explosion);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
-        PKT(SP_OpenWindow);
-        PKT(SP_CloseWindow);
         PKT(SP_SetSlot);
         PKT(SP_WindowItems);
         PKT(SP_ConfirmTransaction);
@@ -565,6 +565,7 @@ typedef struct {
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);        // 02
+        PKT(CP_CloseWindow);        // 08
         PKT(CP_UseEntity);          // 0a
         PKT(CP_PlayerPosition);     // 0c
         PKT(CP_PlayerPositionLook); // 0d
@@ -576,7 +577,6 @@ typedef struct {
 
         PKT(CP_PlayerDigging);
         PKT(CP_PlayerBlockPlacement);
-        PKT(CP_CloseWindow);
         PKT(CP_ClickWindow);
     };
 } MCPacket;
