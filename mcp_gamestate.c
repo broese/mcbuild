@@ -260,7 +260,7 @@ int sameitem(slot_t *a, slot_t *b) {
 void dump_inventory() {
     int i;
     printf("Dumping inventory:\n");
-    for(i=-1; i<45; i++) {
+    for(i=-1; i<46; i++) {
         slot_t *s;
         if (i<0) {
             s=&gs.inv.drag;
@@ -548,6 +548,7 @@ static void inv_shiftclick(int button, int16_t sid) {
     if (I_CHESTPLATE(f->item)) armorslot = 6;
     if (I_LEGGINGS(f->item))   armorslot = 7;
     if (I_BOOTS(f->item))      armorslot = 8;
+    if (I_ELYTRA(f->item))     armorslot = 45;
 
     slot_t *as = (armorslot>0) ? &gs.inv.slots[armorslot] : NULL;
 
@@ -564,7 +565,7 @@ static void inv_shiftclick(int button, int16_t sid) {
         // main area - try to move to the quickbar
         mask = SLOTS_QUICKBAR;
     }
-    else if (sid>=36) {
+    else if (sid>=36 && sid<45) {
         // quickbar - try to move to the main area
         mask = SLOTS_MAINAREA;
     }
@@ -1051,7 +1052,7 @@ void gs_packet(MCPacket *pkt) {
                 modify_blocks(x>>4,z>>4,&block,1);
             }
         } _GSP;
-
+#endif
         ////////////////////////////////////////////////////////////////
         // Inventory
 
@@ -1069,7 +1070,7 @@ void gs_packet(MCPacket *pkt) {
                 case 0: {
                     //dump_packet(pkt);
                     // main inventory window (wid=0)
-                    assert(tpkt->sid>=0 && tpkt->sid<45);
+                    assert(tpkt->sid>=0 && tpkt->sid<46);
 
                     // copy the slot to our inventory slot
                     clone_slot(&tpkt->slot, &gs.inv.slots[tpkt->sid]);
@@ -1270,7 +1271,6 @@ void gs_packet(MCPacket *pkt) {
                 clone_slot(wslot, islot);
             }
         } _GSP;
-#endif
     }
 }
 

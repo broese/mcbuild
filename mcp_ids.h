@@ -266,7 +266,8 @@
 #define I_CHESTPLATE(id) ((id)==0x12b || (id)==0x12f || (id)==0x133 || (id)==0x137 || (id)==0x13b)
 #define I_LEGGINGS(id)   ((id)==0x12c || (id)==0x130 || (id)==0x134 || (id)==0x138 || (id)==0x13c)
 #define I_BOOTS(id)      ((id)==0x12d || (id)==0x131 || (id)==0x135 || (id)==0x139 || (id)==0x13d)
-#define I_ARMOR(id)      (I_HELMET(id) || I_CHESTPLATE(id) || I_LEGGINGS(id) || I_BOOTS(id))
+#define I_ELYTRA(id)     ((id)==0x1bb)
+#define I_ARMOR(id)      (I_HELMET(id) || I_CHESTPLATE(id) || I_LEGGINGS(id) || I_BOOTS(id) || I_ELYTRA(id))
 
 typedef struct _item_id {
     const char * name;
