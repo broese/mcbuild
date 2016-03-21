@@ -857,14 +857,16 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"Antispam filter is %s",opt.antispam?"ON":"OFF");
         rpos = 2;
     }
+#endif
     else if (!strcmp(words[0],"coords")) {
-        sprintf(reply,"coord=%d,%d,%d, rot=%.1f,%.1f, onground=%d",
-                gs.own.x>>5,gs.own.y>>5,gs.own.z>>5,
+        sprintf(reply,"coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",
+                gs.own.x,gs.own.y,gs.own.z,
                 gs.own.yaw,gs.own.pitch,gs.own.onground);
     }
     else if (!strcmp(words[0],"inv")) {
         dump_inventory();
     }
+#if 0
     else if (!strcmp(words[0],"grind")) {
         int maxlevel=30;
         int start = 1;
@@ -930,6 +932,7 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
             opt.bright = bright;
         }
     }
+#endif
     else if (!strcmp(words[0],"changeheld")) {
         if (!words[1] || !words[2]) {
             sprintf(reply,"Usage: changeheld <sid> <notify_client>");
@@ -946,7 +949,6 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
             gmi_swap_slots(tq, bq, atoi(words[1]), atoi(words[2]));
         }
     }
-#endif
 
     // send an immediate reply if any was given
     if (reply[0]) chat_message(reply, bq, "gold", rpos);
@@ -1109,7 +1111,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
 
             break;
         }
-
+#endif
         ////////////////////////////////////////////////////////////////
         // Inventory
 
@@ -1117,7 +1119,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             gmi_confirm(tpkt, sq, cq);
             queue_packet(pkt, tq);
         } _GMP;
-
+#if 0
         ////////////////////////////////////////////////////////////////
         // Map data
 
@@ -1261,14 +1263,11 @@ void gm_reset() {
 }
 
 void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
-//FIXME: uncomment
-#if 0
     if (invq.state) {
         // do not attempt to do other things while inventory is handled
         gmi_process_queue(sq, cq);
         return;
     }
-#endif
 
     if (opt.autokill)  autokill(sq);
 #if 0
