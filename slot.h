@@ -34,8 +34,14 @@ void dump_slot(slot_t *s);
 // clear slot, free any allocated data
 void clear_slot(slot_t *s);
 
+// ensure that an emptied slot is in a consistent state
+void prune_slot(slot_t *s);
+
 // make a copy of a slot, including deep-copied NBT
 slot_t * clone_slot(slot_t *src, slot_t *dst);
+
+// swap the contents of two slots
+void swap_slots(slot_t *f, slot_t *t);
 
 // read slot data from MC packet format
 uint8_t * read_slot(uint8_t *p, slot_t *s);

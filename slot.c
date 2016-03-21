@@ -49,10 +49,18 @@ void clear_slot(slot_t *s) {
     s->damage = 0;
 }
 
+// ensure that an emptied slot is in a consistent state
+void prune_slot(slot_t *s) {
+    if (s->count <= 0 || s->item == -1)
+        clear_slot(s);
+}
+
 // make a copy of a slot, including deep-copied NBT
 slot_t * clone_slot(slot_t *src, slot_t *dst) {
     if (!dst)
         lh_alloc_obj(dst);
+
+    clear_slot(dst);
 
     dst->item = src->item;
     dst->count = src->count;
@@ -60,6 +68,14 @@ slot_t * clone_slot(slot_t *src, slot_t *dst) {
     dst->nbt = nbt_clone(src->nbt);
 
     return dst;
+}
+
+// swap the contents of two slots
+void swap_slots(slot_t *f, slot_t *t) {
+    slot_t temp;
+    temp = *t;
+    *t = *f;
+    *f = temp;
 }
 
 // read slot data from MC packet format
