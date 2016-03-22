@@ -29,20 +29,72 @@ const char * METANAME[][32] = {
     [Entity] = {
         [0]  = "Flags",
         [1]  = "Air",
+        [2]  = "Custom name",
+        [3]  = "Name visible",
+        [4]  = "Is silent",
     },
-    [LivingEntity] = {
-        [0]  = "Flags",
-        [1]  = "Air",
-        [2]  = "Name tag",
-        [3]  = "Always show name tag",
+    [Potion] = {
+        [5]  = "Slot",
+    },
+    [FallingBlock] = {
+        [5]  = "Position",
+    },
+    [AreaEffectCloud] = {
+        [5]  = "Radius",
+        [6]  = "Color",
+        [7]  = "Single point",
+        [8]  = "Particle ID",
+    },
+    [FishingFloat] = {
+        [5]  = "Hooked entity",
+    },
+    [Arrow] = {
+        [5]  = "Is critical",
+    },
+    [TippedArrow] = {
+        [6]  = "Color",
+    },
+    [Boat] = {
+        [5]  = "Time since hit",
+        [6]  = "Forward direction",
+        [7]  = "Damage taken",
+        [8]  = "Type",
+        [9]  = "Paddle A",
+        [10] = "Paddle B",
+    },
+    [EnderCrystal] = {
+        [5]  = "Beam target",
+        [6]  = "Show bottom",
+    },
+    [Fireball] = {
+    },
+    [WitherSkull] = {
+        [5]  = "Invulnerable",
+    },
+    [Fireworks] = {
+        [5] = "Firework info",
+    },
+    [Hanging] = {
+    },
+    [ItemFrame] = {
+        [5] = "Item",
+        [6] = "Rotation",
+    },
+    [Item] = {
+        [5] = "Item",
+    },
+    [Living] = {
+        [5]  = "Active hand",
         [6]  = "Health",
         [7]  = "Potion effect color",
         [8]  = "Potion effect ambient",
         [9]  = "Number of arrows",
-        [15] = "No AI",
     },
-    [Ageable] = {
-        [12] = "Age",
+    [Player] = {
+        [10] = "Additional hearts",
+        [11] = "Score",
+        [12] = "Skin flags",
+        [13] = "Main hand",
     },
     [ArmorStand] = {
         [10] = "Armor stand flags",
@@ -53,185 +105,188 @@ const char * METANAME[][32] = {
         [15] = "L leg position",
         [16] = "R leg position",
     },
-    [Human] = {
-        [10] = "Skin flags",
-        [16] = "Hide cape",
-        [17] = "Absorption hearts",
-        [18] = "Score",
+    [Insentinent] = {
+        [10] = "Insentinent flags",
     },
-    [Horse] = {
-        [16] = "Horse flags",
-        [19] = "Horse type",
-        [20] = "Horse color",
-        [21] = "Owner name",
-        [22] = "Horse armor",
+    [Ambient] = {
     },
     [Bat] = {
-        [16] = "Is hanging",
+        [11] = "Is hanging",
     },
-    [Tameable] = {
-        [16] = "Tameable flags",
-        [17] = "Owner name",
+    [Creature] = {
     },
-    [Ocelot] = {
-        [18] = "Ocelot type",
+    [Ageable] = {
+        [11] = "Is baby",
     },
-    [Wolf] = {
-        [18] = "Health",
-        [19] = "Begging",
-        [20] = "Collar color",
+    [Animal] = {
+    },
+    [Horse] = {
+        [12] = "Horse flags",
+        [13] = "Horse type",
+        [14] = "Horse color",
+        [15] = "Owner UUID",
+        [16] = "Horse armor",
     },
     [Pig] = {
-        [16] = "Has saddle",
+        [12] = "Has saddle",
     },
     [Rabbit] = {
-        [18] = "Rabbit type",
+        [12] = "Rabbit type",
     },
     [Sheep] = {
-        [16] = "Sheep color",
+        [12] = "Sheep color",
+    },
+    [TameableAnimal] = {
+        [12] = "Tameable flags",
+        [13] = "Owner UUID",
+    },
+    [Ocelot] = {
+        [14] = "Ocelot type",
+    },
+    [Wolf] = {
+        [14] = "Damage",
+        [15] = "Begging",
+        [16] = "Collar color",
     },
     [Villager] = {
-        [16] = "Villager type",
+        [12] = "Profession",
     },
-    [Enderman] = {
-        [16] = "Carried block",
-        [17] = "Carried block data",
-        [18] = "Is screaming",
-    },
-    [Zombie] = {
-        [12] = "child zombie",
-        [13] = "villager zombie",
-        [14] = "converting zombie",
-    },
-    [ZombiePigman] = {
-    },
-    [Blaze] = {
-        [16] = "Blaze it motherfucker",
-    },
-    [Spider] = {
-        [16] = "Climbing",
-    },
-    [CaveSpider] = {
-    },
-    [Creeper] = {
-        [16] = "Creeper state",
-        [17] = "is powered",
-    },
-    [Ghast] = {
-        [16] = "is attacking",
-    },
-    [Slime] = {
-        [16] = "Size",
-    },
-    [MagmaCube] = {
-    },
-    [Skeleton] = {
-        [13] = "Skeleton type",
-    },
-    [Witch] = {
-        [21] = "is aggressive",
+    [Golem] = {
     },
     [IronGolem] = {
-        [16] = "created by player",
+        [11] = "created by player",
+    },
+    [Snowman] = {
+        [10] = "Flags",
+    },
+    [Shulker] = {
+        [11] = "Direction",
+        [12] = "Attachment position",
+        [13] = "Shield height",
+    },
+    [Monster] = {
+    },
+    [Blaze] = {
+        [11] = "On fire",
+    },
+    [Creeper] = {
+        [11] = "Creeper state",
+        [12] = "Charged",
+        [13] = "Ignited",
+    },
+    [Guardian] = {
+        [11] = "Flags",
+        [12] = "Target EID",
+    },
+    [Skeleton] = {
+        [11] = "Skeleton type",
+        [12] = "Targeting",
+    },
+    [Spider] = {
+        [11] = "Climbing",
+    },
+    [Witch] = {
+        [11] = "Aggressive",
     },
     [Wither] = {
-        [17] = "Target 1",
-        [18] = "Target 2",
-        [19] = "Target 3",
-        [20] = "Invulnerable time",
+        [11] = "Target 1",
+        [12] = "Target 2",
+        [13] = "Target 3",
+        [14] = "Invulnerable time",
     },
-    [Boat] = {
-        [17] = "Time since hit",
-        [18] = "Forward direction",
-        [19] = "Damage taken",
+    [Zombie] = {
+        [11] = "Baby zombie",
+        [12] = "Villager zombie",
+        [13] = "Converting zombie",
+        [14] = "Hands up",
+    },
+    [Enderman] = {
+        [11] = "Carried block",
+        [12] = "Screaming",
+    },
+    [Enderdragon] = {
+        [11] = "Phase",
+    },
+    [Flying] = {
+    },
+    [Ghast] = {
+        [11] = "Attacking",
+    },
+    [Slime] = {
+        [11] = "Size",
     },
     [Minecart] = {
-        [17] = "Shaking power",
-        [18] = "Shaking direction",
-        [19] = "Damage taken/shaking multiplier",
-        [20] = "Block id/data",
-        [21] = "Block y",
-        [22] = "Show block",
+        [5]  = "Shaking power",
+        [6]  = "Shaking direction",
+        [7]  = "Shaking multiplier",
+        [8]  = "Block id/data",
+        [9]  = "Block y",
+        [10] = "Show block",
     },
-    [FurnaceMinecart] = {
-        [16] = "Is powered",
-    },
-    [Item] = {
-        [10] = "Item",
-    },
-    [Arrow] = {
-        [16] = "Is critical",
-    },
-    [Firework] = {
-        [8] = "Firework data",
-    },
-    [ItemFrame] = {
-        [8] = "Framed item",
-        [9] = "Rotation",
-    },
-    [EnderCrystal] = {
-        [8] = "Health",
+    [MinecartFurnace] = {
+        [11] = "Powered",
     },
 };
 
 const EntityType ENTITY_HIERARCHY[] = {
     //// Superclasses
-    [Entity]          = IllegalEntityType,
-    [LivingEntity]    = Entity,
-    [Ageable]         = LivingEntity,
-    [Human]           = LivingEntity,
-    [Tameable]        = Ageable,
-    [Item]            = Entity,
-    [Firework]        = Entity,
-    [Mob]             = LivingEntity,
-    [Monster]         = LivingEntity,
-
-    //// Monsters
-    [Creeper]         = LivingEntity,
-    [Skeleton]        = LivingEntity,
-    [Spider]          = LivingEntity,
-    [GiantZombie]     = LivingEntity,
-    [Zombie]          = LivingEntity,
-    [Slime]           = LivingEntity,
-    [Ghast]           = LivingEntity,
-    [ZombiePigman]    = Zombie,
-    [Enderman]        = LivingEntity,
-    [CaveSpider]      = Spider,
-    [Silverfish]      = LivingEntity,
-    [Blaze]           = LivingEntity,
-    [MagmaCube]       = Slime,
-    [Enderdragon]     = LivingEntity,
-    [Wither]          = LivingEntity,
-    [Bat]             = LivingEntity,
-    [Witch]           = LivingEntity,
-    [Endermite]       = LivingEntity,
-    [Guardian]        = LivingEntity,
-
-    //// Mobs
-    [Pig]             = Ageable,
-    [Sheep]           = Ageable,
-    [Cow]             = Ageable,
-    [Chicken]         = Ageable,
-    [Squid]           = LivingEntity,
-    [Wolf]            = Tameable,
-    [Mooshroom]       = Ageable,
-    [Snowman]         = LivingEntity,
-    [Ocelot]          = Tameable,
-    [IronGolem]       = LivingEntity,
-    [Horse]           = Ageable,
-    [Rabbit]          = Ageable,
-    [Villager]        = Ageable,
-
-    //// Objects
-    [Boat]            = Entity,
-    [ItemStack]       = Entity,
-    [Minecart]        = Entity,
-    [ChestMinecart]   = Minecart,
-    [FurnaceMinecart] = Minecart,
-    [EnderCrystal]    = Entity,
-    [Arrow]           = Entity,
-    [ItemFrame]       = Entity,
-    [ArmorStand]      = LivingEntity,
+    [Entity]            = IllegalEntityType,
+    [Potion]            = Entity,
+    [FallingBlock]      = Entity,
+    [AreaEffectCloud]   = Entity,
+    [FishingFloat]      = Entity,
+    [Arrow]             = Entity,
+    [TippedArrow]       = Arrow,
+    [Boat]              = Entity,
+    [EnderCrystal]      = Entity,
+    [Fireball]          = Entity,
+    [WitherSkull]       = Fireball,
+    [Fireworks]         = Entity,
+    [Hanging]           = Entity,
+    [ItemFrame]         = Hanging,
+    [Item]              = Entity,
+    [Living]            = Entity,
+    [Player]            = Living,
+    [ArmorStand]        = Living,
+    [Insentinent]       = Living,
+    [Ambient]           = Insentinent,
+    [Bat]               = Ambient,
+    [Creature]          = Insentinent,
+    [Ageable]           = Creature,
+    [Animal]            = Ageable,
+    [Horse]             = Animal,
+    [Pig]               = Animal,
+    [Rabbit]            = Animal,
+    [Sheep]             = Animal,
+    [TameableAnimal]    = Animal,
+    [Ocelot]            = TameableAnimal,
+    [Wolf]              = TameableAnimal,
+    [Villager]          = Creature,
+    [Golem]             = Creature,
+    [IronGolem]         = Golem,
+    [Snowman]           = Golem,
+    [Shulker]           = Golem,
+    [Monster]           = Creature,
+    [Blaze]             = Monster,
+    [Creeper]           = Monster,
+    [Guardian]          = Monster,
+    [Skeleton]          = Monster,
+    [Spider]            = Monster,
+    [CaveSpider]        = Spider,
+    [Witch]             = Monster,
+    [Wither]            = Monster,
+    [Zombie]            = Monster,
+    [ZombiePigman]      = Zombie,
+    [Enderman]          = Monster,
+    [Enderdragon]       = Insentinent,
+    [Flying]            = Insentinent,
+    [Ghast]             = Flying,
+    [Slime]             = Insentinent,
+    [MagmaCube]         = Slime,
+    [Minecart]          = Entity,
+    [MinecartCommandBlock] = Minecart,
+    [MinecartFurnace]   = Minecart,
+    [ActivatedTNT]      = Entity,
 };
 
 #define ENUMNAME(name) [name] = #name
@@ -256,6 +311,7 @@ const char * ENTITY_NAMES[MaxEntityType] = {
     ENUMNAME(Witch),
     ENUMNAME(Endermite),
     ENUMNAME(Guardian),
+    ENUMNAME(Shulker),
 
     ENUMNAME(Pig),
     ENUMNAME(Sheep),

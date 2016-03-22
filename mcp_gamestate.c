@@ -820,7 +820,7 @@ void gs_packet(MCPacket *pkt) {
             e->y  = tpkt->y;
             e->z  = tpkt->z;
             e->type = ENTITY_PLAYER;
-            e->mtype = Human;
+            e->mtype = Player;
             //TODO: name
             //TODO: mark players hostile/neutral/friendly depending on the faglist
             e->mdata = clone_metadata(tpkt->meta);

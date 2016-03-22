@@ -25,12 +25,21 @@ typedef enum {
     //// Superclasses
     IllegalEntityType   = -1,
     Entity              = 0,
-    LivingEntity        = 1,
+    Living              = 1,
     Ageable             = 2,
-    Human               = 3,
-    Tameable            = 4,
+    Player              = 3,
+    TameableAnimal      = 4,
     Item                = 5,
-    Firework            = 6,
+    Fireworks           = 6,
+    Potion              = 7,
+    FallingBlock        = 8,
+    Hanging             = 9,
+    Insentinent         = 10,
+    Ambient             = 11,
+    Creature            = 12,
+    Animal              = 13,
+    Golem               = 14,
+    Flying              = 15,
     Mob                 = 48,
     Monster             = 49,
 
@@ -56,6 +65,7 @@ typedef enum {
     Witch               = 66,
     Endermite           = 67,
     Guardian            = 68,
+    Shulker             = 69,
 
     Pig                 = 90,
     Sheep               = 91,
@@ -76,14 +86,39 @@ typedef enum {
     //// Objects
     Boat                = 1 +256,
     ItemStack           = 2 +256,
+    AreaEffectCloud     = 3 +256,
+
     Minecart            = 10+256,
     ChestMinecart       = 11+256, // deprecated since 1.6
-    FurnaceMinecart     = 12+256, // deprecated since 1.6
+    MinecartFurnace     = 12+256, // deprecated since 1.6
+    MinecartCommandBlock= 13+256,
+
+    ActivatedTNT        = 50+256,
     EnderCrystal        = 51+256,
+
     Arrow               = 60+256,
+    Snowball            = 61+256,
+    Egg                 = 62+256,
+    Fireball            = 63+256,
+    FireCharge          = 64+256,
+    ThrownEnderpearl    = 65+256,
+    WitherSkull         = 66+256,
+    ShulkerBullet       = 67+256,
+
+    FallingObjects      = 70+256,
     ItemFrame           = 71+256,
+    EyeOfEnder          = 72+256,
+    ThrownPotion        = 73+256,
+    FallingDragonEgg    = 74+256,
+    ThrownExpBottle     = 75+256,
+    FireworkRocket      = 76+256,
+    LeashKnot           = 77+256,
     ArmorStand          = 78+256,
-    //TODO: other objects
+
+    FishingFloat        = 90+256,
+    SpectralArrow       = 91+256,
+    TippedArrow         = 92+256,
+    DragonFireball      = 93+256,
 
     //// Terminating ID
     MaxEntityType       = 512,

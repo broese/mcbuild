@@ -428,7 +428,7 @@ DUMP_BEGIN(SP_SpawnPlayer) {
     printf("eid=%08x, uuid=%s, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, item=%d",
            tpkt->eid, limhex(tpkt->uuid,16,16), tpkt->x, tpkt->y, tpkt->z,
            (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->item);
-    dump_metadata(tpkt->meta, Human);
+    dump_metadata(tpkt->meta, Player);
 } DUMP_END;
 
 FREE_BEGIN(SP_SpawnPlayer) {
