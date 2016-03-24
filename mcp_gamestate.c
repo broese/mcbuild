@@ -42,8 +42,9 @@ void dump_entities() {
     int i;
     for(i=0; i<C(gs.entity); i++) {
         entity *e = P(gs.entity)+i;
-        printf("  %4d eid=%08x type=%-7s coord=%.1f,%.1f,%.1f\n",
-               i,e->id, ENTITY_TYPES[e->type], e->x, e->y, e->z);
+        printf("  %4d eid=%08x type=%-7s coord=%.1f,%.1f,%.1f dist=%.1f\n",
+               i,e->id, ENTITY_TYPES[e->type], e->x, e->y, e->z,
+               sqrt(SQ(gs.own.x-e->x)+SQ(gs.own.y-e->y)+SQ(gs.own.z-e->z)));
     }
 }
 
@@ -893,18 +894,18 @@ void gs_packet(MCPacket *pkt) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
             entity *e = P(gs.entity)+idx;
-            e->x += (double)tpkt->dx/64.0; //FIXME: check factor
-            e->y += (double)tpkt->dy/64.0;
-            e->z += (double)tpkt->dz/64.0;
+            e->x += ((double)tpkt->dx)/4096.0;
+            e->y += ((double)tpkt->dy)/4096.0;
+            e->z += ((double)tpkt->dz)/4096.0;
         } _GSP;
 
         GSP(SP_EntityLookRelMove) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
             entity *e = P(gs.entity)+idx;
-            e->x += (double)tpkt->dx/64.0; //FIXME: check factor
-            e->y += (double)tpkt->dy/64.0;
-            e->z += (double)tpkt->dz/64.0;
+            e->x += ((double)tpkt->dx)/4096.0;
+            e->y += ((double)tpkt->dy)/4096.0;
+            e->z += ((double)tpkt->dz)/4096.0;
         } _GSP;
 
         GSP(SP_EntityTeleport) {
