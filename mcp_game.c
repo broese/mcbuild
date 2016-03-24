@@ -175,23 +175,19 @@ static void autokill(MCPacketQueue *sq) {
     }
 }
 
-#if 0
-
 ////////////////////////////////////////////////////////////////////////////////
 // Autoshear
 
 // use same constants from Autokill
-
-uint64_t last_autoshear = 0;
+TBDEF(tb_ash, MIN_ATTACK_DELAY, MAX_ATTACK);
 
 static void autoshear(MCPacketQueue *sq) {
     // player must hold shears as active item
     slot_t * islot = &gs.inv.slots[gs.inv.held+36];
     if (islot->item != 359) return;
 
-    // skip if we used autoshear less than MIN_ATTACK_DELAY us ago
-    uint64_t ts = gettimestamp();
-    if ((ts-last_autoshear)<MIN_ATTACK_DELAY) return;
+    // rate-limit
+    if (!tb_event(&tb_ash, 1)) return;
 
     // calculate list of usable entities in range
     uint32_t hent[MAX_ENTITIES];
@@ -206,30 +202,21 @@ static void autoshear(MCPacketQueue *sq) {
         if (!e->mdata) continue;
 
         // skip sheared sheep
-        assert(e->mdata[16].h != 0x7f);
-        assert(e->mdata[16].type == META_BYTE);
-        if (e->mdata[16].b >= 0x10) continue;
+        assert(e->mdata[12].type == META_BYTE);
+        if (e->mdata[12].b >= 0x10) continue;
 
         // skip baby sheep
-        assert(e->mdata[12].h != 0x7f);
-        assert(e->mdata[12].type == META_BYTE);
-        if (e->mdata[12].b < 0) continue;
-
-        // skip entities we hit only recently
-        if ((ts-e->lasthit) < MIN_ENTITY_DELAY) continue;
+        assert(e->mdata[11].type == META_BOOL);
+        if (e->mdata[11].bool) continue;
 
         // only take entities that are within our reach
-        int sd = mydist(e->x, e->y, e->z) >> 10;
-        if (sd<=SQ(REACH_RANGE))
+        if (mydist(e->x, e->y, e->z)<=REACH_RANGE)
             hent[hi++] = i;
     }
 
     for(i=0; i<hi && i<MAX_ATTACK; i++) {
         entity *e = P(gs.entity)+hent[i];
         //printf("Shearing entity %08x\n",e->id);
-
-        e->lasthit = ts;
-        last_autoshear = ts;
 
         // Shear entity
         NEWPACKET(CP_UseEntity, atk);
@@ -242,6 +229,8 @@ static void autoshear(MCPacketQueue *sq) {
         queue_packet(anim, sq);
     }
 }
+
+#if 0
 
 ////////////////////////////////////////////////////////////////////////////////
 // Holeradar
@@ -842,11 +831,13 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"Anti-AFK is %s",opt.antiafk?"ON":"OFF");
         rpos = 2;
     }
+#endif
     else if (!strcmp(words[0],"ash") || !strcmp(words[0],"autoshear")) {
         opt.autoshear = !opt.autoshear;
         sprintf(reply,"Autoshear is %s",opt.autoshear?"ON":"OFF");
         rpos = 2;
     }
+#if 0
     else if (!strcmp(words[0],"ae") || !strcmp(words[0],"autoeat")) {
         opt.autoeat = !opt.autoeat;
         sprintf(reply,"Autoeat is %s",opt.autoeat?"ON":"OFF");
@@ -1270,9 +1261,9 @@ void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
     if (opt.autokill)  autokill(sq);
+    if (opt.autoshear) autoshear(sq);
 #if 0
     if (opt.antiafk)   antiafk(sq, cq);
-    if (opt.autoshear) autoshear(sq);
     if (opt.autoeat)   autoeat(sq, cq);
 
     build_preview_transmit(cq);
