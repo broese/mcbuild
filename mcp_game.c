@@ -41,7 +41,6 @@ struct {
     int antispam;
     int autoshear;
     int autoeat;
-    int bright;
 } opt;
 
 // loaded base locations - for thunder protection
@@ -740,23 +739,6 @@ void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, float yaw) {
     queue_packet(c, cq);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// Fullbright
-
-void chunk_bright(chunk_t * chunk, int bincr) {
-    int Y,i,level;
-    for(Y=0; Y<16; Y++) {
-        if (chunk->cubes[Y]) {
-            light_t *light = chunk->cubes[Y]->light;
-            for(i=0; i<2048; i++) {
-                level = (int)light[i].l + bincr;
-                light[i].l = (level<15) ? level : 15;
-                level = (int)light[i].h + bincr;
-                light[i].h = (level<15) ? level : 15;
-            }
-        }
-    }
-}
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -901,27 +883,6 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         }
 
         face_direction(tq, bq, yaw);
-    }
-    else if (!strcmp(words[0],"br") || !strcmp(words[0],"bright")) {
-        int bright = -1;
-        if (words[1]) {
-            if (sscanf(words[1], "%u", &bright)!=1) {
-                bright = -1;
-            }
-        }
-        else {
-            bright = (opt.bright) ? 0 : 15;
-        }
-
-        if (bright<0) {
-            sprintf(reply, "Usage: #bright [increment]");
-        }
-        else {
-            if (bright > 15) bright=15;
-            sprintf(reply,"Brightness increment: %d", bright);
-            rpos = 2;
-            opt.bright = bright;
-        }
     }
 #endif
     else if (!strcmp(words[0],"changeheld")) {
@@ -1112,17 +1073,6 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             queue_packet(pkt, tq);
         } _GMP;
 #if 0
-        ////////////////////////////////////////////////////////////////
-        // Map data
-
-        GMP(SP_ChunkData) {
-            if (opt.bright) {
-                chunk_bright(&tpkt->chunk, opt.bright);
-                pkt->modified=1;
-            }
-            queue_packet(pkt, tq);
-        } _GMP;
-
         ////////////////////////////////////////////////////////////////
         // Other players
 
