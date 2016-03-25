@@ -490,6 +490,8 @@ const item_id ITEMS[] = {
     [0x8ff] = { NULL }, //Terminator
 };
 
+#define MAXITEMID 0x8ff
+
 // given a specific block ID and meta, return the meta value corresponding
 // to the basic state of the block
 int get_base_meta(int id, int meta) {
@@ -637,7 +639,7 @@ bid_t get_base_block_material(bid_t mat) {
 }
 
 const char * get_mat_name(char *buf, int id, int meta) {
-    if (id<0) {
+    if (id<0 || id>MAXITEMID) {
         sprintf(buf, "-");
         return buf;
     }
