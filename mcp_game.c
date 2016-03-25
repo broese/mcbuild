@@ -707,6 +707,7 @@ void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
 
     ae_last_eat = ts;
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Autowalk (work in progress)
@@ -715,14 +716,14 @@ void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
 
 void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, float yaw) {
     // coordinates are adjusted so we stand exactly in the middle of the block
-    int x=gs.own.x&0xfffffff0; x|=0x00000010;
-    int z=gs.own.z&0xfffffff0; z|=0x00000010;
+    double x = floor(gs.own.x)+0.5;
+    double z = floor(gs.own.z)+0.5;
 
     // packet to the client
     NEWPACKET(CP_PlayerPositionLook, s);
-    ts->x = (double)x/32.0;
-    ts->z = (double)z/32.0;
-    ts->y = (double)(gs.own.y>>5);
+    ts->x = x;
+    ts->z = z;
+    ts->y = gs.own.y;
     ts->yaw = yaw;
     ts->pitch = DEFAULT_PITCH;
     ts->onground = gs.own.onground;
@@ -730,16 +731,14 @@ void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, float yaw) {
 
     // packet to the server
     NEWPACKET(SP_PlayerPositionLook, c);
-    tc->x = (double)x/32.0;
-    tc->z = (double)z/32.0;
-    tc->y = (double)(gs.own.y>>5);
+    ts->x = x;
+    ts->z = z;
+    ts->y = gs.own.y;
     tc->yaw = yaw;
     tc->pitch = DEFAULT_PITCH;
     tc->flags = 0;
     queue_packet(c, cq);
 }
-
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
@@ -870,7 +869,6 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"Hole radar is %s",opt.holeradar?"ON":"OFF");
         rpos = 2;
     }
-#if 0
     else if (!strcmp(words[0],"align")) {
         float yaw = 0;
         if (!(words[1] && sscanf(words[1], "%f", &yaw) == 1)) {
@@ -884,7 +882,6 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
 
         face_direction(tq, bq, yaw);
     }
-#endif
     else if (!strcmp(words[0],"changeheld")) {
         if (!words[1] || !words[2]) {
             sprintf(reply,"Usage: changeheld <sid> <notify_client>");
