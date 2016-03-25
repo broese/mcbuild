@@ -148,7 +148,7 @@ typedef struct {
     slot_t   slot;
 } SP_SetSlot_pkt;
 
-// 0x27
+// 0x1c
 typedef struct {
     float    x,y,z;
     float    radius;
@@ -156,6 +156,11 @@ typedef struct {
     boff_t  *blocks;
     float    vx,vy,vz;
 } SP_Explosion_pkt;
+
+// 0x1d
+typedef struct {
+    int32_t  X,Z;
+} SP_UnloadChunk_pkt;
 
 // 0x20
 typedef struct {
@@ -531,6 +536,7 @@ typedef struct {
         PKT(SP_WindowItems);        // 14
         PKT(SP_SetSlot);            // 16
         PKT(SP_Explosion);          // 1c
+        PKT(SP_UnloadChunk);        // 1d
         PKT(SP_ChunkData);          // 20
         PKT(SP_JoinGame);           // 23
         PKT(SP_EntityRelMove);      // 25

@@ -600,6 +600,23 @@ FREE_BEGIN(SP_Explosion) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x1d SP_UnloadChunk
+
+DECODE_BEGIN(SP_UnloadChunk,_1_9) {
+    Pint(X);
+    Pint(Z);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_UnloadChunk,_1_9) {
+    Wint(X);
+    Wint(Z);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_UnloadChunk) {
+    printf("chunk=%d,%d", tpkt->X, tpkt->Z);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x20 SP_ChunkData
 
 static int is_overworld = 1;
@@ -1449,6 +1466,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_WindowItems,_1_8_1),        // 14
         SUPPORT_DEF (SP_SetSlot,_1_8_1),            // 16
         SUPPORT_DF  (SP_Explosion,_1_8_1),          // 1c
+        SUPPORT_DE  (SP_UnloadChunk,_1_9),          // 1d
         SUPPORT_DF  (SP_ChunkData,_1_9),            // 20
         SUPPORT_D   (SP_JoinGame,_1_8_1),           // 23
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
