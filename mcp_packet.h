@@ -287,13 +287,6 @@ typedef struct {
     bid_t    block;
 } SP_BlockChange_pkt;
 
-// 0x26
-typedef struct {
-    int8_t   skylight;
-    int32_t  nchunks;
-    chunk_t *chunk;
-} SP_MapChunkBulk_pkt;
-
 // 0x27
 typedef struct {
     float    x,y,z;
@@ -556,7 +549,6 @@ typedef struct {
         PKT(SP_SetExperience);
         PKT(SP_MultiBlockChange);
         PKT(SP_BlockChange);
-        PKT(SP_MapChunkBulk);
         PKT(SP_Explosion);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
