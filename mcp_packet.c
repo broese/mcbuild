@@ -347,6 +347,26 @@ FREE_BEGIN(SP_SpawnPlayer) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x0b SP_BlockChange
+
+DECODE_BEGIN(SP_BlockChange,_1_8_1) {
+    Plong(pos.p);
+    Rvarint(bid);
+    tpkt->block.raw = (uint16_t)bid;
+} DECODE_END;
+
+ENCODE_BEGIN(SP_BlockChange,_1_8_1) {
+    Wlong(pos.p);
+    Wvarint(block.raw);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_BlockChange) {
+    printf("coord=%d,%d,%d bid=%3x meta=%d",
+           tpkt->pos.x, tpkt->pos.y, tpkt->pos.z,
+           tpkt->block.bid,tpkt->block.meta);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x0F SP_ChatMessage
 
 DECODE_BEGIN(SP_ChatMessage,_1_8_1) {
@@ -371,6 +391,50 @@ DUMP_BEGIN(SP_ChatMessage) {
 
 FREE_BEGIN(SP_ChatMessage) {
     lh_free(tpkt->json);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x10 SP_MultiBlockChange
+
+DECODE_BEGIN(SP_MultiBlockChange,_1_8_1) {
+    Pint(X);
+    Pint(Z);
+    Pvarint(count);
+    lh_alloc_num(tpkt->blocks, tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        Pchar(blocks[i].pos);
+        Pchar(blocks[i].y);
+        Rvarint(bid);
+        tpkt->blocks[i].bid.raw = (uint16_t)bid;
+    }
+} DECODE_END;
+
+ENCODE_BEGIN(SP_MultiBlockChange,_1_8_1) {
+    Wint(X);
+    Wint(Z);
+    Wvarint(count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        Wchar(blocks[i].pos);
+        Wchar(blocks[i].y);
+        Wvarint(blocks[i].bid.raw);
+    }
+} ENCODE_END;
+
+DUMP_BEGIN(SP_MultiBlockChange) {
+    printf("chunk=%d:%d, count=%d",
+           tpkt->X, tpkt->Z, tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        blkrec *b = tpkt->blocks+i;
+        printf("\n    coord=%2d,%3d,%2d bid=%3x meta=%d",
+               b->x,b->z,b->y,b->bid.bid,b->bid.meta);
+    }
+} DUMP_END;
+
+FREE_BEGIN(SP_MultiBlockChange) {
+    lh_free(tpkt->blocks);
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -493,6 +557,46 @@ DUMP_BEGIN(SP_SetSlot) {
 
 FREE_BEGIN(SP_SetSlot) {
     clear_slot(&tpkt->slot);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x1c SP_Explosion
+
+DECODE_BEGIN(SP_Explosion,_1_8_1) {
+    Pfloat(x);
+    Pfloat(y);
+    Pfloat(z);
+    Pfloat(radius);
+    Pint(count);
+    lh_alloc_num(tpkt->blocks, tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        boff_t *b = tpkt->blocks+i;
+        Rchar(dx);
+        Rchar(dy);
+        Rchar(dz);
+        b->dx = (int8_t)dx;
+        b->dy = (int8_t)dy;
+        b->dz = (int8_t)dz;
+    }
+    Pfloat(vx);
+    Pfloat(vy);
+    Pfloat(vz);
+} DECODE_END;
+
+DUMP_BEGIN(SP_Explosion) {
+    printf("coord=%.1f,%.1f,%.1f, radius=%.1f, velocity=%.1f,%.1f,%.1f, count=%d",
+           tpkt->x, tpkt->y, tpkt->z, tpkt->radius,
+           tpkt->vx, tpkt->vy, tpkt->vz, tpkt->count);
+    int i;
+    for(i=0; i<tpkt->count; i++) {
+        boff_t *b = tpkt->blocks+i;
+        printf("\n  offset=%d,%d,%d",b->dx,b->dy,b->dz);
+    }
+} DUMP_END;
+
+FREE_BEGIN(SP_Explosion) {
+    lh_free(tpkt->blocks);
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -889,110 +993,6 @@ DECODE_BEGIN(SP_SetExperience,_1_8_1) {
 DUMP_BEGIN(SP_SetExperience) {
     printf("bar=%.2f level=%d exp=%d",tpkt->bar, tpkt->level, tpkt->exp);
 } DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x22 SP_MultiBlockChange
-
-DECODE_BEGIN(SP_MultiBlockChange,_1_8_1) {
-    Pint(X);
-    Pint(Z);
-    Pvarint(count);
-    lh_alloc_num(tpkt->blocks, tpkt->count);
-    int i;
-    for(i=0; i<tpkt->count; i++) {
-        Pchar(blocks[i].pos);
-        Pchar(blocks[i].y);
-        Rvarint(bid);
-        tpkt->blocks[i].bid.raw = (uint16_t)bid;
-    }
-} DECODE_END;
-
-ENCODE_BEGIN(SP_MultiBlockChange,_1_8_1) {
-    Wint(X);
-    Wint(Z);
-    Wvarint(count);
-    int i;
-    for(i=0; i<tpkt->count; i++) {
-        Wchar(blocks[i].pos);
-        Wchar(blocks[i].y);
-        Wvarint(blocks[i].bid.raw);
-    }
-} ENCODE_END;
-
-DUMP_BEGIN(SP_MultiBlockChange) {
-    printf("chunk=%d:%d, count=%d",
-           tpkt->X, tpkt->Z, tpkt->count);
-    int i;
-    for(i=0; i<tpkt->count; i++) {
-        blkrec *b = tpkt->blocks+i;
-        printf("\n    coord=%2d,%3d,%2d bid=%3x meta=%d",
-               b->x,b->z,b->y,b->bid.bid,b->bid.meta);
-    }
-} DUMP_END;
-
-FREE_BEGIN(SP_MultiBlockChange) {
-    lh_free(tpkt->blocks);
-} FREE_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x23 SP_BlockChange
-
-DECODE_BEGIN(SP_BlockChange,_1_8_1) {
-    Plong(pos.p);
-    Rvarint(bid);
-    tpkt->block.raw = (uint16_t)bid;
-} DECODE_END;
-
-ENCODE_BEGIN(SP_BlockChange,_1_8_1) {
-    Wlong(pos.p);
-    Wvarint(block.raw);
-} ENCODE_END;
-
-DUMP_BEGIN(SP_BlockChange) {
-    printf("coord=%d,%d,%d bid=%3x meta=%d",
-           tpkt->pos.x, tpkt->pos.y, tpkt->pos.z,
-           tpkt->block.bid,tpkt->block.meta);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x27 SP_Explosion
-
-DECODE_BEGIN(SP_Explosion,_1_8_1) {
-    Pfloat(x);
-    Pfloat(y);
-    Pfloat(z);
-    Pfloat(radius);
-    Pint(count);
-    lh_alloc_num(tpkt->blocks, tpkt->count);
-    int i;
-    for(i=0; i<tpkt->count; i++) {
-        boff_t *b = tpkt->blocks+i;
-        Rchar(dx);
-        Rchar(dy);
-        Rchar(dz);
-        b->dx = dx;
-        b->dy = dy;
-        b->dz = dz;
-    }
-    Pfloat(vx);
-    Pfloat(vy);
-    Pfloat(vz);
-} DECODE_END;
-
-DUMP_BEGIN(SP_Explosion) {
-    printf("coord=%.1f,%.1f,%.1f, radius=%.1f, velocity=%.1f,%.1f,%.1f, count=%d",
-           tpkt->x, tpkt->y, tpkt->z, tpkt->radius,
-           tpkt->vx, tpkt->vy, tpkt->vz, tpkt->count);
-    int i;
-    for(i=0; i<tpkt->count; i++) {
-        boff_t *b = tpkt->blocks+i;
-        printf("\n  offset=%d,%d,%d",b->dx,b->dy,b->dz);
-    }
-} DUMP_END;
-
-FREE_BEGIN(SP_Explosion) {
-    lh_free(tpkt->blocks);
-} FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x28 SP_Effect
@@ -1411,9 +1411,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
-        SUPPORT_DEF (SP_MultiBlockChange,_1_8_1),
-        SUPPORT_DE  (SP_BlockChange,_1_8_1),
-        SUPPORT_DF  (SP_Explosion,_1_8_1),
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DF  (SP_Maps,_1_8_1),
@@ -1435,12 +1432,15 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_SpawnMob,_1_9),             // 03
         SUPPORT_D   (SP_SpawnPainting,_1_9),        // 04
         SUPPORT_DF  (SP_SpawnPlayer,_1_9),          // 05
+        SUPPORT_DE  (SP_BlockChange,_1_8_1),        // 0b
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f
+        SUPPORT_DEF (SP_MultiBlockChange,_1_8_1),   // 10
         SUPPORT_D   (SP_ConfirmTransaction,_1_8_1), // 11
         SUPPORT_DE  (SP_CloseWindow,_1_8_1),        // 12
         SUPPORT_DEF (SP_OpenWindow,_1_8_1),         // 13
         SUPPORT_DEF (SP_WindowItems,_1_8_1),        // 14
         SUPPORT_DEF (SP_SetSlot,_1_8_1),            // 16
+        SUPPORT_DF  (SP_Explosion,_1_8_1),          // 1c
         SUPPORT_DF  (SP_ChunkData,_1_9),            // 20
         SUPPORT_D   (SP_JoinGame,_1_8_1),           // 23
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25

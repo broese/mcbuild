@@ -94,11 +94,24 @@ typedef struct {
     metadata *meta;
 } SP_SpawnPlayer_pkt;
 
+// 0x0b
+typedef struct {
+    pos_t    pos;
+    bid_t    block;
+} SP_BlockChange_pkt;
+
 // 0x0f
 typedef struct {
     char       *json;
     uint8_t     pos;
 } SP_ChatMessage_pkt;
+
+// 0x10
+typedef struct {
+    int32_t  X,Z;
+    int32_t  count;
+    blkrec  *blocks;
+} SP_MultiBlockChange_pkt;
 
 // 0x11
 typedef struct {
@@ -134,6 +147,15 @@ typedef struct {
     int16_t  sid;
     slot_t   slot;
 } SP_SetSlot_pkt;
+
+// 0x27
+typedef struct {
+    float    x,y,z;
+    float    radius;
+    int32_t  count;
+    boff_t  *blocks;
+    float    vx,vy,vz;
+} SP_Explosion_pkt;
 
 // 0x20
 typedef struct {
@@ -273,28 +295,6 @@ typedef struct {
     int32_t  level; // player's level
     int32_t  exp;   // total experience
 } SP_SetExperience_pkt;
-
-// 0x22
-typedef struct {
-    int32_t  X,Z;
-    int32_t  count;
-    blkrec  *blocks;
-} SP_MultiBlockChange_pkt;
-
-// 0x23
-typedef struct {
-    pos_t    pos;
-    bid_t    block;
-} SP_BlockChange_pkt;
-
-// 0x27
-typedef struct {
-    float    x,y,z;
-    float    radius;
-    int32_t  count;
-    boff_t  *blocks;
-    float    vx,vy,vz;
-} SP_Explosion_pkt;
 
 // 0x28
 typedef struct {
@@ -522,12 +522,15 @@ typedef struct {
         PKT(SP_SpawnMob);           // 03
         PKT(SP_SpawnPainting);      // 04
         PKT(SP_SpawnPlayer);        // 05
+        PKT(SP_BlockChange);        // 0b
         PKT(SP_ChatMessage);        // 0f
+        PKT(SP_MultiBlockChange);   // 10
         PKT(SP_ConfirmTransaction); // 11
         PKT(SP_CloseWindow);        // 12
         PKT(SP_OpenWindow);         // 13
         PKT(SP_WindowItems);        // 14
         PKT(SP_SetSlot);            // 16
+        PKT(SP_Explosion);          // 1c
         PKT(SP_ChunkData);          // 20
         PKT(SP_JoinGame);           // 23
         PKT(SP_EntityRelMove);      // 25
@@ -547,9 +550,6 @@ typedef struct {
         PKT(SP_EntityVelocity);
         PKT(SP_Entity);
         PKT(SP_SetExperience);
-        PKT(SP_MultiBlockChange);
-        PKT(SP_BlockChange);
-        PKT(SP_Explosion);
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
         PKT(SP_Maps);
