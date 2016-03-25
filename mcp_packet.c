@@ -729,6 +729,22 @@ FREE_BEGIN(SP_ChunkData) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x21 SP_Effect
+
+DECODE_BEGIN(SP_Effect,_1_8_1) {
+    Pint(id);
+    Plong(loc.p);
+    Pint(data);
+    Pchar(disvol);
+} DECODE_END;
+
+DUMP_BEGIN(SP_Effect) {
+    printf("id=%d loc=%d,%d,%d data=%d disvol=%d",
+           tpkt->id, tpkt->loc.x, tpkt->loc.y, tpkt->loc.z,
+           tpkt->data, tpkt->disvol);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x23 SP_JoinGame
 
 DECODE_BEGIN(SP_JoinGame,_1_8_1) {
@@ -915,6 +931,26 @@ DUMP_BEGIN(SP_UpdateHealth) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x42 SP_SoundEffect
+
+DECODE_BEGIN(SP_SoundEffect,_1_9) {
+    Pvarint(id);
+    Pvarint(category);
+    Pint(x);
+    Pint(y);
+    Pint(z);
+    Pfloat(vol);
+    Pchar(pitch);
+} DECODE_END;
+
+DUMP_BEGIN(SP_SoundEffect) {
+    printf("id=%d, category=%d, coord=%.1f,%.1f,%.1f, vol=%.2f, pitch=%d",
+           tpkt->id, tpkt->category,
+           (float)tpkt->x/8,(float)tpkt->y/8,(float)tpkt->z/8,
+           tpkt->vol, tpkt->pitch);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x4a SP_EntityTeleport
 
 DECODE_BEGIN(SP_EntityTeleport,_1_9) {
@@ -1038,41 +1074,6 @@ DECODE_BEGIN(SP_SetExperience,_1_8_1) {
 
 DUMP_BEGIN(SP_SetExperience) {
     printf("bar=%.2f level=%d exp=%d",tpkt->bar, tpkt->level, tpkt->exp);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x28 SP_Effect
-
-DECODE_BEGIN(SP_Effect,_1_8_1) {
-    Pint(id);
-    Plong(loc.p);
-    Pint(data);
-    Pchar(disvol);
-} DECODE_END;
-
-DUMP_BEGIN(SP_Effect) {
-    printf("id=%d loc=%d,%d,%d data=%d disvol=%d",
-           tpkt->id, tpkt->loc.x, tpkt->loc.y, tpkt->loc.z,
-           tpkt->data, tpkt->disvol);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x29 SP_SoundEffect
-
-DECODE_BEGIN(SP_SoundEffect,_1_8_1) {
-    Pstr(name);
-    Pint(x);
-    Pint(y);
-    Pint(z);
-    Pfloat(vol);
-    Pchar(pitch);
-} DECODE_END;
-
-DUMP_BEGIN(SP_SoundEffect) {
-    printf("name=%s, coord=%.1f,%.1f,%.1f, vol=%.2f, pitch=%d",
-           tpkt->name,
-           (float)tpkt->x/8,(float)tpkt->y/8,(float)tpkt->z/8,
-           tpkt->vol, tpkt->pitch);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1436,8 +1437,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
-        SUPPORT_D   (SP_Effect,_1_8_1),
-        SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DF  (SP_Maps,_1_8_1),
         SUPPORT_DE  (SP_SetCompression,_1_8_1),
     },
@@ -1468,6 +1467,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_Explosion,_1_8_1),          // 1c
         SUPPORT_DE  (SP_UnloadChunk,_1_9),          // 1d
         SUPPORT_DF  (SP_ChunkData,_1_9),            // 20
+        SUPPORT_D   (SP_Effect,_1_8_1),             // 21
         SUPPORT_D   (SP_JoinGame,_1_8_1),           // 23
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
         SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
@@ -1477,6 +1477,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_Respawn,_1_8_1),            // 33
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),     // 37
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),       // 3e
+        SUPPORT_D   (SP_SoundEffect,_1_9),          // 42
         SUPPORT_D   (SP_EntityTeleport,_1_9),       // 4a
     },
     {

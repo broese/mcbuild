@@ -176,6 +176,14 @@ typedef struct {
     chunk_t  chunk;
 } SP_ChunkData_pkt;
 
+// 0x21
+typedef struct {
+    uint32_t id;
+    pos_t    loc;
+    uint32_t data;
+    uint8_t  disvol;
+} SP_Effect_pkt;
+
 // 0x23
 typedef struct {
     uint32_t eid;
@@ -247,6 +255,17 @@ typedef struct {
     float    saturation;
 } SP_UpdateHealth_pkt;
 
+// 0x42
+typedef struct {
+    int32_t     id;
+    int32_t     category;
+    int32_t     x;     // multiplied by 8
+    int32_t     y;     // multiplied by 8
+    int32_t     z;     // multiplied by 8
+    float       vol;
+    uint8_t     pitch;
+} SP_SoundEffect_pkt;
+
 // 0x4a
 typedef struct {
     uint32_t    eid;
@@ -307,24 +326,6 @@ typedef struct {
     int32_t  level; // player's level
     int32_t  exp;   // total experience
 } SP_SetExperience_pkt;
-
-// 0x28
-typedef struct {
-    uint32_t id;
-    pos_t    loc;
-    uint32_t data;
-    uint8_t  disvol;
-} SP_Effect_pkt;
-
-// 0x29
-typedef struct {
-    char     name[256];
-    int32_t  x;     // multiplied by 8
-    int32_t  y;     // multiplied by 8
-    int32_t  z;     // multiplied by 8
-    float    vol;
-    uint8_t  pitch;
-} SP_SoundEffect_pkt;
 
 // 0x34
 typedef struct {
@@ -539,6 +540,7 @@ typedef struct {
         PKT(SP_Explosion);          // 1c
         PKT(SP_UnloadChunk);        // 1d
         PKT(SP_ChunkData);          // 20
+        PKT(SP_Effect);             // 21
         PKT(SP_JoinGame);           // 23
         PKT(SP_EntityRelMove);      // 25
         PKT(SP_EntityLookRelMove);  // 26
@@ -548,6 +550,7 @@ typedef struct {
         PKT(SP_Respawn);            // 33
         PKT(SP_HeldItemChange);     // 37
         PKT(SP_UpdateHealth);       // 3e
+        PKT(SP_SoundEffect);        // 42
         PKT(SP_EntityTeleport);     // 4a
 
         PKT(SP_KeepAlive);
@@ -557,8 +560,6 @@ typedef struct {
         PKT(SP_EntityVelocity);
         PKT(SP_Entity);
         PKT(SP_SetExperience);
-        PKT(SP_Effect);
-        PKT(SP_SoundEffect);
         PKT(SP_Maps);
         PKT(SP_SetCompression);
 
