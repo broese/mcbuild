@@ -958,7 +958,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             else
                 queue_packet(pkt, tq);
         } _GMP;
-
+#endif
         ////////////////////////////////////////////////////////////////
         // Misc effects
 
@@ -978,7 +978,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
 
         GMP(SP_SoundEffect) {
             // thunder protection
-            if (!strcmp(tpkt->name,"ambient.weather.thunder")) {
+            if (tpkt->id == 262) { // entity.lightning.thunder
                 printf("**** THUNDER **** coords=%d,%d,%d vol=%.4f pitch=%d\n",
                        tpkt->x/8,tpkt->y/8,tpkt->z/8,
                        tpkt->vol,tpkt->pitch);
@@ -997,15 +997,14 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             }
 
             // block annoying sounds
-            if (strncmp(tpkt->name,"mob.sheep.",10) &&
-                strncmp(tpkt->name,"mob.cow.",8) &&
-                strncmp(tpkt->name,"mob.pig.",8) &&
-                strncmp(tpkt->name,"mob.chicken.",12) &&
-                strncmp(tpkt->name,"note.",5) ) {
+            if ( !((tpkt->id >= 296 && tpkt->id <= 303) ||
+                  tpkt->id == 305 || tpkt->id == 345 ||
+                 (tpkt->id >= 148 && tpkt->id <= 157)) ) {
                 queue_packet(pkt, tq);
             }
         } _GMP;
 
+#if 0
         ////////////////////////////////////////////////////////////////
         // Player
 

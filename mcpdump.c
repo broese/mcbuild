@@ -323,7 +323,7 @@ void mcpd_packet(MCPacket *pkt) {
 
         case SP_SoundEffect: {
             SP_SoundEffect_pkt *tpkt = (SP_SoundEffect_pkt *)&pkt->_SP_SoundEffect;
-            if (!strcmp(tpkt->name,"ambient.weather.thunder")) {
+            if (tpkt->id == 262) { // entity.lightning.thunder
                 fixp tx = tpkt->x*4;
                 fixp tz = tpkt->z*4;
                 track_remote_sounds(tx, tz, tpkt->y/8, pkt->ts);
