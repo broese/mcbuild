@@ -779,7 +779,7 @@ DECODE_BEGIN(SP_EntityTeleport,_1_9) {
 
 DUMP_BEGIN(SP_EntityTeleport) {
     printf("eid=%08x, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",tpkt->eid,
-           (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
+           tpkt->x, tpkt->y, tpkt->z,
            (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->onground);
 } DUMP_END;
 
