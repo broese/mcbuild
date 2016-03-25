@@ -230,8 +230,6 @@ static void autoshear(MCPacketQueue *sq) {
     }
 }
 
-#if 0
-
 ////////////////////////////////////////////////////////////////////////////////
 // Holeradar
 
@@ -260,7 +258,7 @@ static void hole_radar(MCPacketQueue *cq) {
         }
     }
 }
-#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // Inventory Handling
 
@@ -884,11 +882,13 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
     else if (!strcmp(words[0],"build") || !strcmp(words[0],"bu")) {
         build_cmd(words, tq, bq);
     }
+#endif
     else if (!strcmp(words[0],"hr") || !strcmp(words[0],"holeradar")) {
         opt.holeradar = !opt.holeradar;
         sprintf(reply,"Hole radar is %s",opt.holeradar?"ON":"OFF");
         rpos = 2;
     }
+#if 0
     else if (!strcmp(words[0],"align")) {
         float yaw = 0;
         if (!(words[1] && sscanf(words[1], "%f", &yaw) == 1)) {
@@ -1062,7 +1062,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             }
             queue_packet(pkt, tq);
         } _GMP;
-
+#endif
         // use case statements since we don't really need these packets,
         // but just as a trigger that position or world has updated
         case SP_PlayerPositionLook:
@@ -1076,9 +1076,9 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         case SP_Explosion: {
 
             // check if our position or orientation have changed
-            int32_t x = (int32_t)gs.own.x>>5;
-            int32_t y = (int32_t)gs.own.y>>5;
-            int32_t z = (int32_t)gs.own.z>>5;
+            int32_t x = (int32_t)gs.own.x;
+            int32_t y = (int32_t)gs.own.y;
+            int32_t z = (int32_t)gs.own.z;
             int yaw = (int)(round(gs.own.yaw/90));
 
             if (x!= gs.own.lx || y!= gs.own.ly ||
@@ -1097,12 +1097,13 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
 
             gs.own.pos_change = 0;
 
-            if (build_packet(pkt, sq, cq))
+            //if (build_packet(pkt, sq, cq))
                 queue_packet(pkt, tq);
+
 
             break;
         }
-#endif
+
         ////////////////////////////////////////////////////////////////
         // Inventory
 
