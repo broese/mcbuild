@@ -142,7 +142,7 @@ typedef struct {
 typedef struct {
     int32_t  X;
     int32_t  Z;
-    uint16_t mask;
+    uint32_t mask;
     cube_t   *cubes[16];    // pointers to cubes. The pointers may be NULL meaning air
     uint8_t  biome[256];
 } chunk_t;

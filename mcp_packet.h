@@ -135,6 +135,13 @@ typedef struct {
     slot_t   slot;
 } SP_SetSlot_pkt;
 
+// 0x20
+typedef struct {
+    int8_t   cont;          // ground-up continuous
+    int8_t   skylight;      // whether skylight was sent;
+    chunk_t  chunk;
+} SP_ChunkData_pkt;
+
 // 0x23
 typedef struct {
     uint32_t eid;
@@ -266,13 +273,6 @@ typedef struct {
     int32_t  level; // player's level
     int32_t  exp;   // total experience
 } SP_SetExperience_pkt;
-
-// 0x21
-typedef struct {
-    int8_t   cont;          // ground-up continuous
-    int8_t   skylight;      // whether skylight was sent;
-    chunk_t  chunk;
-} SP_ChunkData_pkt;
 
 // 0x22
 typedef struct {
@@ -535,6 +535,7 @@ typedef struct {
         PKT(SP_OpenWindow);         // 13
         PKT(SP_WindowItems);        // 14
         PKT(SP_SetSlot);            // 16
+        PKT(SP_ChunkData);          // 20
         PKT(SP_JoinGame);           // 23
         PKT(SP_EntityRelMove);      // 25
         PKT(SP_EntityLookRelMove);  // 26
@@ -553,7 +554,6 @@ typedef struct {
         PKT(SP_EntityVelocity);
         PKT(SP_Entity);
         PKT(SP_SetExperience);
-        PKT(SP_ChunkData);
         PKT(SP_MultiBlockChange);
         PKT(SP_BlockChange);
         PKT(SP_MapChunkBulk);

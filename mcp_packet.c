@@ -585,6 +585,95 @@ FREE_BEGIN(SP_SetSlot) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x20 SP_ChunkData
+
+static int is_overworld = 1;
+
+// Read a single 16x16x16 chunk section (aka "cube")
+// Detailed format description: http://wiki.vg/SMP_Map_Format
+static uint8_t * read_cube(uint8_t *p, cube_t *cube) {
+    int i,j;
+
+    bid_t pal[4096];
+    Rvarint(nbits);
+    assert(nbits!=0); //FIXME: support 13-bit packed format w/o palette
+    uint64_t mask = ((1<<nbits)-1);
+    if (nbits) {
+        // nbits!=0 - read palette data
+        Rvarint(npal);
+        for(i=0; i<npal; i++) {
+            pal[i].raw = (uint16_t)lh_read_varint(p);
+            char mat[256];
+            //printf("%2d : %03x:%2d (%s)\n", i, pal[i].bid, pal[i].meta, get_bid_name(mat, pal[i]));
+        }
+        Rvarint(nblocks);
+        assert(lh_align(512*nbits, 8) == nblocks*8);
+
+        // read block data, packed nbits palette indices
+        int abits=0, idx=0;
+        uint64_t adata=0;
+        for(i=0; i<4096; i++) {
+            // load more data from array if we don't have enough bits
+            if (abits<nbits) {
+                idx = adata; // save the remaining bits from adata
+                adata = lh_read_long_be(p);
+                idx |= (adata<<abits)&mask;
+                adata >>= (nbits-abits);
+                abits = 64-(nbits-abits);
+            }
+            else {
+                idx = adata&mask;
+                adata>>=nbits;
+                abits-=nbits;
+            }
+            assert(idx<npal);
+            cube->blocks[i] = pal[idx];
+        }
+
+        // read block light and skylight data
+        memmove(cube->light, p, sizeof(cube->light));
+        p += sizeof(cube->light);
+        if (is_overworld) {
+            memmove(cube->skylight, p, sizeof(cube->skylight));
+            p += sizeof(cube->skylight);
+        }
+    }
+
+    return p;
+}
+
+DECODE_BEGIN(SP_ChunkData,_1_9) {
+    Pint(chunk.X);
+    Pint(chunk.Z);
+    Pchar(cont);
+    Pvarint(chunk.mask);
+    assert(tpkt->chunk.mask <= 0xffff);
+    Rvarint(size);
+
+    int i,j;
+    for(i=tpkt->chunk.mask,j=0; i; i>>=1,j++) {
+        lh_alloc_obj(tpkt->chunk.cubes[j]);
+        p=read_cube(p, tpkt->chunk.cubes[j]);
+    }
+
+    if (tpkt->cont)
+        memmove(tpkt->chunk.biome, p, 256);
+} DECODE_END;
+
+DUMP_BEGIN(SP_ChunkData) {
+    printf("coord=%4d:%4d, cont=%d, skylight=%d, mask=%04x",
+           tpkt->chunk.X, tpkt->chunk.Z, tpkt->cont,
+           tpkt->skylight, tpkt->chunk.mask);
+} DUMP_END;
+
+FREE_BEGIN(SP_ChunkData) {
+    int i;
+    for(i=0; i<16; i++) {
+        lh_free(tpkt->chunk.cubes[i]);
+    }
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x23 SP_JoinGame
 
 DECODE_BEGIN(SP_JoinGame,_1_8_1) {
@@ -889,53 +978,6 @@ DECODE_BEGIN(SP_SetExperience,_1_8_1) {
 DUMP_BEGIN(SP_SetExperience) {
     printf("bar=%.2f level=%d exp=%d",tpkt->bar, tpkt->level, tpkt->exp);
 } DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x21 SP_ChunkData
-
-DECODE_BEGIN(SP_ChunkData,_1_8_1) {
-    Pint(chunk.X);
-    Pint(chunk.Z);
-    Pchar(cont);
-    Pshort(chunk.mask);
-    Rvarint(size);
-
-    tpkt->skylight=0;
-
-    if (tpkt->chunk.mask) {
-        int nblk = count_bits(tpkt->chunk.mask);
-        tpkt->skylight = ((size-256)/nblk == 3*4096);
-    }
-
-    p=read_chunk(p, tpkt->skylight, &tpkt->chunk);
-} DECODE_END;
-
-ENCODE_BEGIN(SP_ChunkData,_1_8_1) {
-    Wint(chunk.X);
-    Wint(chunk.Z);
-    Wchar(cont);
-
-    Wshort(chunk.mask);
-
-    int nblk = count_bits(tpkt->chunk.mask);
-    uint32_t size = 256 + nblk*(10240+2048*tpkt->skylight);
-    lh_write_varint(w, size);
-
-    w = write_chunk(w, tpkt->skylight, &tpkt->chunk);
-} ENCODE_END;
-
-DUMP_BEGIN(SP_ChunkData) {
-    printf("coord=%4d:%4d, cont=%d, skylight=%d, mask=%04x",
-           tpkt->chunk.X, tpkt->chunk.Z, tpkt->cont,
-           tpkt->skylight, tpkt->chunk.mask);
-} DUMP_END;
-
-FREE_BEGIN(SP_ChunkData) {
-    int i;
-    for(i=0; i<16; i++) {
-        lh_free(tpkt->chunk.cubes[i]);
-    }
-} FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x22 SP_MultiBlockChange
@@ -1516,7 +1558,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
         SUPPORT_D   (SP_SetExperience,_1_8_1),
-        SUPPORT_DEF (SP_ChunkData,_1_8_1),
         SUPPORT_DEF (SP_MultiBlockChange,_1_8_1),
         SUPPORT_DE  (SP_BlockChange,_1_8_1),
         SUPPORT_DEF (SP_MapChunkBulk,_1_8_1),
@@ -1548,6 +1589,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_OpenWindow,_1_8_1),         // 13
         SUPPORT_DEF (SP_WindowItems,_1_8_1),        // 14
         SUPPORT_DEF (SP_SetSlot,_1_8_1),            // 16
+        SUPPORT_DF  (SP_ChunkData,_1_9),            // 20
         SUPPORT_D   (SP_JoinGame,_1_8_1),           // 23
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
         SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
