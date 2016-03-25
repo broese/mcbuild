@@ -94,6 +94,13 @@ typedef struct {
     metadata *meta;
 } SP_SpawnPlayer_pkt;
 
+// 0x09
+typedef struct {
+    pos_t    loc;
+    uint8_t  action;
+    nbt_t    *nbt;
+} SP_UpdateBlockEntity_pkt;
+
 // 0x0b
 typedef struct {
     pos_t    pos;
@@ -339,13 +346,6 @@ typedef struct {
     uint8_t  *data;
 } SP_Maps_pkt;
 
-// 0x35
-typedef struct {
-    pos_t    loc;
-    uint8_t  action;
-    nbt_t    *nbt;
-} SP_UpdateBlockEntity_pkt;
-
 // 0x46
 typedef struct {
     int32_t     threshold;
@@ -527,6 +527,7 @@ typedef struct {
         PKT(SP_SpawnMob);           // 03
         PKT(SP_SpawnPainting);      // 04
         PKT(SP_SpawnPlayer);        // 05
+        PKT(SP_UpdateBlockEntity);  // 09
         PKT(SP_BlockChange);        // 0b
         PKT(SP_ChatMessage);        // 0f
         PKT(SP_MultiBlockChange);   // 10
@@ -559,7 +560,6 @@ typedef struct {
         PKT(SP_Effect);
         PKT(SP_SoundEffect);
         PKT(SP_Maps);
-        PKT(SP_UpdateBlockEntity);
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);        // 02

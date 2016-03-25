@@ -347,6 +347,27 @@ FREE_BEGIN(SP_SpawnPlayer) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x35 SP_UpdateBlockEntity
+
+DECODE_BEGIN(SP_UpdateBlockEntity,_1_8_1) {
+    Plong(loc.p);
+    Pchar(action);
+    tpkt->nbt = nbt_parse(&p);
+} DECODE_END;
+
+DUMP_BEGIN(SP_UpdateBlockEntity) {
+    printf("pos=%d,%d,%d action=%d nbt=%s\n", tpkt->loc.x, tpkt->loc.z, tpkt->loc.y,
+           tpkt->action, tpkt->nbt ? "present" : "none");
+    if (tpkt->nbt)
+        nbt_dump(tpkt->nbt);
+} DUMP_END;
+
+FREE_BEGIN(SP_UpdateBlockEntity) {
+    nbt_free(tpkt->nbt);
+    tpkt->nbt = NULL;
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x0b SP_BlockChange
 
 DECODE_BEGIN(SP_BlockChange,_1_8_1) {
@@ -1091,27 +1112,6 @@ FREE_BEGIN(SP_Maps) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x35 SP_UpdateBlockEntity
-
-DECODE_BEGIN(SP_UpdateBlockEntity,_1_8_1) {
-    Plong(loc.p);
-    Pchar(action);
-    tpkt->nbt = nbt_parse(&p);
-} DECODE_END;
-
-DUMP_BEGIN(SP_UpdateBlockEntity) {
-    printf("pos=%d,%d,%d action=%d nbt=%s\n", tpkt->loc.x, tpkt->loc.z, tpkt->loc.y,
-           tpkt->action, tpkt->nbt ? "present" : "none");
-    if (tpkt->nbt)
-        nbt_dump(tpkt->nbt);
-} DUMP_END;
-
-FREE_BEGIN(SP_UpdateBlockEntity) {
-    nbt_free(tpkt->nbt);
-    tpkt->nbt = NULL;
-} FREE_END;
-
-////////////////////////////////////////////////////////////////////////////////
 // 0x46 SP_SetCompression
 
 DECODE_BEGIN(SP_SetCompression,_1_8_1) {
@@ -1439,7 +1439,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_Effect,_1_8_1),
         SUPPORT_D   (SP_SoundEffect,_1_8_1),
         SUPPORT_DF  (SP_Maps,_1_8_1),
-        SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),
         SUPPORT_DE  (SP_SetCompression,_1_8_1),
     },
     {
@@ -1457,6 +1456,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_SpawnMob,_1_9),             // 03
         SUPPORT_D   (SP_SpawnPainting,_1_9),        // 04
         SUPPORT_DF  (SP_SpawnPlayer,_1_9),          // 05
+        SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),  // 09
         SUPPORT_DE  (SP_BlockChange,_1_8_1),        // 0b
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f
         SUPPORT_DEF (SP_MultiBlockChange,_1_8_1),   // 10

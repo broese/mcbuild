@@ -164,7 +164,9 @@ void track_spawners(SP_UpdateBlockEntity_pkt *ube) {
 
     // determine the type of the spawner
     int type = SPAWNER_OTHER;
-    nbt_t * sType = nbt_hget(ube->nbt, "EntityId");
+    nbt_t * sd = nbt_hget(ube->nbt, "SpawnData");
+    assert(sd && sd->type==NBT_COMPOUND);
+    nbt_t * sType = nbt_hget(sd, "id");
     assert(sType && sType->type==NBT_STRING);
 
     if (!strcmp(sType->st, "Zombie"))   type = SPAWNER_ZOMBIE;
