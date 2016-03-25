@@ -673,6 +673,8 @@ DECODE_BEGIN(SP_ChunkData,_1_9) {
 
     if (tpkt->cont)
         memmove(tpkt->chunk.biome, p, 256);
+
+    tpkt->skylight = is_overworld;
 } DECODE_END;
 
 DUMP_BEGIN(SP_ChunkData) {
@@ -699,6 +701,9 @@ DECODE_BEGIN(SP_JoinGame,_1_8_1) {
     Pchar(maxplayers);
     Pstr(leveltype);
     Pchar(reduced_debug_info);
+
+    // track dimension changes - needed for correct SP_ChunkData decoding
+    is_overworld = (tpkt->dimension == 0);
 } DECODE_END;
 
 DUMP_BEGIN(SP_JoinGame) {
@@ -826,6 +831,9 @@ DECODE_BEGIN(SP_Respawn,_1_8_1) {
     Pchar(difficulty);
     Pchar(gamemode);
     Pstr(leveltype);
+
+    // track dimension changes - needed for correct SP_ChunkData decoding
+    is_overworld = (tpkt->dimension == 0);
 } DECODE_END;
 
 DUMP_BEGIN(SP_Respawn) {
