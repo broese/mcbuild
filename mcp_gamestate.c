@@ -1010,16 +1010,14 @@ void gs_packet(MCPacket *pkt) {
 
         ////////////////////////////////////////////////////////////////
         // Chunks
-#if 0
+
         GSP(SP_ChunkData) {
-            if (!tpkt->chunk.mask) {
-                if (gs.opt.prune_chunks) {
-                    remove_chunk(tpkt->chunk.X,tpkt->chunk.Z);
-                }
-            }
-            else {
-                insert_chunk(&tpkt->chunk);
-            }
+            insert_chunk(&tpkt->chunk);
+        } _GSP;
+
+        GSP(SP_UnloadChunk) {
+            if (gs.opt.prune_chunks)
+                remove_chunk(tpkt->X,tpkt->Z);
         } _GSP;
 
         GSP(SP_BlockChange) {
@@ -1053,7 +1051,7 @@ void gs_packet(MCPacket *pkt) {
                 modify_blocks(x>>4,z>>4,&block,1);
             }
         } _GSP;
-#endif
+
         ////////////////////////////////////////////////////////////////
         // Inventory
 
