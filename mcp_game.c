@@ -628,6 +628,8 @@ int ae_held = -1;
 #define EAT_THRESHOLD   8
 #define EAT_MAX         20
 
+TBDEF(tb_eat, EAT_INTERVAL, 1);
+
 /*
   The problem of autoeating - start eating is just a single packet sent to the
   server (PlayerBlockPlacement with coords -1,-1,-1), but the eating is not
@@ -637,9 +639,7 @@ int ae_held = -1;
 */
 
 void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
-    // skip if we used autoeat less than EAT_INTERVAL us ago
-    uint64_t ts = gettimestamp();
-    if ((ts-ae_last_eat)<EAT_INTERVAL) return;
+    if (!tb_event(&tb_eat, 1)) return;
 
     // if we have full health, start eating when food<EAT_THRESHOLD
     // if we're less than full health, eat until max food level
@@ -690,17 +690,10 @@ void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
 
     // send start eating packet to the server and exit, switch back to
     // the old slot will be done next time this function runs
-    NEWPACKET(CP_PlayerBlockPlacement, pbp);
-    tpbp->bpos = POS(-1,-1,-1);
-    tpbp->face   = -1;
-    tpbp->cx     = 0;
-    tpbp->cy     = 0;
-    tpbp->cz     = 0;
-    clone_slot(s, &tpbp->item);
-    queue_packet(pbp,sq);
-    dump_packet(pbp);
-
-    ae_last_eat = ts;
+    NEWPACKET(CP_UseItem, use);
+    tuse->hand   = 0;
+    queue_packet(use,sq);
+    dump_packet(use);
 }
 #endif
 
@@ -1203,9 +1196,7 @@ void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (opt.autokill)  autokill(sq);
     if (opt.autoshear) autoshear(sq);
     if (opt.antiafk)   antiafk(sq, cq);
-#if 0
-    if (opt.autoeat)   autoeat(sq, cq);
-#endif
+    //if (opt.autoeat)   autoeat(sq, cq);
 
     build_preview_transmit(cq);
     build_progress(sq, cq);
