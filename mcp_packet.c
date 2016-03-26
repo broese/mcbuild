@@ -1316,6 +1316,26 @@ DUMP_BEGIN(CP_Player) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x13 CP_PlayerDigging
+
+DECODE_BEGIN(CP_PlayerDigging,_1_9) {
+    Pvarint(status);
+    Plong(loc.p);
+    Pchar(face);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_PlayerDigging,_1_9) {
+    Wvarint(status);
+    Wlong(loc.p);
+    Wchar(face);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_PlayerDigging) {
+    printf("status=%d, location=%d,%d,%d, face=%d",
+           tpkt->status, tpkt->loc.x, tpkt->loc.y, tpkt->loc.z, tpkt->face);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x14 CP_EntityAction
 
 DECODE_BEGIN(CP_EntityAction,_1_8_1) {
@@ -1398,30 +1418,6 @@ DUMP_BEGIN(CP_PlayerBlockPlacement) {
 
 #if 0
 
-////////////////////////////////////////////////////////////////////////////////
-// 0x07 CP_PlayerDigging
-
-DECODE_BEGIN(CP_PlayerDigging,_1_8_1) {
-    Pchar(status);
-    Plong(loc.p);
-    Pchar(face);
-} DECODE_END;
-
-ENCODE_BEGIN(CP_PlayerDigging,_1_8_1) {
-    Wchar(status);
-    Wlong(loc.p);
-    Wchar(face);
-} ENCODE_END;
-
-DUMP_BEGIN(CP_PlayerDigging) {
-    printf("status=%d, location=%d,%d,%d, face=%d",
-           tpkt->status, tpkt->loc.x, tpkt->loc.y, tpkt->loc.z, tpkt->face);
-} DUMP_END;
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-
 const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_D   (SP_KeepAlive,_1_8_1),
@@ -1435,7 +1431,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_SetCompression,_1_8_1),
     },
     {
-        SUPPORT_DE  (CP_PlayerDigging,_1_8_1),
     },
 };
 
@@ -1482,6 +1477,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (CP_PlayerPositionLook,_1_8_1), // 0d
         SUPPORT_DE  (CP_PlayerLook,_1_8_1),         // 0e
         SUPPORT_D   (CP_Player,_1_8_1),             // 0f
+        SUPPORT_DE  (CP_PlayerDigging,_1_9),        // 13
         SUPPORT_DE  (CP_EntityAction,_1_8_1),       // 14
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),     // 17
         SUPPORT_DE  (CP_Animation,_1_9),            // 1a

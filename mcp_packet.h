@@ -413,6 +413,13 @@ typedef struct {
     uint8_t     onground;
 } CP_Player_pkt;
 
+// 0x13
+typedef struct {
+    uint32_t    status;
+    pos_t       loc;
+    uint8_t     face;
+} CP_PlayerDigging_pkt;
+
 // 0x14
 typedef struct {
     uint32_t    eid;
@@ -437,26 +444,6 @@ typedef struct {
     int32_t hand;
     int8_t  cx,cy,cz;
 } CP_PlayerBlockPlacement_pkt;
-
-
-
-
-
-
-
-
-
-// 0x07
-typedef struct {
-    uint8_t status;
-    pos_t   loc;
-    uint8_t face;
-} CP_PlayerDigging_pkt;
-
-
-
-
-
 
 
 
@@ -571,12 +558,12 @@ typedef struct {
         PKT(CP_PlayerPositionLook); // 0d
         PKT(CP_PlayerLook);         // 0e
         PKT(CP_Player);             // 0f
+        PKT(CP_PlayerDigging);      // 13
         PKT(CP_EntityAction);       // 14
         PKT(CP_HeldItemChange);     // 17
         PKT(CP_Animation);          // 1a
         PKT(CP_PlayerBlockPlacement);// 1c
 
-        PKT(CP_PlayerDigging);
     };
 } MCPacket;
 
