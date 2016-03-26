@@ -334,7 +334,7 @@ void gmi_failed(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (aid>60000) aid=10000;
 
     // Abort the building process for safety and notify user
-    //build_pause(); //TODO: uncomment
+    build_pause();
     chat_message("INV ACTION FAILED!!! Buildtask paused!", cq, "green", 2);
     chat_message("An inventory action has failed or timed out, inventory state may be inconsistent", cq, "green", 0);
     chat_message("Access any dialog (container/crafting table/etc.) to refresh the inventory", cq, "green", 0);
@@ -860,10 +860,10 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
             sprintf(reply,"Grinding to level %d",opt.maxlevel);
         }
     }
+#endif
     else if (!strcmp(words[0],"build") || !strcmp(words[0],"bu")) {
         build_cmd(words, tq, bq);
     }
-#endif
     else if (!strcmp(words[0],"hr") || !strcmp(words[0],"holeradar")) {
         opt.holeradar = !opt.holeradar;
         sprintf(reply,"Hole radar is %s",opt.holeradar?"ON":"OFF");
@@ -1050,11 +1050,11 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             if (opt.holeradar && gs.own.pos_change)
                 hole_radar(cq);
 
-            //build_update(); //TODO: uncomment
+            build_update();
 
             gs.own.pos_change = 0;
 
-            //if (build_packet(pkt, sq, cq))
+            if (build_packet(pkt, sq, cq))
                 queue_packet(pkt, tq);
 
 
@@ -1192,10 +1192,10 @@ void read_uuids() {
 
 void gm_reset() {
     lh_clear_obj(opt);
-    //clear_slot(&invq.drag); //FIXME: uncomment
-    //lh_clear_obj(invq);     //FIXME: uncomment
+    clear_slot(&invq.drag);
+    lh_clear_obj(invq);
 
-    //build_clear(NULL,NULL); //FIXME: uncomment
+    build_clear(NULL,NULL);
     readbases();
     read_uuids();
 }
@@ -1212,8 +1212,8 @@ void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
 #if 0
     if (opt.antiafk)   antiafk(sq, cq);
     if (opt.autoeat)   autoeat(sq, cq);
+#endif
 
     build_preview_transmit(cq);
     build_progress(sq, cq);
-#endif
 }

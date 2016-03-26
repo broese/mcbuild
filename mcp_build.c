@@ -31,7 +31,6 @@
 #define EYEHEIGHT 52
 #define YAWMARGIN 0.5
 
-#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
 
@@ -1133,10 +1132,10 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
             tpbp->bpos = POS(b->x+NOFF[face][0],b->y+NOFF[face][2],b->z+NOFF[face][1]);
         }
         tpbp->face = face;
+        tpbp->hand = 0; //TODO: support second hand
         tpbp->cx = cx;
         tpbp->cy = cy;
         tpbp->cz = cz;
-        clone_slot(hslot,&tpbp->item);
         queue_packet(pbp,sq);
         //dump_packet(pbp);
 
@@ -1145,10 +1144,10 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
             NEWPACKET(CP_PlayerBlockPlacement, pbucket);
             tpbucket->bpos = POS(-1,-1,-1);
             tpbucket->face = -1;
+            tpbucket->hand = 0; //TODO: support second hand
             tpbucket->cx = 0;
             tpbucket->cy = 0;
             tpbucket->cz = 0;
-            clone_slot(hslot,&tpbucket->item);
             queue_packet(pbucket,sq);
         }
         else {
@@ -2379,4 +2378,3 @@ int build_packet(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     return 1;
 }
-#endif
