@@ -445,7 +445,10 @@ typedef struct {
     int8_t  cx,cy,cz;
 } CP_PlayerBlockPlacement_pkt;
 
-
+// 0x1d
+typedef struct {
+    int32_t     hand;
+} CP_UseItem_pkt;
 
 
 
@@ -563,6 +566,7 @@ typedef struct {
         PKT(CP_HeldItemChange);     // 17
         PKT(CP_Animation);          // 1a
         PKT(CP_PlayerBlockPlacement);// 1c
+        PKT(CP_UseItem);            // 1d
 
     };
 } MCPacket;

@@ -174,6 +174,7 @@
 #define CP_Animation            CP(1a)
 #define CP_Spectate             CP(1b)
 #define CP_PlayerBlockPlacement CP(1c)
+#define CP_UseItem              CP(1d)
 
 #define MAXPACKETTYPES          0x100
 

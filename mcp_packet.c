@@ -1412,8 +1412,22 @@ DUMP_BEGIN(CP_PlayerBlockPlacement) {
            tpkt->face, tpkt->cx, tpkt->cy, tpkt->cz, tpkt->hand);
 } DUMP_END;
 
+////////////////////////////////////////////////////////////////////////////////
+// 0x1d CP_UseItem
 
+DECODE_BEGIN(CP_UseItem,_1_9) {
+    Pvarint(hand);
+} DECODE_END;
 
+ENCODE_BEGIN(CP_UseItem,_1_9) {
+    Wvarint(hand);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_UseItem) {
+    printf("hand=%d", tpkt->hand);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 
 
 #if 0
@@ -1482,6 +1496,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),     // 17
         SUPPORT_DE  (CP_Animation,_1_9),            // 1a
         SUPPORT_DE  (CP_PlayerBlockPlacement,_1_9), // 1c
+        SUPPORT_DE  (CP_UseItem,_1_9),              // 1d
     },
 };
 
