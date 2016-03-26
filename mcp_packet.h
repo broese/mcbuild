@@ -430,6 +430,14 @@ typedef struct {
     uint32_t    hand;
 } CP_Animation_pkt;
 
+// 0x1c
+typedef struct {
+    pos_t   bpos;
+    int32_t face;
+    int32_t hand;
+    int8_t  cx,cy,cz;
+} CP_PlayerBlockPlacement_pkt;
+
 
 
 
@@ -444,14 +452,6 @@ typedef struct {
     pos_t   loc;
     uint8_t face;
 } CP_PlayerDigging_pkt;
-
-// 0x08
-typedef struct {
-    pos_t   bpos;
-    int8_t  face;
-    slot_t  item;
-    int8_t  cx,cy,cz;
-} CP_PlayerBlockPlacement_pkt;
 
 
 
@@ -574,9 +574,9 @@ typedef struct {
         PKT(CP_EntityAction);       // 14
         PKT(CP_HeldItemChange);     // 17
         PKT(CP_Animation);          // 1a
+        PKT(CP_PlayerBlockPlacement);// 1c
 
         PKT(CP_PlayerDigging);
-        PKT(CP_PlayerBlockPlacement);
     };
 } MCPacket;
 

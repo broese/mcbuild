@@ -1365,6 +1365,32 @@ DUMP_BEGIN(CP_Animation) {
     printf("hand=%d", tpkt->hand);
 } DUMP_END;
 
+////////////////////////////////////////////////////////////////////////////////
+// 0x1c CP_PlayerBlockPlacement
+
+DECODE_BEGIN(CP_PlayerBlockPlacement,_1_9) {
+    Plong(bpos.p);
+    Pvarint(face);
+    Pvarint(hand);
+    Pchar(cx);
+    Pchar(cy);
+    Pchar(cz);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_PlayerBlockPlacement,_1_9) {
+    Wlong(bpos.p);
+    Wvarint(face);
+    Wvarint(hand);
+    Wchar(cx);
+    Wchar(cy);
+    Wchar(cz);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_PlayerBlockPlacement) {
+    printf("bpos=%d,%d,%d, face=%d, cursor=%d,%d,%d, hand=%d",
+           tpkt->bpos.x,  tpkt->bpos.y,  tpkt->bpos.z,
+           tpkt->face, tpkt->cx, tpkt->cy, tpkt->cz, tpkt->hand);
+} DUMP_END;
 
 
 
@@ -1392,38 +1418,6 @@ DUMP_BEGIN(CP_PlayerDigging) {
            tpkt->status, tpkt->loc.x, tpkt->loc.y, tpkt->loc.z, tpkt->face);
 } DUMP_END;
 
-////////////////////////////////////////////////////////////////////////////////
-// 0x08 CP_PlayerBlockPlacement
-
-DECODE_BEGIN(CP_PlayerBlockPlacement,_1_8_1) {
-    Plong(bpos.p);
-    Pchar(face);
-    p = read_slot(p, &tpkt->item);
-    Pchar(cx);
-    Pchar(cy);
-    Pchar(cz);
-} DECODE_END;
-
-ENCODE_BEGIN(CP_PlayerBlockPlacement,_1_8_1) {
-    Wlong(bpos.p);
-    Wchar(face);
-    w = write_slot(w, &tpkt->item);
-    Wchar(cx);
-    Wchar(cy);
-    Wchar(cz);
-} ENCODE_END;
-
-DUMP_BEGIN(CP_PlayerBlockPlacement) {
-    printf("bpos=%d,%d,%d, face=%d, cursor=%d,%d,%d, item=",
-           tpkt->bpos.x,  tpkt->bpos.y,  tpkt->bpos.z,
-           tpkt->face, tpkt->cx, tpkt->cy, tpkt->cz);
-    dump_slot(&tpkt->item);
-} DUMP_END;
-
-FREE_BEGIN(CP_PlayerBlockPlacement) {
-    clear_slot(&tpkt->item);
-} FREE_END;
-
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1442,7 +1436,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
     },
     {
         SUPPORT_DE  (CP_PlayerDigging,_1_8_1),
-        SUPPORT_DEF (CP_PlayerBlockPlacement,_1_8_1),
     },
 };
 
@@ -1492,6 +1485,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (CP_EntityAction,_1_8_1),       // 14
         SUPPORT_DE  (CP_HeldItemChange,_1_8_1),     // 17
         SUPPORT_DE  (CP_Animation,_1_9),            // 1a
+        SUPPORT_DE  (CP_PlayerBlockPlacement,_1_9), // 1c
     },
 };
 
