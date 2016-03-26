@@ -1356,13 +1356,17 @@ static void brec_blockplace(MCPacket *pkt) {
     CP_PlayerBlockPlacement_pkt *tpkt = &pkt->_CP_PlayerBlockPlacement;
 
     if (tpkt->face < 0) return; // ignore "fake" block placements
-    bid_t b = BLOCKTYPE(tpkt->item.item, tpkt->item.damage);
+
+    //TODO: handle placements made with the second hand
+    slot_t *h = &gs.inv.slots[gs.inv.held+36];
+    bid_t b = BLOCKTYPE(h->item, h->damage);
 
     int32_t x = tpkt->bpos.x - NOFF[tpkt->face][0];
     int32_t z = tpkt->bpos.z - NOFF[tpkt->face][1];
     int32_t y = tpkt->bpos.y - NOFF[tpkt->face][2];
 
-    //printf("Recording block at %d,%d,%d\n",x,y,z);
+    char buf[256];
+    //printf("Recording block at %d,%d,%d  %s",x,y,z,get_bid_name(buf, b));
 
     // check if the placed block will become a double slab
     if (ITEMS[b.bid].flags&I_SLAB) {
