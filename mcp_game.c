@@ -1033,9 +1033,9 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         case SP_Explosion: {
 
             // check if our position or orientation have changed
-            int32_t x = (int32_t)gs.own.x;
-            int32_t y = (int32_t)gs.own.y;
-            int32_t z = (int32_t)gs.own.z;
+            int32_t x = floor(gs.own.x);
+            int32_t y = floor(gs.own.y);
+            int32_t z = floor(gs.own.z);
             int yaw = (int)(round(gs.own.yaw/90));
 
             if (x!= gs.own.lx || y!= gs.own.ly ||

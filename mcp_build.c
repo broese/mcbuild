@@ -38,10 +38,14 @@
 // calculate the yaw and pitch values for the player looking at a specific
 // dot in space
 int calculate_yaw_pitch(fixp x, fixp z, fixp y, float *yaw, float *pitch) {
+    fixp px = (fixp)(gs.own.x*32.0);
+    fixp py = (fixp)(gs.own.y*32.0)+EYEHEIGHT;
+    fixp pz = (fixp)(gs.own.z*32.0);
+
     // relative distance to the dot
-    float dx = (float)(x-gs.own.x)/32.0;
-    float dz = (float)(z-gs.own.z)/32.0;
-    float dy = (float)(y-(gs.own.y+EYEHEIGHT))/32.0;
+    float dx = (float)(x-px)/32.0;
+    float dz = (float)(z-pz)/32.0;
+    float dy = (float)(y-py)/32.0;
     float c  = sqrt(dx*dx+dz*dz);
     if (c==0) c=0.0001;
 
@@ -390,9 +394,9 @@ static void remove_distant_dots(blk *b) {
     // this will be now replaced with the max dot distance
     b->dist = 0;
 
-    fixp px = gs.own.x;
-    fixp pz = gs.own.z;
-    fixp py = gs.own.y+EYEHEIGHT;
+    fixp px = (fixp)(gs.own.x*32.0);
+    fixp py = (fixp)(gs.own.y*32.0)+EYEHEIGHT;
+    fixp pz = (fixp)(gs.own.z*32.0);
 
     int f;
     for(f=0; f<6; f++) {
@@ -535,8 +539,6 @@ void set_block_dots(blk *b) {
     // determine usable dots on the neighbor faces
     lh_clear_obj(b->dots);
 
-    //TODO: provide support for ALL position-dependent blocks
-
     const item_id *it = &ITEMS[b->b.bid];
 
     if (it->flags&I_SLAB) { // Halfslabs
@@ -635,9 +637,9 @@ void set_block_dots(blk *b) {
     }
 
     else if (it->flags&I_RSDEV) { // Pistons, Dispensers and Droppers
-        int px = gs.own.x>>5;
-        int pz = gs.own.z>>5;
-        int py = (gs.own.y>>5)+((gs.own.y>>4)&1); // rounded
+        int px = floor(gs.own.x);
+        int pz = floor(gs.own.z);
+        int py = round(gs.own.y); // rounded
 
         int dx = b->x-px;
         int dz = b->z-pz;
@@ -817,6 +819,11 @@ void build_update() {
 
     int i,f;
 
+    // Convert player coordinates into fixp
+    fixp px = (fixp)(gs.own.x*32.0);
+    fixp py = (fixp)(gs.own.y*32.0)+EYEHEIGHT;
+    fixp pz = (fixp)(gs.own.z*32.0);
+
     // 1. Update 'inreach' flag for all blocks and set the block distance
     // inreach=1 does not necessarily mean the block is really reachable -
     // this will be determined later in more detail, but those with
@@ -828,7 +835,7 @@ void build_update() {
         b->inreach = 1;
 
         // avoid building blocks above the player in wall and limit mode
-        if ((buildopts.wallmode && (b->y>(gs.own.y>>5)-1)) ||
+        if ((buildopts.wallmode && (b->y>(py>>5)-1)) ||
             (build.limit && (b->y>build.limit))) {
                 b->inreach = 0;
                 continue;
@@ -837,17 +844,17 @@ void build_update() {
         // if the "seal mode" is active, only build blocks located in front of you
         if (buildopts.sealmode) {
             switch (player_direction()) {
-                case DIR_NORTH: if (b->z >= (gs.own.z>>5)) b->inreach=0; break;
-                case DIR_SOUTH: if (b->z <= (gs.own.z>>5)) b->inreach=0; break;
-                case DIR_WEST:  if (b->x >= (gs.own.x>>5)) b->inreach=0; break;
-                case DIR_EAST:  if (b->x <= (gs.own.x>>5)) b->inreach=0; break;
+                case DIR_NORTH: if (b->z >= (pz>>5)) b->inreach=0; break;
+                case DIR_SOUTH: if (b->z <= (pz>>5)) b->inreach=0; break;
+                case DIR_WEST:  if (b->x >= (px>>5)) b->inreach=0; break;
+                case DIR_EAST:  if (b->x <= (px>>5)) b->inreach=0; break;
             }
             if (b->inreach==0) continue;
         }
 
-        int32_t dx = gs.own.x-(b->x<<5)+16;
-        int32_t dy = gs.own.y-(b->y<<5)+16+EYEHEIGHT;
-        int32_t dz = gs.own.z-(b->z<<5)+16;
+        int32_t dx = px-(b->x<<5)+16;
+        int32_t dy = py-(b->y<<5)+16;
+        int32_t dz = pz-(b->z<<5)+16;
         b->dist = SQ(dx)+SQ(dy)+SQ(dz);
 
         b->inreach = (b->dist<MAXREACH_COARSE);
@@ -862,14 +869,16 @@ void build_update() {
 
     // 2. extract the cuboid with the existing world blocks
 
-    int32_t xmin = (gs.own.x>>5)-12;
-    int32_t xmax = (gs.own.x>>5)+12;
-    int32_t ymin = (gs.own.y>>5)-12;
+    int32_t xmin = (px>>5)-12;
+    int32_t xmax = (px>>5)+12;
+    int32_t ymin = (py>>5)-12;
+    int32_t ymax = (py>>5)+12;
+    int32_t zmin = (pz>>5)-12;
+    int32_t zmax = (pz>>5)+12;
+
+    // make sure our cuboid doesn't exceed y coordinate limits
     if (ymin<0) ymin=0;
-    int32_t ymax = (gs.own.y>>5)+12;
     if (ymax>255) ymax=255;
-    int32_t zmin = (gs.own.z>>5)-12;
-    int32_t zmax = (gs.own.z>>5)+12;
 
     extent_t ex = { { xmin, ymin, zmin }, { xmax, ymax, zmax } };
     cuboid_t c = export_cuboid_extent(ex);
@@ -947,12 +956,12 @@ void build_update() {
 
             // disable faces looking away from you
             if (!buildopts.anyface) {
-                if (b->y > (gs.own.y>>5)+1) memset(b->dots[DIR_UP], 0, sizeof(DOTS_ALL));
-                if (b->y < (gs.own.y>>5)+2) memset(b->dots[DIR_DOWN], 0, sizeof(DOTS_ALL));
-                if (b->x > (gs.own.x>>5)) memset(b->dots[DIR_EAST], 0, sizeof(DOTS_ALL));
-                if (b->x < (gs.own.x>>5)) memset(b->dots[DIR_WEST], 0, sizeof(DOTS_ALL));
-                if (b->z > (gs.own.z>>5)) memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
-                if (b->z < (gs.own.z>>5)) memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
+                if (b->y > (py>>5)+1)   memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
+                if (b->y < (py>>5)+2)   memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
+                if (b->x > (px>>5))     memset(b->dots[DIR_EAST],  0, sizeof(DOTS_ALL));
+                if (b->x < (px>>5))     memset(b->dots[DIR_WEST],  0, sizeof(DOTS_ALL));
+                if (b->z > (pz>>5))     memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
+                if (b->z < (pz>>5))     memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
             }
         }
         else {
@@ -963,12 +972,12 @@ void build_update() {
 
             // disable faces looking away from you
             if (!buildopts.anyface) {
-                if (b->y < (gs.own.y>>5)+1) memset(b->dots[DIR_UP], 0, sizeof(DOTS_ALL));
-                if (b->y > (gs.own.y>>5)+2) memset(b->dots[DIR_DOWN], 0, sizeof(DOTS_ALL));
-                if (b->x < (gs.own.x>>5)) memset(b->dots[DIR_EAST], 0, sizeof(DOTS_ALL));
-                if (b->x > (gs.own.x>>5)) memset(b->dots[DIR_WEST], 0, sizeof(DOTS_ALL));
-                if (b->z < (gs.own.z>>5)) memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
-                if (b->z > (gs.own.z>>5)) memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
+                if (b->y < (py>>5)+1)   memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
+                if (b->y > (py>>5)+2)   memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
+                if (b->x < (px>>5))     memset(b->dots[DIR_EAST],  0, sizeof(DOTS_ALL));
+                if (b->x > (px>>5))     memset(b->dots[DIR_WEST],  0, sizeof(DOTS_ALL));
+                if (b->z < (pz>>5))     memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
+                if (b->z > (pz>>5))     memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
             }
         }
 
@@ -1083,7 +1092,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
                    b->x+NOFF[face][0],b->z+NOFF[face][1],b->y+NOFF[face][2],
                    b->nblocks[face].bid, get_bid_name(buf2, b->nblocks[face]),
                    face, cx, cy, cz,
-                   (float)gs.own.x/32, (float)(gs.own.y+EYEHEIGHT)/32, (float)gs.own.z/32,
+                   gs.own.x, gs.own.y+(double)EYEHEIGHT/32, gs.own.z,
                    (float)b->x+(float)cx/16,(float)b->y+(float)cy/16,(float)b->z+(float)cz/16,
                    yaw, pitch, ldir, DIRNAME[ldir],
                    needcrouch?"(need to crouch)":"");
@@ -1685,9 +1694,9 @@ void build_cancel(MCPacketQueue *sq, MCPacketQueue *cq) {
 static void get_argdefaults(arg_defaults *ad) {
     lh_clear_ptr(ad);
 
-    ad->px = gs.own.x>>5;
-    ad->pz = gs.own.z>>5;
-    ad->py = gs.own.y>>5;
+    ad->px = floor(gs.own.x);
+    ad->pz = floor(gs.own.z);
+    ad->py = floor(gs.own.y);
     ad->pd = player_direction();
 
     ad->mat = BLOCKTYPE(0,0);
@@ -2299,7 +2308,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     CMD2(limit,li) {
         if (!words[0]) {
             // set the limit to player's current y position
-            build.limit = gs.own.y>>5;
+            build.limit = floor(gs.own.y);
         }
         else {
             if (!strcmp(words[0],"none") || !strcmp(words[0],"-")) {
