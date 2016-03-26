@@ -800,6 +800,18 @@ void set_block_dots(blk *b) {
         PLACE_ALL(b);
     }
 
+    else if (b->b.bid==198) { // End Rod
+        switch(b->b.meta) {
+            case 0: PLACE_CEIL(b); break;
+            case 1: PLACE_FLOOR(b); break;
+            case 2: PLACE_NORTH(b); break;
+            case 3: PLACE_SOUTH(b); break;
+            case 4: PLACE_WEST(b); break;
+            case 5: PLACE_EAST(b); break;
+            default: PLACE_NONE(b); break;
+        }
+    }
+
     else {
         // Blocks that don't have I_MPOS or not supported
         PLACE_ALL(b);

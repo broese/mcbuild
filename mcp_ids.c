@@ -272,7 +272,25 @@ const item_id ITEMS[] = {
     [0xc3] = { "Jungle Door",           I_MPOS|I_ADJ|I_DOOR },  // P: dir, A: open/close
     [0xc4] = { "Dark Oak Door",         I_MPOS|I_ADJ|I_DOOR },  // P: dir, A: open/close
     [0xc5] = { "Acacia Door",           I_MPOS|I_ADJ|I_DOOR },  // P: dir, A: open/close
+    [0xc6] = { "End Rod",               I_MPOS },               // P: dir
+    [0xc7] = { "Chorus Plant" },
+    [0xc8] = { "Chorus Fruit",          I_STATE_F|I_PLANT },    // S: level
+    [0xc9] = { "Purpur Block",          I_OPAQUE },
+    [0xca] = { "Purpur Pillar",         I_MTYPE|I_MPOS|I_LOG|I_OPAQUE },// P: dir
+    [0xcb] = { "Purpur Stairs",         I_MPOS|I_STAIR },               // P: dir
+    [0xcc] = { "Purpur D-slab",         I_MTYPE|I_DSLAB|I_OPAQUE,
+               { }, },
+    [0xcd] = { "Purpur Slab",           I_MPOS|I_SLAB },        // P: up/down
+    [0xce] = { "Endstone Bricks",       I_OPAQUE },
+    [0xcf] = { "Beetroot Plant",        I_STATE_F|I_PLANT },    // S: level
 
+    [0xd0] = { "Grass Path" },
+    [0xd1] = { "End Gateway" },
+    [0xd2] = { "Repeating Command Block",   I_OPAQUE|I_CONT },
+    [0xd3] = { "Chain Command Block",       I_OPAQUE|I_CONT },
+    [0xd4] = { "Frosted Ice",           I_STATE_F|I_OPAQUE },   // S: level
+
+    [0xff] = { "Structure Block",       I_OPAQUE },
 
     ////////////////////////////////////////////////////////////////////////
     // Items
@@ -473,6 +491,25 @@ const item_id ITEMS[] = {
     [0x1ae] = { "Acacia Door",          I_ITEM },
     [0x1af] = { "Dark Oak Door",        I_ITEM },
 
+    [0x1b0] = { "Chorus Fruit",         I_ITEM|I_FOOD },
+    [0x1b1] = { "Popped Chorus Fruit",  I_ITEM },
+    [0x1b2] = { "Beetroot",             I_ITEM|I_FOOD },
+    [0x1b3] = { "Beetroot Seeds",       I_ITEM },
+    [0x1b4] = { "Beetroot Soup",        I_ITEM|I_FOOD },
+    [0x1b5] = { "Dragon Breath",        I_ITEM },
+    [0x1b6] = { "Splash Potion",        I_ITEM },
+    [0x1b7] = { "Spectral Arrow",       I_ITEM },
+    [0x1b8] = { "Tipped Arrow",         I_ITEM },
+    [0x1b9] = { "Lingering Potion",     I_ITEM },
+    [0x1ba] = { "Shield",               I_ITEM },
+    [0x1bb] = { "Elytra",               I_ITEM },
+    [0x1bc] = { "Spruce Boat",          I_ITEM },
+    [0x1bd] = { "Birch Boat",           I_ITEM },
+    [0x1be] = { "Jungle Boat",          I_ITEM },
+    [0x1bf] = { "Acacia Boat",          I_ITEM },
+
+    [0x1c0] = { "Dark Oak Boat",        I_ITEM },
+
     [0x8d0] = { "Record 13",            I_ITEM|I_NSTACK },
     [0x8d1] = { "Record Cat",           I_ITEM|I_NSTACK },
     [0x8d2] = { "Record Blocks",        I_ITEM|I_NSTACK },
@@ -521,6 +558,7 @@ int get_base_meta(int id, int meta) {
         case 0xa1: // Leaves2
         case 0xa2: // Wood2
         case 0xaa: // Haybales
+        case 0xca: // Purpur Pillar
             return meta&3;
 
         case 0x9b: // Quartz block
@@ -558,6 +596,7 @@ bid_t get_base_material(bid_t mat) {
     BI(142,392);  // Potato Plant -> Potato
     BI(104,361);  // Pumpkin Stem -> Pumpkin Seeds
     BI(105,362);  // Melon Stem -> Melon Seeds
+    BI(207,435);  // Beetroot Plant -> Betroot Seeds
     if (mat.bid == 127) return BLOCKTYPE(351,3);  // Cocoa -> Cocoa Beans (which is also a Brown Dye, duh)
 
     BI(63,323);   // Standing Sign -> Sign
@@ -634,6 +673,12 @@ bid_t get_base_block_material(bid_t mat) {
         case 0xb5:
         case 0xb6:
             return BLOCKTYPE(0xb3,0); // Red Sandstone (plain)
+
+        // purpur stairs, d-slabs, slabs
+        case 0xcb:
+        case 0xcc:
+        case 0xcd:
+            return BLOCKTYPE(0xc9,0); // Purpur Block
     }
     return mat;
 }
@@ -908,7 +953,7 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (b.bid==155)     return GETMETAGROUP(MM_QUARTZ);
     if (flags&I_GATE)   return GETMETAGROUP(MM_BED);
 
-    if ((flags&I_RSDEV) || b.bid==154)
+    if ((flags&I_RSDEV) || b.bid==154 || b.bid==198)
         return GETMETAGROUP(MM_ONWALL);
 
     return NULL; // default - no orientation mapping
