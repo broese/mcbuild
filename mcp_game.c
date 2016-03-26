@@ -539,30 +539,25 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
     clear_slot(&invq.drag);
 }
 
-#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Anti-AFK
 
 #define AFK_TIMEOUT 60*1000000LL
 
-uint64_t last_antiafk = 0;
+TBDEF(tb_afk, AFK_TIMEOUT, 1);
 
 static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
     char reply[256], bname[256];
     reply[0] = 0;
 
-    uint64_t ts = gettimestamp();
-    if (ts - last_antiafk < AFK_TIMEOUT) return;
+    if (!tb_event(&tb_afk, 1)) return;
 
     // don't interfere if the client already has a window open
-    if (gs.inv.windowopen) {
-        last_antiafk = ts;
-        return;
-    }
+    if (gs.inv.windowopen) return;
 
-    int x=gs.own.x>>5;
-    int y=gs.own.y>>5;
-    int z=gs.own.z>>5;
+    int x=floor(gs.own.x);
+    int y=floor(gs.own.y);
+    int z=floor(gs.own.z);
 
     bid_t b = get_block_at(x,z,y);
 
@@ -599,10 +594,10 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
             NEWPACKET(CP_PlayerBlockPlacement, pbp);
             tpbp->bpos = POS(x,y-1,z);
             tpbp->face   = 1;
+            tpbp->hand   = 0;
             tpbp->cx     = 8;
             tpbp->cy     = 16;
             tpbp->cz     = 8;
-            clone_slot(&gs.inv.slots[tslot+36], &tpbp->item);
             queue_packet(pbp,sq);
             dump_packet(pbp);
 
@@ -619,10 +614,10 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (reply[0])
         chat_message(reply, cq, "gold", 0);
 
-    last_antiafk = ts;
     return;
 }
 
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Auto-eat
 
@@ -804,13 +799,11 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"Autokill is %s",opt.autokill?"ON":"OFF");
         rpos = 2;
     }
-#if 0
     else if (!strcmp(words[0],"afk") || !strcmp(words[0],"antiafk")) {
         opt.antiafk = !opt.antiafk;
         sprintf(reply,"Anti-AFK is %s",opt.antiafk?"ON":"OFF");
         rpos = 2;
     }
-#endif
     else if (!strcmp(words[0],"ash") || !strcmp(words[0],"autoshear")) {
         opt.autoshear = !opt.autoshear;
         sprintf(reply,"Autoshear is %s",opt.autoshear?"ON":"OFF");
@@ -1209,8 +1202,8 @@ void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
 
     if (opt.autokill)  autokill(sq);
     if (opt.autoshear) autoshear(sq);
-#if 0
     if (opt.antiafk)   antiafk(sq, cq);
+#if 0
     if (opt.autoeat)   autoeat(sq, cq);
 #endif
 
