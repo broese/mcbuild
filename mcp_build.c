@@ -955,8 +955,8 @@ void build_update() {
 
             // disable faces looking away from you
             if (!buildopts.anyface) {
-                if (b->y > (py>>5)+1)   memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
-                if (b->y < (py>>5)+2)   memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
+                if (b->y > ((py-EYEHEIGHT)>>5)+1)   memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
+                if (b->y < ((py-EYEHEIGHT)>>5)+2)   memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
                 if (b->x > (px>>5))     memset(b->dots[DIR_EAST],  0, sizeof(DOTS_ALL));
                 if (b->x < (px>>5))     memset(b->dots[DIR_WEST],  0, sizeof(DOTS_ALL));
                 if (b->z > (pz>>5))     memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
@@ -971,8 +971,8 @@ void build_update() {
 
             // disable faces looking away from you
             if (!buildopts.anyface) {
-                if (b->y < (py>>5)+1)   memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
-                if (b->y > (py>>5)+2)   memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
+                if (b->y < ((py-EYEHEIGHT)>>5)+1)   memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
+                if (b->y > ((py-EYEHEIGHT)>>5)+2)   memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
                 if (b->x < (px>>5))     memset(b->dots[DIR_EAST],  0, sizeof(DOTS_ALL));
                 if (b->x > (px>>5))     memset(b->dots[DIR_WEST],  0, sizeof(DOTS_ALL));
                 if (b->z < (pz>>5))     memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
