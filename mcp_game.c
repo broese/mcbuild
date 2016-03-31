@@ -822,7 +822,6 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
     else if (!strcmp(words[0],"inv")) {
         dump_inventory();
     }
-#if 0
     else if (!strcmp(words[0],"grind")) {
         int maxlevel=30;
         int start = 1;
@@ -846,7 +845,6 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
             sprintf(reply,"Grinding to level %d",opt.maxlevel);
         }
     }
-#endif
     else if (!strcmp(words[0],"build") || !strcmp(words[0],"bu")) {
         build_cmd(words, tq, bq);
     }
@@ -990,7 +988,6 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             }
         } _GMP;
 
-#if 0
         ////////////////////////////////////////////////////////////////
         // Player
 
@@ -1005,7 +1002,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             }
             queue_packet(pkt, tq);
         } _GMP;
-#endif
+
         // use case statements since we don't really need these packets,
         // but just as a trigger that position or world has updated
         case SP_PlayerPositionLook:
