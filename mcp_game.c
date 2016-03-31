@@ -808,11 +808,6 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"Autoeat is %s",opt.autoeat?"ON":"OFF");
         rpos = 2;
     }
-    else if (!strcmp(words[0],"as") || !strcmp(words[0],"antispam")) {
-        opt.antispam = !opt.antispam;
-        sprintf(reply,"Antispam filter is %s",opt.antispam?"ON":"OFF");
-        rpos = 2;
-    }
 #endif
     else if (!strcmp(words[0],"coords")) {
         sprintf(reply,"coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",
@@ -922,27 +917,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 queue_packet(pkt, tq);
             }
         } _GMP;
-#if 0
-        GMP(SP_ChatMessage) {
-            char name[256], message[256];
-            int isspam=0;
-            if (opt.antispam) {
-                if (decode_chat_json(tpkt->json, name, message)) {
-                    if (!strncmp(message, "I just ", 7) ||
-                        !strncmp(message, "\xef\xbc\xa9 \xef\xbd\x8a\xef\xbd\x95\xef\xbd\x93\xef\xbd\x94 ", 17) )
-                        isspam = 1;
-                    if (!strncmp(message, "Hello, ", 7) ||
-                        !strncmp(message, "Welcome, ", 9) ||
-                        !strncmp(message, "Greetings, ", 11) )
-                        isspam = 1;
-                }
-            }
-            if (isspam)
-                printf("Antispam: blocked [%s] %s\n", name, message);
-            else
-                queue_packet(pkt, tq);
-        } _GMP;
-#endif
+
         ////////////////////////////////////////////////////////////////
         // Misc effects
 
