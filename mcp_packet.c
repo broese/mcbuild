@@ -347,7 +347,7 @@ FREE_BEGIN(SP_SpawnPlayer) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x35 SP_UpdateBlockEntity
+// 0x09 SP_UpdateBlockEntity
 
 DECODE_BEGIN(SP_UpdateBlockEntity,_1_8_1) {
     Plong(loc.p);
@@ -917,6 +917,19 @@ DUMP_BEGIN(SP_HeldItemChange) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x3d SP_SetExperience
+
+DECODE_BEGIN(SP_SetExperience,_1_8_1) {
+    Pfloat(bar);
+    Pvarint(level);
+    Pvarint(exp);
+} DECODE_END;
+
+DUMP_BEGIN(SP_SetExperience) {
+    printf("bar=%.2f level=%d exp=%d",tpkt->bar, tpkt->level, tpkt->exp);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x3e SP_UpdateHealth
 
 DECODE_BEGIN(SP_UpdateHealth,_1_8_1) {
@@ -1061,19 +1074,6 @@ DECODE_BEGIN(SP_Entity,_1_8_1) {
 
 DUMP_BEGIN(SP_Entity) {
     printf("eid=%08x",tpkt->eid);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x1f SP_SetExperience
-
-DECODE_BEGIN(SP_SetExperience,_1_8_1) {
-    Pfloat(bar);
-    Pvarint(level);
-    Pvarint(exp);
-} DECODE_END;
-
-DUMP_BEGIN(SP_SetExperience) {
-    printf("bar=%.2f level=%d exp=%d",tpkt->bar, tpkt->level, tpkt->exp);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1440,7 +1440,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_CollectItem,_1_8_1),
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
-        SUPPORT_D   (SP_SetExperience,_1_8_1),
         SUPPORT_DF  (SP_Maps,_1_8_1),
         SUPPORT_DE  (SP_SetCompression,_1_8_1),
     },
@@ -1478,6 +1477,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
         SUPPORT_D   (SP_Respawn,_1_8_1),            // 33
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),     // 37
+        SUPPORT_D   (SP_SetExperience,_1_8_1),      // 3d
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),       // 3e
         SUPPORT_D   (SP_SoundEffect,_1_9),          // 42
         SUPPORT_D   (SP_EntityTeleport,_1_9),       // 4a

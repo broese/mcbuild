@@ -248,6 +248,13 @@ typedef struct {
     int8_t sid;
 } SP_HeldItemChange_pkt;
 
+// 0x3d
+typedef struct {
+    float    bar;
+    int32_t  level;
+    int32_t  exp;
+} SP_SetExperience_pkt;
+
 // 0x3e
 typedef struct {
     float    health;
@@ -319,13 +326,6 @@ typedef struct {
 typedef struct {
     uint32_t eid;
 } SP_Entity_pkt;
-
-// 0x1f
-typedef struct {
-    float    bar;   // state of the experience bar
-    int32_t  level; // player's level
-    int32_t  exp;   // total experience
-} SP_SetExperience_pkt;
 
 // 0x34
 typedef struct {
@@ -539,6 +539,7 @@ typedef struct {
         PKT(SP_DestroyEntities);    // 30
         PKT(SP_Respawn);            // 33
         PKT(SP_HeldItemChange);     // 37
+        PKT(SP_SetExperience);      // 3d
         PKT(SP_UpdateHealth);       // 3e
         PKT(SP_SoundEffect);        // 42
         PKT(SP_EntityTeleport);     // 4a
@@ -549,7 +550,6 @@ typedef struct {
         PKT(SP_CollectItem);
         PKT(SP_EntityVelocity);
         PKT(SP_Entity);
-        PKT(SP_SetExperience);
         PKT(SP_Maps);
         PKT(SP_SetCompression);
 
