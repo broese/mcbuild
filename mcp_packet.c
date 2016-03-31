@@ -773,6 +773,43 @@ DUMP_BEGIN(SP_JoinGame) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x24 SP_Map
+
+DECODE_BEGIN(SP_Map,_1_9) {
+    Pvarint(mapid);
+    Pchar(scale);
+    Pchar(trackpos);
+    Pvarint(nicons);
+    lh_alloc_num(tpkt->icons, tpkt->nicons);
+    int i;
+    for(i=0; i<tpkt->nicons; i++) {
+        Pchar(icons[i].type);
+        Pchar(icons[i].x);
+        Pchar(icons[i].z);
+    }
+    Pchar(ncols);
+    if (tpkt->ncols > 0) {
+        Pchar(nrows);
+        Pchar(X);
+        Pchar(Z);
+        Pvarint(len);
+        lh_alloc_num(tpkt->data, tpkt->len);
+        Pdata(data, tpkt->len);
+    }
+} DECODE_END;
+
+DUMP_BEGIN(SP_Map) {
+    printf("id=%d, scale=%d, trackpos=%d, icons=%d, size=%d,%d, at=%d,%d, len=%d",
+           tpkt->mapid, tpkt->scale, tpkt->trackpos, tpkt->nicons,
+           tpkt->ncols, tpkt->nrows, tpkt->X, tpkt->Z, tpkt->len);
+} DUMP_END;
+
+FREE_BEGIN(SP_Map) {
+    lh_free(tpkt->icons);
+    lh_free(tpkt->data);
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x25 SP_EntityRelMove
 
 DECODE_BEGIN(SP_EntityRelMove,_1_9) {
@@ -1075,42 +1112,6 @@ DECODE_BEGIN(SP_Entity,_1_8_1) {
 DUMP_BEGIN(SP_Entity) {
     printf("eid=%08x",tpkt->eid);
 } DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x34 SP_Map
-
-DECODE_BEGIN(SP_Maps,_1_8_1) {
-    Pvarint(mapid);
-    Pchar(scale);
-    Pvarint(nicons);
-    lh_alloc_num(tpkt->icons, tpkt->nicons);
-    int i;
-    for(i=0; i<tpkt->nicons; i++) {
-        Pchar(icons[i].type);
-        Pchar(icons[i].x);
-        Pchar(icons[i].z);
-    }
-    Pchar(ncols);
-    if (tpkt->ncols > 0) {
-        Pchar(nrows);
-        Pchar(X);
-        Pchar(Z);
-        Pvarint(len);
-        lh_alloc_num(tpkt->data, tpkt->len);
-        Pdata(data, tpkt->len);
-    }
-} DECODE_END;
-
-DUMP_BEGIN(SP_Maps) {
-    printf("id=%d, scale=%d, icons=%d, size=%d,%d, at=%d,%d, len=%d",
-           tpkt->mapid, tpkt->scale, tpkt->nicons,
-           tpkt->ncols, tpkt->nrows, tpkt->X, tpkt->Z, tpkt->len);
-} DUMP_END;
-
-FREE_BEGIN(SP_Maps) {
-    lh_free(tpkt->icons);
-    lh_free(tpkt->data);
-} FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x46 SP_SetCompression
@@ -1440,7 +1441,6 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DE  (SP_CollectItem,_1_8_1),
         SUPPORT_D   (SP_EntityVelocity,_1_8_1),
         SUPPORT_D   (SP_Entity,_1_8_1),
-        SUPPORT_DF  (SP_Maps,_1_8_1),
         SUPPORT_DE  (SP_SetCompression,_1_8_1),
     },
     {
@@ -1470,6 +1470,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_ChunkData,_1_9),            // 20
         SUPPORT_D   (SP_Effect,_1_8_1),             // 21
         SUPPORT_D   (SP_JoinGame,_1_8_1),           // 23
+        SUPPORT_DF  (SP_Map,_1_9),                  // 24
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
         SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
         SUPPORT_DF  (SP_EntityMetadata,_1_8_1),     // 27

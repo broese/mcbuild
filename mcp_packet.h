@@ -195,6 +195,27 @@ typedef struct {
     uint8_t  reduced_debug_info;
 } SP_JoinGame_pkt;
 
+// 0x24
+typedef struct {
+    uint8_t  type;
+    uint8_t  x;
+    uint8_t  z;
+} map_icon;
+
+typedef struct {
+    uint32_t mapid;
+    uint8_t  scale;
+    uint8_t  trackpos;
+    uint32_t nicons;
+    map_icon *icons;
+    uint8_t  ncols;
+    uint8_t  nrows;
+    uint8_t  X;
+    uint8_t  Z;
+    uint32_t len;
+    uint8_t  *data;
+} SP_Map_pkt;
+
 // 0x25
 typedef struct {
     uint32_t    eid;
@@ -326,26 +347,6 @@ typedef struct {
 typedef struct {
     uint32_t eid;
 } SP_Entity_pkt;
-
-// 0x34
-typedef struct {
-    uint8_t  type;
-    uint8_t  x;
-    uint8_t  z;
-} map_icon;
-
-typedef struct {
-    uint32_t mapid;
-    uint8_t  scale;
-    uint32_t nicons;
-    map_icon *icons;
-    uint8_t  ncols;
-    uint8_t  nrows;
-    uint8_t  X;
-    uint8_t  Z;
-    uint32_t len;
-    uint8_t  *data;
-} SP_Maps_pkt;
 
 // 0x46
 typedef struct {
@@ -532,6 +533,7 @@ typedef struct {
         PKT(SP_ChunkData);          // 20
         PKT(SP_Effect);             // 21
         PKT(SP_JoinGame);           // 23
+        PKT(SP_Map);                // 24
         PKT(SP_EntityRelMove);      // 25
         PKT(SP_EntityLookRelMove);  // 26
         PKT(SP_EntityMetadata);     // 27
@@ -550,7 +552,6 @@ typedef struct {
         PKT(SP_CollectItem);
         PKT(SP_EntityVelocity);
         PKT(SP_Entity);
-        PKT(SP_Maps);
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);        // 02

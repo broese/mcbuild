@@ -333,7 +333,7 @@ void mcpd_packet(MCPacket *pkt) {
 
         case SP_Map: {
             if (!o_extract_maps) break;
-            SP_Maps_pkt *tpkt = (SP_Maps_pkt *)&pkt->_SP_Maps;
+            SP_Map_pkt *tpkt = (SP_Map_pkt *)&pkt->_SP_Map;
             if (tpkt->ncols == 128 && tpkt->nrows == 128) {
                 if (!maps[tpkt->mapid])
                     lh_alloc_buf(maps[tpkt->mapid], 16384);
