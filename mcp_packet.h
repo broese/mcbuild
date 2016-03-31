@@ -309,50 +309,6 @@ typedef struct {
 
 
 
-
-
-// 0x00
-typedef struct {
-    uint32_t id;
-} SP_KeepAlive_pkt;
-
-// 0x03
-typedef struct {
-    uint64_t worldage;
-    uint64_t time;
-} SP_TimeUpdate_pkt;
-
-// 0x04
-typedef struct {
-    uint32_t eid;
-    int16_t  sid;
-    slot_t   item;
-} SP_EntityEquipment_pkt;
-
-// 0x0d
-typedef struct {
-    uint32_t eid;
-    uint32_t collector;
-} SP_CollectItem_pkt;
-
-// 0x12
-typedef struct {
-    uint32_t eid;
-    int16_t  vx;
-    int16_t  vy;
-    int16_t  vz;
-} SP_EntityVelocity_pkt;
-
-// 0x14
-typedef struct {
-    uint32_t eid;
-} SP_Entity_pkt;
-
-// 0x46
-typedef struct {
-    int32_t     threshold;
-} SP_SetCompression_pkt;
-
 ////////////////////////////////////////////////////////////////////////////////
 // Client -> Server
 
@@ -545,14 +501,6 @@ typedef struct {
         PKT(SP_UpdateHealth);       // 3e
         PKT(SP_SoundEffect);        // 42
         PKT(SP_EntityTeleport);     // 4a
-
-        PKT(SP_KeepAlive);
-        PKT(SP_TimeUpdate);
-        PKT(SP_EntityEquipment);
-        PKT(SP_CollectItem);
-        PKT(SP_EntityVelocity);
-        PKT(SP_Entity);
-        PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);        // 02
         PKT(CP_ClickWindow);        // 07

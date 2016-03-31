@@ -1024,117 +1024,6 @@ DUMP_BEGIN(SP_EntityTeleport) {
 
 
 
-
-#if 0
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x00 SP_KeepAlive
-
-DECODE_BEGIN(SP_KeepAlive,_1_8_1) {
-    Pvarint(id);
-} DECODE_END;
-
-DUMP_BEGIN(SP_KeepAlive) {
-    printf("id=%08x",tpkt->id);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x03 SP_TimeUpdate
-
-DECODE_BEGIN(SP_TimeUpdate,_1_8_1) {
-    Plong(worldage);
-    Plong(time);
-} DECODE_END;
-
-DUMP_BEGIN(SP_TimeUpdate) {
-    printf("worldage=%jd ticks (%jdd %02jdh%02jdm), "
-           "time=%jd ticks (%jdd %02jd:%02jd)",
-           tpkt->worldage,tpkt->worldage/24000,(tpkt->worldage%24000)/1000,(tpkt->worldage%1000)/60,
-           tpkt->time, tpkt->time/24000, (tpkt->time%24000)/1000, (tpkt->time%1000)/60);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x04 SP_EntityEquipment
-
-DECODE_BEGIN(SP_EntityEquipment,_1_8_1) {
-    Pvarint(eid);
-    Pshort(sid);
-    p = read_slot(p, &tpkt->item);
-} DECODE_END;
-
-DUMP_BEGIN(SP_EntityEquipment) {
-    printf("eid=%08x, sid=%d, item:", tpkt->eid, tpkt->sid);
-    dump_slot(&tpkt->item);
-} DUMP_END;
-
-FREE_BEGIN(SP_EntityEquipment) {
-    clear_slot(&tpkt->item);
-} FREE_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x0d SP_CollectItem
-
-DECODE_BEGIN(SP_CollectItem,_1_8_1) {
-    Pvarint(eid);
-    Pvarint(collector);
-} DECODE_END;
-
-ENCODE_BEGIN(SP_CollectItem,_1_8_1) {
-    Wvarint(eid);
-    Wvarint(collector);
-} ENCODE_END;
-
-DUMP_BEGIN(SP_CollectItem) {
-    printf("eid=%08x, collector=%d", tpkt->eid, tpkt->collector);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x12 SP_EntityVelocity
-
-DECODE_BEGIN(SP_EntityVelocity,_1_8_1) {
-    Pvarint(eid);
-    Pshort(vx);
-    Pshort(vy);
-    Pshort(vz);
-} DECODE_END;
-
-DUMP_BEGIN(SP_EntityVelocity) {
-    printf("eid=%08x, vel=%d,%d,%d", tpkt->eid, tpkt->vx,tpkt->vy,tpkt->vz);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x14 SP_Entity
-
-DECODE_BEGIN(SP_Entity,_1_8_1) {
-    Rvarint(eid);
-} DECODE_END;
-
-DUMP_BEGIN(SP_Entity) {
-    printf("eid=%08x",tpkt->eid);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x46 SP_SetCompression
-
-DECODE_BEGIN(SP_SetCompression,_1_8_1) {
-    Pvarint(threshold);
-} DECODE_END;
-
-ENCODE_BEGIN(SP_SetCompression,_1_8_1) {
-    Wvarint(threshold);
-} ENCODE_END;
-
-DUMP_BEGIN(SP_SetCompression) {
-    printf("threshold=%d",tpkt->threshold);
-} DUMP_END;
-
-#endif
-
-
-
-
-
-////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 // Client -> Server
 
@@ -1428,26 +1317,13 @@ DUMP_BEGIN(CP_UseItem) {
     printf("hand=%d", tpkt->hand);
 } DUMP_END;
 
+
+
+
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
-
-
-#if 0
-
-const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
-    {
-        SUPPORT_D   (SP_KeepAlive,_1_8_1),
-        SUPPORT_D   (SP_TimeUpdate,_1_8_1),
-        SUPPORT_DF  (SP_EntityEquipment,_1_8_1),
-        SUPPORT_DE  (SP_CollectItem,_1_8_1),
-        SUPPORT_D   (SP_EntityVelocity,_1_8_1),
-        SUPPORT_D   (SP_Entity,_1_8_1),
-        SUPPORT_DE  (SP_SetCompression,_1_8_1),
-    },
-    {
-    },
-};
-
-#endif
 
 const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
     {

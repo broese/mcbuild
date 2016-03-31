@@ -807,10 +807,6 @@ void gs_packet(MCPacket *pkt) {
         ////////////////////////////////////////////////////////////////
         // Gamestate
 
-        GSP(SP_TimeUpdate) {
-            gs.time = tpkt->time;
-        } _GSP;
-
         ////////////////////////////////////////////////////////////////
         // Entities tracking
 
