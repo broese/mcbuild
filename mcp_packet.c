@@ -705,8 +705,10 @@ DECODE_BEGIN(SP_ChunkData,_1_9) {
 
     int i,j;
     for(i=tpkt->chunk.mask,j=0; i; i>>=1,j++) {
-        lh_alloc_obj(tpkt->chunk.cubes[j]);
-        p=read_cube(p, tpkt->chunk.cubes[j]);
+        if (i&1) {
+            lh_alloc_obj(tpkt->chunk.cubes[j]);
+            p=read_cube(p, tpkt->chunk.cubes[j]);
+        }
     }
 
     if (tpkt->cont)
