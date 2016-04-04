@@ -61,6 +61,7 @@ bplan * bplan_disk(float diam, bid_t mat, int edge);
 bplan * bplan_ball(float diam, bid_t mat, int edge);
 bplan * bplan_scaffolding(int wd, int hg, bid_t mat, int ladder);
 bplan * bplan_stairs(int32_t wd, int32_t hg, bid_t mat, int base);
+bplan * bplan_seal();
 
 ////////////////////////////////////////////////////////////////////////////////
 // Buildplan manipulations

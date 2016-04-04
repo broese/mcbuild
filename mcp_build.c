@@ -1925,6 +1925,13 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
+    CMD(seal) {
+        build_clear(sq, cq);
+        build.bp = bplan_seal();
+        sprintf(reply, "Seal");
+        goto Place;
+    }
+
     // Buildplan manipulation
     CMD2(extend,ext) {
         NEEDBP;
