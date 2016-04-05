@@ -28,7 +28,7 @@
 #include "mcp_arg.h"
 
 
-#define EYEHEIGHT 52
+#define EYEHEIGHT (52.0/32.0)
 #define YAWMARGIN 0.5
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -36,23 +36,19 @@
 
 // calculate the yaw and pitch values for the player looking at a specific
 // dot in space
-int calculate_yaw_pitch(fixp x, fixp z, fixp y, float *yaw, float *pitch) {
-    fixp px = (fixp)(gs.own.x*32.0);
-    fixp py = (fixp)(gs.own.y*32.0)+EYEHEIGHT;
-    fixp pz = (fixp)(gs.own.z*32.0);
-
+int calculate_yaw_pitch(double x, double z, double y, double *yaw, double *pitch) {
     // relative distance to the dot
-    float dx = (float)(x-px)/32.0;
-    float dz = (float)(z-pz)/32.0;
-    float dy = (float)(y-py)/32.0;
-    float c  = sqrt(dx*dx+dz*dz);
+    double dx = gs.own.x-x;
+    double dz = gs.own.z-z;
+    double dy = gs.own.y+EYEHEIGHT-y;
+    double c  = sqrt(dx*dx+dz*dz);
     if (c==0) c=0.0001;
 
-    float alpha = asinf(dx/c)/M_PI*180;
+    double alpha = asin(dx/c)/M_PI*180;
     *yaw = (dz<0) ? (180+alpha) : (360-alpha);
     if (*yaw >= 360.0) *yaw-=360; // normalize yaw
 
-    *pitch = -atanf(dy/c)/M_PI*180;
+    *pitch = -atan(dy/c)/M_PI*180;
 
     if (*yaw < 45-YAWMARGIN || *yaw > 315+YAWMARGIN) {
         return DIR_SOUTH;
@@ -152,7 +148,7 @@ typedef struct {
     uint16_t dots[6][15];       // usable dots on the 6 neighbor faces to place the block
     int ndots;                  // number of dots on this block we can use to place it correctly
 
-    int32_t dist;               // distance to the block center (squared)
+    double dist;                // distance to the block center
 
     uint64_t last;              // last timestamp when we attempted to place this block
 } blk;
@@ -365,14 +361,14 @@ void calculate_material(int plan) {
 // Building process
 
 // maximum reach distance for building, squared, in fixp units (1/32 block)
-#define MAXREACH_COARSE SQ(5<<5)
-#define MAXREACH SQ(4<<5)
+#define MAXREACH_COARSE 5.0
+#define MAXREACH 4.0
 #define OFF(x,z,y) (((x)-xo)+((z)-zo)*(xsz)+((y)-yo)*(xsz*zsz))
 
 typedef struct {
-    fixp x,z,y;     // position of the dot 0,0
-    fixp cx,cz,cy;  // deltas to the next dot in column
-    fixp rx,rz,ry;  // deltas to the next dot in row
+    double x,z,y;     // position of the dot 0,0
+    double cx,cz,cy;  // deltas to the next dot in column
+    double rx,rz,ry;  // deltas to the next dot in row
 } dotpos_t;
 
 static dotpos_t DOTPOS[6] = {
@@ -393,9 +389,9 @@ static void remove_distant_dots(blk *b) {
     // this will be now replaced with the max dot distance
     b->dist = 0;
 
-    fixp px = (fixp)(gs.own.x*32.0);
-    fixp py = (fixp)(gs.own.y*32.0)+EYEHEIGHT;
-    fixp pz = (fixp)(gs.own.z*32.0);
+    double px = gs.own.x;
+    double pz = gs.own.z;
+    double py = gs.own.y+EYEHEIGHT;
 
     int f;
     for(f=0; f<6; f++) {
@@ -403,10 +399,10 @@ static void remove_distant_dots(blk *b) {
         uint16_t *dots = b->dots[f];
         dotpos_t dotpos = DOTPOS[f];
 
-        // coordinates (fixed point) of the adjacent block
-        fixp nx = (b->x+NOFF[f][0])<<5;
-        fixp nz = (b->z+NOFF[f][1])<<5;
-        fixp ny = (b->y+NOFF[f][2])<<5;
+        // coordinates of the adjacent block
+        double nx = (b->x+NOFF[f][0]);
+        double nz = (b->z+NOFF[f][1]);
+        double ny = (b->y+NOFF[f][2]);
 
         int dr,dc;
         for(dr=0; dr<15; dr++) {
@@ -414,19 +410,19 @@ static void remove_distant_dots(blk *b) {
             if (!drow) continue; // skip disabled rows
 
             // dot dr,0 coordinates in 3D space
-            fixp rx = nx + dotpos.x + dotpos.rx*dr;
-            fixp ry = ny + dotpos.y + dotpos.ry*dr;
-            fixp rz = nz + dotpos.z + dotpos.rz*dr;
+            double rx = nx + dotpos.x/32 + dotpos.rx*dr/32;
+            double ry = ny + dotpos.y/32 + dotpos.ry*dr/32;
+            double rz = nz + dotpos.z/32 + dotpos.rz*dr/32;
 
             for(dc=0; dc<15; dc++) {
                 uint16_t mask = 1<<dc;
                 if (!(drow&mask)) continue; // skip disabled dots
 
-                fixp x = rx + dotpos.cx*dc;
-                fixp y = ry + dotpos.cy*dc;
-                fixp z = rz + dotpos.cz*dc;
+                double x = rx + dotpos.cx*dc/32;
+                double y = ry + dotpos.cy*dc/32;
+                double z = rz + dotpos.cz*dc/32;
 
-                int32_t dist = SQ(x-px)+SQ(z-pz)+SQ(y-py);
+                double dist = sqrt(SQ(x-px)+SQ(z-pz)+SQ(y-py));
 
                 if (dist > MAXREACH) {
                     dots[dr] &= ~mask; // this dot is too far away - disable it
@@ -436,7 +432,7 @@ static void remove_distant_dots(blk *b) {
 
                 if (b->rdir != DIR_ANY) {
                     // this block requires a certain player look direction on placement
-                    float yaw,pitch;
+                    double yaw,pitch;
                     int yawdir = calculate_yaw_pitch(x, z, y, &yaw, &pitch);
                     if (yawdir != b->rdir) {
                         // direction does not match - we can't place this block
@@ -824,139 +820,131 @@ void set_block_dots(blk *b) {
             memset(b->dots[f], 0, sizeof(DOTS_ALL));
 }
 
-// called when player position or look have changed - update our placeable blocks list
-void build_update() {
-    if (!build.active) return;
+// update inreach flag for the blocks - calculate which
+// blocks of the buildtask reachable (coarse estimation)
+int update_inreach() {
+    int i, num_inreach=0;
 
-    int i,f;
-
-    // Convert player coordinates into fixp
-    fixp px = (fixp)(gs.own.x*32.0);
-    fixp py = (fixp)(gs.own.y*32.0)+EYEHEIGHT;
-    fixp pz = (fixp)(gs.own.z*32.0);
-
-    // 1. Update 'inreach' flag for all blocks and set the block distance
-    // inreach=1 does not necessarily mean the block is really reachable -
-    // this will be determined later in more detail, but those with
-    // inreach=0 are definitely too far away to bother.
-    int num_inreach = 0;
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
-        b->state = 0;
+        b->state = 0; // clear flags
         b->inreach = 1;
 
+        // make sure we're not building outside of the y coord range
+        if (b->y<0 || b->y>255) {
+            b->inreach = 0;
+            continue;
+        }
+
         // avoid building blocks above the player in wall and limit mode
-        if ((buildopts.wallmode && (b->y>(py>>5)-1)) ||
+        if ((buildopts.wallmode && b->y>floor(gs.own.y)-1) ||
             (build.limit && (b->y>build.limit))) {
                 b->inreach = 0;
                 continue;
         }
 
-        // if the "seal mode" is active, only build blocks located in front of you
-        if (buildopts.sealmode) {
-            switch (player_direction()) {
-                case DIR_NORTH: if (b->z >= (pz>>5)) b->inreach=0; break;
-                case DIR_SOUTH: if (b->z <= (pz>>5)) b->inreach=0; break;
-                case DIR_WEST:  if (b->x >= (px>>5)) b->inreach=0; break;
-                case DIR_EAST:  if (b->x <= (px>>5)) b->inreach=0; break;
-            }
-            if (b->inreach==0) continue;
-        }
-
-        int32_t dx = px-(b->x<<5)+16;
-        int32_t dy = py-(b->y<<5)+16;
-        int32_t dz = pz-(b->z<<5)+16;
-        b->dist = SQ(dx)+SQ(dy)+SQ(dz);
+        double dx = gs.own.x - b->x + 0.5;
+        double dy = gs.own.x - b->x + 0.5;
+        double dz = gs.own.x - b->x + 0.5;
+        b->dist = sqrt((SQ(dx)+SQ(dy)+SQ(dz)));
 
         b->inreach = (b->dist<MAXREACH_COARSE);
         num_inreach += b->inreach;
     }
-    if (num_inreach==0) {
-        // no potentially buildable blocks nearby - don't bother with the rest
-        build.nbq = 0;
-        build.bq[0] = -1;
-        return;
-    }
 
-    // 2. extract the cuboid with the existing world blocks
+    return num_inreach;
+}
 
-    int32_t xmin = (px>>5)-12;
-    int32_t xmax = (px>>5)+12;
-    int32_t ymin = (py>>5)-12;
-    int32_t ymax = (py>>5)+12;
-    int32_t zmin = (pz>>5)-12;
-    int32_t zmax = (pz>>5)+12;
+// update placed and avail flags for the blocks in the buildtask, and
+// the neighbor mask
+int update_placed() {
+    int i, num_avail=0;
 
-    // make sure our cuboid doesn't exceed y coordinate limits
-    if (ymin<0) ymin=0;
-    if (ymax>255) ymax=255;
-
-    extent_t ex = { { xmin, ymin, zmin }, { xmax, ymax, zmax } };
-    cuboid_t c = export_cuboid_extent(ex);
-
-    // 3. determine which blocks are occupied and which neighbors are available
+    // determine which blocks are occupied and which neighbors are available
     build.nbq = 0;
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
-        b->rdir = DIR_ANY;
         if (!b->inreach) continue;
 
-        int x = b->x-xmin;
-        int y = b->y-ymin;
-        int z = b->z-zmin;
+        // world block at the position this btask block would be placed
+        bid_t bl = get_block_at(b->x, b->z, b->y);
 
-        bid_t *row   = c.data[y]+c.boff+z*c.sa.x;
-        bid_t *row_u = c.data[y+1]+c.boff+z*c.sa.x;
-        bid_t *row_d = c.data[y-1]+c.boff+z*c.sa.x;
-        bid_t *row_n = c.data[y]+c.boff+(z-1)*c.sa.x;
-        bid_t *row_s = c.data[y]+c.boff+(z+1)*c.sa.x;
-
-        bid_t bl = row[x];
+        const item_id *it = &ITEMS[b->b.bid];
+        int smask = (it->flags&I_STATE_MASK)^15;
 
         // check if this block is already correctly placed (including meta)
-        //TODO: implement less restricted check for blocks with non-positional meta
-        b->placed = (bl.raw == b->b.raw);
+        b->placed  = 0;
+        b->needadj = 0;
+        b->empty   = 0;
 
+        if ( bl.bid == b->b.bid ) {
+            if ((bl.meta&smask) == (b->b.meta&smask)) {
+                // meta is already correct
+                // note that we exclude the dynamic state bits (e.g. redstone power)
+                b->placed = 1;
+            }
+            else if (it->flags&I_ADJ) {
+                // meta is not correct, but this block is adjustable
+                // consider it placed, but mark it for adjustment
+                b->placed = 1;
+                b->needadj = 1;
+            }
+            // else - some block with the correct ID, but incorrect meta was placed
+            // (e.g. wrong wool color)
+        }
+        else if (it->flags&I_DSLAB) {
+            // special case - doubleslabs
+            bid_t bm = get_base_material(b->b);
+            if (bm.bid==bl.bid && bm.meta==(bl.meta&7)) {
+                // we want to place a doubleslab here and the block already contains
+                // a suitable slab - mark it as empty, so we can place the second slab
+                b->empty = 1;
+            }
+            // else - the block is occupied by something insuitable
+        }
+        else if ( (bl.bid == 0x97 && b->b.bid == 0xb2) || (bl.bid == 0xb2 && b->b.bid == 0x97) ) {
+            // special case - daylight sensor
+            // adjustment toggles between two block IDs instead of meta
+            b->placed = 1;
+            b->needadj = 1;
+        }
+        // else - placed is set to 0
 
         // check if the block is empty, but ignore those that are already
         // placed - this way we can support "empty" blocks like water in our buildplan
-        b->empty  = ISEMPTY(bl.bid) && !b->placed;
-
-        const item_id *it = &ITEMS[b->b.bid];
-        if (it->flags&I_DSLAB) {
-            // we want to place doubleslab here and the block contains
-            // a suitable slab - mark it as empty, so we can place the second slab
-            bid_t bm = get_base_material(b->b);
-            if (bm.bid==bl.bid && bm.meta==(bl.meta&7))
-                b->empty = 1;
-        }
-
-        // check if this block needs state adjustment (e.g. repeaters)
-        int smask = (it->flags&I_STATE_MASK)^15;
-        if (bl.bid==b->b.bid && (bl.meta&smask)!=(b->b.meta&smask) && (it->flags&I_ADJ))
-            b->needadj = 1;
-
-        // special case - daylight sensor
-        if ((bl.bid == 0x97 && b->b.bid == 0xb2) || (bl.bid == 0xb2 && b->b.bid == 0x97))
-            b->needadj = 1;
+        if (!b->empty)
+            b->empty = ISEMPTY(bl.bid) && !b->placed;
+        // from now on, b->empty indicates that this block can be technically placed here
 
         //TODO: when placing a double slab, prevent obstruction - place the slab further away first
         //TODO: take care when placing a slab over a slab - prevent a doubleslab creation
 
         // determine which neighbors do we have
         bid_t nbl;
-        nbl = b->nblocks[DIR_UP] = row_u[x];
+        nbl = b->nblocks[DIR_UP] = get_block_at(b->x,b->z,b->y+1);
         b->n_yp = !ISEMPTY(nbl.bid);
-        nbl = b->nblocks[DIR_DOWN] = row_d[x];
+        nbl = b->nblocks[DIR_DOWN] = get_block_at(b->x,b->z,b->y-1);
         b->n_yn = nbl.bid!=0; //!ISEMPTY(nbl.bid);
-        nbl = b->nblocks[DIR_SOUTH] = row_s[x];
+        nbl = b->nblocks[DIR_SOUTH] = get_block_at(b->x,b->z+1,b->y);
         b->n_zp = !ISEMPTY(nbl.bid);
-        nbl = b->nblocks[DIR_NORTH] = row_n[x];
+        nbl = b->nblocks[DIR_NORTH] = get_block_at(b->x,b->z-1,b->y);
         b->n_zn = !ISEMPTY(nbl.bid);
-        nbl = b->nblocks[DIR_EAST]  = row[x+1];
+        nbl = b->nblocks[DIR_EAST]  = get_block_at(b->x+1,b->z,b->y);
         b->n_xp = !ISEMPTY(nbl.bid);
-        nbl = b->nblocks[DIR_WEST]  = row[x-1];
+        nbl = b->nblocks[DIR_WEST]  = get_block_at(b->x-1,b->z,b->y);
         b->n_xn = !ISEMPTY(nbl.bid);
+
+        if (b->empty) num_avail++;
+    }
+
+    return num_avail;
+}
+
+void update_dots() {
+    int i;
+    for(i=0; i<C(build.task); i++) {
+        blk *b = P(build.task)+i;
+        b->rdir = DIR_ANY;
 
         if (b->needadj) {
             // we can handle adjustment clicks on the block itself in similar fashion
@@ -966,35 +954,58 @@ void build_update() {
             PLACE_ALL(b);
 
             // disable faces looking away from you
+            // note - this is opposite from what we do below for building blocks!
             if (!buildopts.anyface) {
-                if (b->y > ((py-EYEHEIGHT)>>5)+1)   memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
-                if (b->y < ((py-EYEHEIGHT)>>5)+2)   memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
-                if (b->x > (px>>5))     memset(b->dots[DIR_EAST],  0, sizeof(DOTS_ALL));
-                if (b->x < (px>>5))     memset(b->dots[DIR_WEST],  0, sizeof(DOTS_ALL));
-                if (b->z > (pz>>5))     memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
-                if (b->z < (pz>>5))     memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
+                if (b->y > gs.own.y+1) memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
+                if (b->y < gs.own.y+2) memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
+                if (b->x > gs.own.x)   memset(b->dots[DIR_EAST],  0, sizeof(DOTS_ALL));
+                if (b->x < gs.own.x)   memset(b->dots[DIR_WEST],  0, sizeof(DOTS_ALL));
+                if (b->z > gs.own.z)   memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
+                if (b->z < gs.own.z)   memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
             }
         }
         else {
             // skip the blocks we can't place
             if (b->placed || !b->empty || !b->neigh) continue;
 
+            //TODO: allow placing in the air (i.e. no neighbors)
+
             set_block_dots(b);
 
             // disable faces looking away from you
             if (!buildopts.anyface) {
-                if (b->y < ((py-EYEHEIGHT)>>5)+1)   memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
-                if (b->y > ((py-EYEHEIGHT)>>5)+2)   memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
-                if (b->x < (px>>5))     memset(b->dots[DIR_EAST],  0, sizeof(DOTS_ALL));
-                if (b->x > (px>>5))     memset(b->dots[DIR_WEST],  0, sizeof(DOTS_ALL));
-                if (b->z < (pz>>5))     memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
-                if (b->z > (pz>>5))     memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
+                if (b->y < gs.own.y+1)   memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
+                if (b->y > gs.own.y+2)   memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
+                if (b->x < gs.own.x)     memset(b->dots[DIR_EAST],  0, sizeof(DOTS_ALL));
+                if (b->x > gs.own.x)     memset(b->dots[DIR_WEST],  0, sizeof(DOTS_ALL));
+                if (b->z < gs.own.z)     memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
+                if (b->z > gs.own.z)     memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
             }
         }
+    }
+}
 
-        // calculate exact distance to each of the dots and remove those out of reach
+// called when player position or look have changed - update our placeable blocks list
+void build_update() {
+    if (!build.active) return;
+
+    int i,f;
+
+    if (!update_inreach() || !update_placed() ) {
+        // no potentially buildable blocks nearby - don't bother with the rest
+        build.nbq = 0;
+        build.bq[0] = -1;
+        return;
+    }
+
+    update_dots();
+
+    build.nbq = 0;
+    for(i=0; i<C(build.task); i++) {
+        blk *b = P(build.task)+i;
+        if (!b->empty) continue;
+
         remove_distant_dots(b);
-
         b->ndots = count_dots(b);
         if (b->ndots>0 && build.nbq<MAXBUILDABLE)
             build.bq[build.nbq++] = i;
@@ -1003,11 +1014,8 @@ void build_update() {
 
     qsort(build.bq, build.nbq, sizeof(build.bq[0]), sort_blocks);
 
-    /* Further things TODO:
-       - remove the dots obstructed by other blocks
-       - make the various obstruction checking options configurable
-    */
-    free_cuboid(c);
+    //TODO: calculate obstruction
+    //TODO: allow less restricted placement rules through option
 }
 
 // randomly choose which of the suitable dots we are going to use to place the block
@@ -1029,7 +1037,7 @@ static void choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz)
                         *cx = (dotpos.x+dotpos.rx*dr+dotpos.cx*dc)/2;
                         *cy = (dotpos.y+dotpos.ry*dr+dotpos.cy*dc)/2;
                         *cz = (dotpos.z+dotpos.rz*dr+dotpos.cz*dc)/2;
-                        //printf("face=%d dot=%d,%d, cur=%d,%d,%d\n",*face,dr,dc,*cx,*cy,*cz);
+                        //printf("choose_dot: face=%d dot=%d,%d, cur=%d,%d,%d\n",*face,dr,dc,*cx,*cy,*cz);
                         return;
                     }
                 }
@@ -1076,11 +1084,11 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         choose_dot(b, &face, &cx, &cy, &cz);
 
         // dot's absolute 3D coordinates (fixed point)
-        fixp tx = ((b->x+NOFF[face][0])<<5) + cx*2;
-        fixp tz = ((b->z+NOFF[face][1])<<5) + cz*2;
-        fixp ty = ((b->y+NOFF[face][2])<<5) + cy*2;
+        double tx = b->x+NOFF[face][0] + (double)cx/16;
+        double tz = b->z+NOFF[face][1] + (double)cz/16;
+        double ty = b->y+NOFF[face][2] + (double)cy/16;
 
-        float yaw, pitch;
+        double yaw, pitch;
         int ldir = calculate_yaw_pitch(tx, tz, ty, &yaw, &pitch);
 
         int needcrouch=0;
@@ -1103,7 +1111,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
                    b->x+NOFF[face][0],b->z+NOFF[face][1],b->y+NOFF[face][2],
                    b->nblocks[face].bid, get_bid_name(buf2, b->nblocks[face]),
                    face, cx, cy, cz,
-                   gs.own.x, gs.own.y+(double)EYEHEIGHT/32, gs.own.z,
+                   gs.own.x, (double)gs.own.y+EYEHEIGHT, gs.own.z,
                    (float)b->x+(float)cx/16,(float)b->y+(float)cy/16,(float)b->z+(float)cz/16,
                    yaw, pitch, ldir, DIRNAME[ldir],
                    needcrouch?"(need to crouch)":"");
@@ -1520,9 +1528,9 @@ void build_dump_task() {
     char buf[256];
     for(i=0; i<C(build.task); i++) {
         blk *b = &P(build.task)[i];
-        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d (%.2f) %c%c%c %c%c%c%c%c%c (%3d) material=%s\n",
+        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%.2f %c%c%c %c%c%c%c%c%c (%3d) material=%s\n",
                i, b->x, b->z, b->y, b->b.bid, b->b.meta,
-               b->dist, sqrt((float)b->dist)/32,
+               b->dist,
                b->inreach?'R':'.',
                b->empty  ?'E':'.',
                b->placed ?'P':'.',
@@ -1545,9 +1553,9 @@ void build_dump_queue() {
     char buf[256];
     for(i=0; i<build.nbq; i++) {
         blk *b = P(build.task)+build.bq[i];
-        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d (%.4f) %c%c%c %c%c%c%c%c%c (%3d) material=%s\n",
+        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%.2f %c%c%c %c%c%c%c%c%c (%3d) material=%s\n",
                build.bq[i], b->x, b->z, b->y, b->b.bid, b->b.meta,
-               b->dist, sqrt((float)b->dist)/32,
+               b->dist,
                b->inreach?'R':'.',
                b->empty  ?'E':'.',
                b->placed ?'P':'.',
