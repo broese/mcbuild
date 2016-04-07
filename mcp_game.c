@@ -1026,7 +1026,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             gmi_confirm(tpkt, sq, cq);
             queue_packet(pkt, tq);
         } _GMP;
-#if 0
+
         ////////////////////////////////////////////////////////////////
         // Other players
 
@@ -1043,13 +1043,13 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             }
 
             if (!pu)
-                sprintf(buf, "Player %02x%02x%02x%02x%02x%02x... at %d,%d/%d",
+                sprintf(buf, "Player %02x%02x%02x%02x%02x%02x... at %f,%f/%f",
                         tpkt->uuid[0],tpkt->uuid[1],tpkt->uuid[2],
                         tpkt->uuid[3],tpkt->uuid[4],tpkt->uuid[5],
-                        tpkt->x>>5,tpkt->z>>5,tpkt->y>>5);
+                        tpkt->x,tpkt->z,tpkt->y);
             else
-                sprintf(buf, "Player %s at %d,%d/%d",
-                        pu->name, tpkt->x>>5, tpkt->z>>5, tpkt->y>>5);
+                sprintf(buf, "Player %s at %f,%f/%f",
+                        pu->name, tpkt->x, tpkt->z, tpkt->y);
 
             chat_message(buf, tq, "red", 0);
             queue_packet(pkt, tq);
@@ -1057,7 +1057,6 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             if (pu && pu->status==UUID_DANGER)
                 drop_connection();
         } _GMP;
-#endif
 
         default:
             // by default - just forward the packet
