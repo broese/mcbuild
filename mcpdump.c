@@ -117,22 +117,16 @@ int parse_args(int ac, char **av) {
 #define VIEWDIST (158<<5)
 #define THUNDERDIST (160000<<5)
 
-void track_remote_sounds(int32_t x, int32_t z, int32_t y, struct timeval tv) {
-#if 0
-    fixp dx = x - gs.own.x;
-    fixp dz = z - gs.own.z;
-    int32_t sqdist = dx*dx+dz*dz;
+void track_remote_sounds(double x, double z, double y, struct timeval tv) {
+    double dx = x - gs.own.x;
+    double dz = z - gs.own.z;
+    //double dist = sqrt(dx*dx+dz*dz);
 
-    // thunder within view distance - ignore local thunder
-    if (sqdist < VIEWDIST*VIEWDIST) return;
-
-    float scale = (float)THUNDERDIST / sqrtf((float)sqdist);
-    fixp rx = (fixp)((float)dx*scale)+gs.own.x;
-    fixp rz = (fixp)((float)dz*scale)+gs.own.z;
+    //fixp rx = (fixp)((float)dx*scale)+gs.own.x;
+    //fixp rz = (fixp)((float)dz*scale)+gs.own.z;
 
     // process output with ./mcpdump | egrep '^thunder' | sed 's/thunder: //' > output.csv
-    printf("thunder: %ld,%d,%.1f,%.1f,%.1f,%d\n",tv.tv_sec,gs.own.x,gs.own.z,rx,rz,y);
-#endif
+    printf("thunder: %ld,%.1f,%.1f,%.1f,%.1f,%.1f\n",tv.tv_sec,gs.own.x,gs.own.z,dx,dz,y);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -324,8 +318,8 @@ void mcpd_packet(MCPacket *pkt) {
         case SP_SoundEffect: {
             SP_SoundEffect_pkt *tpkt = (SP_SoundEffect_pkt *)&pkt->_SP_SoundEffect;
             if (tpkt->id == 262) { // entity.lightning.thunder
-                fixp tx = tpkt->x*4;
-                fixp tz = tpkt->z*4;
+                double tx = (double)tpkt->x/8;
+                double tz = (double)tpkt->z/8;
                 track_remote_sounds(tx, tz, tpkt->y/8, pkt->ts);
             }
             break;
