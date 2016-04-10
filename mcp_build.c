@@ -864,6 +864,10 @@ int update_placed() {
     build.nbq = 0;
     for(i=0; i<C(build.task); i++) {
         blk *b = P(build.task)+i;
+        b->placed  = 0;
+        b->needadj = 0;
+        b->empty   = 0;
+
         if (!b->inreach) continue;
 
         // world block at the position this btask block would be placed
@@ -873,10 +877,6 @@ int update_placed() {
         int smask = (it->flags&I_STATE_MASK)^15;
 
         // check if this block is already correctly placed (including meta)
-        b->placed  = 0;
-        b->needadj = 0;
-        b->empty   = 0;
-
         if ( bl.bid == b->b.bid ) {
             if ((bl.meta&smask) == (b->b.meta&smask)) {
                 // meta is already correct
@@ -940,6 +940,44 @@ int update_placed() {
     return num_avail;
 }
 
+// mark blocks not suitable for seal mode as unreachable
+void update_seal() {
+    int i;
+    if (C(build.task) <=0 ) return;
+
+    int32_t minx,maxx,minz,maxz;
+    int num_empty=0;
+
+    // determine limits for blocks in btask that still need placing
+    for(i=0; i<C(build.task); i++) {
+        blk *b = P(build.task)+i;
+
+        if (b->empty) {
+            if (b->x<minx || !num_empty) minx=b->x;
+            if (b->x>maxx || !num_empty) maxx=b->x;
+            if (b->z<minz || !num_empty) minz=b->z;
+            if (b->z>maxz || !num_empty) maxz=b->z;
+
+            num_empty++;
+        }
+    }
+    if (!num_empty) return;
+
+    // depending on pivot direction, mark only blocks on certain side of
+    // btask as suitable for seal mode
+    for(i=0; i<C(build.task); i++) {
+        blk *b = P(build.task)+i;
+        if (!b->empty) continue;
+
+        switch (build.pv.dir) {
+            case DIR_EAST:  if (b->x < maxx) b->empty=0; break;
+            case DIR_WEST:  if (b->x > minx) b->empty=0; break;
+            case DIR_SOUTH: if (b->z < maxz) b->empty=0; break;
+            case DIR_NORTH: if (b->z > minz) b->empty=0; break;
+        }
+    }
+}
+
 void update_dots() {
     int i;
     for(i=0; i<C(build.task); i++) {
@@ -998,6 +1036,7 @@ void build_update() {
         return;
     }
 
+    update_seal();
     update_dots();
 
     build.nbq = 0;
@@ -1703,6 +1742,7 @@ void build_cancel(MCPacketQueue *sq, MCPacketQueue *cq) {
     lh_arr_free(BTASK);
     build.bq[0] = -1;
     build.nbrp = 0; // clear the pending queue
+    buildopts.sealmode = 0; // always cancel seal mode
 }
 
 
@@ -1937,6 +1977,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         build_clear(sq, cq);
         build.bp = bplan_seal();
         sprintf(reply, "Seal");
+        buildopts.sealmode = 1;
         goto Place;
     }
 

@@ -457,6 +457,37 @@
     <p><tt>#build scaf 15,5 -l</tt> - scaffolding 15 blocks wide and 5 floors high</p>
 
 
+
+    <a name="para_seal">
+    <h3>seal</h3>
+
+    <p>This is a special option useful for sealing nether tunnels - a quite
+     tedious task. This creates a 1x2x1000 wall of netherack, but it's
+     orientation is your back. That means, the wall will extend from the
+     origin point towards you. It is intended that you place the pivot
+     at the end of the tunnel, looking to the sealed end and then retreat
+     backwards from the tunnel to seal it.</p>
+    <p>While a buildplan like this can be easily created with other commands,
+     placing a seal automatically enters so called "seal mode" that will make
+     sure all blocks at one position in the tunnel are placed before
+     progressing. This ensures that there are no empty blocks left accidentally.
+    </p>
+
+    <p>Format:</p>
+    <p><tt>#build seal</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+    </ul>
+
+    <p>Pivot: end of the tunnel, bottom</p>
+
+    <p>Examples and usage tips:</p>
+
+    <p><tt>#build seal</tt> 1x2x1000 wall of neterrack</p>
+
+
+
     <a name="build_manipulate">
     <h2>Buildplan Manipulation</h2>
 
