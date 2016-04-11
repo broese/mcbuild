@@ -38,9 +38,9 @@
 // dot in space
 int calculate_yaw_pitch(double x, double z, double y, double *yaw, double *pitch) {
     // relative distance to the dot
-    double dx = gs.own.x-x;
-    double dz = gs.own.z-z;
-    double dy = gs.own.y+EYEHEIGHT-y;
+    double dx = x-gs.own.x;
+    double dz = z-gs.own.z;
+    double dy = y-gs.own.y-EYEHEIGHT;
     double c  = sqrt(dx*dx+dz*dz);
     if (c==0) c=0.0001;
 
@@ -1151,7 +1151,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
                    b->nblocks[face].bid, get_bid_name(buf2, b->nblocks[face]),
                    face, cx, cy, cz,
                    gs.own.x, (double)gs.own.y+EYEHEIGHT, gs.own.z,
-                   (float)b->x+(float)cx/16,(float)b->y+(float)cy/16,(float)b->z+(float)cz/16,
+                   tx,ty,tz,
                    yaw, pitch, ldir, DIRNAME[ldir],
                    needcrouch?"(need to crouch)":"");
 #endif
