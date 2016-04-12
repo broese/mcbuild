@@ -236,12 +236,6 @@ typedef struct {
     uint8_t     onground;
 } SP_EntityLookRelMove_pkt;
 
-// 0x27
-typedef struct {
-    uint32_t eid;
-    metadata *meta;
-} SP_EntityMetadata_pkt;
-
 // 0x2e
 typedef struct {
     double      x,y,z;
@@ -268,6 +262,12 @@ typedef struct {
 typedef struct {
     int8_t sid;
 } SP_HeldItemChange_pkt;
+
+// 0x39
+typedef struct {
+    uint32_t    eid;
+    metadata *  meta;
+} SP_EntityMetadata_pkt;
 
 // 0x3d
 typedef struct {
@@ -492,11 +492,11 @@ typedef struct {
         PKT(SP_Map);                // 24
         PKT(SP_EntityRelMove);      // 25
         PKT(SP_EntityLookRelMove);  // 26
-        PKT(SP_EntityMetadata);     // 27
         PKT(SP_PlayerPositionLook); // 2e
         PKT(SP_DestroyEntities);    // 30
         PKT(SP_Respawn);            // 33
         PKT(SP_HeldItemChange);     // 37
+        PKT(SP_EntityMetadata);     // 39
         PKT(SP_SetExperience);      // 3d
         PKT(SP_UpdateHealth);       // 3e
         PKT(SP_SoundEffect);        // 42

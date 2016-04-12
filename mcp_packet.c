@@ -847,24 +847,6 @@ DUMP_BEGIN(SP_EntityLookRelMove) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x27 SP_EntityMetadata
-
-DECODE_BEGIN(SP_EntityMetadata,_1_8_1) {
-    Pvarint(eid);
-    Pmeta(meta);
-} DECODE_END;
-
-DUMP_BEGIN(SP_EntityMetadata) {
-    printf("eid=%08x", tpkt->eid);
-    // unfortunately we don't have access to proper entity type here
-    dump_metadata(tpkt->meta, Entity);
-} DUMP_END;
-
-FREE_BEGIN(SP_EntityMetadata) {
-    free_metadata(tpkt->meta);
-} FREE_END;
-
-////////////////////////////////////////////////////////////////////////////////
 // 0x2e SP_PlayerPositionLook
 
 DECODE_BEGIN(SP_PlayerPositionLook,_1_9) {
@@ -954,6 +936,24 @@ ENCODE_BEGIN(SP_HeldItemChange,_1_8_1) {
 DUMP_BEGIN(SP_HeldItemChange) {
     printf("sid=%d", tpkt->sid);
 } DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
+// 0x39 SP_EntityMetadata
+
+DECODE_BEGIN(SP_EntityMetadata,_1_8_1) {
+    Pvarint(eid);
+    Pmeta(meta);
+} DECODE_END;
+
+DUMP_BEGIN(SP_EntityMetadata) {
+    printf("eid=%08x", tpkt->eid);
+    // unfortunately we don't have access to proper entity type here
+    dump_metadata(tpkt->meta, Entity);
+} DUMP_END;
+
+FREE_BEGIN(SP_EntityMetadata) {
+    free_metadata(tpkt->meta);
+} FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x3d SP_SetExperience
@@ -1351,11 +1351,11 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_Map,_1_9),                  // 24
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
         SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
-        SUPPORT_DF  (SP_EntityMetadata,_1_8_1),     // 27
         SUPPORT_DE  (SP_PlayerPositionLook,_1_9),   // 2E
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
         SUPPORT_D   (SP_Respawn,_1_8_1),            // 33
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),     // 37
+        SUPPORT_DF  (SP_EntityMetadata,_1_8_1),     // 39
         SUPPORT_D   (SP_SetExperience,_1_8_1),      // 3d
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),       // 3e
         SUPPORT_D   (SP_SoundEffect,_1_9),          // 42
