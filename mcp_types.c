@@ -9,7 +9,6 @@
 */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <assert.h>
 
 #include <lh_buffers.h>
@@ -75,5 +74,21 @@ uint8_t * write_string(uint8_t *w, const char *s) {
     memmove(w, s, len);
     w+=len;
     return w;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Helpers
+
+char limhexbuf[4100];
+const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
+    //assert(len<(sizeof(limhexbuf)-4)/2);
+    assert(maxbyte >= 4);
+
+    int i;
+    //TODO: implement aaaaaa....bbbbbb - type of printing
+    if (len > maxbyte) len = maxbyte;
+    for(i=0;i<len;i++)
+        sprintf(limhexbuf+i*2,"%02x ",data[i]);
+    return limhexbuf;
 }
 
