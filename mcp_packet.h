@@ -236,6 +236,29 @@ typedef struct {
     uint8_t     onground;
 } SP_EntityLookRelMove_pkt;
 
+// 0x2d
+typedef struct {
+    char        pname[64];
+    char        pval[4096];
+    uint8_t     is_signed;
+    char        signature[4096];
+} pli_prop;
+
+typedef struct {
+    uuid_t      uuid;
+    char        name[64];
+    lh_arr_declare(pli_prop,prop);
+    int32_t     gamemode;
+    int32_t     ping;
+    uint8_t     has_dispname;
+    char        dispname[64];
+} pli_t;
+
+typedef struct {
+    int32_t     action;
+    lh_arr_declare(pli_t,list);
+} SP_PlayerListItem_pkt;
+
 // 0x2e
 typedef struct {
     double      x,y,z;
@@ -492,6 +515,7 @@ typedef struct {
         PKT(SP_Map);                // 24
         PKT(SP_EntityRelMove);      // 25
         PKT(SP_EntityLookRelMove);  // 26
+        PKT(SP_PlayerListItem);     // 2d
         PKT(SP_PlayerPositionLook); // 2e
         PKT(SP_DestroyEntities);    // 30
         PKT(SP_Respawn);            // 33

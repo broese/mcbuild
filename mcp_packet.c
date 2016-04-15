@@ -847,6 +847,119 @@ DUMP_BEGIN(SP_EntityLookRelMove) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x2d SP_PlayerListItem
+
+DECODE_BEGIN(SP_PlayerListItem,_1_9) {
+    Pvarint(action);
+    Rvarint(np); // number of player entries that follow
+    lh_arr_allocate_c(GAR(tpkt->list), np);
+
+    int i,j;
+    for(i=0; i<np; i++) {
+        pli_t * entry = P(tpkt->list)+i;
+        memmove(entry->uuid,p,16); p+=16;
+
+        switch(tpkt->action) {
+            case 0: { // add player
+                p=read_string(p,entry->name);
+                Rvarint(nprop);
+                lh_arr_allocate_c(GAR(entry->prop), nprop);
+                for(j=0; j<nprop; j++) {
+                    pli_prop * pp = P(entry->prop)+j;
+                    p=read_string(p,pp->pname);
+                    p=read_string(p,pp->pval);
+                    Rchar(is_signed);
+                    pp->is_signed = is_signed;
+                    if (is_signed) {
+                        p=read_string(p,pp->signature);
+                    }
+                }
+                Rvarint(gamemode); entry->gamemode = gamemode;
+                Rvarint(ping); entry->ping = ping;
+                Rchar(has_dispname); entry->has_dispname = has_dispname;
+                if (has_dispname) {
+                    p=read_string(p,entry->dispname);
+                }
+                break;
+            }
+
+            case 1: { // update gamemode
+                Rvarint(gamemode); entry->gamemode = gamemode;
+                break;
+            }
+
+            case 2: { // update ping
+                Rvarint(ping); entry->ping = ping;
+                break;
+            }
+
+            case 3: { // update display name
+                Rchar(has_dispname); entry->has_dispname = has_dispname;
+                if (has_dispname) {
+                    p=read_string(p,entry->dispname);
+                }
+                break;
+            }
+
+            case 4: { // remove player
+                break;
+            }
+        }
+    }
+} DECODE_END;
+
+DUMP_BEGIN(SP_PlayerListItem) {
+    printf("action=%d, np=%d\n", tpkt->action, C(tpkt->list));
+    int i,j;
+    for(i=0; i<C(tpkt->list); i++) {
+        pli_t * entry = P(tpkt->list)+i;
+        printf("  %d: uuid=%s",  i, limhex(entry->uuid,16,16));
+        switch(tpkt->action) {
+            case 0:
+                printf(" ADD name=%s, gamemode=%d, ping=%d", entry->name, entry->gamemode, entry->ping);
+                if (entry->has_dispname)
+                    printf(", dispname=%s\n", entry->dispname);
+                else
+                    printf("\n");
+
+                if (C(entry->prop) > 0) {
+                    for(j=0; j<C(entry->prop); j++) {
+                        pli_prop * pp = P(entry->prop)+j;
+                        printf("    PROPERTY %d : %s = %s\n", j, pp->pname, pp->pval);
+                        //if (pp->is_signed) printf("      SIGNED %s\n", pp->signature);
+                    }
+                }
+                break;
+
+            case 1:
+                printf(" UPD gamemode=%d\n", entry->gamemode);
+                break;
+
+            case 2:
+                printf(" UPD ping=%d\n", entry->ping);
+                break;
+
+            case 3:
+                printf(" UPD dispname=%s\n", entry->has_dispname ? entry->dispname : "N/A");
+                break;
+
+            case 4:
+                printf(" DEL\n");
+                break;
+        }
+    }
+} DUMP_END;
+
+FREE_BEGIN(SP_PlayerListItem) {
+    int i,j;
+    for(i=0; i<C(tpkt->list); i++) {
+        pli_t * entry = P(tpkt->list)+i;
+        lh_arr_free(GAR(entry->prop));
+    }
+    lh_arr_free(GAR(tpkt->list));
+} FREE_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x2e SP_PlayerPositionLook
 
 DECODE_BEGIN(SP_PlayerPositionLook,_1_9) {
@@ -1351,7 +1464,8 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_Map,_1_9),                  // 24
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
         SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
-        SUPPORT_DE  (SP_PlayerPositionLook,_1_9),   // 2E
+        SUPPORT_DF  (SP_PlayerListItem,_1_9),       // 2d
+        SUPPORT_DE  (SP_PlayerPositionLook,_1_9),   // 2e
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
         SUPPORT_D   (SP_Respawn,_1_8_1),            // 33
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),     // 37
