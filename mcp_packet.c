@@ -893,7 +893,7 @@ DECODE_BEGIN(SP_PlayerListItem,_1_9) {
 } DECODE_END;
 
 DUMP_BEGIN(SP_PlayerListItem) {
-    printf("action=%d, np=%d\n", tpkt->action, C(tpkt->list));
+    printf("action=%d, np=%zd\n", tpkt->action, C(tpkt->list));
     int i,j;
     for(i=0; i<C(tpkt->list); i++) {
         pli_t * entry = P(tpkt->list)+i;
