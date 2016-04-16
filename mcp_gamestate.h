@@ -83,6 +83,11 @@ typedef struct {
 // chunk coord -> super-region offset within world (512x512 superregions, 128kx128k regions, 4Mx4M chunks, 64Mx64M blocks)
 #define CC_2(X,Z)   (uint32_t)(((((uint64_t)(X))>>13)&0x1ff)|(((((uint64_t)(Z))>>13)&0x1ff)<<9))
 
+// offsets in world, super-region, region -> chunk coord
+#define SIGNEXT(X) ((X)|(((X)&0x200000)?0xffc00000:0))
+#define CC_X(S,R,C) SIGNEXT(  (((S)&0x1ff)<<13)  | (((R)&0xff)<<5)   | ((C)&0x1f)        )
+#define CC_Z(S,R,C) SIGNEXT(  (((S)&0x3fe00)<<4) | (((R)&0xff00)>>3) | (((C)&0x3e0)>>5)  )
+
 typedef struct {
     gschunk *chunk[32*32];
 } gsregion;
