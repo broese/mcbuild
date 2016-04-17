@@ -360,7 +360,7 @@ void calculate_material(int plan) {
 ////////////////////////////////////////////////////////////////////////////////
 // Building process
 
-// maximum reach distance for building, squared, in fixp units (1/32 block)
+// maximum reach distance for building
 #define MAXREACH_COARSE 5.0
 #define MAXREACH 4.0
 #define OFF(x,z,y) (((x)-xo)+((z)-zo)*(xsz)+((y)-yo)*(xsz*zsz))
@@ -1036,7 +1036,7 @@ void build_update() {
         return;
     }
 
-    update_seal();
+    if (buildopts.sealmode) update_seal();
     update_dots();
 
     build.nbq = 0;
