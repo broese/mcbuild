@@ -36,6 +36,7 @@ int o_dump_players              = 0;
 int o_extract_maps              = 0;
 int o_dump_packets              = 0;
 int o_dimension                 = 0;
+char *o_biomemap                = NULL;
 
 void print_usage() {
     printf("Usage:\n"
@@ -48,6 +49,7 @@ void print_usage() {
            "  -t                        : track thunder sounds\n"
            "  -p                        : dump player list\n"
            "  -m                        : extract in-game maps\n"
+           "  -B output.png             : extract biome maps\n"
            "  -d                        : dump packets\n"
            "  -D dimension              : specify dimension (0:overworld, -1:nether, 1:end)\n"
     );
@@ -56,7 +58,7 @@ void print_usage() {
 int parse_args(int ac, char **av) {
     int opt,error=0;
 
-    while ( (opt=getopt(ac,av,"b:D:sSihmdtp")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:D:B:sSihmdtp")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -103,6 +105,11 @@ int parse_args(int ac, char **av) {
                     printf("-D : incorrect dimension specified, must be 0 for Overworld, -1 for nether, 1 for end\n");
                     error++;
                 }
+                break;
+            }
+            case 'B': {
+                o_biomemap = strdup(optarg);
+                break;
             }
             case '?': {
                 printf("Unknown option -%c", opt);
@@ -324,6 +331,44 @@ void extract_maps() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void extract_biome_map() {
+    int32_t Xmin,Xmax,Zmin,Zmax;
+    if (!get_stored_area(&gs.overworld, &Xmin, &Xmax, &Zmin, &Zmax)) {
+        printf("No chunks\n");
+        return;
+    }
+
+    lhimage * img = allocate_image((Xmax-Xmin+1)*16, (Zmax-Zmin+1)*16, -1);
+    assert(img);
+
+    int X,Z;
+    for(X=Xmin; X<=Xmax; X++) {
+        for(Z=Zmin; Z<=Zmax; Z++) {
+            gschunk *c = find_chunk(&gs.overworld, X, Z, 0);
+            if (!c) continue;
+
+            int x,z;
+            int xoff = (X-Xmin)*16, zoff = (Z-Zmin)*16;
+
+            for(z=0; z<16; z++) {
+                for(x=0; x<16; x++) {
+                    uint8_t bid = c->biome[x+z*16];
+                    uint32_t c = BIOMES[bid].name ? BIOMES[bid].color : 0xff00ff;
+                    IMGDOT(img, x+xoff, z+zoff) = c;
+                }
+            }
+        }
+    }
+
+    ssize_t sz = export_png_file(img, o_biomemap);
+    printf("Exported %dx%d map to %s, size=%zd bytes\n",
+           img->width, img->height, o_biomemap, sz);
+
+    destroy_image(img);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 #define MAXPLEN (4*1024*1024)
 
 void mcpd_packet(MCPacket *pkt) {
@@ -540,6 +585,9 @@ int main(int ac, char **av) {
 
     if (o_extract_maps)
         extract_maps();
+
+    if (o_biomemap)
+        extract_biome_map();
 
     gs_destroy();
 
