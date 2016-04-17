@@ -285,6 +285,15 @@ extern const item_id ITEMS[];
 
 ////////////////////////////////////////////////////////////////////////////////
 
+typedef struct {
+    const char *name;
+    uint32_t    color;
+} biome_id;
+
+extern const biome_id BIOMES[];
+
+////////////////////////////////////////////////////////////////////////////////
+
 // block types we should exclude from scanning
 static inline int NOSCAN(int bid) {
     return ( bid==0x00 ||               // air
