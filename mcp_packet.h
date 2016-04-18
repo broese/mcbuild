@@ -267,6 +267,12 @@ typedef struct {
     uint32_t    tpid;
 } SP_PlayerPositionLook_pkt;
 
+// 0x2f
+typedef struct {
+    uint32_t    eid;
+    pos_t       pos;
+} SP_UseBed_pkt;
+
 // 0x30
 typedef struct {
     uint32_t    count;
@@ -517,6 +523,7 @@ typedef struct {
         PKT(SP_EntityLookRelMove);  // 26
         PKT(SP_PlayerListItem);     // 2d
         PKT(SP_PlayerPositionLook); // 2e
+        PKT(SP_UseBed);             // 2f
         PKT(SP_DestroyEntities);    // 30
         PKT(SP_Respawn);            // 33
         PKT(SP_HeldItemChange);     // 37

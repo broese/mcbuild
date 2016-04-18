@@ -972,6 +972,23 @@ DUMP_BEGIN(SP_PlayerPositionLook) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x2f SP_UseBed
+
+DECODE_BEGIN(SP_UseBed,_1_9) {
+    Pvarint(eid);
+    Plong(pos.p);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_UseBed,_1_9) {
+    Wvarint(eid);
+    Wlong(pos.p);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_UseBed) {
+    printf("eid=%d, pos=%d,%d,%d", tpkt->eid, tpkt->pos.x, tpkt->pos.y, tpkt->pos.z);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x30 SP_DestroyEntities
 
 DECODE_BEGIN(SP_DestroyEntities,_1_8_1) {
@@ -1450,6 +1467,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
         SUPPORT_DF  (SP_PlayerListItem,_1_9),       // 2d
         SUPPORT_DE  (SP_PlayerPositionLook,_1_9),   // 2e
+        SUPPORT_DE  (SP_UseBed,_1_9),               // 2f
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
         SUPPORT_D   (SP_Respawn,_1_8_1),            // 33
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),     // 37
