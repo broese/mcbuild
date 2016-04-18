@@ -1143,6 +1143,20 @@ DUMP_BEGIN(SP_EntityTeleport) {
 ////////////////////////////////////////////////////////////////////////////////
 // Client -> Server
 
+////////////////////////////////////////////////////////////////////////////////
+// 0x00 CP_TeleportConfirm
+
+DECODE_BEGIN(CP_TeleportConfirm,_1_9) {
+    Pvarint(tpid);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_TeleportConfirm,_1_9) {
+    Wvarint(tpid);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_TeleportConfirm) {
+    printf("tpid=%d", tpkt->tpid);
+} DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
 // 0x02 CP_ChatMessage
@@ -1478,6 +1492,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityTeleport,_1_9),       // 4a
     },
     {
+        SUPPORT_DE  (CP_TeleportConfirm,_1_9),      // 00
         SUPPORT_D   (CP_ChatMessage,_1_8_1),        // 02
         SUPPORT_DEF (CP_ClickWindow,_1_8_1),        // 07
         SUPPORT_DE  (CP_CloseWindow,_1_8_1),        // 08

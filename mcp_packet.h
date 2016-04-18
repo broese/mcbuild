@@ -341,6 +341,11 @@ typedef struct {
 ////////////////////////////////////////////////////////////////////////////////
 // Client -> Server
 
+// 0x00
+typedef struct {
+    uint32_t    tpid;
+} CP_TeleportConfirm_pkt;
+
 // 0x02
 typedef struct {
     char        str[256];
@@ -533,6 +538,7 @@ typedef struct {
         PKT(SP_SoundEffect);        // 42
         PKT(SP_EntityTeleport);     // 4a
 
+        PKT(CP_TeleportConfirm);    // 00
         PKT(CP_ChatMessage);        // 02
         PKT(CP_ClickWindow);        // 07
         PKT(CP_CloseWindow);        // 08
