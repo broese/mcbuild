@@ -52,9 +52,6 @@ nbttest: nbt.c
 varint: varint.c
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
 
-spiral: spiral.c
-	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
-
 
 
 .c.o: $(DEPFILE)

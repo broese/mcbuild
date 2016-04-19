@@ -1,15 +1,6 @@
 # Files
 *.o
 *~
-*.mca
-*.dat
-*.mcs
-crstate.dat*
-gmon.out
-mtrace
-outcast.c
-test.c
-*.bplan
 bases.txt
 players.txt
 make.depend*
@@ -17,17 +8,9 @@ make.depend*
 # applications
 mcproxy
 mcpdump
-mcsanvil
-minemap
-netmine
-slimemap
 argtest
 varint
 nbttest
-invedit
-chunkradar
-bptest
-spiral
 
 # directories
 saved
@@ -35,12 +18,5 @@ schematic
 bplan
 png
 csv
-pcaps
-junk
-reg
-region
-chunks
-doc
-maps
 projects
 bases
