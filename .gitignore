@@ -1,6 +1,7 @@
 # Files
 *.o
 *~
+*.mcs
 bases.txt
 players.txt
 make.depend*
@@ -19,4 +20,3 @@ bplan
 png
 csv
 projects
-bases

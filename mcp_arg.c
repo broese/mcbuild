@@ -153,7 +153,6 @@ int argf_size(arg_defaults *ad, char **words, char **names, size3_t *sz) {
         default:
             assert(0);
     }
-    //printf("Matched format >%s<, size=%d,%d,%d\n", fmt_size[fi], sz->x,sz->z,sz->y);
 
     return 0;
 }
@@ -180,7 +179,6 @@ int argf_diam(arg_defaults *ad, char **words, char **names, float *diam) {
         default:
             assert(0);
     }
-    //printf("Matched format >%s<, diam=%f\n", fmt_diam[fi], *diam);
 
     return 0;
 }
@@ -248,8 +246,6 @@ int argf_pivot(arg_defaults *ad, char **words, char **names, pivot_t *pivot) {
         default:
             assert(0);
     }
-    //printf("Matched format >%s<, coords=%d,%d,%d dir=%d (%s)\n", fmt_pivot[fi],
-    //       pivot->pos.x, pivot->pos.z, pivot->pos.y, pivot->dir, DIRNAME[pivot->dir] );
 
     return 0;
 }
@@ -313,9 +309,6 @@ int argf_offset(arg_defaults *ad, char **words, char **names, off3_t *offset) {
     offset->y = y;
     offset->z = z;
 
-    //printf("Matched format >%s<, offset=%d,%d,%d\n", fmt_offset[fi],
-    //       offset->x, offset->z, offset->y );
-
     return 0;
 }
 
@@ -369,8 +362,6 @@ int argf_pos(arg_defaults *ad, char **words, char **names, off3_t *pos) {
         default:
             assert(0);
     }
-    //printf("Matched format >%s<, coords=%d,%d,%d\n", fmt_pos[fi],
-    //       pos->x, pos->z, pos->y);
 
     return 0;
 }
@@ -459,8 +450,6 @@ int argf_mat(arg_defaults *ad, char **words, char **names, bid_t *mat) {
     *mat = BLOCKTYPE(bid, meta);
 
     char buf[256];
-    //printf("Matched format >%s<, material=%d:%d (%s)\n", fmt_mat[fi],
-    //       bid, meta, get_bid_name(buf, *mat));
 
     return 0;
 }
@@ -495,9 +484,6 @@ int argf_dir(arg_defaults *ad, char **words, char **names, int *dir) {
             return fi;
     }
 
-    //printf("Matched format >%s<, direction=%d (%s)\n", fmt_dir[fi],
-    //       *dir, DIRNAME[*dir]);
-
     return 0;
 }
 
@@ -528,52 +514,3 @@ int argf_count(arg_defaults *ad, char **words, char **names, int *count) {
 }
 
 const char *argfmt_count = "count=<n>";
-
-////////////////////////////////////////////////////////////////////////////////
-// Test function
-
-#if TEST
-
-void test_arg(char *reply, char **words) {
-    off3_t pos;
-    arg_defaults ad = {
-        10,20,70,
-        3,
-        BLOCKTYPE(44,3),
-        BLOCKTYPE(5,0),
-        100,50,30};
-
-    if (!argf_pos(&ad, words, NULL, &pos))
-        printf("pos=%d,%d,%d\n", pos.x, pos.z, pos.y);
-    else
-        sprintf(reply, "Fail");
-}
-
-int main(int ac, char **av) {
-    char **words = av+1;
-
-    char reply[4096]; reply[0] = 0;
-    char buf1[256],buf2[256];
-    int i;
-
-
-    printf("------------------\n");
-    for(i=0; words[i]; i++)
-        printf("%d %s\n",i,words[i]);
-    printf("------------------\n");
-
-    test_arg(reply, words);
-    if (reply[0])
-        printf("Error: %s\n",reply);
-    else
-        printf("Success\n");
-
-    printf("------------------\n");
-    for(i=0; words[i]; i++)
-        printf("%d %s\n",i,words[i]);
-    printf("------------------\n");
-
-    return 0;
-}
-
-#endif

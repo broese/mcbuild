@@ -41,7 +41,6 @@ struct {
     int antispam;
     int autoshear;
     int autoeat;
-    int bright;
 } opt;
 
 // loaded base locations - for thunder protection
@@ -81,10 +80,44 @@ uint64_t gettimestamp() {
     return ts;
 }
 
-#define HEADPOSY(y) ((y)+32*162/100)
+typedef struct {
+    uint64_t    last;       // last timestamp when an event was allowed by rate-limiting
+    uint64_t    level;      // current number of tokens
+    uint64_t    interval;   // average interval, in us
+    uint64_t    burst;      // burst size, in tokens
+} tokenbucket;
 
-static inline int mydist(fixp x, fixp y, fixp z) {
-    return SQ(gs.own.x-x)+SQ(HEADPOSY(gs.own.y)-y)+SQ(gs.own.z-z);
+#define TBDEF(name, i, b)                                                      \
+    tokenbucket name = { .last=0, .level=b, .interval=i, .burst=b };
+
+tokenbucket * tb_init(tokenbucket *tb, int64_t interval, int64_t burst) {
+    if (!tb) tb = (tokenbucket *)malloc(sizeof(tokenbucket));
+    assert(tb);
+
+    tb->last = gettimestamp();
+    tb->level = burst;
+    tb->interval = interval;
+    tb->burst = burst;
+
+    return tb;
+}
+
+int tb_event(tokenbucket *tb, uint64_t size) {
+    uint64_t ts = gettimestamp();
+    uint64_t level = tb->level + (ts-tb->last)/tb->interval; // currently available token level
+    if (level > tb->burst) level = tb->burst;
+
+    if (size > level) return 0; // disallow this event
+
+    tb->level = level-size;
+    tb->last = ts;
+    return size;
+}
+
+#define HEADPOSY(y) ((double)(y)+1.62)
+
+static inline double mydist(double x, double y, double z) {
+    return sqrt(SQ(gs.own.x-x)+SQ(HEADPOSY(gs.own.y)-y)+SQ(gs.own.z-z));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -94,14 +127,12 @@ static inline int mydist(fixp x, fixp y, fixp z) {
 #define MIN_ENTITY_DELAY 250000  // minimum interval between hitting the same entity (us)
 #define MIN_ATTACK_DELAY 50000   // minimum interval between attacking any entity
 #define MAX_ATTACK       1       // how many entities to attack at once
-#define REACH_RANGE      4
+#define REACH_RANGE      4.5
 
-uint64_t ak_last_attack = 0;
+TBDEF(tb_ak, MIN_ATTACK_DELAY, MAX_ATTACK);
 
 static void autokill(MCPacketQueue *sq) {
-    // skip if we used autokill less than MIN_ATTACK_DELAY us ago
-    uint64_t ts = gettimestamp();
-    if ((ts-ak_last_attack)<MIN_ATTACK_DELAY) return;
+    if (!tb_event(&tb_ak, 1)) return;
 
     // calculate list of hostile entities in range
     uint32_t hent[MAX_ENTITIES];
@@ -114,22 +145,21 @@ static void autokill(MCPacketQueue *sq) {
         if (!e->hostile) continue;
 
         // skip entities we hit only recently
-        if ((ts-e->lasthit) < MIN_ENTITY_DELAY) continue;
+        if ((tb_ak.last-e->lasthit) < MIN_ENTITY_DELAY) continue;
 
         // only take entities that are within our reach
-        int sd = mydist(e->x, e->y, e->z) >> 10;
-        if (sd<=SQ(REACH_RANGE))
+        if (mydist(e->x, e->y, e->z)<=REACH_RANGE)
             hent[hi++] = i;
     }
     //TODO: sort entities by how dangerous and how close they are
     //TODO: check for obstruction
+    //TODO: adjust for cooldown time
 
     for(i=0; i<hi && i<MAX_ATTACK; i++) {
         entity *e = P(gs.entity)+hent[i];
         //printf("Attacking entity %08x\n",e->id);
 
-        e->lasthit = ts;
-        ak_last_attack = ts;
+        e->lasthit = tb_ak.last;
 
         // Attack entity
         NEWPACKET(CP_UseEntity, atk);
@@ -139,6 +169,7 @@ static void autokill(MCPacketQueue *sq) {
 
         // Wave arm
         NEWPACKET(CP_Animation, anim);
+        tanim->hand  = 0; // right hand
         queue_packet(anim, sq);
     }
 }
@@ -147,17 +178,15 @@ static void autokill(MCPacketQueue *sq) {
 // Autoshear
 
 // use same constants from Autokill
-
-uint64_t last_autoshear = 0;
+TBDEF(tb_ash, MIN_ATTACK_DELAY, MAX_ATTACK);
 
 static void autoshear(MCPacketQueue *sq) {
     // player must hold shears as active item
     slot_t * islot = &gs.inv.slots[gs.inv.held+36];
     if (islot->item != 359) return;
 
-    // skip if we used autoshear less than MIN_ATTACK_DELAY us ago
-    uint64_t ts = gettimestamp();
-    if ((ts-last_autoshear)<MIN_ATTACK_DELAY) return;
+    // rate-limit
+    if (!tb_event(&tb_ash, 1)) return;
 
     // calculate list of usable entities in range
     uint32_t hent[MAX_ENTITIES];
@@ -172,30 +201,21 @@ static void autoshear(MCPacketQueue *sq) {
         if (!e->mdata) continue;
 
         // skip sheared sheep
-        assert(e->mdata[16].h != 0x7f);
-        assert(e->mdata[16].type == META_BYTE);
-        if (e->mdata[16].b >= 0x10) continue;
+        assert(e->mdata[12].type == META_BYTE);
+        if (e->mdata[12].b >= 0x10) continue;
 
         // skip baby sheep
-        assert(e->mdata[12].h != 0x7f);
-        assert(e->mdata[12].type == META_BYTE);
-        if (e->mdata[12].b < 0) continue;
-
-        // skip entities we hit only recently
-        if ((ts-e->lasthit) < MIN_ENTITY_DELAY) continue;
+        assert(e->mdata[11].type == META_BOOL);
+        if (e->mdata[11].bool) continue;
 
         // only take entities that are within our reach
-        int sd = mydist(e->x, e->y, e->z) >> 10;
-        if (sd<=SQ(REACH_RANGE))
+        if (mydist(e->x, e->y, e->z)<=REACH_RANGE)
             hent[hi++] = i;
     }
 
     for(i=0; i<hi && i<MAX_ATTACK; i++) {
         entity *e = P(gs.entity)+hent[i];
         //printf("Shearing entity %08x\n",e->id);
-
-        e->lasthit = ts;
-        last_autoshear = ts;
 
         // Shear entity
         NEWPACKET(CP_UseEntity, atk);
@@ -524,24 +544,20 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
 
 #define AFK_TIMEOUT 60*1000000LL
 
-uint64_t last_antiafk = 0;
+TBDEF(tb_afk, AFK_TIMEOUT, 1);
 
 static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
     char reply[256], bname[256];
     reply[0] = 0;
 
-    uint64_t ts = gettimestamp();
-    if (ts - last_antiafk < AFK_TIMEOUT) return;
+    if (!tb_event(&tb_afk, 1)) return;
 
     // don't interfere if the client already has a window open
-    if (gs.inv.windowopen) {
-        last_antiafk = ts;
-        return;
-    }
+    if (gs.inv.windowopen) return;
 
-    int x=gs.own.x>>5;
-    int y=gs.own.y>>5;
-    int z=gs.own.z>>5;
+    int x=floor(gs.own.x);
+    int y=floor(gs.own.y);
+    int z=floor(gs.own.z);
 
     bid_t b = get_block_at(x,z,y);
 
@@ -578,10 +594,10 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
             NEWPACKET(CP_PlayerBlockPlacement, pbp);
             tpbp->bpos = POS(x,y-1,z);
             tpbp->face   = 1;
+            tpbp->hand   = 0;
             tpbp->cx     = 8;
             tpbp->cy     = 16;
             tpbp->cz     = 8;
-            clone_slot(&gs.inv.slots[tslot+36], &tpbp->item);
             queue_packet(pbp,sq);
             dump_packet(pbp);
 
@@ -598,10 +614,10 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
     if (reply[0])
         chat_message(reply, cq, "gold", 0);
 
-    last_antiafk = ts;
     return;
 }
 
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // Auto-eat
 
@@ -612,6 +628,8 @@ int ae_held = -1;
 #define EAT_THRESHOLD   8
 #define EAT_MAX         20
 
+TBDEF(tb_eat, EAT_INTERVAL, 1);
+
 /*
   The problem of autoeating - start eating is just a single packet sent to the
   server (PlayerBlockPlacement with coords -1,-1,-1), but the eating is not
@@ -621,9 +639,7 @@ int ae_held = -1;
 */
 
 void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
-    // skip if we used autoeat less than EAT_INTERVAL us ago
-    uint64_t ts = gettimestamp();
-    if ((ts-ae_last_eat)<EAT_INTERVAL) return;
+    if (!tb_event(&tb_eat, 1)) return;
 
     // if we have full health, start eating when food<EAT_THRESHOLD
     // if we're less than full health, eat until max food level
@@ -674,66 +690,44 @@ void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
 
     // send start eating packet to the server and exit, switch back to
     // the old slot will be done next time this function runs
-    NEWPACKET(CP_PlayerBlockPlacement, pbp);
-    tpbp->bpos = POS(-1,-1,-1);
-    tpbp->face   = -1;
-    tpbp->cx     = 0;
-    tpbp->cy     = 0;
-    tpbp->cz     = 0;
-    clone_slot(s, &tpbp->item);
-    queue_packet(pbp,sq);
-    dump_packet(pbp);
-
-    ae_last_eat = ts;
+    NEWPACKET(CP_UseItem, use);
+    tuse->hand   = 0;
+    queue_packet(use,sq);
+    dump_packet(use);
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // Autowalk (work in progress)
 
 #define DEFAULT_PITCH 20
+#define DEFAULT_TELEPORT_ID 0x01234567
 
 void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, float yaw) {
     // coordinates are adjusted so we stand exactly in the middle of the block
-    int x=gs.own.x&0xfffffff0; x|=0x00000010;
-    int z=gs.own.z&0xfffffff0; z|=0x00000010;
+    double x = floor(gs.own.x)+0.5;
+    double z = floor(gs.own.z)+0.5;
 
-    // packet to the client
+    // packet to the server
     NEWPACKET(CP_PlayerPositionLook, s);
-    ts->x = (double)x/32.0;
-    ts->z = (double)z/32.0;
-    ts->y = (double)(gs.own.y>>5);
+    ts->x = x;
+    ts->z = z;
+    ts->y = gs.own.y;
     ts->yaw = yaw;
     ts->pitch = DEFAULT_PITCH;
     ts->onground = gs.own.onground;
     queue_packet(s, sq);
 
-    // packet to the server
+    // packet to the client
     NEWPACKET(SP_PlayerPositionLook, c);
-    tc->x = (double)x/32.0;
-    tc->z = (double)z/32.0;
-    tc->y = (double)(gs.own.y>>5);
+    ts->x = x;
+    ts->z = z;
+    ts->y = gs.own.y;
     tc->yaw = yaw;
     tc->pitch = DEFAULT_PITCH;
     tc->flags = 0;
+    tc->tpid = DEFAULT_TELEPORT_ID;
     queue_packet(c, cq);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Fullbright
-
-void chunk_bright(chunk_t * chunk, int bincr) {
-    int Y,i,level;
-    for(Y=0; Y<16; Y++) {
-        if (chunk->cubes[Y]) {
-            light_t *light = chunk->cubes[Y]->light;
-            for(i=0; i<2048; i++) {
-                level = (int)light[i].l + bincr;
-                light[i].l = (level<15) ? level : 15;
-                level = (int)light[i].h + bincr;
-                light[i].h = (level<15) ? level : 15;
-            }
-        }
-    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -810,19 +804,16 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"Autoshear is %s",opt.autoshear?"ON":"OFF");
         rpos = 2;
     }
+#if 0
     else if (!strcmp(words[0],"ae") || !strcmp(words[0],"autoeat")) {
         opt.autoeat = !opt.autoeat;
         sprintf(reply,"Autoeat is %s",opt.autoeat?"ON":"OFF");
         rpos = 2;
     }
-    else if (!strcmp(words[0],"as") || !strcmp(words[0],"antispam")) {
-        opt.antispam = !opt.antispam;
-        sprintf(reply,"Antispam filter is %s",opt.antispam?"ON":"OFF");
-        rpos = 2;
-    }
+#endif
     else if (!strcmp(words[0],"coords")) {
-        sprintf(reply,"coord=%d,%d,%d, rot=%.1f,%.1f, onground=%d",
-                gs.own.x>>5,gs.own.y>>5,gs.own.z>>5,
+        sprintf(reply,"coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, onground=%d",
+                gs.own.x,gs.own.y,gs.own.z,
                 gs.own.yaw,gs.own.pitch,gs.own.onground);
     }
     else if (!strcmp(words[0],"inv")) {
@@ -872,27 +863,6 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
 
         face_direction(tq, bq, yaw);
     }
-    else if (!strcmp(words[0],"br") || !strcmp(words[0],"bright")) {
-        int bright = -1;
-        if (words[1]) {
-            if (sscanf(words[1], "%u", &bright)!=1) {
-                bright = -1;
-            }
-        }
-        else {
-            bright = (opt.bright) ? 0 : 15;
-        }
-
-        if (bright<0) {
-            sprintf(reply, "Usage: #bright [increment]");
-        }
-        else {
-            if (bright > 15) bright=15;
-            sprintf(reply,"Brightness increment: %d", bright);
-            rpos = 2;
-            opt.bright = bright;
-        }
-    }
     else if (!strcmp(words[0],"changeheld")) {
         if (!words[1] || !words[2]) {
             sprintf(reply,"Usage: changeheld <sid> <notify_client>");
@@ -928,6 +898,12 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
     MCPacketQueue *sq = pkt->cl ? tq : bq;
     MCPacketQueue *cq = pkt->cl ? bq : tq;
 
+    // skip unimplemented packets
+    if (!pkt->ver) {
+        queue_packet(pkt, tq);
+        return;
+    }
+
     switch (pkt->pid) {
 
         ////////////////////////////////////////////////////////////////
@@ -942,26 +918,6 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 // forward other chat messages
                 queue_packet(pkt, tq);
             }
-        } _GMP;
-
-        GMP(SP_ChatMessage) {
-            char name[256], message[256];
-            int isspam=0;
-            if (opt.antispam) {
-                if (decode_chat_json(tpkt->json, name, message)) {
-                    if (!strncmp(message, "I just ", 7) ||
-                        !strncmp(message, "\xef\xbc\xa9 \xef\xbd\x8a\xef\xbd\x95\xef\xbd\x93\xef\xbd\x94 ", 17) )
-                        isspam = 1;
-                    if (!strncmp(message, "Hello, ", 7) ||
-                        !strncmp(message, "Welcome, ", 9) ||
-                        !strncmp(message, "Greetings, ", 11) )
-                        isspam = 1;
-                }
-            }
-            if (isspam)
-                printf("Antispam: blocked [%s] %s\n", name, message);
-            else
-                queue_packet(pkt, tq);
         } _GMP;
 
         ////////////////////////////////////////////////////////////////
@@ -983,7 +939,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
 
         GMP(SP_SoundEffect) {
             // thunder protection
-            if (!strcmp(tpkt->name,"ambient.weather.thunder")) {
+            if (tpkt->id == 262) { // entity.lightning.thunder
                 printf("**** THUNDER **** coords=%d,%d,%d vol=%.4f pitch=%d\n",
                        tpkt->x/8,tpkt->y/8,tpkt->z/8,
                        tpkt->vol,tpkt->pitch);
@@ -1002,11 +958,9 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             }
 
             // block annoying sounds
-            if (strncmp(tpkt->name,"mob.sheep.",10) &&
-                strncmp(tpkt->name,"mob.cow.",8) &&
-                strncmp(tpkt->name,"mob.pig.",8) &&
-                strncmp(tpkt->name,"mob.chicken.",12) &&
-                strncmp(tpkt->name,"note.",5) ) {
+            if ( !((tpkt->id >= 296 && tpkt->id <= 303) ||
+                  tpkt->id == 305 || tpkt->id == 345 ||
+                 (tpkt->id >= 148 && tpkt->id <= 157)) ) {
                 queue_packet(pkt, tq);
             }
         } _GMP;
@@ -1039,9 +993,9 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         case SP_Explosion: {
 
             // check if our position or orientation have changed
-            int32_t x = (int32_t)gs.own.x>>5;
-            int32_t y = (int32_t)gs.own.y>>5;
-            int32_t z = (int32_t)gs.own.z>>5;
+            int32_t x = floor(gs.own.x);
+            int32_t y = floor(gs.own.y);
+            int32_t z = floor(gs.own.z);
             int yaw = (int)(round(gs.own.yaw/90));
 
             if (x!= gs.own.lx || y!= gs.own.ly ||
@@ -1063,35 +1017,22 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             if (build_packet(pkt, sq, cq))
                 queue_packet(pkt, tq);
 
+
             break;
         }
+
+        GMP(CP_TeleportConfirm) {
+            // do not forward Teleport Confirm packets from client that
+            // resulted from our own SP_PlayerPositionLook (e.g. in #align)
+            if (tpkt->tpid != DEFAULT_TELEPORT_ID)
+                queue_packet(pkt, tq);
+        } _GMP;
 
         ////////////////////////////////////////////////////////////////
         // Inventory
 
         GMP(SP_ConfirmTransaction) {
             gmi_confirm(tpkt, sq, cq);
-            queue_packet(pkt, tq);
-        } _GMP;
-
-        ////////////////////////////////////////////////////////////////
-        // Map data
-
-        GMP(SP_ChunkData) {
-            if (opt.bright) {
-                chunk_bright(&tpkt->chunk, opt.bright);
-                pkt->modified=1;
-            }
-            queue_packet(pkt, tq);
-        } _GMP;
-
-        GMP(SP_MapChunkBulk) {
-            if (opt.bright) {
-                int i;
-                for(i=0; i<tpkt->nchunks; i++)
-                    chunk_bright(&tpkt->chunk[i], opt.bright);
-                pkt->modified=1;
-            }
             queue_packet(pkt, tq);
         } _GMP;
 
@@ -1110,14 +1051,22 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 }
             }
 
-            if (!pu)
+            pli * pl = NULL;
+            for(i=0; i<C(gs.players); i++) {
+                if (!memcmp(tpkt->uuid, P(gs.players)[i].uuid, 16)) {
+                    pl = P(gs.players)+i;
+                    break;
+                }
+            }
+
+            if (!pl)
                 sprintf(buf, "Player %02x%02x%02x%02x%02x%02x... at %d,%d/%d",
                         tpkt->uuid[0],tpkt->uuid[1],tpkt->uuid[2],
                         tpkt->uuid[3],tpkt->uuid[4],tpkt->uuid[5],
-                        tpkt->x>>5,tpkt->z>>5,tpkt->y>>5);
+                        (int)tpkt->x,(int)tpkt->z,(int)tpkt->y);
             else
                 sprintf(buf, "Player %s at %d,%d/%d",
-                        pu->name, tpkt->x>>5, tpkt->z>>5, tpkt->y>>5);
+                        pl->name, (int)tpkt->x, (int)tpkt->z, (int)tpkt->y);
 
             chat_message(buf, tq, "red", 0);
             queue_packet(pkt, tq);
@@ -1233,9 +1182,9 @@ void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
     if (opt.autokill)  autokill(sq);
-    if (opt.antiafk)   antiafk(sq, cq);
     if (opt.autoshear) autoshear(sq);
-    if (opt.autoeat)   autoeat(sq, cq);
+    if (opt.antiafk)   antiafk(sq, cq);
+    //if (opt.autoeat)   autoeat(sq, cq);
 
     build_preview_transmit(cq);
     build_progress(sq, cq);

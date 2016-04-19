@@ -42,9 +42,9 @@ void dump_entities() {
     int i;
     for(i=0; i<C(gs.entity); i++) {
         entity *e = P(gs.entity)+i;
-        printf("  %4d eid=%08x type=%-7s coord=%.1f,%.1f,%.1f\n",
-               i,e->id, ENTITY_TYPES[e->type],
-               (float)e->x/32,(float)e->y/32,(float)e->z/32);
+        printf("  %4d eid=%08x type=%-7s coord=%.1f,%.1f,%.1f dist=%.1f\n",
+               i,e->id, ENTITY_TYPES[e->type], e->x, e->y, e->z,
+               sqrt(SQ(gs.own.x-e->x)+SQ(gs.own.y-e->y)+SQ(gs.own.z-e->z)));
     }
 }
 
@@ -164,6 +164,42 @@ static void modify_blocks(int32_t X, int32_t Z, blkrec *blocks, int32_t count) {
     }
 }
 
+// return the dimensions of the are of stared chunks
+int get_stored_area(gsworld *w, int32_t *Xmin, int32_t *Xmax, int32_t *Zmin, int32_t *Zmax) {
+    int si,ri,ci,set=0;
+    for(si=0; si<512*512; si++) {
+        gssreg * sreg = w->sreg[si];
+        if (!sreg) continue;
+
+        for(ri=0; ri<256*256; ri++) {
+            gsregion * region = sreg->region[ri];
+            if (!region) continue;
+
+            for(ci=0; ci<32*32; ci++) {
+                gschunk * gc = region->chunk[ci];
+                if (!gc) continue;
+
+                int32_t X = CC_X(si,ri,ci);
+                int32_t Z = CC_Z(si,ri,ci);
+
+                if (!set) {
+                    *Xmin = *Xmax = X;
+                    *Zmin = *Zmax = Z;
+                    set = 1;
+                }
+                else {
+                    if (X < *Xmin) *Xmin = X;
+                    if (X > *Xmax) *Xmax = X;
+                    if (Z < *Zmin) *Zmin = Z;
+                    if (Z > *Zmax) *Zmax = Z;
+                }
+            }
+        }
+    }
+
+    return set;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 cuboid_t export_cuboid_extent(extent_t ex) {
@@ -261,7 +297,7 @@ int sameitem(slot_t *a, slot_t *b) {
 void dump_inventory() {
     int i;
     printf("Dumping inventory:\n");
-    for(i=-1; i<45; i++) {
+    for(i=-1; i<46; i++) {
         slot_t *s;
         if (i<0) {
             s=&gs.inv.drag;
@@ -280,12 +316,6 @@ void dump_inventory() {
 
         //if (s->nbt) nbt_dump(s->nbt);
     }
-}
-
-// ensure that an emptied slot is in a consistent state
-static inline void prune_slot(slot_t *s) {
-    if (s->count <= 0 || s->item == -1)
-        clear_slot(s);
 }
 
 static void slot_transfer(slot_t *f, slot_t *t, int count) {
@@ -327,22 +357,6 @@ static void slot_transfer(slot_t *f, slot_t *t, int count) {
     printf("Attempting slot_transfer with different item types:\n");
 
     assert(0);
-}
-
-static void copy_slot(slot_t *f, slot_t *t) {
-    clear_slot(t);
-
-    t->item = f->item;
-    t->damage = f->damage;
-    t->count = f->count;
-    t->nbt = nbt_clone(f->nbt);
-}
-
-static void slot_swap(slot_t *f, slot_t *t) {
-    slot_t temp;
-    temp = *t;
-    *t = *f;
-    *f = temp;
 }
 
 #define GREATERHALF(x) (((x)>>1)+((x)&1))
@@ -501,7 +515,7 @@ static void inv_click(int button, int16_t sid) {
                    gs.inv.drag.count, get_item_name(name,&gs.inv.drag),
                    s->count, get_item_name(name2,s), sid);
 
-        slot_swap(s, &gs.inv.drag);
+        swap_slots(s, &gs.inv.drag);
         return;
     }
 
@@ -571,6 +585,7 @@ static void inv_shiftclick(int button, int16_t sid) {
     if (I_CHESTPLATE(f->item)) armorslot = 6;
     if (I_LEGGINGS(f->item))   armorslot = 7;
     if (I_BOOTS(f->item))      armorslot = 8;
+    if (I_ELYTRA(f->item))     armorslot = 45;
 
     slot_t *as = (armorslot>0) ? &gs.inv.slots[armorslot] : NULL;
 
@@ -587,7 +602,7 @@ static void inv_shiftclick(int button, int16_t sid) {
         // main area - try to move to the quickbar
         mask = SLOTS_QUICKBAR;
     }
-    else if (sid>=36) {
+    else if (sid>=36 && sid<45) {
         // quickbar - try to move to the main area
         mask = SLOTS_MAINAREA;
     }
@@ -821,12 +836,40 @@ int player_direction() {
 #define _GSP break; }
 
 void gs_packet(MCPacket *pkt) {
+    // skip unimplemented packets
+    if (!pkt->ver) return;
+
     switch (pkt->pid) {
         ////////////////////////////////////////////////////////////////
         // Gamestate
 
-        GSP(SP_TimeUpdate) {
-            gs.time = tpkt->time;
+        GSP(SP_PlayerListItem) {
+            int i,j;
+            for(i=0; i<C(tpkt->list); i++) {
+                pli_t * entry = P(tpkt->list)+i;
+
+                switch(tpkt->action) {
+                    case 0: {
+                        pli *pli = lh_arr_new_c(GAR(gs.players));
+                        memmove(pli->uuid, entry->uuid, 16);
+                        pli->name = strdup(entry->name);
+                        if (entry->has_dispname) {
+                            pli->dispname = strdup(entry->dispname);
+                        }
+                        break;
+                    }
+
+                    case 4: {
+                        for(j=0; j<C(gs.players); j++) {
+                            if (memcmp(P(gs.players)[j].uuid, entry->uuid, 16)==0) {
+                                lh_arr_delete(GAR(gs.players),j);
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
         } _GSP;
 
         ////////////////////////////////////////////////////////////////
@@ -839,21 +882,10 @@ void gs_packet(MCPacket *pkt) {
             e->y  = tpkt->y;
             e->z  = tpkt->z;
             e->type = ENTITY_PLAYER;
-            e->mtype = Human;
+            e->mtype = Player;
             //TODO: name
             //TODO: mark players hostile/neutral/friendly depending on the faglist
             e->mdata = clone_metadata(tpkt->meta);
-        } _GSP;
-
-        GSP(SP_SpawnObject) {
-            entity *e = lh_arr_new_c(GAR(gs.entity));
-            e->id = tpkt->eid;
-            e->x  = tpkt->x;
-            e->y  = tpkt->y;
-            e->z  = tpkt->z;
-            e->type = ENTITY_OBJECT;
-            e->mtype = Item;
-            e->mdata = NULL; //TODO: object metadata
         } _GSP;
 
         GSP(SP_SpawnMob) {
@@ -876,15 +908,25 @@ void gs_packet(MCPacket *pkt) {
             e->mdata = clone_metadata(tpkt->meta);
         } _GSP;
 
-        GSP(SP_SpawnPainting) {
+        GSP(SP_DestroyEntities) {
+            int i;
+            for(i=0; i<tpkt->count; i++) {
+                int idx = find_entity(tpkt->eids[i]);
+                if (idx<0) continue;
+                free_metadata(P(gs.entity)[idx].mdata);
+                lh_arr_delete(GAR(gs.entity),idx);
+            }
+        } _GSP;
+
+        GSP(SP_SpawnObject) {
             entity *e = lh_arr_new_c(GAR(gs.entity));
             e->id = tpkt->eid;
-            e->x  = tpkt->pos.x*32;
-            e->y  = tpkt->pos.y*32;
-            e->z  = tpkt->pos.z*32;
-            e->type = ENTITY_OTHER;
-            e->mtype = Entity;
-            e->mdata = NULL;
+            e->x  = tpkt->x;
+            e->y  = tpkt->y;
+            e->z  = tpkt->z;
+            e->type = ENTITY_OBJECT;
+            e->mtype = Item;
+            e->mdata = NULL; //TODO: object metadata
         } _GSP;
 
         GSP(SP_SpawnExperienceOrb) {
@@ -898,32 +940,33 @@ void gs_packet(MCPacket *pkt) {
             e->mdata = NULL;
         } _GSP;
 
-        GSP(SP_DestroyEntities) {
-            int i;
-            for(i=0; i<tpkt->count; i++) {
-                int idx = find_entity(tpkt->eids[i]);
-                if (idx<0) continue;
-                free_metadata(P(gs.entity)[idx].mdata);
-                lh_arr_delete(GAR(gs.entity),idx);
-            }
+        GSP(SP_SpawnPainting) {
+            entity *e = lh_arr_new_c(GAR(gs.entity));
+            e->id = tpkt->eid;
+            e->x  = (double)tpkt->pos.x;
+            e->y  = (double)tpkt->pos.y;
+            e->z  = (double)tpkt->pos.z;
+            e->type = ENTITY_OTHER;
+            e->mtype = Entity;
+            e->mdata = NULL;
         } _GSP;
 
         GSP(SP_EntityRelMove) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
             entity *e = P(gs.entity)+idx;
-            e->x += tpkt->dx;
-            e->y += tpkt->dy;
-            e->z += tpkt->dz;
+            e->x += ((double)tpkt->dx)/4096.0;
+            e->y += ((double)tpkt->dy)/4096.0;
+            e->z += ((double)tpkt->dz)/4096.0;
         } _GSP;
 
         GSP(SP_EntityLookRelMove) {
             int idx = find_entity(tpkt->eid);
             if (idx<0) break;
             entity *e = P(gs.entity)+idx;
-            e->x += tpkt->dx;
-            e->y += tpkt->dy;
-            e->z += tpkt->dz;
+            e->x += ((double)tpkt->dx)/4096.0;
+            e->y += ((double)tpkt->dy)/4096.0;
+            e->z += ((double)tpkt->dz)/4096.0;
         } _GSP;
 
         GSP(SP_EntityTeleport) {
@@ -946,7 +989,7 @@ void gs_packet(MCPacket *pkt) {
             else {
                 int i;
                 for(i=0; i<32; i++) {
-                    if (tpkt->meta[i].h != 0x7f) {
+                    if (tpkt->meta[i].type != 0xff) {
                         // replace stored metadata with the one from the packet
                         if (e->mdata[i].type == META_SLOT)
                             clear_slot(&e->mdata[i].slot);
@@ -969,9 +1012,9 @@ void gs_packet(MCPacket *pkt) {
                 printf("SP_PlayerPositionLook with relative values, ignoring packet\n");
                 break;
             }
-            gs.own.x     = (int)(tpkt->x*32);
-            gs.own.y     = (int)(tpkt->y*32);
-            gs.own.z     = (int)(tpkt->z*32);
+            gs.own.x     = tpkt->x;
+            gs.own.y     = tpkt->y;
+            gs.own.z     = tpkt->z;
             gs.own.yaw   = tpkt->yaw;
             gs.own.pitch = tpkt->pitch;
         } _GSP;
@@ -981,9 +1024,9 @@ void gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(CP_PlayerPosition) {
-            gs.own.x     = (int)(tpkt->x*32);
-            gs.own.y     = (int)(tpkt->y*32);
-            gs.own.z     = (int)(tpkt->z*32);
+            gs.own.x     = tpkt->x;
+            gs.own.y     = tpkt->y;
+            gs.own.z     = tpkt->z;
             gs.own.onground = tpkt->onground;
         } _GSP;
 
@@ -994,9 +1037,9 @@ void gs_packet(MCPacket *pkt) {
         } _GSP;
 
         GSP(CP_PlayerPositionLook) {
-            gs.own.x     = (int)(tpkt->x*32);
-            gs.own.y     = (int)(tpkt->y*32);
-            gs.own.z     = (int)(tpkt->z*32);
+            gs.own.x     = tpkt->x;
+            gs.own.y     = tpkt->y;
+            gs.own.z     = tpkt->z;
             gs.own.yaw   = tpkt->yaw;
             gs.own.pitch = tpkt->pitch;
             gs.own.onground = tpkt->onground;
@@ -1030,20 +1073,12 @@ void gs_packet(MCPacket *pkt) {
         // Chunks
 
         GSP(SP_ChunkData) {
-            if (!tpkt->chunk.mask) {
-                if (gs.opt.prune_chunks) {
-                    remove_chunk(tpkt->chunk.X,tpkt->chunk.Z);
-                }
-            }
-            else {
-                insert_chunk(&tpkt->chunk);
-            }
+            insert_chunk(&tpkt->chunk);
         } _GSP;
 
-        GSP(SP_MapChunkBulk) {
-            int i;
-            for(i=0; i<tpkt->nchunks; i++)
-                insert_chunk(&tpkt->chunk[i]);
+        GSP(SP_UnloadChunk) {
+            if (gs.opt.prune_chunks)
+                remove_chunk(tpkt->X,tpkt->Z);
         } _GSP;
 
         GSP(SP_BlockChange) {
@@ -1095,10 +1130,10 @@ void gs_packet(MCPacket *pkt) {
                 case 0: {
                     //dump_packet(pkt);
                     // main inventory window (wid=0)
-                    assert(tpkt->sid>=0 && tpkt->sid<45);
+                    assert(tpkt->sid>=0 && tpkt->sid<46);
 
                     // copy the slot to our inventory slot
-                    copy_slot(&tpkt->slot, &gs.inv.slots[tpkt->sid]);
+                    clone_slot(&tpkt->slot, &gs.inv.slots[tpkt->sid]);
 
                     if (DEBUG_INVENTORY) {
                         printf("*** set slot sid=%d: ", tpkt->sid);
@@ -1121,7 +1156,7 @@ void gs_packet(MCPacket *pkt) {
                             printf("  tracked: "); dump_slot(ds); printf("\n");
                             printf("  server:  "); dump_slot(&tpkt->slot); printf("\n");
                         }
-                        copy_slot(&tpkt->slot, ds);
+                        clone_slot(&tpkt->slot, ds);
                     }
                     break;
                 }
@@ -1149,6 +1184,32 @@ void gs_packet(MCPacket *pkt) {
             if (DEBUG_INVENTORY)
                 dump_packet(pkt);
             if (tpkt->wid != 0) break;
+
+            // Since MC1.9 we no longer receive SetSlot from the server to set
+            // our product slot when crafting something. Instead, we must rely
+            // on the slot data send by the real MC client when clicking on the
+            // slot and update our state.
+            // This should be only relevant for the product slot, but keep track
+            // if the corrections occur on other slots - may indicate corruption
+            if (tpkt->sid>=0 && tpkt->sid<=45) {
+                slot_t * s = &gs.inv.slots[tpkt->sid];
+                if (tpkt->slot.item != s->item ||
+                    tpkt->slot.count != s->count ||
+                    tpkt->slot.damage != s->damage ) {
+
+                    if (DEBUG_INVENTORY) {
+                        printf("Correcting clicked slot:\n");
+                        printf("  Packet slot:    ");
+                        dump_slot(&tpkt->slot);
+                        printf("\n");
+                        printf("  Inventory slot: ");
+                        dump_slot(s);
+                        printf("\n");
+                    }
+                }
+                clear_slot(s);
+                clone_slot(&tpkt->slot, s);
+            }
 
             switch (tpkt->mode) {
                 case 0:

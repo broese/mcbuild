@@ -32,20 +32,24 @@ int o_spawner_mult              = 0;
 int o_spawner_single            = 0;
 int o_track_inventory           = 0;
 int o_track_thunder             = 0;
+int o_dump_players              = 0;
 int o_extract_maps              = 0;
 int o_dump_packets              = 0;
 int o_dimension                 = 0;
+char *o_biomemap                = NULL;
 
 void print_usage() {
     printf("Usage:\n"
            "mcpdump [options] file.mcs...\n"
            "  -h                        : print this help\n"
-           //"  -b id[:meta]              : search for blocks by block ID and optionally meta value\n"
+           "  -b id[:meta]              : search for blocks by block ID and optionally meta value\n"
            "  -s                        : search for multiple-spawner locations\n"
            "  -S                        : search for single spawner locations\n"
            "  -i                        : track inventory transactions and dump inventory\n"
            "  -t                        : track thunder sounds\n"
+           "  -p                        : dump player list\n"
            "  -m                        : extract in-game maps\n"
+           "  -B output.png             : extract biome maps\n"
            "  -d                        : dump packets\n"
            "  -D dimension              : specify dimension (0:overworld, -1:nether, 1:end)\n"
     );
@@ -54,7 +58,7 @@ void print_usage() {
 int parse_args(int ac, char **av) {
     int opt,error=0;
 
-    while ( (opt=getopt(ac,av,"b:D:sSihmdt")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:D:B:sSihmdtp")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -70,6 +74,9 @@ int parse_args(int ac, char **av) {
                 break;
             case 't':
                 o_track_thunder = 1;
+                break;
+            case 'p':
+                o_dump_players = 1;
                 break;
             case 'm':
                 o_extract_maps = 1;
@@ -98,6 +105,11 @@ int parse_args(int ac, char **av) {
                     printf("-D : incorrect dimension specified, must be 0 for Overworld, -1 for nether, 1 for end\n");
                     error++;
                 }
+                break;
+            }
+            case 'B': {
+                o_biomemap = strdup(optarg);
+                break;
             }
             case '?': {
                 printf("Unknown option -%c", opt);
@@ -117,20 +129,29 @@ int parse_args(int ac, char **av) {
 #define VIEWDIST (158<<5)
 #define THUNDERDIST (160000<<5)
 
-void track_remote_sounds(int32_t x, int32_t z, int32_t y, struct timeval tv) {
-    fixp dx = x - gs.own.x;
-    fixp dz = z - gs.own.z;
-    int32_t sqdist = dx*dx+dz*dz;
+void track_remote_sounds(double x, double z, double y, struct timeval tv) {
+    double dx = x - gs.own.x;
+    double dz = z - gs.own.z;
+    //double dist = sqrt(dx*dx+dz*dz);
 
-    // thunder within view distance - ignore local thunder
-    if (sqdist < VIEWDIST*VIEWDIST) return;
-
-    float scale = (float)THUNDERDIST / sqrtf((float)sqdist);
-    fixp rx = (fixp)((float)dx*scale)+gs.own.x;
-    fixp rz = (fixp)((float)dz*scale)+gs.own.z;
+    //fixp rx = (fixp)((float)dx*scale)+gs.own.x;
+    //fixp rz = (fixp)((float)dz*scale)+gs.own.z;
 
     // process output with ./mcpdump | egrep '^thunder' | sed 's/thunder: //' > output.csv
-    printf("thunder: %ld,%d,%d,%d,%d,%d\n",tv.tv_sec,gs.own.x>>5,gs.own.z>>5,rx>>5,rz>>5,y);
+    printf("thunder: %ld,%.1f,%.1f,%.1f,%.1f,%.1f\n",tv.tv_sec,gs.own.x,gs.own.z,dx,dz,y);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void dump_players() {
+    int i;
+    for(i=0; i<C(gs.players); i++) {
+        printf("%3d: %-32s [ %s]", i, P(gs.players)[i].name,
+               limhex(P(gs.players)[i].uuid, 16, 16));
+        if (P(gs.players)[i].dispname)
+            printf(" display=%s",P(gs.players)[i].dispname);
+        printf("\n");
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -162,7 +183,9 @@ void track_spawners(SP_UpdateBlockEntity_pkt *ube) {
 
     // determine the type of the spawner
     int type = SPAWNER_OTHER;
-    nbt_t * sType = nbt_hget(ube->nbt, "EntityId");
+    nbt_t * sd = nbt_hget(ube->nbt, "SpawnData");
+    assert(sd && sd->type==NBT_COMPOUND);
+    nbt_t * sType = nbt_hget(sd, "id");
     assert(sType && sType->type==NBT_STRING);
 
     if (!strcmp(sType->st, "Zombie"))   type = SPAWNER_ZOMBIE;
@@ -308,6 +331,44 @@ void extract_maps() {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void extract_biome_map() {
+    int32_t Xmin,Xmax,Zmin,Zmax;
+    if (!get_stored_area(&gs.overworld, &Xmin, &Xmax, &Zmin, &Zmax)) {
+        printf("No chunks\n");
+        return;
+    }
+
+    lhimage * img = allocate_image((Xmax-Xmin+1)*16, (Zmax-Zmin+1)*16, -1);
+    assert(img);
+
+    int X,Z;
+    for(X=Xmin; X<=Xmax; X++) {
+        for(Z=Zmin; Z<=Zmax; Z++) {
+            gschunk *c = find_chunk(&gs.overworld, X, Z, 0);
+            if (!c) continue;
+
+            int x,z;
+            int xoff = (X-Xmin)*16, zoff = (Z-Zmin)*16;
+
+            for(z=0; z<16; z++) {
+                for(x=0; x<16; x++) {
+                    uint8_t bid = c->biome[x+z*16];
+                    uint32_t c = BIOMES[bid].name ? BIOMES[bid].color : 0xff00ff;
+                    IMGDOT(img, x+xoff, z+zoff) = c;
+                }
+            }
+        }
+    }
+
+    ssize_t sz = export_png_file(img, o_biomemap);
+    printf("Exported %dx%d map to %s, size=%zd bytes\n",
+           img->width, img->height, o_biomemap, sz);
+
+    destroy_image(img);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 #define MAXPLEN (4*1024*1024)
 
 void mcpd_packet(MCPacket *pkt) {
@@ -319,17 +380,17 @@ void mcpd_packet(MCPacket *pkt) {
 
         case SP_SoundEffect: {
             SP_SoundEffect_pkt *tpkt = (SP_SoundEffect_pkt *)&pkt->_SP_SoundEffect;
-            if (!strcmp(tpkt->name,"ambient.weather.thunder")) {
-                fixp tx = tpkt->x*4;
-                fixp tz = tpkt->z*4;
+            if (tpkt->id == 262) { // entity.lightning.thunder
+                double tx = (double)tpkt->x/8;
+                double tz = (double)tpkt->z/8;
                 track_remote_sounds(tx, tz, tpkt->y/8, pkt->ts);
             }
             break;
         }
 
-        case SP_Maps: {
+        case SP_Map: {
             if (!o_extract_maps) break;
-            SP_Maps_pkt *tpkt = (SP_Maps_pkt *)&pkt->_SP_Maps;
+            SP_Map_pkt *tpkt = (SP_Map_pkt *)&pkt->_SP_Map;
             if (tpkt->ncols == 128 && tpkt->nrows == 128) {
                 if (!maps[tpkt->mapid])
                     lh_alloc_buf(maps[tpkt->mapid], 16384);
@@ -416,7 +477,6 @@ void parse_mcp(uint8_t *data, ssize_t size) {
                 break;
             }
 
-            case SP_SetCompression:
             case SL_SetCompression: {
                 compression = 1;
                 break;
@@ -432,33 +492,6 @@ void parse_mcp(uint8_t *data, ssize_t size) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// print a single chunk slice (16x16x1 blocks) on the screen using ANSI_COLORS
-static void print_slice(bid_t * data,int Xs, int Zs) {
-    int x,z;
-    for(z=0; z<16*Zs; z++) {
-        printf("%s%3d ",ANSI_CLEAR,z);
-        bid_t * row = data+z*(Xs*16);
-        for(x=0; x<Xs*16; x++)
-            printf("%s",(row[x].bid<256) ?
-                   ANSI_BLOCK[row[x].bid] : ANSI_ILLBLOCK );
-        printf("%s\n",ANSI_CLEAR);
-    }
-}
-
-#if 0
-void extract_cuboid(int X, int Z, int y) {
-    int Xs=5,Zs=5;
-    bid_t * map = export_cuboid(X,Xs,Z,Zs,y,1,NULL);
-    //hexdump((char *)map,512);
-    printf("Slice y=%d\n",y);
-    print_slice(map,Xs,Zs);
-    free(map);
-}
-#endif
-
-////////////////////////////////////////////////////////////////////////////////
-
-#if 0
 void search_blocks(int dim, int bid, int meta) {
     gsworld *w;
     switch (dim) {
@@ -469,18 +502,27 @@ void search_blocks(int dim, int bid, int meta) {
 
     if (!w) return;
 
-    int Xi,Zi,i;
-    for(Zi=0; Zi<w->Zs; Zi++) {
-        for(Xi=0; Xi<w->Xs; Xi++) {
-            int32_t idx = Xi+Zi*w->Xs;
-            gschunk *c = w->chunks[idx];
+    int s,r,c,i;
+    for(s=0; s<512*512; s++) {
+        gssreg *sr = w->sreg[s];
+        if (!sr) continue;
 
-            if (c) {
+        for(r=0; r<256*256; r++) {
+            gsregion *re = sr->region[r];
+            if (!re) continue;
+
+            for(c=0; c<32*32; c++) {
+                gschunk *ch = re->chunk[c];
+                if (!ch) continue;
+
+                int32_t X = CC_X(s,r,c);
+                int32_t Z = CC_Z(s,r,c);
+
                 for(i=0; i<65536; i++) {
-                    bid_t bl = c->blocks[i];
+                    bid_t bl = ch->blocks[i];
                     if (bl.bid == bid && (meta<0 || bl.meta == meta) ) {
-                        int32_t x = ((Xi+w->Xo)*16+(i&0xf));
-                        int32_t z = ((Zi+w->Zo)*16+((i>>4)&0xf));
+                        int32_t x = (X*16+(i&0xf));
+                        int32_t z = (Z*16+((i>>4)&0xf));
                         int32_t y = i>>8;
 
                         printf("Block %3d:%2d at %5d,%5d,%3d\n",
@@ -491,7 +533,6 @@ void search_blocks(int dim, int bid, int meta) {
         }
     }
 }
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -524,7 +565,9 @@ int main(int ac, char **av) {
     if (o_track_inventory)
         dump_inventory();
     //dump_entities();
-    //dump_overworld();
+
+    if (o_dump_players)
+        dump_players();
 
     if (o_spawner_single) {
         for(i=0; i<C(spawners); i++) {
@@ -537,13 +580,14 @@ int main(int ac, char **av) {
     if (o_spawner_mult)
         find_spawners();
 
-#if 0
     if (o_block_id >=0)
         search_blocks(o_dimension, o_block_id, o_block_meta);
-#endif
 
     if (o_extract_maps)
         extract_maps();
+
+    if (o_biomemap)
+        extract_biome_map();
 
     gs_destroy();
 

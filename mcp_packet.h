@@ -22,6 +22,8 @@
 
 #include "mcp_ids.h"
 #include "mcp_types.h"
+#include "slot.h"
+#include "entity.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Misc
@@ -33,10 +35,156 @@ int decode_chat_json(const char *json, char *name, char *message);
 
 // 0x00
 typedef struct {
-    uint32_t id;
-} SP_KeepAlive_pkt;
+    uint32_t    eid;
+    uuid_t      uuid;
+    uint8_t     objtype;
+    double      x;
+    double      y;
+    double      z;
+    angle_t     pitch;
+    angle_t     yaw;
+    //TODO: object data
+} SP_SpawnObject_pkt;
 
 // 0x01
+typedef struct {
+    uint32_t eid;
+    double      x;
+    double      y;
+    double      z;
+    uint16_t count;
+} SP_SpawnExperienceOrb_pkt;
+
+// 0x03
+typedef struct {
+    uint32_t    eid;
+    uuid_t      uuid;
+    uint8_t     mobtype;
+    double      x;
+    double      y;
+    double      z;
+    angle_t     yaw;
+    angle_t     pitch;
+    angle_t     headpitch;
+    int16_t     vx;
+    int16_t     vy;
+    int16_t     vz;
+    metadata *meta;
+} SP_SpawnMob_pkt;
+
+// 0x04
+typedef struct {
+    uint32_t    eid;
+    uuid_t      uuid;
+    char        title[32];
+    pos_t       pos;
+    uint8_t     dir;
+} SP_SpawnPainting_pkt;
+
+// 0x05
+typedef struct {
+    uint32_t    eid;
+    uuid_t      uuid;
+    double      x;
+    double      y;
+    double      z;
+    angle_t     yaw;
+    angle_t     pitch;
+    int16_t     item;
+    metadata *meta;
+} SP_SpawnPlayer_pkt;
+
+// 0x09
+typedef struct {
+    pos_t    loc;
+    uint8_t  action;
+    nbt_t    *nbt;
+} SP_UpdateBlockEntity_pkt;
+
+// 0x0b
+typedef struct {
+    pos_t    pos;
+    bid_t    block;
+} SP_BlockChange_pkt;
+
+// 0x0f
+typedef struct {
+    char       *json;
+    uint8_t     pos;
+} SP_ChatMessage_pkt;
+
+// 0x10
+typedef struct {
+    int32_t  X,Z;
+    int32_t  count;
+    blkrec  *blocks;
+} SP_MultiBlockChange_pkt;
+
+// 0x11
+typedef struct {
+    uint8_t  wid;
+    uint16_t aid;
+    uint8_t  accepted;
+} SP_ConfirmTransaction_pkt;
+
+// 0x12
+typedef struct {
+    uint8_t wid;
+} SP_CloseWindow_pkt;
+
+// 0x13
+typedef struct {
+    uint8_t  wid;
+    char     wtype[256];
+    char    *title;
+    uint8_t  nslots;
+    uint32_t eid;   // horse's ID - only used if the window type is a EntityHorse
+} SP_OpenWindow_pkt;
+
+// 0x14
+typedef struct {
+    uint8_t  wid;
+    int16_t  count;
+    slot_t   slots[256];
+} SP_WindowItems_pkt;
+
+// 0x16
+typedef struct {
+    uint8_t  wid;
+    int16_t  sid;
+    slot_t   slot;
+} SP_SetSlot_pkt;
+
+// 0x1c
+typedef struct {
+    float    x,y,z;
+    float    radius;
+    int32_t  count;
+    boff_t  *blocks;
+    float    vx,vy,vz;
+} SP_Explosion_pkt;
+
+// 0x1d
+typedef struct {
+    int32_t  X,Z;
+} SP_UnloadChunk_pkt;
+
+// 0x20
+typedef struct {
+    int8_t   cont;          // ground-up continuous
+    int8_t   skylight;      // whether skylight was sent;
+    chunk_t  chunk;
+} SP_ChunkData_pkt;
+
+// 0x21
+typedef struct {
+    uint32_t id;
+    pos_t    loc;
+    uint32_t data;
+    uint8_t  disvol;
+} SP_Effect_pkt;
+
+// 0x23
 typedef struct {
     uint32_t eid;
     uint8_t  gamemode;
@@ -47,277 +195,7 @@ typedef struct {
     uint8_t  reduced_debug_info;
 } SP_JoinGame_pkt;
 
-// 0x02
-typedef struct {
-    char    *json;
-    uint8_t  pos;
-} SP_ChatMessage_pkt;
-
-// 0x03
-typedef struct {
-    uint64_t worldage;
-    uint64_t time;
-} SP_TimeUpdate_pkt;
-
-// 0x04
-typedef struct {
-    uint32_t eid;
-    int16_t  sid;
-    slot_t   item;
-} SP_EntityEquipment_pkt;
-
-// 0x06
-typedef struct {
-    float    health;
-    int32_t  food;
-    float    saturation;
-} SP_UpdateHealth_pkt;
-
-// 0x07
-typedef struct {
-    int32_t dimension;
-    uint8_t difficulty;
-    uint8_t gamemode;
-    char    leveltype[32];
-} SP_Respawn_pkt;
-
-// 0x08
-typedef struct {
-    double x,y,z;
-    float  yaw,pitch;
-    char   flags;
-} SP_PlayerPositionLook_pkt;
-
-// 0x09
-typedef struct {
-    int8_t sid;
-} SP_HeldItemChange_pkt;
-
-// 0x0c
-typedef struct {
-    uint32_t eid;
-    uuid_t   uuid;
-    fixp     x;
-    fixp     y;
-    fixp     z;
-    angle_t  yaw;
-    angle_t  pitch;
-    int16_t  item;
-    metadata *meta;
-} SP_SpawnPlayer_pkt;
-
-// 0x0d
-typedef struct {
-    uint32_t eid;
-    uint32_t collector;
-} SP_CollectItem_pkt;
-
-// 0x0e
-typedef struct {
-    uint32_t eid;
-    uint8_t  objtype;
-    fixp     x;
-    fixp     y;
-    fixp     z;
-    angle_t  pitch;
-    angle_t  yaw;
-    //TODO: object data
-} SP_SpawnObject_pkt;
-
-// 0x0f
-typedef struct {
-    uint32_t eid;
-    uint8_t  mobtype;
-    fixp     x;
-    fixp     y;
-    fixp     z;
-    angle_t  yaw;
-    angle_t  pitch;
-    angle_t  headpitch;
-    int16_t  vx;
-    int16_t  vy;
-    int16_t  vz;
-    metadata *meta;
-} SP_SpawnMob_pkt;
-
-// 0x10
-typedef struct {
-    uint32_t eid;
-    char     title[32];
-    pos_t    pos;
-    uint8_t  dir;
-} SP_SpawnPainting_pkt;
-
-// 0x11
-typedef struct {
-    uint32_t eid;
-    fixp     x;
-    fixp     y;
-    fixp     z;
-    uint16_t count;
-} SP_SpawnExperienceOrb_pkt;
-
-// 0x12
-typedef struct {
-    uint32_t eid;
-    int16_t  vx;
-    int16_t  vy;
-    int16_t  vz;
-} SP_EntityVelocity_pkt;
-
-// 0x13
-typedef struct {
-    uint32_t count;
-    uint32_t *eids;
-} SP_DestroyEntities_pkt;
-
-// 0x14
-typedef struct {
-    uint32_t eid;
-} SP_Entity_pkt;
-
-// 0x15
-typedef struct {
-    uint32_t eid;
-    int8_t   dx;
-    int8_t   dy;
-    int8_t   dz;
-    uint8_t  onground;
-} SP_EntityRelMove_pkt;
-
-// 0x16
-typedef struct {
-    uint32_t eid;
-    angle_t  yaw;
-    angle_t  pitch;
-    uint8_t  onground;
-} SP_EntityLook_pkt;
-
-// 0x17
-typedef struct {
-    uint32_t eid;
-    int8_t   dx;
-    int8_t   dy;
-    int8_t   dz;
-    angle_t  yaw;
-    angle_t  pitch;
-    uint8_t  onground;
-} SP_EntityLookRelMove_pkt;
-
-// 0x18
-typedef struct {
-    uint32_t eid;
-    fixp     x;
-    fixp     y;
-    fixp     z;
-    angle_t  yaw;
-    angle_t  pitch;
-    uint8_t  onground;
-} SP_EntityTeleport_pkt;
-
-// 0x1c
-typedef struct {
-    uint32_t eid;
-    metadata *meta;
-} SP_EntityMetadata_pkt;
-
-// 0x1f
-typedef struct {
-    float    bar;   // state of the experience bar
-    int32_t  level; // player's level
-    int32_t  exp;   // total experience
-} SP_SetExperience_pkt;
-
-// 0x21
-typedef struct {
-    int8_t   cont;          // ground-up continuous
-    int8_t   skylight;      // whether skylight was sent;
-    chunk_t  chunk;
-} SP_ChunkData_pkt;
-
-// 0x22
-typedef struct {
-    int32_t  X,Z;
-    int32_t  count;
-    blkrec  *blocks;
-} SP_MultiBlockChange_pkt;
-
-// 0x23
-typedef struct {
-    pos_t    pos;
-    bid_t    block;
-} SP_BlockChange_pkt;
-
-// 0x26
-typedef struct {
-    int8_t   skylight;
-    int32_t  nchunks;
-    chunk_t *chunk;
-} SP_MapChunkBulk_pkt;
-
-// 0x27
-typedef struct {
-    float    x,y,z;
-    float    radius;
-    int32_t  count;
-    boff_t  *blocks;
-    float    vx,vy,vz;
-} SP_Explosion_pkt;
-
-// 0x28
-typedef struct {
-    uint32_t id;
-    pos_t    loc;
-    uint32_t data;
-    uint8_t  disvol;
-} SP_Effect_pkt;
-
-// 0x29
-typedef struct {
-    char     name[256];
-    int32_t  x;     // multiplied by 8
-    int32_t  y;     // multiplied by 8
-    int32_t  z;     // multiplied by 8
-    float    vol;
-    uint8_t  pitch;
-} SP_SoundEffect_pkt;
-
-// 0x2d
-typedef struct {
-    uint8_t  wid;
-    char     wtype[256];
-    char    *title;
-    uint8_t  nslots;
-    uint32_t eid;   // horse's ID - only used if the window type is a EntityHorse
-} SP_OpenWindow_pkt;
-
-// 0x2e
-typedef struct {
-    uint8_t wid;
-} SP_CloseWindow_pkt;
-
-// 0x2f
-typedef struct {
-    uint8_t  wid;
-    int16_t  sid;
-    slot_t   slot;
-} SP_SetSlot_pkt;
-
-// 0x30
-typedef struct {
-    uint8_t  wid;
-    int16_t  count;
-    slot_t   slots[256];
-} SP_WindowItems_pkt;
-
-// 0x32
-typedef struct {
-    uint8_t  wid;
-    uint16_t aid;
-    uint8_t  accepted;
-} SP_ConfirmTransaction_pkt;
-
-// 0x34
+// 0x24
 typedef struct {
     uint8_t  type;
     uint8_t  x;
@@ -327,6 +205,7 @@ typedef struct {
 typedef struct {
     uint32_t mapid;
     uint8_t  scale;
+    uint8_t  trackpos;
     uint32_t nicons;
     map_icon *icons;
     uint8_t  ncols;
@@ -335,102 +214,144 @@ typedef struct {
     uint8_t  Z;
     uint32_t len;
     uint8_t  *data;
-} SP_Maps_pkt;
+} SP_Map_pkt;
 
-// 0x35
+// 0x25
 typedef struct {
-    pos_t    loc;
-    uint8_t  action;
-    nbt_t    *nbt;
-} SP_UpdateBlockEntity_pkt;
+    uint32_t    eid;
+    int16_t     dx;
+    int16_t     dy;
+    int16_t     dz;
+    uint8_t     onground;
+} SP_EntityRelMove_pkt;
 
-// 0x46
+// 0x26
 typedef struct {
-    int32_t     threshold;
-} SP_SetCompression_pkt;
+    uint32_t    eid;
+    int16_t     dx;
+    int16_t     dy;
+    int16_t     dz;
+    angle_t     yaw;
+    angle_t     pitch;
+    uint8_t     onground;
+} SP_EntityLookRelMove_pkt;
+
+// 0x2d
+typedef struct {
+    char        pname[64];
+    char        pval[4096];
+    uint8_t     is_signed;
+    char        signature[4096];
+} pli_prop;
+
+typedef struct {
+    uuid_t      uuid;
+    char        name[64];
+    lh_arr_declare(pli_prop,prop);
+    int32_t     gamemode;
+    int32_t     ping;
+    uint8_t     has_dispname;
+    char        dispname[64];
+} pli_t;
+
+typedef struct {
+    int32_t     action;
+    lh_arr_declare(pli_t,list);
+} SP_PlayerListItem_pkt;
+
+// 0x2e
+typedef struct {
+    double      x,y,z;
+    float       yaw,pitch;
+    char        flags;
+    uint32_t    tpid;
+} SP_PlayerPositionLook_pkt;
+
+// 0x2f
+typedef struct {
+    uint32_t    eid;
+    pos_t       pos;
+} SP_UseBed_pkt;
+
+// 0x30
+typedef struct {
+    uint32_t    count;
+    uint32_t   *eids;
+} SP_DestroyEntities_pkt;
+
+// 0x33
+typedef struct {
+    int32_t dimension;
+    uint8_t difficulty;
+    uint8_t gamemode;
+    char    leveltype[32];
+} SP_Respawn_pkt;
+
+// 0x37
+typedef struct {
+    int8_t sid;
+} SP_HeldItemChange_pkt;
+
+// 0x39
+typedef struct {
+    uint32_t    eid;
+    metadata *  meta;
+} SP_EntityMetadata_pkt;
+
+// 0x3d
+typedef struct {
+    float    bar;
+    int32_t  level;
+    int32_t  exp;
+} SP_SetExperience_pkt;
+
+// 0x3e
+typedef struct {
+    float    health;
+    int32_t  food;
+    float    saturation;
+} SP_UpdateHealth_pkt;
+
+// 0x42
+typedef struct {
+    int32_t     id;
+    int32_t     category;
+    int32_t     x;     // multiplied by 8
+    int32_t     y;     // multiplied by 8
+    int32_t     z;     // multiplied by 8
+    float       vol;
+    uint8_t     pitch;
+} SP_SoundEffect_pkt;
+
+// 0x4a
+typedef struct {
+    uint32_t    eid;
+    double      x;
+    double      y;
+    double      z;
+    angle_t     yaw;
+    angle_t     pitch;
+    uint8_t     onground;
+} SP_EntityTeleport_pkt;
+
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Client -> Server
 
-// 0x01
+// 0x00
 typedef struct {
-    char str[256];
-} CP_ChatMessage_pkt;
+    uint32_t    tpid;
+} CP_TeleportConfirm_pkt;
 
 // 0x02
 typedef struct {
-    uint32_t target;
-    uint32_t action;
-    float    x,y,z;
-} CP_UseEntity_pkt;
-
-// 0x03
-typedef struct {
-    uint8_t onground;
-} CP_Player_pkt;
-
-// 0x04
-typedef struct {
-    double x;
-    double y;
-    double z;
-    uint8_t onground;
-} CP_PlayerPosition_pkt;
-
-// 0x05
-typedef struct {
-    float  yaw;
-    float  pitch;
-    uint8_t onground;
-} CP_PlayerLook_pkt;
-
-// 0x06
-typedef struct {
-    double x;
-    double y;
-    double z;
-    float  yaw;
-    float  pitch;
-    uint8_t onground;
-} CP_PlayerPositionLook_pkt;
+    char        str[256];
+} CP_ChatMessage_pkt;
 
 // 0x07
-typedef struct {
-    uint8_t status;
-    pos_t   loc;
-    uint8_t face;
-} CP_PlayerDigging_pkt;
-
-// 0x08
-typedef struct {
-    pos_t   bpos;
-    int8_t  face;
-    slot_t  item;
-    int8_t  cx,cy,cz;
-} CP_PlayerBlockPlacement_pkt;
-
-// 0x09
-typedef struct {
-    int16_t sid;
-} CP_HeldItemChange_pkt;
-
-// 0x0a
-typedef struct {
-} CP_Animation_pkt;
-
-// 0x0b
-typedef struct {
-    uint32_t eid;
-    uint32_t action;
-    uint32_t jumpboost;
-} CP_EntityAction_pkt;
-
-// 0x0d
-typedef struct {
-    uint8_t wid;
-} CP_CloseWindow_pkt;
-
-// 0x0e
 typedef struct {
     uint8_t  wid;
     int16_t  sid;
@@ -440,12 +361,85 @@ typedef struct {
     slot_t   slot;
 } CP_ClickWindow_pkt;
 
+// 0x08
+typedef struct {
+    uint8_t wid;
+} CP_CloseWindow_pkt;
 
+// 0x0a
+typedef struct {
+    uint32_t    target;
+    uint32_t    action;
+    float       x,y,z;
+    uint32_t    hand;
+} CP_UseEntity_pkt;
 
+// 0x0c
+typedef struct {
+    double      x;
+    double      y;
+    double      z;
+    uint8_t     onground;
+} CP_PlayerPosition_pkt;
 
+// 0x0d
+typedef struct {
+    double      x;
+    double      y;
+    double      z;
+    float       yaw;
+    float       pitch;
+    uint8_t     onground;
+} CP_PlayerPositionLook_pkt;
 
+// 0x0e
+typedef struct {
+    float       yaw;
+    float       pitch;
+    uint8_t     onground;
+} CP_PlayerLook_pkt;
 
+// 0x0f
+typedef struct {
+    uint8_t     onground;
+} CP_Player_pkt;
 
+// 0x13
+typedef struct {
+    uint32_t    status;
+    pos_t       loc;
+    uint8_t     face;
+} CP_PlayerDigging_pkt;
+
+// 0x14
+typedef struct {
+    uint32_t    eid;
+    uint32_t    action;
+    uint32_t    jumpboost;
+} CP_EntityAction_pkt;
+
+// 0x17
+typedef struct {
+    int16_t sid;
+} CP_HeldItemChange_pkt;
+
+// 0x1a
+typedef struct {
+    uint32_t    hand;
+} CP_Animation_pkt;
+
+// 0x1c
+typedef struct {
+    pos_t   bpos;
+    int32_t face;
+    int32_t hand;
+    int8_t  cx,cy,cz;
+} CP_PlayerBlockPlacement_pkt;
+
+// 0x1d
+typedef struct {
+    int32_t     hand;
+} CP_UseItem_pkt;
 
 
 
@@ -510,59 +504,56 @@ typedef struct {
 
     // various packet types depending on pid
     union {
-        PKT(SP_KeepAlive);
-        PKT(SP_JoinGame);
-        PKT(SP_ChatMessage);
-        PKT(SP_TimeUpdate);
-        PKT(SP_EntityEquipment);
-        PKT(SP_UpdateHealth);
-        PKT(SP_Respawn);
-        PKT(SP_PlayerPositionLook);
-        PKT(SP_HeldItemChange);
-        PKT(SP_SpawnPlayer);
-        PKT(SP_CollectItem);
-        PKT(SP_SpawnObject);
-        PKT(SP_SpawnMob);
-        PKT(SP_SpawnPainting);
-        PKT(SP_SpawnExperienceOrb);
-        PKT(SP_EntityVelocity);
-        PKT(SP_DestroyEntities);
-        PKT(SP_Entity);
-        PKT(SP_EntityRelMove);
-        PKT(SP_EntityLook);
-        PKT(SP_EntityLookRelMove);
-        PKT(SP_EntityTeleport);
-        PKT(SP_EntityMetadata);
-        PKT(SP_SetExperience);
-        PKT(SP_ChunkData);
-        PKT(SP_MultiBlockChange);
-        PKT(SP_BlockChange);
-        PKT(SP_MapChunkBulk);
-        PKT(SP_Explosion);
-        PKT(SP_Effect);
-        PKT(SP_SoundEffect);
-        PKT(SP_OpenWindow);
-        PKT(SP_CloseWindow);
-        PKT(SP_SetSlot);
-        PKT(SP_WindowItems);
-        PKT(SP_ConfirmTransaction);
-        PKT(SP_Maps);
-        PKT(SP_UpdateBlockEntity);
-        PKT(SP_SetCompression);
+        PKT(SP_SpawnObject);        // 00
+        PKT(SP_SpawnExperienceOrb); // 01
+        PKT(SP_SpawnMob);           // 03
+        PKT(SP_SpawnPainting);      // 04
+        PKT(SP_SpawnPlayer);        // 05
+        PKT(SP_UpdateBlockEntity);  // 09
+        PKT(SP_BlockChange);        // 0b
+        PKT(SP_ChatMessage);        // 0f
+        PKT(SP_MultiBlockChange);   // 10
+        PKT(SP_ConfirmTransaction); // 11
+        PKT(SP_CloseWindow);        // 12
+        PKT(SP_OpenWindow);         // 13
+        PKT(SP_WindowItems);        // 14
+        PKT(SP_SetSlot);            // 16
+        PKT(SP_Explosion);          // 1c
+        PKT(SP_UnloadChunk);        // 1d
+        PKT(SP_ChunkData);          // 20
+        PKT(SP_Effect);             // 21
+        PKT(SP_JoinGame);           // 23
+        PKT(SP_Map);                // 24
+        PKT(SP_EntityRelMove);      // 25
+        PKT(SP_EntityLookRelMove);  // 26
+        PKT(SP_PlayerListItem);     // 2d
+        PKT(SP_PlayerPositionLook); // 2e
+        PKT(SP_UseBed);             // 2f
+        PKT(SP_DestroyEntities);    // 30
+        PKT(SP_Respawn);            // 33
+        PKT(SP_HeldItemChange);     // 37
+        PKT(SP_EntityMetadata);     // 39
+        PKT(SP_SetExperience);      // 3d
+        PKT(SP_UpdateHealth);       // 3e
+        PKT(SP_SoundEffect);        // 42
+        PKT(SP_EntityTeleport);     // 4a
 
-        PKT(CP_ChatMessage);
-        PKT(CP_UseEntity);
-        PKT(CP_Player);
-        PKT(CP_PlayerPosition);
-        PKT(CP_PlayerLook);
-        PKT(CP_PlayerPositionLook);
-        PKT(CP_PlayerDigging);
-        PKT(CP_PlayerBlockPlacement);
-        PKT(CP_HeldItemChange);
-        PKT(CP_Animation);
-        PKT(CP_EntityAction);
-        PKT(CP_CloseWindow);
-        PKT(CP_ClickWindow);
+        PKT(CP_TeleportConfirm);    // 00
+        PKT(CP_ChatMessage);        // 02
+        PKT(CP_ClickWindow);        // 07
+        PKT(CP_CloseWindow);        // 08
+        PKT(CP_UseEntity);          // 0a
+        PKT(CP_PlayerPosition);     // 0c
+        PKT(CP_PlayerPositionLook); // 0d
+        PKT(CP_PlayerLook);         // 0e
+        PKT(CP_Player);             // 0f
+        PKT(CP_PlayerDigging);      // 13
+        PKT(CP_EntityAction);       // 14
+        PKT(CP_HeldItemChange);     // 17
+        PKT(CP_Animation);          // 1a
+        PKT(CP_PlayerBlockPlacement);// 1c
+        PKT(CP_UseItem);            // 1d
+
     };
 } MCPacket;
 

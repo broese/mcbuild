@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "mcp_packet.h"
+
 void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq);
 void build_clear(MCPacketQueue *sq, MCPacketQueue *cq);
 void build_cancel(MCPacketQueue *sq, MCPacketQueue *cq);

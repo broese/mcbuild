@@ -25,6 +25,9 @@
 #define GSOP_TRACK_ENTITIES     3
 #define GSOP_TRACK_INVENTORY    4
 
+////////////////////////////////////////////////////////////////////////////////
+// entity tracking
+
 #define ENTITY_UNKNOWN  0
 #define ENTITY_SELF     1
 #define ENTITY_PLAYER   2
@@ -43,7 +46,7 @@ static char * ENTITY_TYPES[] = {
 
 typedef struct _entity {
     int32_t  id;        // EID
-    fixp     x,y,z;     // note: fixed-point coords, divide by 32
+    double   x,y,z;     // position
     int      type;      // one of the ENTITY_ variables
     EntityType mtype;   // mob/object type as used natively
     int      hostile;   // whether marked hostile
@@ -51,6 +54,15 @@ typedef struct _entity {
     char     name[256]; // only valid for players
     metadata *mdata;    // entity metadata
 } entity;
+
+////////////////////////////////////////////////////////////////////////////////
+// player list
+
+typedef struct {
+    uuid_t      uuid;
+    char       *name;
+    char       *dispname;
+} pli;
 
 ////////////////////////////////////////////////////////////////////////////////
 // chunk storage
@@ -70,6 +82,11 @@ typedef struct {
 
 // chunk coord -> super-region offset within world (512x512 superregions, 128kx128k regions, 4Mx4M chunks, 64Mx64M blocks)
 #define CC_2(X,Z)   (uint32_t)(((((uint64_t)(X))>>13)&0x1ff)|(((((uint64_t)(Z))>>13)&0x1ff)<<9))
+
+// offsets in world, super-region, region -> chunk coord
+#define SIGNEXT(X) ((X)|(((X)&0x200000)?0xffc00000:0))
+#define CC_X(S,R,C) SIGNEXT(  (((S)&0x1ff)<<13)  | (((R)&0xff)<<5)   | ((C)&0x1f)        )
+#define CC_Z(S,R,C) SIGNEXT(  (((S)&0x3fe00)<<4) | (((R)&0xff00)>>3) | (((C)&0x3e0)>>5)  )
 
 typedef struct {
     gschunk *chunk[32*32];
@@ -99,7 +116,7 @@ typedef struct _gamestate {
 
     struct {
         uint32_t    eid;
-        fixp        x,y,z;
+        double      x,y,z;
         uint8_t     onground;
         float       yaw,pitch;
 
@@ -133,6 +150,8 @@ typedef struct _gamestate {
     // tracked entities
     lh_arr_declare(entity, entity);
 
+    lh_arr_declare(pli, players);
+
     gsworld         overworld;
     gsworld         end;
     gsworld         nether;
@@ -156,6 +175,7 @@ void dump_inventory();
 gschunk * find_chunk(gsworld *w, int32_t X, int32_t Z, int allocate);
 cuboid_t export_cuboid_extent(extent_t ex);
 bid_t get_block_at(int32_t x, int32_t z, int32_t y);
+int get_stored_area(gsworld *w, int32_t *Xmin, int32_t *Xmax, int32_t *Zmin, int32_t *Zmax);
 
 int player_direction();
 int sameitem(slot_t *a, slot_t *b);

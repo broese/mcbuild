@@ -12,6 +12,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <assert.h>
 
 #define MNAMES_WOOD     { "Oak", "Spruce", "Birch", "Jungle", "Acacia", "Dark Oak" }
 #define MNAMES_OLDWOOD  { "Oak", "Spruce", "Birch", "Jungle" }
@@ -271,7 +272,25 @@ const item_id ITEMS[] = {
     [0xc3] = { "Jungle Door",           I_MPOS|I_ADJ|I_DOOR },  // P: dir, A: open/close
     [0xc4] = { "Dark Oak Door",         I_MPOS|I_ADJ|I_DOOR },  // P: dir, A: open/close
     [0xc5] = { "Acacia Door",           I_MPOS|I_ADJ|I_DOOR },  // P: dir, A: open/close
+    [0xc6] = { "End Rod",               I_MPOS },               // P: dir
+    [0xc7] = { "Chorus Plant" },
+    [0xc8] = { "Chorus Fruit",          I_STATE_F|I_PLANT },    // S: level
+    [0xc9] = { "Purpur Block",          I_OPAQUE },
+    [0xca] = { "Purpur Pillar",         I_MTYPE|I_MPOS|I_LOG|I_OPAQUE },// P: dir
+    [0xcb] = { "Purpur Stairs",         I_MPOS|I_STAIR },               // P: dir
+    [0xcc] = { "Purpur D-slab",         I_MTYPE|I_DSLAB|I_OPAQUE,
+               { }, },
+    [0xcd] = { "Purpur Slab",           I_MPOS|I_SLAB },        // P: up/down
+    [0xce] = { "Endstone Bricks",       I_OPAQUE },
+    [0xcf] = { "Beetroot Plant",        I_STATE_F|I_PLANT },    // S: level
 
+    [0xd0] = { "Grass Path" },
+    [0xd1] = { "End Gateway" },
+    [0xd2] = { "Repeating Command Block",   I_OPAQUE|I_CONT },
+    [0xd3] = { "Chain Command Block",       I_OPAQUE|I_CONT },
+    [0xd4] = { "Frosted Ice",           I_STATE_F|I_OPAQUE },   // S: level
+
+    [0xff] = { "Structure Block",       I_OPAQUE },
 
     ////////////////////////////////////////////////////////////////////////
     // Items
@@ -472,6 +491,25 @@ const item_id ITEMS[] = {
     [0x1ae] = { "Acacia Door",          I_ITEM },
     [0x1af] = { "Dark Oak Door",        I_ITEM },
 
+    [0x1b0] = { "Chorus Fruit",         I_ITEM|I_FOOD },
+    [0x1b1] = { "Popped Chorus Fruit",  I_ITEM },
+    [0x1b2] = { "Beetroot",             I_ITEM|I_FOOD },
+    [0x1b3] = { "Beetroot Seeds",       I_ITEM },
+    [0x1b4] = { "Beetroot Soup",        I_ITEM|I_FOOD },
+    [0x1b5] = { "Dragon Breath",        I_ITEM },
+    [0x1b6] = { "Splash Potion",        I_ITEM },
+    [0x1b7] = { "Spectral Arrow",       I_ITEM },
+    [0x1b8] = { "Tipped Arrow",         I_ITEM },
+    [0x1b9] = { "Lingering Potion",     I_ITEM },
+    [0x1ba] = { "Shield",               I_ITEM },
+    [0x1bb] = { "Elytra",               I_ITEM },
+    [0x1bc] = { "Spruce Boat",          I_ITEM },
+    [0x1bd] = { "Birch Boat",           I_ITEM },
+    [0x1be] = { "Jungle Boat",          I_ITEM },
+    [0x1bf] = { "Acacia Boat",          I_ITEM },
+
+    [0x1c0] = { "Dark Oak Boat",        I_ITEM },
+
     [0x8d0] = { "Record 13",            I_ITEM|I_NSTACK },
     [0x8d1] = { "Record Cat",           I_ITEM|I_NSTACK },
     [0x8d2] = { "Record Blocks",        I_ITEM|I_NSTACK },
@@ -489,6 +527,8 @@ const item_id ITEMS[] = {
     [0x8ff] = { NULL }, //Terminator
 };
 
+#define MAXITEMID 0x8ff
+
 // given a specific block ID and meta, return the meta value corresponding
 // to the basic state of the block
 int get_base_meta(int id, int meta) {
@@ -501,6 +541,9 @@ int get_base_meta(int id, int meta) {
 
     // block meta is used for I_MTYPE but not used for position/state => base meta as is
     if (!(it->flags&(I_MPOS|I_STATE_MASK))) return meta;
+
+    // unless I_MTYPE flag is specified, item's meta is used for damage only
+    if (id>=0x100) return 0;
 
     // everything else needs to be determined individually
     switch (id) {
@@ -515,6 +558,7 @@ int get_base_meta(int id, int meta) {
         case 0xa1: // Leaves2
         case 0xa2: // Wood2
         case 0xaa: // Haybales
+        case 0xca: // Purpur Pillar
             return meta&3;
 
         case 0x9b: // Quartz block
@@ -552,6 +596,7 @@ bid_t get_base_material(bid_t mat) {
     BI(142,392);  // Potato Plant -> Potato
     BI(104,361);  // Pumpkin Stem -> Pumpkin Seeds
     BI(105,362);  // Melon Stem -> Melon Seeds
+    BI(207,435);  // Beetroot Plant -> Betroot Seeds
     if (mat.bid == 127) return BLOCKTYPE(351,3);  // Cocoa -> Cocoa Beans (which is also a Brown Dye, duh)
 
     BI(63,323);   // Standing Sign -> Sign
@@ -628,17 +673,23 @@ bid_t get_base_block_material(bid_t mat) {
         case 0xb5:
         case 0xb6:
             return BLOCKTYPE(0xb3,0); // Red Sandstone (plain)
+
+        // purpur stairs, d-slabs, slabs
+        case 0xcb:
+        case 0xcc:
+        case 0xcd:
+            return BLOCKTYPE(0xc9,0); // Purpur Block
     }
     return mat;
 }
 
 const char * get_mat_name(char *buf, int id, int meta) {
-    if (id<0) {
+    if (id<0 || id>MAXITEMID) {
         sprintf(buf, "-");
         return buf;
     }
 
-    int bmeta = (id<0x100) ? get_base_meta(id, meta) : 0;
+    int bmeta = get_base_meta(id, meta);
 
     const item_id *it = &ITEMS[id];
     if (it->name) {
@@ -902,7 +953,7 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (b.bid==155)     return GETMETAGROUP(MM_QUARTZ);
     if (flags&I_GATE)   return GETMETAGROUP(MM_BED);
 
-    if ((flags&I_RSDEV) || b.bid==154)
+    if ((flags&I_RSDEV) || b.bid==154 || b.bid==198)
         return GETMETAGROUP(MM_ONWALL);
 
     return NULL; // default - no orientation mapping
@@ -982,559 +1033,89 @@ bid_t flip_meta_y(bid_t b) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Entity Metadata
+// Biomes info
 
-const char * METANAME[][32] = {
-    [Entity] = {
-        [0]  = "Flags",
-        [1]  = "Air",
-    },
-    [LivingEntity] = {
-        [0]  = "Flags",
-        [1]  = "Air",
-        [2]  = "Name tag",
-        [3]  = "Always show name tag",
-        [6]  = "Health",
-        [7]  = "Potion effect color",
-        [8]  = "Potion effect ambient",
-        [9]  = "Number of arrows",
-        [15] = "No AI",
-    },
-    [Ageable] = {
-        [12] = "Age",
-    },
-    [ArmorStand] = {
-        [10] = "Armor stand flags",
-        [11] = "Head position",
-        [12] = "Body position",
-        [13] = "L arm position",
-        [14] = "R arm position",
-        [15] = "L leg position",
-        [16] = "R leg position",
-    },
-    [Human] = {
-        [10] = "Skin flags",
-        [16] = "Hide cape",
-        [17] = "Absorption hearts",
-        [18] = "Score",
-    },
-    [Horse] = {
-        [16] = "Horse flags",
-        [19] = "Horse type",
-        [20] = "Horse color",
-        [21] = "Owner name",
-        [22] = "Horse armor",
-    },
-    [Bat] = {
-        [16] = "Is hanging",
-    },
-    [Tameable] = {
-        [16] = "Tameable flags",
-        [17] = "Owner name",
-    },
-    [Ocelot] = {
-        [18] = "Ocelot type",
-    },
-    [Wolf] = {
-        [18] = "Health",
-        [19] = "Begging",
-        [20] = "Collar color",
-    },
-    [Pig] = {
-        [16] = "Has saddle",
-    },
-    [Rabbit] = {
-        [18] = "Rabbit type",
-    },
-    [Sheep] = {
-        [16] = "Sheep color",
-    },
-    [Villager] = {
-        [16] = "Villager type",
-    },
-    [Enderman] = {
-        [16] = "Carried block",
-        [17] = "Carried block data",
-        [18] = "Is screaming",
-    },
-    [Zombie] = {
-        [12] = "child zombie",
-        [13] = "villager zombie",
-        [14] = "converting zombie",
-    },
-    [ZombiePigman] = {
-    },
-    [Blaze] = {
-        [16] = "Blaze it motherfucker",
-    },
-    [Spider] = {
-        [16] = "Climbing",
-    },
-    [CaveSpider] = {
-    },
-    [Creeper] = {
-        [16] = "Creeper state",
-        [17] = "is powered",
-    },
-    [Ghast] = {
-        [16] = "is attacking",
-    },
-    [Slime] = {
-        [16] = "Size",
-    },
-    [MagmaCube] = {
-    },
-    [Skeleton] = {
-        [13] = "Skeleton type",
-    },
-    [Witch] = {
-        [21] = "is aggressive",
-    },
-    [IronGolem] = {
-        [16] = "created by player",
-    },
-    [Wither] = {
-        [17] = "Target 1",
-        [18] = "Target 2",
-        [19] = "Target 3",
-        [20] = "Invulnerable time",
-    },
-    [Boat] = {
-        [17] = "Time since hit",
-        [18] = "Forward direction",
-        [19] = "Damage taken",
-    },
-    [Minecart] = {
-        [17] = "Shaking power",
-        [18] = "Shaking direction",
-        [19] = "Damage taken/shaking multiplier",
-        [20] = "Block id/data",
-        [21] = "Block y",
-        [22] = "Show block",
-    },
-    [FurnaceMinecart] = {
-        [16] = "Is powered",
-    },
-    [Item] = {
-        [10] = "Item",
-    },
-    [Arrow] = {
-        [16] = "Is critical",
-    },
-    [Firework] = {
-        [8] = "Firework data",
-    },
-    [ItemFrame] = {
-        [8] = "Framed item",
-        [9] = "Rotation",
-    },
-    [EnderCrystal] = {
-        [8] = "Health",
-    },
-};
-
-const EntityType ENTITY_HIERARCHY[] = {
-    //// Superclasses
-    [Entity]          = IllegalEntityType,
-    [LivingEntity]    = Entity,
-    [Ageable]         = LivingEntity,
-    [Human]           = LivingEntity,
-    [Tameable]        = Ageable,
-    [Item]            = Entity,
-    [Firework]        = Entity,
-    [Mob]             = LivingEntity,
-    [Monster]         = LivingEntity,
-
-    //// Monsters
-    [Creeper]         = LivingEntity,
-    [Skeleton]        = LivingEntity,
-    [Spider]          = LivingEntity,
-    [GiantZombie]     = LivingEntity,
-    [Zombie]          = LivingEntity,
-    [Slime]           = LivingEntity,
-    [Ghast]           = LivingEntity,
-    [ZombiePigman]    = Zombie,
-    [Enderman]        = LivingEntity,
-    [CaveSpider]      = Spider,
-    [Silverfish]      = LivingEntity,
-    [Blaze]           = LivingEntity,
-    [MagmaCube]       = Slime,
-    [Enderdragon]     = LivingEntity,
-    [Wither]          = LivingEntity,
-    [Bat]             = LivingEntity,
-    [Witch]           = LivingEntity,
-    [Endermite]       = LivingEntity,
-    [Guardian]        = LivingEntity,
-
-    //// Mobs
-    [Pig]             = Ageable,
-    [Sheep]           = Ageable,
-    [Cow]             = Ageable,
-    [Chicken]         = Ageable,
-    [Squid]           = LivingEntity,
-    [Wolf]            = Tameable,
-    [Mooshroom]       = Ageable,
-    [Snowman]         = LivingEntity,
-    [Ocelot]          = Tameable,
-    [IronGolem]       = LivingEntity,
-    [Horse]           = Ageable,
-    [Rabbit]          = Ageable,
-    [Villager]        = Ageable,
-
-    //// Objects
-    [Boat]            = Entity,
-    [ItemStack]       = Entity,
-    [Minecart]        = Entity,
-    [ChestMinecart]   = Minecart,
-    [FurnaceMinecart] = Minecart,
-    [EnderCrystal]    = Entity,
-    [Arrow]           = Entity,
-    [ItemFrame]       = Entity,
-    [ArmorStand]      = LivingEntity,
-};
-
-#define ENUMNAME(name) [name] = #name
-
-const char * ENTITY_NAMES[MaxEntityType] = {
-    ENUMNAME(Creeper),
-    ENUMNAME(Skeleton),
-    ENUMNAME(Spider),
-    ENUMNAME(GiantZombie),
-    ENUMNAME(Zombie),
-    ENUMNAME(Slime),
-    ENUMNAME(Ghast),
-    ENUMNAME(ZombiePigman),
-    ENUMNAME(Enderman),
-    ENUMNAME(CaveSpider),
-    ENUMNAME(Silverfish),
-    ENUMNAME(Blaze),
-    ENUMNAME(MagmaCube),
-    ENUMNAME(Enderdragon),
-    ENUMNAME(Wither),
-    ENUMNAME(Bat),
-    ENUMNAME(Witch),
-    ENUMNAME(Endermite),
-    ENUMNAME(Guardian),
-
-    ENUMNAME(Pig),
-    ENUMNAME(Sheep),
-    ENUMNAME(Cow),
-    ENUMNAME(Chicken),
-    ENUMNAME(Squid),
-    ENUMNAME(Wolf),
-    ENUMNAME(Mooshroom),
-    ENUMNAME(Snowman),
-    ENUMNAME(Ocelot),
-    ENUMNAME(IronGolem),
-    ENUMNAME(Horse),
-    ENUMNAME(Rabbit),
-    ENUMNAME(Villager),
-};
-
-const char * get_entity_name(char *buf, EntityType type) {
-    if (type < 0 || type >= MaxEntityType ) {
-        sprintf(buf, "%s", "IllegalEntityType");
-    }
-    else if ( ENTITY_NAMES[type] ) {
-        sprintf(buf, "%s", ENTITY_NAMES[type]);
-    }
-    else {
-        sprintf(buf, "%s", "UnknownEntity");
-    }
-    return buf;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// ANSI representation of blocks
-
-const char * ANSI_BLOCK[] = {
-    // 00
-    "\x1b[0m ",                         // Air
-    "\x1b[47m ",                        // Stone
-    "\x1b[42;33m\xe2\x96\x91",          // Grass
-    "\x1b[43;30m\xe2\x96\x93",          // Dirt
-    "\x1b[47;30m\xe2\x96\x99",          // Cobblestone
-    "\x1b[43;30;22m\xe2\x96\xa4",       // Planks
-    "\x1b[40;32m\xf0\x9f\x8c\xb1",      // Sapling
-    "\x1b[47;30m\xe2\x96\x93",          // Bedrock
-    "\x1b[44;37m-",                     // Flowing Water
-    "\x1b[44;37m ",                     // Water
-    "\x1b[41;33;22m\xe2\x96\xa4",       // Flowing Lava
-    "\x1b[41;33;22m\xe2\x96\x91",       // Lava
-    "\x1b[43;37m\xe2\x96\x91",          // Sand
-    "\x1b[47;30m\xe2\x96\x92",          // Gravel
-    "\x1b[47;33m\xe2\x97\x86",          // Gold Ore
-    "\x1b[47;35m\xe2\x97\x86",          // Iron Ore
-
-    // 10
-    "\x1b[47;30m\xe2\x97\x86",          // Iron Ore
-    "\x1b[43;30m\xe2\x96\xa2",          // Wood
-    "\x1b[40;32m\xe2\x96\x92",          // Leaves
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    "\x1b[47;34m\xe2\x97\x86",          // Iron Ore
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    "\x1b[40;32m\xe2\x96\x92",          // Leaves
-
-    // 20
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    // 30
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    "\x1b[47;36m\xe2\x97\x86",          // Iron Ore
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    "\x1b[40;33m\xe1\xba\x9b",          // Wheat
-    "\x1b[43;30m\xe2\x90\xa5",          // Farmland
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    // 40
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    "\x1b[47;31m\xe2\x97\x86",          // Redstone Ore
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    // 50
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    "\x1b[40;32m\xe1\xba\x9b",          // Sugar Cane
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    "\x1b[31;40m#",                     // Netherrack
-    ANSI_UNKNOWN,
-    "\x1b[33;47m#",                     // Glowstone
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    // 60
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    // 70
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    // 80
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    ANSI_UNKNOWN,
-    "\x1b[40;32m\xe1\xba\x9b",          // Carrots
-    "\x1b[40;32m\xe1\xba\x9b",          // Potatoes
-    ANSI_UNKNOWN,
-
-    // 90
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    // A0
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    // B0
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    // C0
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    // D0
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    // E0
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-
-    // F0
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
-    ANSI_UNKNOWN,
+// Color values courtesy of AMIDST
+const biome_id BIOMES[256] = {
+    [  0] = { "Ocean", 0x000070 },
+    [  1] = { "Plains", 0x8db360 },
+    [  2] = { "Desert", 0xfa9418 },
+    [  3] = { "Extreme Hills", 0x606060 },
+    [  4] = { "Forest", 0x056621 },
+    [  5] = { "Taiga", 0x0b6659 },
+    [  6] = { "Swampland", 0x07f9b2 },
+    [  7] = { "River", 0x0000ff },
+    [  8] = { "Hell", 0xff0000 },
+    [  9] = { "The End", 0x0a000a },
+    [ 10] = { "Frozen Ocean", 0x9090a0 },
+    [ 11] = { "Frozen River", 0xa0a0ff },
+    [ 12] = { "Ice Plains", 0xffffff },
+    [ 13] = { "Ice Mountains", 0xa0a0a0 },
+    [ 14] = { "Mushroom Island", 0xff00ff },
+    [ 15] = { "Mushroom Island Shore", 0xa000ff },
+    [ 16] = { "Beach", 0xfade55 },
+    [ 17] = { "Desert Hills", 0xd25f12 },
+    [ 18] = { "Forest Hills", 0x22551c },
+    [ 19] = { "Taiga Hills", 0x163933 },
+    [ 20] = { "Extreme Hills Edge", 0x72789a },
+    [ 21] = { "Jungle", 0x537b09 },
+    [ 22] = { "Jungle Hills", 0x2c4205 },
+    [ 23] = { "Jungle Edge", 0x628b17 },
+    [ 24] = { "Deep Ocean", 0x000030 },
+    [ 25] = { "Stone Beach", 0xa2a284 },
+    [ 26] = { "Cold Beach", 0xfaf0c0 },
+    [ 27] = { "Birch Forest", 0x307444 },
+    [ 28] = { "Birch Forest Hills", 0x1f5f32 },
+    [ 29] = { "Roofed Forest", 0x40511a },
+    [ 30] = { "Cold Taiga", 0x31554a },
+    [ 31] = { "Cold Taiga Hills", 0x243f36 },
+    [ 32] = { "Mega Taiga", 0x596651 },
+    [ 33] = { "Mega Taiga Hills", 0x454f3e },
+    [ 34] = { "Extreme Hills+", 0x507050 },
+    [ 35] = { "Savanna", 0xbdb25f },
+    [ 36] = { "Savanna Plateau", 0xa79d64 },
+    [ 37] = { "Mesa", 0xd94515 },
+    [ 38] = { "Mesa Plateau F", 0xb09765 },
+    [ 39] = { "Mesa Plateau", 0xca8c65 },
+    [127] = { "Sky", 0x8080ff },
+    [128] = { "Plains M", 0x8db360 },
+    [129] = { "Sunflower Plains", 0xb5db88 },
+    [130] = { "Desert M", 0xffbc40 },
+    [131] = { "Extreme Hills M", 0x888888 },
+    [132] = { "Flower Forest", 0x2d8e49 },
+    [133] = { "Taiga M", 0x338e81 },
+    [134] = { "Swampland M", 0x2fffda },
+    [135] = { "River M", 0x2828ff },
+    [136] = { "Hell M", 0xff2828 },
+    [138] = { "Frozen Ocean M", 0xb8b8c8 },
+    [139] = { "Frozen River M", 0xc8c8ff },
+    [140] = { "Ice Plains Spikes", 0xb4dcdc },
+    [141] = { "Ice Mountains M", 0xc8c8c8 },
+    [142] = { "Mushroom Island M", 0xff28ff },
+    [143] = { "Mushroom Island Shore M", 0xc828ff },
+    [144] = { "Beach M", 0xffff7d },
+    [145] = { "Desert Hills M", 0xfa873a },
+    [146] = { "Forest Hills M", 0x4a7d44 },
+    [147] = { "Taiga Hills M", 0x3e615b },
+    [148] = { "Extreme Hills Edge M", 0x9aa0c2 },
+    [149] = { "Jungle M", 0x7ba331 },
+    [150] = { "Jungle Hills M", 0x546a2d },
+    [151] = { "Jungle Edge M", 0x8ab33f },
+    [152] = { "Deep Ocean M", 0x282858 },
+    [153] = { "Stone Beach M", 0xcacaac },
+    [154] = { "Cold Beach M", 0xffffe8 },
+    [155] = { "Birch Forest M", 0x589c6c },
+    [156] = { "Birch Forest Hills M", 0x47875a },
+    [157] = { "Roofed Forest M", 0x687942 },
+    [158] = { "Cold Taiga M", 0x597d72 },
+    [159] = { "Cold Taiga Hills M", 0x4c675e },
+    [160] = { "Mega Spruce Taiga", 0x818e79 },
+    [161] = { "Mega Spruce Taiga (Hills)", 0x6d7766 },
+    [162] = { "Extreme Hills+ M", 0x789878 },
+    [163] = { "Savanna M", 0xe5da87 },
+    [164] = { "Savanna Plateau M", 0xcfc58c },
+    [165] = { "Mesa (Bryce)", 0xff6d3d },
+    [166] = { "Mesa Plateau F M", 0xd8bf8d },
+    [167] = { "Mesa Plateau M", 0xf2b48d },
+    [255] = { "Sky M", 0xa8a8ff },
 };

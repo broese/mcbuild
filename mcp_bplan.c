@@ -340,6 +340,26 @@ bplan * bplan_stairs(int32_t wd, int32_t hg, bid_t mat, int base) {
     return bp;
 }
 
+bplan * bplan_seal() {
+    lh_create_obj(bplan, bp);
+    int i;
+    for(i=0; i<1000; i++) {
+        blkr *b;
+        b = lh_arr_new(BP);
+        b->b = BLOCKTYPE(0x57,0);
+        b->x = 0;
+        b->y = 0;
+        b->z = i;
+        b = lh_arr_new(BP);
+        b->b = BLOCKTYPE(0x57,0);
+        b->x = 0;
+        b->y = 1;
+        b->z = i;
+    }
+
+    return bp;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Buildplan manipulation
 
@@ -1036,17 +1056,3 @@ bplan * bplan_pngload(const char *name, const char *setname) {
 
     return bp;
 }
-
-
-////////////////////////////////////////////////////////////////////////////////
-
-#if TEST
-
-int main(int ac, char **av) {
-    bplan *bp = bplan_floor(5,3,BLOCKTYPE(5,2));
-    bplan_update(bp);
-    bplan_dump(bp);
-    bplan_free(bp);
-}
-
-#endif

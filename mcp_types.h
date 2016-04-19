@@ -15,8 +15,7 @@
 */
 
 #include <stdint.h>
-
-#include "nbt.h"
+#include <stdlib.h>
 
 ////////////////////////////////////////////////////////////////////////////////
 // Useful macros
@@ -27,10 +26,45 @@
 #define SQ(x)    ((x)*(x))
 
 ////////////////////////////////////////////////////////////////////////////////
-// various constants
+// various constants and helpers
 
 #define MCP_MAXSTR 4096
 #define MCP_MAXPLEN (4*1024*1024)
+
+uint8_t * read_string(uint8_t *p, char *s);
+uint8_t * write_string(uint8_t *w, const char *s);
+const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte);
+
+////////////////////////////////////////////////////////////////////////////////
+// Directions
+
+#define DIR_ANY    -1
+#define DIR_UP      0
+#define DIR_DOWN    1
+#define DIR_SOUTH   2
+#define DIR_NORTH   3
+#define DIR_EAST    4
+#define DIR_WEST    5
+
+extern const char ** DIRNAME;
+
+static inline int ltodir(char c) {
+    switch (c) {
+        case 'n':
+        case 'N': return DIR_NORTH;
+        case 's':
+        case 'S': return DIR_SOUTH;
+        case 'w':
+        case 'W': return DIR_WEST;
+        case 'e':
+        case 'E': return DIR_EAST;
+        case 'u':
+        case 'U': return DIR_UP;
+        case 'd':
+        case 'D': return DIR_DOWN;
+    }
+    return DIR_ANY;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // protocol
@@ -77,55 +111,6 @@ typedef struct {
 extent_t ps2extent(pivot_t pv, size3_t sz);
 
 ////////////////////////////////////////////////////////////////////////////////
-// Slots and inventory
-
-typedef struct {
-    int16_t item;
-    int16_t count;  // actually int8_t, but we need to have a larger capacity to deal with crafting
-    int16_t damage;
-    nbt_t   *nbt;   // auxiliary data - enchantments etc.
-} slot_t;
-
-void dump_slot(slot_t *s);
-void clear_slot(slot_t *s);
-slot_t * clone_slot(slot_t *src, slot_t *dst);
-
-////////////////////////////////////////////////////////////////////////////////
-// Metadata
-
-// single metadata key-value pair
-typedef struct {
-    union {
-        struct {
-            unsigned char key  : 5;
-            unsigned char type : 3;
-        };
-        uint8_t h;
-    };
-    union {
-        int8_t  b;
-        int16_t s;
-        int32_t i;
-        float   f;
-        char    str[MCP_MAXSTR];
-        slot_t  slot;
-        struct {
-            int32_t x;
-            int32_t y;
-            int32_t z;
-        };
-        struct {
-            float   pitch;
-            float   yaw;
-            float   roll;
-        };
-    };
-} metadata;
-
-metadata * clone_metadata(metadata *meta);
-void free_metadata(metadata *meta);
-
-////////////////////////////////////////////////////////////////////////////////
 // Map data
 
 typedef struct {
@@ -159,7 +144,7 @@ typedef struct {
 typedef struct {
     int32_t  X;
     int32_t  Z;
-    uint16_t mask;
+    uint32_t mask;
     cube_t   *cubes[16];    // pointers to cubes. The pointers may be NULL meaning air
     uint8_t  biome[256];
 } chunk_t;
@@ -189,3 +174,4 @@ typedef struct {
 } cuboid_t;
 
 void free_cuboid(cuboid_t c);
+

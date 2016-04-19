@@ -11,14 +11,16 @@
 #pragma once
 
 #include <stdint.h>
-#include "mcp_packet.h"
+
 #include "mcp_types.h"
+#include "slot.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 //// Protocol IDs
 
 #define PROTO_NONE   0x00000000
 #define PROTO_1_8_1  0x00010801
+#define PROTO_1_9    0x00010900
 
 ////////////////////////////////////////////////////////////////////////////////
 //// Protocol Messages
@@ -65,107 +67,114 @@
 
 // Play
 
-#define SP_KeepAlive            SP(00)
-#define SP_JoinGame             SP(01)
-#define SP_ChatMessage          SP(02)
-#define SP_TimeUpdate           SP(03)
-#define SP_EntityEquipment      SP(04)
-#define SP_SpawnPosition        SP(05)
-#define SP_UpdateHealth         SP(06)
-#define SP_Respawn              SP(07)
-#define SP_PlayerPositionLook   SP(08)
-#define SP_HeldItemChange       SP(09)
-#define SP_UseBed               SP(0a)
-#define SP_Animation            SP(0b)
-#define SP_SpawnPlayer          SP(0c)
-#define SP_CollectItem          SP(0d)
-#define SP_SpawnObject          SP(0e)
-#define SP_SpawnMob             SP(0f)
-#define SP_SpawnPainting        SP(10)
-#define SP_SpawnExperienceOrb   SP(11)
-#define SP_EntityVelocity       SP(12)
-#define SP_DestroyEntities      SP(13)
-#define SP_Entity               SP(14)
-#define SP_EntityRelMove        SP(15)
-#define SP_EntityLook           SP(16)
-#define SP_EntityLookRelMove    SP(17)
-#define SP_EntityTeleport       SP(18)
-#define SP_EntityHeadLook       SP(19)
-#define SP_EntityStatus         SP(1a)
-#define SP_AttachEntity         SP(1b)
-#define SP_EntityMetadata       SP(1c)
-#define SP_EntityEffect         SP(1d)
-#define SP_RemoveEntityEffect   SP(1e)
-#define SP_SetExperience        SP(1f)
-#define SP_EntityProperties     SP(20)
-#define SP_ChunkData            SP(21)
-#define SP_MultiBlockChange     SP(22)
-#define SP_BlockChange          SP(23)
-#define SP_BlockAction          SP(24)
-#define SP_BlockBreakAnimation  SP(25)
-#define SP_MapChunkBulk         SP(26)
-#define SP_Explosion            SP(27)
-#define SP_Effect               SP(28)
-#define SP_SoundEffect          SP(29)
-#define SP_Particle             SP(2a)
-#define SP_ChangeGameState      SP(2b)
-#define SP_SpawnGlobalEntity    SP(2c)
-#define SP_OpenWindow           SP(2d)
-#define SP_CloseWindow          SP(2e)
-#define SP_SetSlot              SP(2f)
-#define SP_WindowItems          SP(30)
-#define SP_WindowProperty       SP(31)
-#define SP_ConfirmTransaction   SP(32)
-#define SP_UpdateSign           SP(33)
-#define SP_Maps                 SP(34)
-#define SP_UpdateBlockEntity    SP(35)
-#define SP_SignEditorOpen       SP(36)
-#define SP_Statistics           SP(37)
-#define SP_PlayerListItem       SP(38)
-#define SP_PlayerAbilities      SP(39)
-#define SP_TabComplete          SP(3a)
-#define SP_ScoreboardObjective  SP(3b)
-#define SP_UpdateScore          SP(3c)
-#define SP_DisplayScoreboard    SP(3d)
-#define SP_Teams                SP(3e)
-#define SP_PluginMessage        SP(3f)
-#define SP_Disconnect           SP(40)
-#define SP_ServerDifficulty     SP(41)
-#define SP_CombatEffect         SP(42)
-#define SP_Camera               SP(43)
-#define SP_WorldBorder          SP(44)
+#define SP_SpawnObject          SP(00)
+#define SP_SpawnExperienceOrb   SP(01)
+#define SP_SpawnGlobalEntity    SP(02)
+#define SP_SpawnMob             SP(03)
+#define SP_SpawnPainting        SP(04)
+#define SP_SpawnPlayer          SP(05)
+#define SP_Animation            SP(06)
+#define SP_Statistics           SP(07)
+#define SP_BlockBreakAnimation  SP(08)
+#define SP_UpdateBlockEntity    SP(09)
+#define SP_BlockAction          SP(0a)
+#define SP_BlockChange          SP(0b)
+#define SP_BossBar              SP(0c)
+#define SP_ServerDifficulty     SP(0d)
+#define SP_TabComplete          SP(0e)
+#define SP_ChatMessage          SP(0f)
+#define SP_MultiBlockChange     SP(10)
+#define SP_ConfirmTransaction   SP(11)
+#define SP_CloseWindow          SP(12)
+#define SP_OpenWindow           SP(13)
+#define SP_WindowItems          SP(14)
+#define SP_WindowProperty       SP(15)
+#define SP_SetSlot              SP(16)
+#define SP_SetCooldown          SP(17)
+#define SP_PluginMessage        SP(18)
+#define SP_NamedSoundEffect     SP(19)
+#define SP_Disconnect           SP(1a)
+#define SP_EntityStatus         SP(1b)
+#define SP_Explosion            SP(1c)
+#define SP_UnloadChunk          SP(1d)
+#define SP_ChangeGameState      SP(1e)
+#define SP_KeepAlive            SP(1f)
+#define SP_ChunkData            SP(20)
+#define SP_Effect               SP(21)
+#define SP_Particle             SP(22)
+#define SP_JoinGame             SP(23)
+#define SP_Map                  SP(24)
+#define SP_EntityRelMove        SP(25)
+#define SP_EntityLookRelMove    SP(26)
+#define SP_EntityLook           SP(27)
+#define SP_Entity               SP(28)
+#define SP_VehicleMove          SP(29)
+#define SP_SignEditorOpen       SP(2a)
+#define SP_PlayerAbilities      SP(2b)
+#define SP_CombatEffect         SP(2c)
+#define SP_PlayerListItem       SP(2d)
+#define SP_PlayerPositionLook   SP(2e)
+#define SP_UseBed               SP(2f)
+#define SP_DestroyEntities      SP(30)
+#define SP_RemoveEntityEffect   SP(31)
+#define SP_ResourcePackSent     SP(32)
+#define SP_Respawn              SP(33)
+#define SP_EntityHeadLook       SP(34)
+#define SP_WorldBorder          SP(35)
+#define SP_Camera               SP(36)
+#define SP_HeldItemChange       SP(37)
+#define SP_DisplayScoreboard    SP(38)
+#define SP_EntityMetadata       SP(39)
+#define SP_AttachEntity         SP(3a)
+#define SP_EntityVelocity       SP(3b)
+#define SP_EntityEquipment      SP(3c)
+#define SP_SetExperience        SP(3d)
+#define SP_UpdateHealth         SP(3e)
+#define SP_ScoreboardObjective  SP(3f)
+#define SP_SetPassengers        SP(40)
+#define SP_Teams                SP(41)
+#define SP_UpdateScore          SP(42)
+#define SP_SpawnPosition        SP(43)
+#define SP_TimeUpdate           SP(44)
 #define SP_Title                SP(45)
-#define SP_SetCompression       SP(46)
-#define SP_PlayerListHeader     SP(47)
-#define SP_ResourcePackSent     SP(48)
-#define SP_UpdateEntityNbt      SP(49)
+#define SP_UpdateSign           SP(46)
+#define SP_SoundEffect          SP(47)
+#define SP_PlayerListHeader     SP(48)
+#define SP_CollectItem          SP(49)
+#define SP_EntityTeleport       SP(4a)
+#define SP_EntityProperties     SP(4b)
+#define SP_EntityEffect         SP(4c)
 
-#define CP_KeepAlive            CP(00)
-#define CP_ChatMessage          CP(01)
-#define CP_UseEntity            CP(02)
-#define CP_Player               CP(03)
-#define CP_PlayerPosition       CP(04)
-#define CP_PlayerLook           CP(05)
-#define CP_PlayerPositionLook   CP(06)
-#define CP_PlayerDigging        CP(07)
-#define CP_PlayerBlockPlacement CP(08)
-#define CP_HeldItemChange       CP(09)
-#define CP_Animation            CP(0a)
-#define CP_EntityAction         CP(0b)
-#define CP_SteerVehicle         CP(0c)
-#define CP_CloseWindow          CP(0d)
-#define CP_ClickWindow          CP(0e)
-#define CP_ConfirmTransaction   CP(0f)
-#define CP_CreativeInventoryAct CP(10)
-#define CP_EnchantItem          CP(11)
-#define CP_UpdateSign           CP(12)
-#define CP_PlayerAbilities      CP(13)
-#define CP_TabComplete          CP(14)
-#define CP_ClientSettings       CP(15)
-#define CP_ClientStatus         CP(16)
-#define CP_PluginMessage        CP(17)
-#define CP_Spectate             CP(18)
-#define CP_ResourcePackStatus   CP(19)
+#define CP_TeleportConfirm      CP(00)
+#define CP_TabComplete          CP(01)
+#define CP_ChatMessage          CP(02)
+#define CP_ClientStatus         CP(03)
+#define CP_ClientSettings       CP(04)
+#define CP_ConfirmTransaction   CP(05)
+#define CP_EnchantItem          CP(06)
+#define CP_ClickWindow          CP(07)
+#define CP_CloseWindow          CP(08)
+#define CP_PluginMessage        CP(09)
+#define CP_UseEntity            CP(0a)
+#define CP_KeepAlive            CP(0b)
+#define CP_PlayerPosition       CP(0c)
+#define CP_PlayerPositionLook   CP(0d)
+#define CP_PlayerLook           CP(0e)
+#define CP_Player               CP(0f)
+#define CP_VehicleMode          CP(10)
+#define CP_SteerBoat            CP(11)
+#define CP_PlayerAbilities      CP(12)
+#define CP_PlayerDigging        CP(13)
+#define CP_EntityAction         CP(14)
+#define CP_SteerVehicle         CP(15)
+#define CP_ResourcePackStatus   CP(16)
+#define CP_HeldItemChange       CP(17)
+#define CP_CreativeInventoryAct CP(18)
+#define CP_UpdateSign           CP(19)
+#define CP_Animation            CP(1a)
+#define CP_Spectate             CP(1b)
+#define CP_PlayerBlockPlacement CP(1c)
+#define CP_UseItem              CP(1d)
 
 #define MAXPACKETTYPES          0x100
 
@@ -258,7 +267,8 @@
 #define I_CHESTPLATE(id) ((id)==0x12b || (id)==0x12f || (id)==0x133 || (id)==0x137 || (id)==0x13b)
 #define I_LEGGINGS(id)   ((id)==0x12c || (id)==0x130 || (id)==0x134 || (id)==0x138 || (id)==0x13c)
 #define I_BOOTS(id)      ((id)==0x12d || (id)==0x131 || (id)==0x135 || (id)==0x139 || (id)==0x13d)
-#define I_ARMOR(id)      (I_HELMET(id) || I_CHESTPLATE(id) || I_LEGGINGS(id) || I_BOOTS(id))
+#define I_ELYTRA(id)     ((id)==0x1bb)
+#define I_ARMOR(id)      (I_HELMET(id) || I_CHESTPLATE(id) || I_LEGGINGS(id) || I_BOOTS(id) || I_ELYTRA(id))
 
 typedef struct _item_id {
     const char * name;
@@ -272,6 +282,15 @@ extern const item_id ITEMS[];
     ( ITEMS[item].flags&I_NSTACK ? 1 : ( ITEMS[item].flags&I_S16 ? 16 : 64 ) )
 
 #define BLOCKTYPE(b,m) (bid_t){ { { .bid = b, .meta = m } } }
+
+////////////////////////////////////////////////////////////////////////////////
+
+typedef struct {
+    const char *name;
+    uint32_t    color;
+} biome_id;
+
+extern const biome_id BIOMES[];
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -304,146 +323,8 @@ static inline int ISEMPTY(int bid) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Directions
 
-#define DIR_ANY    -1
-#define DIR_UP      0
-#define DIR_DOWN    1
-#define DIR_SOUTH   2
-#define DIR_NORTH   3
-#define DIR_EAST    4
-#define DIR_WEST    5
-
-extern const char ** DIRNAME;
-
-static inline int ltodir(char c) {
-    switch (c) {
-        case 'n':
-        case 'N': return DIR_NORTH;
-        case 's':
-        case 'S': return DIR_SOUTH;
-        case 'w':
-        case 'W': return DIR_WEST;
-        case 'e':
-        case 'E': return DIR_EAST;
-        case 'u':
-        case 'U': return DIR_UP;
-        case 'd':
-        case 'D': return DIR_DOWN;
-    }
-    return DIR_ANY;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Entity Metadata
-
-typedef enum {
-    //// Superclasses
-    IllegalEntityType   = -1,
-    Entity              = 0,
-    LivingEntity        = 1,
-    Ageable             = 2,
-    Human               = 3,
-    Tameable            = 4,
-    Item                = 5,
-    Firework            = 6,
-    Mob                 = 48,
-    Monster             = 49,
-
-
-    //// Mobs
-    Creeper             = 50,
-    Skeleton            = 51,
-    Spider              = 52,
-    GiantZombie         = 53,
-    Zombie              = 54,
-    Slime               = 55,
-    Ghast               = 56,
-    ZombiePigman        = 57,
-    Enderman            = 58,
-    CaveSpider          = 59,
-
-    Silverfish          = 60,
-    Blaze               = 61,
-    MagmaCube           = 62,
-    Enderdragon         = 63,
-    Wither              = 64,
-    Bat                 = 65,
-    Witch               = 66,
-    Endermite           = 67,
-    Guardian            = 68,
-
-    Pig                 = 90,
-    Sheep               = 91,
-    Cow                 = 92,
-    Chicken             = 93,
-    Squid               = 94,
-    Wolf                = 95,
-    Mooshroom           = 96,
-    Snowman             = 97,
-    Ocelot              = 98,
-    IronGolem           = 99,
-
-    Horse               = 100,
-    Rabbit              = 101,
-
-    Villager            = 120,
-
-    //// Objects
-    Boat                = 1 +256,
-    ItemStack           = 2 +256,
-    Minecart            = 10+256,
-    ChestMinecart       = 11+256, // deprecated since 1.6
-    FurnaceMinecart     = 12+256, // deprecated since 1.6
-    EnderCrystal        = 51+256,
-    Arrow               = 60+256,
-    ItemFrame           = 71+256,
-    ArmorStand          = 78+256,
-    //TODO: other objects
-
-    //// Terminating ID
-    MaxEntityType       = 512,
-} EntityType;
-
-extern const char * METANAME[][32];
-extern const EntityType ENTITY_HIERARCHY[];
-extern const char * ENTITY_NAMES[];
-const char * get_entity_name(char *buf, EntityType type);
-
-////////////////////////////////////////////////////////////////////////////////
-// Entity Metadata
-
-#define META_BYTE    0
-#define META_SHORT   1
-#define META_INT     2
-#define META_FLOAT   3
-#define META_STRING  4
-#define META_SLOT    5
-#define META_COORD   6
-#define META_ROT     7
-
-static const char * METATYPES[] = {
-    [META_BYTE]       = "byte",
-    [META_SHORT]      = "short",
-    [META_INT]        = "int",
-    [META_FLOAT]      = "float",
-    [META_STRING]     = "string",
-    [META_SLOT]       = "slot",
-    [META_COORD]      = "coord",
-    [META_ROT]        = "rot",
-};
-
-////////////////////////////////////////////////////////////////////////////////
-// ANSI representation of blocks
-
-#define ANSI_CLEAR     "\x1b[0m"
-#define ANSI_PLAYER    "\x1b[5;32;44m$\x1b[0m"
-#define ANSI_UNKNOWN   "\x1b[45;36m#"
-#define ANSI_ILLBLOCK  "\x1b[5;32;44m#\x1b[0m"
-
-extern const char * ANSI_BLOCK[];
-
-////////////////////////////////////////////////////////////////////////////////
+#include "mcp_types.h"
 
 const char * get_item_name(char *buf, slot_t *s);
 const char * get_bid_name(char *buf, bid_t b);
