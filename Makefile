@@ -48,10 +48,10 @@ $(DEPFILE): $(SRC_ALL) $(HDR_ALL)
 	makedepend -Y -f $(DEPFILE) $(SRC_ALL) 2> /dev/null
 
 install: $(ALLBIN)
-	test -d $(HOME)/bin || mkdir $(HOME)/bin
-	cp -a scripts/* $(HOME)/bin
-	chmod +x $(HOME)/bin/mcb*
-	echo 'export PATH="$$HOME/bin:$$PATH"' >> ~/.bashrc
+	@test -d $(HOME)/bin || mkdir $(HOME)/bin
+	@cp -a scripts/* $(HOME)/bin
+	@chmod +x $(HOME)/bin/mcb*
+	@command -v mcb_update 2>&1 >> /dev/null || ( echo 'export PATH="$$HOME/bin:$$PATH"' >> ~/.bashrc ; echo "Please restart your shell or source ~/.bashrc to set PATH" )
 
 clean:
 	rm -f *.o *~ $(ALLBIN) $(TSTBIN) $(DEPFILE)
