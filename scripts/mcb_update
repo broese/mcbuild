@@ -8,7 +8,16 @@ cd ~/libhelper
 git $IGNORE_ATTR pull && make
 
 cd ~/mcbuild
-git $IGNORE_ATTR pull && make
+if [ "x$1" != 'x' ] ; then
+    if [ "$1" == 'dev' ] ; then
+        BRANCH="master"
+    else
+        BRANCH="release_$1"
+    fi
+    git checkout "$BRANCH" || ( echo "Failed to check out branch $BRANCH" ; exit 1 )
+fi
+
+git $IGNORE_ATTR pull && make && make install
 
 echo "MCBuild updated"
 
