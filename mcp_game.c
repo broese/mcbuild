@@ -701,13 +701,14 @@ void autoeat(MCPacketQueue *sq, MCPacketQueue *cq) {
 // Autowalk (work in progress)
 
 #define DEFAULT_PITCH 20
+#define DEFAULT_TELEPORT_ID 0x01234567
 
 void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, float yaw) {
     // coordinates are adjusted so we stand exactly in the middle of the block
     double x = floor(gs.own.x)+0.5;
     double z = floor(gs.own.z)+0.5;
 
-    // packet to the client
+    // packet to the server
     NEWPACKET(CP_PlayerPositionLook, s);
     ts->x = x;
     ts->z = z;
@@ -717,7 +718,7 @@ void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, float yaw) {
     ts->onground = gs.own.onground;
     queue_packet(s, sq);
 
-    // packet to the server
+    // packet to the client
     NEWPACKET(SP_PlayerPositionLook, c);
     ts->x = x;
     ts->z = z;
@@ -725,6 +726,7 @@ void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, float yaw) {
     tc->yaw = yaw;
     tc->pitch = DEFAULT_PITCH;
     tc->flags = 0;
+    tc->tpid = DEFAULT_TELEPORT_ID;
     queue_packet(c, cq);
 }
 
@@ -1018,6 +1020,13 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
 
             break;
         }
+
+        GMP(CP_TeleportConfirm) {
+            // do not forward Teleport Confirm packets from client that
+            // resulted from our own SP_PlayerPositionLook (e.g. in #align)
+            if (tpkt->tpid != DEFAULT_TELEPORT_ID)
+                queue_packet(pkt, tq);
+        } _GMP;
 
         ////////////////////////////////////////////////////////////////
         // Inventory
