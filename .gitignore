@@ -12,6 +12,7 @@ test.c
 *.bplan
 bases.txt
 players.txt
+make.depend*
 
 # applications
 mcproxy
