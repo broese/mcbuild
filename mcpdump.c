@@ -108,7 +108,7 @@ int parse_args(int ac, char **av) {
                 break;
             }
             case 'B': {
-                o_biomemap = strdup(optarg);
+                o_biomemap = optarg;
                 break;
             }
             case '?': {
