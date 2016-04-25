@@ -323,6 +323,15 @@ typedef struct {
     uint8_t     pitch;
 } SP_SoundEffect_pkt;
 
+// 0x46
+typedef struct {
+    pos_t       pos;
+    char        line1[64];
+    char        line2[64];
+    char        line3[64];
+    char        line4[64];
+} SP_UpdateSign_pkt;
+
 // 0x4a
 typedef struct {
     uint32_t    eid;
@@ -536,6 +545,7 @@ typedef struct {
         PKT(SP_SetExperience);      // 3d
         PKT(SP_UpdateHealth);       // 3e
         PKT(SP_SoundEffect);        // 42
+        PKT(SP_UpdateSign);         // 46
         PKT(SP_EntityTeleport);     // 4a
 
         PKT(CP_TeleportConfirm);    // 00

@@ -1117,6 +1117,23 @@ DUMP_BEGIN(SP_SoundEffect) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x46 SP_UpdateSign
+
+DECODE_BEGIN(SP_UpdateSign,_1_8_1) {
+    Plong(pos.p);
+    Pstr(line1);
+    Pstr(line2);
+    Pstr(line3);
+    Pstr(line4);
+} DECODE_END;
+
+DUMP_BEGIN(SP_UpdateSign) {
+    printf("pos=%d,%d,%d, line1=\"%s\", line2=\"%s\", line3=\"%s\", line4=\"%s\"",
+           tpkt->pos.x,tpkt->pos.y,tpkt->pos.z,
+           tpkt->line1,tpkt->line2,tpkt->line3,tpkt->line4);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x4a SP_EntityTeleport
 
 DECODE_BEGIN(SP_EntityTeleport,_1_9) {
@@ -1489,6 +1506,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_SetExperience,_1_8_1),      // 3d
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),       // 3e
         SUPPORT_D   (SP_SoundEffect,_1_9),          // 42
+        SUPPORT_D   (SP_UpdateSign,_1_8_1),         // 46
         SUPPORT_D   (SP_EntityTeleport,_1_9),       // 4a
     },
     {
