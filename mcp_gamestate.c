@@ -80,7 +80,7 @@ gschunk * find_chunk(gsworld *w, int32_t X, int32_t Z, int allocate) {
 
 // add/replace chunk data, allocating storage if necessary
 // return pointer to the chunk
-static gschunk * insert_chunk(chunk_t *c) {
+static gschunk * insert_chunk(chunk_t *c, int cont) {
     gschunk * gc = find_chunk(gs.world, c->X, c->Z, 1);
 
     int i;
@@ -90,14 +90,15 @@ static gschunk * insert_chunk(chunk_t *c) {
             memmove(gc->light+i*2048,    c->cubes[i]->light,    2048*sizeof(light_t));
             memmove(gc->skylight+i*2048, c->cubes[i]->skylight, 2048*sizeof(light_t));
         }
-        else {
+        else if (cont) {
             memset(gc->blocks+i*4096,   0, 4096*sizeof(bid_t));
             memset(gc->light+i*2048,    0, 2048*sizeof(light_t));
             memset(gc->skylight+i*2048, 0, 2048*sizeof(light_t));
         }
-        memmove(gc->biome, c->biome, 256);
     }
 
+    if (cont)
+        memmove(gc->biome, c->biome, 256);
     return gc;
 }
 
@@ -1078,7 +1079,7 @@ void gs_packet(MCPacket *pkt) {
         // Chunks
 
         GSP(SP_ChunkData) {
-            insert_chunk(&tpkt->chunk);
+            insert_chunk(&tpkt->chunk, tpkt->cont);
         } _GSP;
 
         GSP(SP_UnloadChunk) {
