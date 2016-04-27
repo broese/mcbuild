@@ -248,8 +248,28 @@ static void hole_radar(MCPacketQueue *cq) {
     }
 
     for(i=0; i<HR_DIST; i++) {
-        bid_t bl = get_block_at(x+lx*i, z+lz*i, y);
-        if (ISEMPTY(bl.bid)) {
+        bid_t bl[8] = {
+            get_block_at(x+lx*i,    z+lz*i,    y+3),
+            get_block_at(x+lx*i+lz, z+lz*i+lx, y+2),
+            get_block_at(x+lx*i,    z+lz*i,    y+2),
+            get_block_at(x+lx*i-lz, z+lz*i-lx, y+2),
+            get_block_at(x+lx*i+lz, z+lz*i+lx, y+1),
+            get_block_at(x+lx*i,    z+lz*i,    y+1),
+            get_block_at(x+lx*i-lz, z+lz*i-lx, y+1),
+            get_block_at(x+lx*i,    z+lz*i,    y)
+        };
+
+        int j;
+        for(j=0; j<8; j++) {
+            if (bl[j].bid == 10 || bl[j].bid == 11) {
+                char reply[32768];
+                sprintf(reply, "*** LAVA *** : d=%d", i);
+                chat_message(reply, cq, "gold", 2);
+                return;
+            }
+        }
+
+        if (ISEMPTY(bl[7].bid)) {
             char reply[32768];
             sprintf(reply, "*** HOLE *** : %d,%d y=%d d=%d", x+lx*i,z+lz*i,y,i);
             chat_message(reply, cq, "gold", 2);
