@@ -169,12 +169,12 @@ static nbt_t * nbt_parse_type(uint8_t **p, uint8_t type, int named) {
             break;
 
         case NBT_LIST: {
-            uint8_t ltype = lh_read_char(*p);
+            nbt->ltype = lh_read_char(*p);
             nbt->count = lh_read_int_be(*p);
             lh_alloc_num(nbt->li, nbt->count);
 
             for(i=0; i<nbt->count; i++)
-                nbt->li[i] = nbt_parse_type(p, ltype, 0);
+                nbt->li[i] = nbt_parse_type(p, nbt->ltype, 0);
 
             break;
         }
@@ -264,8 +264,7 @@ void nbt_write(uint8_t **w, nbt_t *nbt) {
             break;
 
         case NBT_LIST: {
-            uint8_t ltype = nbt->li[0]->type;
-            lh_write_char(*w, ltype);
+            lh_write_char(*w, nbt->ltype);
             lh_write_int_be(*w, nbt->count);
 
             for(i=0; i<nbt->count; i++)
@@ -273,10 +272,9 @@ void nbt_write(uint8_t **w, nbt_t *nbt) {
 
             break;
         }
-
         case NBT_COMPOUND: {
             for(i=0; i<nbt->count; i++)
-                nbt_write(w, nbt->li[i]);
+                nbt_write(w, nbt->co[i]);
             lh_write_char(*w, NBT_END);
             break;
         }
