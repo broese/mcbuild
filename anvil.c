@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include <lh_debug.h>
 #include <lh_files.h>
 #include <lh_bytes.h>
+#include <lh_compress.h>
 
 #include "anvil.h"
 
@@ -70,7 +72,7 @@ ssize_t anvil_save(mca *region, const char *path) {
         if (region->data[i]) {
             int chlen = lh_align(region->len[i], 4096);
             lh_write_int_be(w, (choff<<8) + (chlen>>12));
-            printf("Chunk %d (%d,%d), off=%d, len=%d\n", i, i%32, i/32, choff, (chlen>>12));
+            //printf("Chunk %d (%d,%d), off=%d, len=%d\n", i, i%32, i/32, choff, (chlen>>12));
             choff+=(chlen>>12);
         }
         else {
@@ -102,3 +104,54 @@ ssize_t anvil_save(mca *region, const char *path) {
     return sz;
 }
 
+static uint8_t nbtdata[2<<24]; // static buffer for NBT data
+static uint8_t cdata[2<<22];   // static buffer for compressed data
+
+// return decoded NBT data of a chunk from the region
+nbt_t * anvil_get_chunk(mca * region, int32_t X, int32_t Z) {
+    // chunk index in the region - we can accept local and global coordinates
+    int idx = (X&0x1f)+((Z&0x1f)<<5);
+
+    // chunk is not available
+    if (!region->data[idx]) return NULL;
+
+    // parse chunk header
+    uint8_t *p = region->data[idx];
+    uint32_t len = lh_read_int_be(p)-1;
+    assert(region->len[idx]>=len+5);
+    uint8_t ctype = lh_read_char(p);
+    assert(ctype==1 || ctype==2);
+
+    ssize_t dlen;
+    if (ctype==1)
+        dlen = lh_gzip_decode_to(p, len, nbtdata, sizeof(nbtdata));
+    else
+        dlen = lh_zlib_decode_to(p, len, nbtdata, sizeof(nbtdata));
+
+    p = nbtdata;
+    nbt_t * nbt = nbt_parse(&p);
+
+    return nbt;
+}
+
+// add a chunk in NBT form to the region
+void anvil_insert_chunk(mca * region, int32_t X, int32_t Z, nbt_t *nbt) {
+    // chunk index in the region - we can accept local and global coordinates
+    int idx = (X&0x1f)+((Z&0x1f)<<5);
+
+    // chunk is available - delete it
+    lh_free(region->data[idx]);
+
+    // serialize and compress chunk NBT
+    uint8_t *w = nbtdata;
+    nbt_write(&w, nbt);
+    ssize_t clen = lh_zlib_encode_to(nbtdata, w-nbtdata, cdata, sizeof(cdata));
+
+    // store it in the region
+    region->data[idx] = malloc(clen+5);
+    region->len[idx]  = clen+5;
+    w = region->data[idx];
+    lh_write_int_be(w, (uint32_t)clen+1);
+    lh_write_char(w, 2);
+    memmove(w, cdata, clen);
+}
