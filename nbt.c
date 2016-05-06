@@ -59,14 +59,14 @@ static void nbt_dump_ind(nbt_t *nbt, int indent) {
             break;
 
         case NBT_BYTE_ARRAY:
-            printf("Byte Array '%s'[%d] = { ",name,nbt->count);
+            printf("Byte Array '%s'[%zd] = { ",name,nbt->count);
             for(i=0; i<nbt->count; i++)
                 printf("%s%d",i?", ":"",nbt->ba[i]);
             printf(" }\n");
             break;
 
         case NBT_INT_ARRAY:
-            printf("Int Array '%s'[%d] = { ",name,nbt->count);
+            printf("Int Array '%s'[%zd] = { ",name,nbt->count);
             for(i=0; i<nbt->count; i++)
                 printf("%s%d",i?", ":"",nbt->ia[i]);
             printf(" }\n");
