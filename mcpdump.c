@@ -42,7 +42,7 @@ void print_usage() {
     printf("Usage:\n"
            "mcpdump [options] file.mcs...\n"
            "  -h                        : print this help\n"
-           //"  -b id[:meta]              : search for blocks by block ID and optionally meta value\n"
+           "  -b id[:meta]              : search for blocks by block ID and optionally meta value\n"
            "  -s                        : search for multiple-spawner locations\n"
            "  -S                        : search for single spawner locations\n"
            "  -i                        : track inventory transactions and dump inventory\n"
@@ -479,29 +479,30 @@ void extract_cuboid(int X, int Z, int y) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#if 0
-void search_blocks(int dim, int bid, int meta) {
-    gsworld *w;
-    switch (dim) {
-        case 0:  w = &gs.overworld; break;
-        case -1: w = &gs.nether; break;
-        case 1:  w = &gs.end; break;
-    }
+void search_blocks(gsworld *w, int bid, int meta) {
+    assert(w);
 
-    if (!w) return;
+    int s,r,c,i;
+    for(s=0; s<512*512; s++) {
+        gssreg *sr = w->sreg[s];
+        if (!sr) continue;
 
-    int Xi,Zi,i;
-    for(Zi=0; Zi<w->Zs; Zi++) {
-        for(Xi=0; Xi<w->Xs; Xi++) {
-            int32_t idx = Xi+Zi*w->Xs;
-            gschunk *c = w->chunks[idx];
+        for(r=0; r<256*256; r++) {
+            gsregion *re = sr->region[r];
+            if (!re) continue;
 
-            if (c) {
+            for(c=0; c<32*32; c++) {
+                gschunk *ch = re->chunk[c];
+                if (!ch) continue;
+
+                int32_t X = CC_X(s,r,c);
+                int32_t Z = CC_Z(s,r,c);
+
                 for(i=0; i<65536; i++) {
-                    bid_t bl = c->blocks[i];
+                    bid_t bl = ch->blocks[i];
                     if (bl.bid == bid && (meta<0 || bl.meta == meta) ) {
-                        int32_t x = ((Xi+w->Xo)*16+(i&0xf));
-                        int32_t z = ((Zi+w->Zo)*16+((i>>4)&0xf));
+                        int32_t x = (X*16+(i&0xf));
+                        int32_t z = (Z*16+((i>>4)&0xf));
                         int32_t y = i>>8;
 
                         printf("Block %3d:%2d at %5d,%5d,%3d\n",
@@ -512,7 +513,6 @@ void search_blocks(int dim, int bid, int meta) {
         }
     }
 }
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -567,10 +567,8 @@ int main(int ac, char **av) {
     if (o_spawner_mult)
         find_spawners();
 
-#if 0
     if (o_block_id >=0)
-        search_blocks(o_dimension, o_block_id, o_block_meta);
-#endif
+        search_blocks(o_world, o_block_id, o_block_meta);
 
     if (o_extract_maps)
         extract_maps();
