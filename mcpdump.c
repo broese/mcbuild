@@ -36,6 +36,7 @@ int o_dump_players              = 0;
 int o_extract_maps              = 0;
 int o_dump_packets              = 0;
 int o_dimension                 = 0;
+gsworld * o_world               = NULL;
 
 void print_usage() {
     printf("Usage:\n"
@@ -539,6 +540,12 @@ int main(int ac, char **av) {
             parse_mcp(data, size);
             free(data);
         }
+    }
+
+    switch (o_dimension) {
+        case 0:  o_world = &gs.overworld; break;
+        case -1: o_world = &gs.nether; break;
+        case 1:  o_world = &gs.end; break;
     }
 
     if (o_track_inventory)
