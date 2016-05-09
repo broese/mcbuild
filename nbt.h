@@ -70,7 +70,8 @@ Tags
 typedef struct nbt_t {
     int      type;      // type of element
     char    *name;      // element name - allocated, must be freed!
-    int      count;     // number of elements in the parsed object:
+    int      ltype;     // type of list elements - only valid for lists
+    ssize_t  count;     // number of elements in the parsed object:
                         // 1 for all elemental types
                         // number of elements in the array for ba, ia
                         // string length for str (the allocated buffer for the string has a 1 byte more for the terminator)
