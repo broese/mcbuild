@@ -12,6 +12,7 @@
 #include <stdlib.h>
 
 #include <lh_buffers.h>
+#include <lh_bytes.h>
 
 #include "mcp_types.h"
 #include "mcp_ids.h"
@@ -109,5 +110,46 @@ void free_metadata(metadata *meta) {
         if (meta[i].type == META_SLOT)
             clear_slot(&meta[i].slot);
     free(meta);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// String
+
+/*
+  MCP string format:
+  varint length
+  char[length] string, no terminator
+*/
+
+uint8_t * read_string(uint8_t *p, char *s) {
+    uint32_t len = lh_read_varint(p);
+    assert(len<MCP_MAXSTR);
+    memmove(s, p, len);
+    s[len] = 0;
+    return p+len;
+}
+
+uint8_t * write_string(uint8_t *w, const char *s) {
+    uint32_t len = (uint32_t)strlen(s);
+    lh_write_varint(w, len);
+    memmove(w, s, len);
+    w+=len;
+    return w;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Helpers
+
+char limhexbuf[4100];
+const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
+    //assert(len<(sizeof(limhexbuf)-4)/2);
+    assert(maxbyte >= 4);
+
+    int i;
+    //TODO: implement aaaaaa....bbbbbb - type of printing
+    if (len > maxbyte) len = maxbyte;
+    for(i=0;i<len;i++)
+        sprintf(limhexbuf+i*2,"%02x ",data[i]);
+    return limhexbuf;
 }
 

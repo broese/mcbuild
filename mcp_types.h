@@ -27,10 +27,14 @@
 #define SQ(x)    ((x)*(x))
 
 ////////////////////////////////////////////////////////////////////////////////
-// various constants
+// various constants and helpers
 
 #define MCP_MAXSTR 4096
 #define MCP_MAXPLEN (4*1024*1024)
+
+uint8_t * read_string(uint8_t *p, char *s);
+uint8_t * write_string(uint8_t *w, const char *s);
+const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte);
 
 ////////////////////////////////////////////////////////////////////////////////
 // protocol

@@ -23,19 +23,6 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
 
-char limhexbuf[4100];
-static const char * limhex(uint8_t *data, ssize_t len, ssize_t maxbyte) {
-    //assert(len<(sizeof(limhexbuf)-4)/2);
-    assert(maxbyte >= 4);
-
-    int i;
-    //TODO: implement aaaaaa....bbbbbb - type of printing
-    if (len > maxbyte) len = maxbyte;
-    for(i=0;i<len;i++)
-        sprintf(limhexbuf+i*2,"%02x ",data[i]);
-    return limhexbuf;
-}
-
 static inline int count_bits(uint16_t bitmask) {
     int c=0;
     for(c=0; bitmask; bitmask>>=1)
@@ -45,28 +32,6 @@ static inline int count_bits(uint16_t bitmask) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // String
-
-/*
-  MCP string format:
-  varint length
-  char[length] string, no terminator
-*/
-
-static uint8_t * read_string(uint8_t *p, char *s) {
-    uint32_t len = lh_read_varint(p);
-    assert(len<MCP_MAXSTR);
-    memmove(s, p, len);
-    s[len] = 0;
-    return p+len;
-}
-
-static uint8_t * write_string(uint8_t *w, const char *s) {
-    uint32_t len = (uint32_t)strlen(s);
-    lh_write_varint(w, len);
-    memmove(w, s, len);
-    w+=len;
-    return w;
-}
 
 int decode_chat_json(const char *json, char *name, char *message) {
     if (strncmp(json, "{\"extra\":[\"\\u003c",17)) return 0;
