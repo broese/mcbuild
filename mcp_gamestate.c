@@ -825,6 +825,35 @@ void gs_packet(MCPacket *pkt) {
         ////////////////////////////////////////////////////////////////
         // Gamestate
 
+        GSP(SP_PlayerListItem) {
+            int i,j;
+            for(i=0; i<C(tpkt->list); i++) {
+                pli_t * entry = P(tpkt->list)+i;
+
+                switch(tpkt->action) {
+                    case 0: {
+                        pli *pli = lh_arr_new_c(GAR(gs.players));
+                        memmove(pli->uuid, entry->uuid, 16);
+                        pli->name = strdup(entry->name);
+                        if (entry->has_dispname) {
+                            pli->dispname = strdup(entry->dispname);
+                        }
+                        break;
+                    }
+
+                    case 4: {
+                        for(j=0; j<C(gs.players); j++) {
+                            if (memcmp(P(gs.players)[j].uuid, entry->uuid, 16)==0) {
+                                lh_arr_delete(GAR(gs.players),j);
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        } _GSP;
+
         GSP(SP_TimeUpdate) {
             gs.time = tpkt->time;
         } _GSP;

@@ -25,6 +25,9 @@
 #define GSOP_TRACK_ENTITIES     3
 #define GSOP_TRACK_INVENTORY    4
 
+////////////////////////////////////////////////////////////////////////////////
+// entity tracking
+
 #define ENTITY_UNKNOWN  0
 #define ENTITY_SELF     1
 #define ENTITY_PLAYER   2
@@ -51,6 +54,15 @@ typedef struct _entity {
     char     name[256]; // only valid for players
     metadata *mdata;    // entity metadata
 } entity;
+
+////////////////////////////////////////////////////////////////////////////////
+// player list
+
+typedef struct {
+    uuid_t      uuid;
+    char       *name;
+    char       *dispname;
+} pli;
 
 ////////////////////////////////////////////////////////////////////////////////
 // chunk storage
@@ -132,6 +144,9 @@ typedef struct _gamestate {
 
     // tracked entities
     lh_arr_declare(entity, entity);
+
+    // list of players
+    lh_arr_declare(pli, players);
 
     gsworld         overworld;
     gsworld         end;
