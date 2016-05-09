@@ -164,6 +164,42 @@ static void modify_blocks(int32_t X, int32_t Z, blkrec *blocks, int32_t count) {
     }
 }
 
+// return the dimensions of the are of stared chunks
+int get_stored_area(gsworld *w, int32_t *Xmin, int32_t *Xmax, int32_t *Zmin, int32_t *Zmax) {
+    int si,ri,ci,set=0;
+    for(si=0; si<512*512; si++) {
+        gssreg * sreg = w->sreg[si];
+        if (!sreg) continue;
+
+        for(ri=0; ri<256*256; ri++) {
+            gsregion * region = sreg->region[ri];
+            if (!region) continue;
+
+            for(ci=0; ci<32*32; ci++) {
+                gschunk * gc = region->chunk[ci];
+                if (!gc) continue;
+
+                int32_t X = CC_X(si,ri,ci);
+                int32_t Z = CC_Z(si,ri,ci);
+
+                if (!set) {
+                    *Xmin = *Xmax = X;
+                    *Zmin = *Zmax = Z;
+                    set = 1;
+                }
+                else {
+                    if (X < *Xmin) *Xmin = X;
+                    if (X > *Xmax) *Xmax = X;
+                    if (Z < *Zmin) *Zmin = Z;
+                    if (Z > *Zmax) *Zmax = Z;
+                }
+            }
+        }
+    }
+
+    return set;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 cuboid_t export_cuboid_extent(extent_t ex) {
