@@ -32,6 +32,7 @@ int o_spawner_mult              = 0;
 int o_spawner_single            = 0;
 int o_track_inventory           = 0;
 int o_track_thunder             = 0;
+int o_dump_players              = 0;
 int o_extract_maps              = 0;
 int o_dump_packets              = 0;
 int o_dimension                 = 0;
@@ -45,6 +46,7 @@ void print_usage() {
            "  -S                        : search for single spawner locations\n"
            "  -i                        : track inventory transactions and dump inventory\n"
            "  -t                        : track thunder sounds\n"
+           "  -p                        : dump player list\n"
            "  -m                        : extract in-game maps\n"
            "  -d                        : dump packets\n"
            "  -D dimension              : specify dimension (0:overworld, -1:nether, 1:end)\n"
@@ -54,7 +56,7 @@ void print_usage() {
 int parse_args(int ac, char **av) {
     int opt,error=0;
 
-    while ( (opt=getopt(ac,av,"b:D:sSihmdt")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:D:sSihmdtp")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -70,6 +72,9 @@ int parse_args(int ac, char **av) {
                 break;
             case 't':
                 o_track_thunder = 1;
+                break;
+            case 'p':
+                o_dump_players = 1;
                 break;
             case 'm':
                 o_extract_maps = 1;
@@ -181,6 +186,21 @@ void track_spawners(SP_UpdateBlockEntity_pkt *ube) {
     s->loc = ube->loc;
     s->type = type;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+void dump_players() {
+    int i;
+    for(i=0; i<C(gs.players); i++) {
+        printf("%3d: %-32s [ %s]", i, P(gs.players)[i].name,
+               limhex(P(gs.players)[i].uuid, 16, 16));
+        if (P(gs.players)[i].dispname)
+            printf(" display=%s",P(gs.players)[i].dispname);
+        printf("\n");
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 static void find_spawners() {
     int i,j,k;
@@ -525,6 +545,9 @@ int main(int ac, char **av) {
         dump_inventory();
     //dump_entities();
     //dump_overworld();
+
+    if (o_dump_players)
+        dump_players();
 
     if (o_spawner_single) {
         for(i=0; i<C(spawners); i++) {
