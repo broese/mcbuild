@@ -344,6 +344,29 @@ typedef struct {
     nbt_t    *nbt;
 } SP_UpdateBlockEntity_pkt;
 
+// 0x38
+typedef struct {
+    char        pname[64];
+    char        pval[4096];
+    uint8_t     is_signed;
+    char        signature[4096];
+} pli_prop;
+
+typedef struct {
+    uuid_t      uuid;
+    char        name[64];
+    lh_arr_declare(pli_prop,prop);
+    int32_t     gamemode;
+    int32_t     ping;
+    uint8_t     has_dispname;
+    char        dispname[64];
+} pli_t;
+
+typedef struct {
+    int32_t     action;
+    lh_arr_declare(pli_t,list);
+} SP_PlayerListItem_pkt;
+
 // 0x46
 typedef struct {
     int32_t     threshold;
@@ -548,6 +571,7 @@ typedef struct {
         PKT(SP_ConfirmTransaction);
         PKT(SP_Maps);
         PKT(SP_UpdateBlockEntity);
+        PKT(SP_PlayerListItem);
         PKT(SP_SetCompression);
 
         PKT(CP_ChatMessage);
