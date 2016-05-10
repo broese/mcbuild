@@ -14,7 +14,7 @@ if [ "x$1" != 'x' ] ; then
     else
         BRANCH="release_$1"
     fi
-    git checkout "$BRANCH" || ( echo "Failed to check out branch $BRANCH" ; exit 1 )
+    git $IGNORE_ATTR checkout "$BRANCH" || ( echo "Failed to check out branch $BRANCH" ; exit 1 )
 fi
 
 git $IGNORE_ATTR pull && make clean && make && make install
