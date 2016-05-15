@@ -1,6 +1,21 @@
+/*
+ Authors:
+ Copyright 2012-2016 by Eduard Broese <ed.broese@gmx.de>
+
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ as published by the Free Software Foundation; either version
+ 2 of the License, or (at your option) any later version.
+*/
+
+/*
+  anvil : handling of Anvil on-disk file format
+*/
+
 #include <stdio.h>
 #include <assert.h>
 
+#include <lh_buffers.h>
 #include <lh_debug.h>
 #include <lh_files.h>
 #include <lh_bytes.h>
@@ -154,4 +169,77 @@ void anvil_insert_chunk(mca * region, int32_t X, int32_t Z, nbt_t *nbt) {
     lh_write_int_be(w, (uint32_t)clen+1);
     lh_write_char(w, 2);
     memmove(w, cdata, clen);
+}
+
+// generate chunk NBT from chunk_t data
+nbt_t * anvil_chunk_create(gschunk * ch, int X, int Z) {
+    int y,i;
+
+    // TODO: export entities and tile entities
+    nbt_t * ent = nbt_new(NBT_LIST, "Entities", 0);
+    ent->ltype = NBT_COMPOUND;
+    nbt_t * tent = nbt_new(NBT_LIST, "TileEntities", 0);
+    tent->ltype = NBT_COMPOUND;
+
+    // Calculate the height map - and fill out the cube mask
+    int hmap[256];
+    lh_clear_obj(hmap);
+    uint16_t mask = 0;
+
+    for(i=65535; i>=0; i--) {
+        if (ch->blocks[i].bid) {
+            y=i>>8;
+            mask |= (1<<(y>>4));
+            if (!hmap[i&0xff]) hmap[i&0xff]=y;
+        }
+    }
+
+    // Block data
+    nbt_t * sections = nbt_new(NBT_LIST, "Sections", 0);
+    sections->ltype = NBT_COMPOUND;
+
+    for(y=0; y<16; y++) {
+        if (!(mask&(1<<y))) continue;
+
+        uint8_t blocks[4096];
+        uint8_t data[2048];
+        for(i=0; i<4096; i++) {
+            blocks[i] = ch->blocks[i+(y<<12)].bid;
+            uint8_t meta = ch->blocks[i+(y<<12)].meta;
+            if (i&1)
+                data[i/2] |= (meta<<4);
+            else
+                data[i/2] = meta;
+        }
+
+        nbt_t * cube = nbt_new(NBT_COMPOUND, NULL, 5,
+            nbt_new(NBT_BYTE_ARRAY, "Blocks", blocks, 4096),
+            nbt_new(NBT_BYTE_ARRAY, "SkyLight", ch->skylight+(y<<11), 2048),
+            nbt_new(NBT_BYTE, "Y", y),
+            nbt_new(NBT_BYTE_ARRAY, "BlockLight", ch->light+(y<<11), 2048),
+            nbt_new(NBT_BYTE_ARRAY, "Data", data, 2048)
+        );
+
+        nbt_add(sections, cube);
+    }
+
+    // Chunk compound
+    nbt_t *chunk = nbt_new(NBT_COMPOUND, "", 1,
+        nbt_new(NBT_COMPOUND, "Level", 12,
+            nbt_new(NBT_BYTE, "LightPopulated", 0),
+            nbt_new(NBT_INT, "zPos", Z),
+            nbt_new(NBT_INT_ARRAY, "HeightMap", hmap, 256),
+            sections,        // Block/light data
+            nbt_new(NBT_LONG, "LastUpdate", 1240000000), //TODO: adjust timestamp
+            nbt_new(NBT_BYTE, "V", 1),
+            nbt_new(NBT_BYTE_ARRAY, "Biomes", ch->biome, 256 ),
+            nbt_new(NBT_LONG, "InhabitedTime", 0),
+            nbt_new(NBT_INT, "xPos", X),
+            nbt_new(NBT_BYTE, "TerrainPopulated", 1),
+            tent,           // TileEntities
+            ent             // Entities
+        )
+    );
+
+    return chunk;
 }
