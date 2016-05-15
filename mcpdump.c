@@ -38,6 +38,7 @@ int o_dump_packets              = 0;
 int o_dimension                 = 0;
 gsworld * o_world               = NULL;
 char *o_biomemap                = NULL;
+int o_flatbedrock               = 0;
 
 void print_usage() {
     printf("Usage:\n"
@@ -53,13 +54,14 @@ void print_usage() {
            "  -B output.png             : extract biome maps\n"
            "  -d                        : dump packets\n"
            "  -D dimension              : specify dimension (0:overworld, -1:nether, 1:end)\n"
+           "  -W                        : search for flat bedrock formations suitable for wither spawning\n"
     );
 }
 
 int parse_args(int ac, char **av) {
     int opt,error=0;
 
-    while ( (opt=getopt(ac,av,"b:D:B:sSihmdtp")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:D:B:A:sSihmdtpW")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -84,6 +86,9 @@ int parse_args(int ac, char **av) {
                 break;
             case 'd':
                 o_dump_packets = 1;
+                break;
+            case 'W':
+                o_flatbedrock = 1;
                 break;
             case 'b': {
                 int bid,meta;
@@ -530,6 +535,73 @@ void search_blocks(gsworld *w, int bid, int meta) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void search_flat_bedrock() {
+    gsworld * oldworld = gs.world;
+    gs.world = &gs.nether;
+    gsworld *w = gs.world;
+
+    int s,r,c,i;
+    for(s=0; s<512*512; s++) {
+        gssreg *sr = w->sreg[s];
+        if (!sr) continue;
+
+        for(r=0; r<256*256; r++) {
+            gsregion *re = sr->region[r];
+            if (!re) continue;
+
+            for(c=0; c<32*32; c++) {
+                gschunk *ch = re->chunk[c];
+                if (!ch) continue;
+
+                int32_t X = CC_X(s,r,c);
+                int32_t Z = CC_Z(s,r,c);
+
+                int x,y,z;
+                for(y=123; y<125; y++) {
+                    for(x=0; x<16; x++) {
+                        for(z=0; z<16; z++) {
+                            int32_t xx = X*16+x;
+                            int32_t zz = Z*16+z;
+
+                            bid_t blk[] = {
+                                get_block_at(xx-1,zz-1,y),
+                                get_block_at(xx-1,zz,y),
+                                get_block_at(xx-1,zz+1,y),
+                                get_block_at(xx,zz-1,y),
+                                get_block_at(xx,zz,y),
+                                get_block_at(xx,zz+1,y),
+                                get_block_at(xx+1,zz-1,y),
+                                get_block_at(xx+1,zz,y),
+                                get_block_at(xx+1,zz+1,y),
+
+                                get_block_at(xx,zz,y-1),
+                                get_block_at(xx,zz,y-2),
+                            };
+
+                            if (blk[0].bid  == 7 &&
+                                blk[1].bid  == 7 &&
+                                blk[2].bid  == 7 &&
+                                blk[3].bid  == 7 &&
+                                blk[4].bid  == 7 &&
+                                blk[5].bid  == 7 &&
+                                blk[6].bid  == 7 &&
+                                blk[7].bid  == 7 &&
+                                blk[8].bid  == 7 &&
+                                blk[9].bid  != 7 &&
+                                blk[10].bid != 7)
+                                printf("Flat Bedrock at %d,%d y=%d\n",xx,zz,y);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    gs.world = oldworld;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 int main(int ac, char **av) {
 
     if (!parse_args(ac,av) || o_help) {
@@ -588,6 +660,9 @@ int main(int ac, char **av) {
 
     if (o_biomemap)
         extract_biome_map();
+
+    if (o_flatbedrock)
+        search_flat_bedrock();
 
     gs_destroy();
 
