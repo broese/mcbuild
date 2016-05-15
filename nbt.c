@@ -61,7 +61,7 @@ static void nbt_dump_ind(nbt_t *nbt, int indent) {
         case NBT_BYTE_ARRAY:
             printf("Byte Array '%s'[%zd] = { ",name,nbt->count);
             for(i=0; i<nbt->count; i++)
-                printf("%s%d",i?", ":"",nbt->ba[i]);
+                printf("%s%d",i?", ":"",(uint8_t)nbt->ba[i]);
             printf(" }\n");
             break;
 
@@ -486,4 +486,26 @@ nbt_t * nbt_new(int type, const char *name, ...) {
 
     va_end(ap);
     return nbt;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// manipulating lists/compounds
+
+//FIXME: Q&D implementation, will insert duplicate names into compounds
+void nbt_add(nbt_t * nbt, nbt_t * el) {
+    assert(nbt);
+    assert(el);
+
+    assert(nbt->type == NBT_COMPOUND || nbt->type == NBT_LIST);
+
+    switch (nbt->type) {
+        case NBT_COMPOUND:
+            assert(el->name);
+            break;
+        case NBT_LIST:
+            assert(el->type == nbt->ltype);
+            break;
+    }
+    nbt_t ** nel = lh_arr_new_c(nbt->co, nbt->count, 1);
+    *nel = el;
 }
