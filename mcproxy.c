@@ -1086,7 +1086,7 @@ int parse_args(int ac, char **av) {
         { printf("Failed to create directory '%s'\n", #name ); return 1; }
 
 int main(int ac, char **av) {
-    printf("MCBuild 1.1 for MC Protocol 1.9\n");
+    printf("MCBuild 1.1 for Minecraft 1.9.4 (protocol v. 110)\n");
 
     // create directories if they don't exist yet
     MKDIR(saved);
