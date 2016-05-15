@@ -36,6 +36,7 @@ int o_dump_players              = 0;
 int o_extract_maps              = 0;
 int o_dump_packets              = 0;
 int o_dimension                 = 0;
+gsworld * o_world               = NULL;
 char *o_biomemap                = NULL;
 
 void print_usage() {
@@ -401,7 +402,7 @@ void mcpd_packet(MCPacket *pkt) {
     }
 }
 
-void parse_mcp(uint8_t *data, ssize_t size) {
+void parse_mcp(uint8_t *data, ssize_t size, char * name) {
     uint8_t *hdr = data;
     int state = STATE_IDLE;
 
@@ -487,20 +488,13 @@ void parse_mcp(uint8_t *data, ssize_t size) {
     }
 
     lh_free(P(udata));
-    printf("Total packets: %d\n",numpackets);
+    printf("Imported %s : %d packets\n", name, numpackets);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void search_blocks(int dim, int bid, int meta) {
-    gsworld *w;
-    switch (dim) {
-        case 0:  w = &gs.overworld; break;
-        case -1: w = &gs.nether; break;
-        case 1:  w = &gs.end; break;
-    }
-
-    if (!w) return;
+void search_blocks(gsworld *w, int bid, int meta) {
+    assert(w);
 
     int s,r,c,i;
     for(s=0; s<512*512; s++) {
@@ -557,9 +551,15 @@ int main(int ac, char **av) {
         uint8_t *data;
         ssize_t size = lh_load_alloc(av[i], &data);
         if (size >= 0) {
-            parse_mcp(data, size);
+            parse_mcp(data, size, av[i]);
             free(data);
         }
+    }
+
+    switch (o_dimension) {
+        case 0:  o_world = &gs.overworld; break;
+        case -1: o_world = &gs.nether; break;
+        case 1:  o_world = &gs.end; break;
     }
 
     if (o_track_inventory)
@@ -581,7 +581,7 @@ int main(int ac, char **av) {
         find_spawners();
 
     if (o_block_id >=0)
-        search_blocks(o_dimension, o_block_id, o_block_meta);
+        search_blocks(o_world, o_block_id, o_block_meta);
 
     if (o_extract_maps)
         extract_maps();
