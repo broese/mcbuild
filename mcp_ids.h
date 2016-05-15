@@ -21,6 +21,7 @@
 #define PROTO_NONE   0x00000000
 #define PROTO_1_8_1  0x00010801
 #define PROTO_1_9    0x00010900
+#define PROTO_1_9_4  0x00010904
 
 ////////////////////////////////////////////////////////////////////////////////
 //// Protocol Messages
@@ -137,13 +138,12 @@
 #define SP_SpawnPosition        SP(43)
 #define SP_TimeUpdate           SP(44)
 #define SP_Title                SP(45)
-#define SP_UpdateSign           SP(46)
-#define SP_SoundEffect          SP(47)
-#define SP_PlayerListHeader     SP(48)
-#define SP_CollectItem          SP(49)
-#define SP_EntityTeleport       SP(4a)
-#define SP_EntityProperties     SP(4b)
-#define SP_EntityEffect         SP(4c)
+#define SP_SoundEffect          SP(46)
+#define SP_PlayerListHeader     SP(47)
+#define SP_CollectItem          SP(48)
+#define SP_EntityTeleport       SP(49)
+#define SP_EntityProperties     SP(4a)
+#define SP_EntityEffect         SP(4b)
 
 #define CP_TeleportConfirm      CP(00)
 #define CP_TabComplete          CP(01)

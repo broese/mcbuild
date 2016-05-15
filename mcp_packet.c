@@ -1117,24 +1117,7 @@ DUMP_BEGIN(SP_SoundEffect) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x46 SP_UpdateSign
-
-DECODE_BEGIN(SP_UpdateSign,_1_8_1) {
-    Plong(pos.p);
-    Pstr(line1);
-    Pstr(line2);
-    Pstr(line3);
-    Pstr(line4);
-} DECODE_END;
-
-DUMP_BEGIN(SP_UpdateSign) {
-    printf("pos=%d,%d,%d, line1=\"%s\", line2=\"%s\", line3=\"%s\", line4=\"%s\"",
-           tpkt->pos.x,tpkt->pos.y,tpkt->pos.z,
-           tpkt->line1,tpkt->line2,tpkt->line3,tpkt->line4);
-} DUMP_END;
-
-////////////////////////////////////////////////////////////////////////////////
-// 0x4a SP_EntityTeleport
+// 0x49 SP_EntityTeleport
 
 DECODE_BEGIN(SP_EntityTeleport,_1_9) {
     Pvarint(eid);
@@ -1490,7 +1473,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_SetSlot,_1_8_1),            // 16
         SUPPORT_DF  (SP_Explosion,_1_8_1),          // 1c
         SUPPORT_DE  (SP_UnloadChunk,_1_9),          // 1d
-        SUPPORT_DF  (SP_ChunkData,_1_9),            // 20
+        SUPPORT_DF  (SP_ChunkData,_1_9_4),          // 20
         SUPPORT_D   (SP_Effect,_1_8_1),             // 21
         SUPPORT_D   (SP_JoinGame,_1_8_1),           // 23
         SUPPORT_DF  (SP_Map,_1_9),                  // 24
@@ -1506,8 +1489,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_SetExperience,_1_8_1),      // 3d
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),       // 3e
         SUPPORT_D   (SP_SoundEffect,_1_9),          // 42
-        SUPPORT_D   (SP_UpdateSign,_1_8_1),         // 46
-        SUPPORT_D   (SP_EntityTeleport,_1_9),       // 4a
+        SUPPORT_D   (SP_EntityTeleport,_1_9),       // 49
     },
     {
         SUPPORT_DE  (CP_TeleportConfirm,_1_9),      // 00
