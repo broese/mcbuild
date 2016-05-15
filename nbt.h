@@ -104,3 +104,4 @@ void    nbt_free(nbt_t *nbt);
 nbt_t * nbt_hget(nbt_t *nbt, const char *name);
 nbt_t * nbt_aget(nbt_t *nbt, int idx);
 nbt_t * nbt_new(int type, const char *name, ...);
+void    nbt_add(nbt_t * nbt, nbt_t * el);
