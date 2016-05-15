@@ -679,7 +679,7 @@ static uint8_t * read_cube(uint8_t *p, cube_t *cube) {
     return p;
 }
 
-DECODE_BEGIN(SP_ChunkData,_1_9) {
+DECODE_BEGIN(SP_ChunkData,_1_9_4) {
     Pint(chunk.X);
     Pint(chunk.Z);
     Pchar(cont);
@@ -695,8 +695,21 @@ DECODE_BEGIN(SP_ChunkData,_1_9) {
         }
     }
 
-    if (tpkt->cont)
+    if (tpkt->cont) {
         memmove(tpkt->chunk.biome, p, 256);
+        p+=256;
+    }
+
+    Rvarint(nte); // number of tile entities
+    nbt_t *te = nbt_new(NBT_COMPOUND, "TileEntities", 0);
+    te->ltype = NBT_COMPOUND;
+    for(i=0; i<nte; i++) {
+        nbt_t * tent = nbt_parse(&p);
+        if (tent) {
+            nbt_add(te, tent);
+        }
+    }
+    tpkt->te = te;
 
     tpkt->skylight = is_overworld;
 } DECODE_END;
@@ -705,6 +718,7 @@ DUMP_BEGIN(SP_ChunkData) {
     printf("coord=%4d:%4d, cont=%d, skylight=%d, mask=%04x",
            tpkt->chunk.X, tpkt->chunk.Z, tpkt->cont,
            tpkt->skylight, tpkt->chunk.mask);
+    nbt_dump(tpkt->te);
 } DUMP_END;
 
 FREE_BEGIN(SP_ChunkData) {
@@ -712,6 +726,7 @@ FREE_BEGIN(SP_ChunkData) {
     for(i=0; i<16; i++) {
         lh_free(tpkt->chunk.cubes[i]);
     }
+    nbt_free(tpkt->te);
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////

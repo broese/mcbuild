@@ -174,6 +174,7 @@ typedef struct {
     int8_t   cont;          // ground-up continuous
     int8_t   skylight;      // whether skylight was sent;
     chunk_t  chunk;
+    nbt_t   *te;            // tile entities
 } SP_ChunkData_pkt;
 
 // 0x21
