@@ -3,6 +3,9 @@
 #include <string.h>
 #include <math.h>
 #include <openssl/rand.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <limits.h>
 
 #define LH_DECLARE_SHORT_NAMES 1
 
@@ -10,6 +13,7 @@
 #include <lh_arr.h>
 #include <lh_bytes.h>
 #include <lh_files.h>
+#include <lh_dir.h>
 #include <lh_compress.h>
 #include <lh_image.h>
 
@@ -17,6 +21,7 @@
 #include "mcp_game.h"
 #include "mcp_ids.h"
 #include "mcp_packet.h"
+#include "anvil.h"
 
 #define STATE_IDLE     0
 #define STATE_STATUS   1
@@ -38,6 +43,7 @@ int o_dump_packets              = 0;
 int o_dimension                 = 0;
 gsworld * o_world               = NULL;
 char *o_biomemap                = NULL;
+char *o_worlddir                = NULL;
 int o_flatbedrock               = 0;
 
 void print_usage() {
@@ -52,6 +58,7 @@ void print_usage() {
            "  -p                        : dump player list\n"
            "  -m                        : extract in-game maps\n"
            "  -B output.png             : extract biome maps\n"
+           "  -A worlddir               : extract world data to Anvil format - update or create region files in worlddir\n"
            "  -d                        : dump packets\n"
            "  -D dimension              : specify dimension (0:overworld, -1:nether, 1:end)\n"
            "  -W                        : search for flat bedrock formations suitable for wither spawning\n"
@@ -61,7 +68,7 @@ void print_usage() {
 int parse_args(int ac, char **av) {
     int opt,error=0;
 
-    while ( (opt=getopt(ac,av,"b:D:B:sSihmdtpW")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:D:B:A:sSihmdtpW")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -114,6 +121,10 @@ int parse_args(int ac, char **av) {
             }
             case 'B': {
                 o_biomemap = optarg;
+                break;
+            }
+            case 'A': {
+                o_worlddir = optarg;
                 break;
             }
             case '?': {
@@ -374,6 +385,77 @@ void extract_biome_map() {
            img->width, img->height, o_biomemap, sz);
 
     destroy_image(img);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+int extract_world_data() {
+    //TODO: delegate directory creation to libhelper
+    // determine the directory to save files to
+    char dirname[PATH_MAX];
+    switch(o_dimension) {
+        case 0:
+            sprintf(dirname, "%s/region", o_worlddir);
+            break;
+        case 1:
+            sprintf(dirname, "%s/DIM1/region", o_worlddir);
+            break;
+        case -1:
+            sprintf(dirname, "%s/DIM-1/region", o_worlddir);
+            break;
+    }
+
+    // create directory
+    printf("Creating directory %s\n", dirname);
+    if (lh_create_dir(dirname, 0777)) {
+        printf("Failed to create directory %s : %s\n", dirname, strerror(errno));
+        return -1;
+    }
+
+    // extract regions
+    int s,r,c,i;
+    for(s=0; s<512*512; s++) {
+        gssreg *sr = o_world->sreg[s];
+        if (!sr) continue;
+
+        for(r=0; r<256*256; r++) {
+            gsregion *re = sr->region[r];
+            if (!re) continue;
+
+            int32_t RX = CC_X(s,r,0)>>5;
+            int32_t RZ = CC_Z(s,r,0)>>5;
+            //printf("s=%08x, r=%08x, RZ=%08x\n",s,r,RZ);
+
+            char rpath[PATH_MAX];
+            sprintf(rpath, "%s/r.%d.%d.mca", dirname, RX, RZ);
+
+            // check if the file exists and load it
+            // FIXME: right now we are just checking if the file can be loaded, catch other possible errors
+            mca * reg;
+            if (lh_path_isfile(rpath))
+                reg = anvil_load(rpath);
+            if (!reg) // if file does not exist or fails to load, create a new one
+                reg = anvil_create();
+
+            int nch = 0;
+            for(c=0; c<REGCHUNKS; c++) {
+                gschunk *ch = re->chunk[c];
+                if (!ch) continue;
+
+                int32_t X = CC_X(s,r,c);
+                int32_t Z = CC_Z(s,r,c);
+
+                nbt_t * nbtch = anvil_chunk_create(ch, X, Z);
+                anvil_insert_chunk(reg, X, Z, nbtch);
+                nch++;
+            }
+
+            anvil_save(reg, rpath);
+            printf("Added %4d chunks to %s\n", nch, rpath);
+        }
+    }
+
+    return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -691,6 +773,9 @@ int main(int ac, char **av) {
 
     if (o_biomemap)
         extract_biome_map();
+
+    if (o_worlddir)
+        extract_world_data();
 
     if (o_flatbedrock)
         search_flat_bedrock();
