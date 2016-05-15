@@ -489,6 +489,30 @@ nbt_t * nbt_new(int type, const char *name, ...) {
     return nbt;
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+// manipulating lists/compounds
+
+//FIXME: Q&D implementation, will insert duplicate names into compounds
+void nbt_add(nbt_t * nbt, nbt_t * el) {
+    assert(nbt);
+    assert(el);
+
+    assert(nbt->type == NBT_COMPOUND || nbt->type == NBT_LIST);
+
+    switch (nbt->type) {
+        case NBT_COMPOUND:
+            assert(el->name);
+            break;
+        case NBT_LIST:
+            assert(el->type == nbt->ltype);
+            break;
+    }
+    nbt_t ** nel = lh_arr_new_c(nbt->co, nbt->count, 1);
+    *nel = el;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // test routines
 
