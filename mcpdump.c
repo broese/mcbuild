@@ -43,6 +43,7 @@ int o_dump_packets              = 0;
 int o_dimension                 = 0;
 gsworld * o_world               = NULL;
 char *o_biomemap                = NULL;
+char *o_heightmap               = NULL;
 char *o_worlddir                = NULL;
 int o_flatbedrock               = 0;
 
@@ -58,6 +59,7 @@ void print_usage() {
            "  -p                        : dump player list\n"
            "  -m                        : extract in-game maps\n"
            "  -B output.png             : extract biome maps\n"
+           "  -H output.png             : extract height maps\n"
            "  -A worlddir               : extract world data to Anvil format - update or create region files in worlddir\n"
            "  -d                        : dump packets\n"
            "  -D dimension              : specify dimension (0:overworld, -1:nether, 1:end)\n"
@@ -68,7 +70,7 @@ void print_usage() {
 int parse_args(int ac, char **av) {
     int opt,error=0;
 
-    while ( (opt=getopt(ac,av,"b:D:B:A:sSihmdtpW")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:D:B:H:A:sSihmdtpW")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -122,6 +124,10 @@ int parse_args(int ac, char **av) {
             }
             case 'B': {
                 o_biomemap = optarg;
+                break;
+            }
+            case 'H': {
+                o_heightmap = optarg;
                 break;
             }
             case 'A': {
@@ -370,8 +376,8 @@ void extract_biome_map() {
             for(z=0; z<16; z++) {
                 for(x=0; x<16; x++) {
                     uint8_t bid = c->biome[x+z*16];
-                    uint32_t c = BIOMES[bid].name ? BIOMES[bid].color : 0xff00ff;
-                    IMGDOT(img, x+xoff, z+zoff) = c;
+                    uint32_t color = BIOMES[bid].name ? BIOMES[bid].color : 0xff00ff;
+                    IMGDOT(img, x+xoff, z+zoff) = color;
                 }
             }
         }
@@ -380,6 +386,48 @@ void extract_biome_map() {
     ssize_t sz = export_png_file(img, o_biomemap);
     printf("Exported %dx%d map to %s, size=%zd bytes\n",
            img->width, img->height, o_biomemap, sz);
+
+    destroy_image(img);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+void extract_height_map() {
+    int32_t Xmin,Xmax,Zmin,Zmax;
+    if (!get_stored_area(o_world, &Xmin, &Xmax, &Zmin, &Zmax)) {
+        printf("No chunks\n");
+        return;
+    }
+
+    lhimage * img = allocate_image((Xmax-Xmin+1)*16, (Zmax-Zmin+1)*16, -1);
+    assert(img);
+
+    int X,Z;
+    for(X=Xmin; X<=Xmax; X++) {
+        for(Z=Zmin; Z<=Zmax; Z++) {
+            gschunk *c = find_chunk(o_world, X, Z, 0);
+            if (!c) continue;
+
+            int x,z,h;
+            int xoff = (X-Xmin)*16, zoff = (Z-Zmin)*16;
+
+            for(z=0; z<16; z++) {
+                for(x=0; x<16; x++) {
+                    for(h=255; h>=0; h--) {
+                        if (c->blocks[x+z*16+h*256].bid) {
+                            uint32_t color = (h<<16)|(h<<8)|h;
+                            IMGDOT(img, x+xoff, z+zoff) = color;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    ssize_t sz = export_png_file(img, o_heightmap);
+    printf("Exported %dx%d map to %s, size=%zd bytes\n",
+           img->width, img->height, o_heightmap, sz);
 
     destroy_image(img);
 }
@@ -742,6 +790,9 @@ int main(int ac, char **av) {
 
     if (o_biomemap)
         extract_biome_map();
+
+    if (o_heightmap)
+        extract_height_map();
 
     if (o_worlddir)
         extract_world_data();
