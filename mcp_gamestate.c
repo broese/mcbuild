@@ -931,9 +931,8 @@ void gs_packet(MCPacket *pkt) {
             e->type = ENTITY_MOB;
 
             e->mtype = tpkt->mobtype;
-            // mark all monster mobs hostile except pigmen (too dangerous)
-            // and bats (too cute)
-            if (e->mtype >= 50 && e->mtype <90 && e->mtype!=57 && e->mtype!=65)
+            // mark all monsters hostile, except bats
+            if (e->mtype >= 50 && e->mtype <90 && e->mtype!=65)
                 e->hostile = 1;
             // mark creepers extra hostile to make them priority targets
             if (e->mtype == 50)
