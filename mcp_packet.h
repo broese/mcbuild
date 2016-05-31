@@ -317,6 +317,15 @@ typedef struct {
     uint8_t  accepted;
 } SP_ConfirmTransaction_pkt;
 
+// 0x33
+typedef struct {
+    pos_t       pos;
+    char        line1[64];
+    char        line2[64];
+    char        line3[64];
+    char        line4[64];
+} SP_UpdateSign_pkt;
+
 // 0x34
 typedef struct {
     uint8_t  type;
@@ -569,6 +578,7 @@ typedef struct {
         PKT(SP_SetSlot);
         PKT(SP_WindowItems);
         PKT(SP_ConfirmTransaction);
+        PKT(SP_UpdateSign);
         PKT(SP_Maps);
         PKT(SP_UpdateBlockEntity);
         PKT(SP_PlayerListItem);

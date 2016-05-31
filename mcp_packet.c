@@ -1263,6 +1263,23 @@ DUMP_BEGIN(SP_ConfirmTransaction) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x33 SP_UpdateSign
+
+DECODE_BEGIN(SP_UpdateSign,_1_8_1) {
+    Plong(pos.p);
+    Pstr(line1);
+    Pstr(line2);
+    Pstr(line3);
+    Pstr(line4);
+} DECODE_END;
+
+DUMP_BEGIN(SP_UpdateSign) {
+    printf("pos=%d,%d,%d, line1=\"%s\", line2=\"%s\", line3=\"%s\", line4=\"%s\"",
+           tpkt->pos.x,tpkt->pos.y,tpkt->pos.z,
+           tpkt->line1,tpkt->line2,tpkt->line3,tpkt->line4);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x34 SP_Map
 
 DECODE_BEGIN(SP_Maps,_1_8_1) {
@@ -1758,6 +1775,7 @@ const static packet_methods SUPPORT_1_8_1[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_SetSlot,_1_8_1),
         SUPPORT_DEF (SP_WindowItems,_1_8_1),
         SUPPORT_D   (SP_ConfirmTransaction,_1_8_1),
+        SUPPORT_D   (SP_UpdateSign,_1_8_1),
         SUPPORT_DF  (SP_Maps,_1_8_1),
         SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),
         SUPPORT_DF  (SP_PlayerListItem,_1_8_1),
