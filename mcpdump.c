@@ -472,14 +472,14 @@ int extract_world_data() {
 
             int32_t RX = CC_X(s,r,0)>>5;
             int32_t RZ = CC_Z(s,r,0)>>5;
-            //printf("s=%08x, r=%08x, RZ=%08x\n",s,r,RZ);
+            //printf("s=%08x, r=%08x, RX=%08x, RZ=%08x\n",s,r,RX,RZ);
 
             char rpath[PATH_MAX];
             sprintf(rpath, "%s/r.%d.%d.mca", dirname, RX, RZ);
 
             // check if the file exists and load it
             // FIXME: right now we are just checking if the file can be loaded, catch other possible errors
-            mca * reg;
+            mca * reg = NULL;
             if (lh_path_isfile(rpath))
                 reg = anvil_load(rpath);
             if (!reg) // if file does not exist or fails to load, create a new one
