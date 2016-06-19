@@ -77,14 +77,14 @@ static void nbt_dump_ind(nbt_t *nbt, int indent) {
             break;
 
         case NBT_LIST:
-            printf("List '%s' = [\n",name);
+            printf("List '%s' [%zd] = [\n",name,nbt->count);
             for(i=0; i<nbt->count; i++)
                 nbt_dump_ind(nbt->li[i], indent+2);
             printf("%s]\n",ind);
             break;
 
         case NBT_COMPOUND:
-            printf("Compound '%s' = {\n",name);
+            printf("Compound '%s' [%zd] = {\n",name,nbt->count);
             for(i=0; i<nbt->count; i++)
                 nbt_dump_ind(nbt->co[i], indent+2);
             printf("%s}\n",ind);
@@ -296,14 +296,10 @@ void nbt_free(nbt_t *nbt) {
         case NBT_INT_ARRAY:  lh_free(nbt->ia); break;
         case NBT_STRING:     lh_free(nbt->st); break;
         case NBT_LIST:
+        case NBT_COMPOUND:
             for(i=0; i<nbt->count; i++)
                 nbt_free(nbt->li[i]);
             lh_free(nbt->li);
-            break;
-        case NBT_COMPOUND:
-            for(i=0; i<nbt->count; i++)
-                nbt_free(nbt->co[i]);
-            lh_free(nbt->co);
             break;
     }
     lh_free(nbt->name);
@@ -365,6 +361,7 @@ nbt_t * nbt_clone(nbt_t *src) {
             break;
 
         case NBT_LIST:
+            dst->ltype = src->ltype;
             lh_alloc_num(dst->li, dst->count);
             for(i=0; i<dst->count; i++)
                 dst->li[i] = nbt_clone(src->li[i]);
@@ -425,7 +422,6 @@ nbt_t * nbt_new(int type, const char *name, ...) {
     lh_create_obj(nbt_t, nbt);
     nbt->type = type;
     nbt->name = name ? strdup(name) : NULL;
-    nbt->count = 1;
 
     va_list ap;
     va_start(ap, name);
@@ -460,20 +456,12 @@ nbt_t * nbt_new(int type, const char *name, ...) {
             nbt->st = strdup(va_arg(ap, const char *));
             nbt->count = strlen(nbt->st);
             break;
-        case NBT_LIST: {
-            nbt->count = va_arg(ap, int);
-            lh_alloc_num(nbt->li, nbt->count);
-            int i;
-            for(i=0; i<nbt->count; i++)
-                nbt->li[i] = va_arg(ap, nbt_t *);
-            break;
-        }
+        case NBT_LIST:
         case NBT_COMPOUND: {
-            nbt->count = va_arg(ap, int);
-            lh_alloc_num(nbt->co, nbt->count);
+            int count = va_arg(ap, int);
             int i;
-            for(i=0; i<nbt->count; i++)
-                nbt->co[i] = va_arg(ap, nbt_t *);
+            for(i=0; i<count; i++)
+                nbt_add(nbt, va_arg(ap, nbt_t *));
             break;
         }
         case NBT_INT_ARRAY: {
@@ -505,6 +493,7 @@ void nbt_add(nbt_t * nbt, nbt_t * el) {
             assert(el->name);
             break;
         case NBT_LIST:
+            if (nbt->ltype == NBT_END) nbt->ltype = el->type;
             assert(el->type == nbt->ltype);
             break;
     }
