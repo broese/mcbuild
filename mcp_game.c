@@ -144,6 +144,9 @@ static void autokill(MCPacketQueue *sq) {
         // skip non-hostile entities
         if (!e->hostile) continue;
 
+        // skip pigmen unless -p option was specified
+        if (opt.autokill==1 && e->mtype==57) continue;
+
         // skip entities we hit only recently
         if ((tb_ak.last-e->lasthit) < MIN_ENTITY_DELAY) continue;
 
@@ -810,8 +813,11 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         dump_entities();
     }
     else if (!strcmp(words[0],"ak") || !strcmp(words[0],"autokill")) {
-        opt.autokill = !opt.autokill;
-        sprintf(reply,"Autokill is %s",opt.autokill?"ON":"OFF");
+        if (words[1] && !strcmp(words[1],"-p"))
+            opt.autokill = 2;
+        else
+            opt.autokill = !opt.autokill;
+        sprintf(reply,"Autokill is %s",opt.autokill?((opt.autokill==2)?"ON (attacks pigmen)":"ON"):"OFF");
         rpos = 2;
     }
     else if (!strcmp(words[0],"afk") || !strcmp(words[0],"antiafk")) {
