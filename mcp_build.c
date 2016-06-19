@@ -148,7 +148,7 @@ typedef struct {
     uint16_t dots[6][15];       // usable dots on the 6 neighbor faces to place the block
     int ndots;                  // number of dots on this block we can use to place it correctly
 
-    int32_t dist;               // distance to the block center (squared)
+    int64_t dist;               // distance to the block center (squared)
 
     uint64_t last;              // last timestamp when we attempted to place this block
 } blk;
@@ -844,9 +844,9 @@ void build_update() {
             if (b->inreach==0) continue;
         }
 
-        int32_t dx = gs.own.x-(b->x<<5)+16;
-        int32_t dy = gs.own.y-(b->y<<5)+16+EYEHEIGHT;
-        int32_t dz = gs.own.z-(b->z<<5)+16;
+        int64_t dx = gs.own.x-(b->x<<5)+16;
+        int64_t dy = gs.own.y-(b->y<<5)+16+EYEHEIGHT;
+        int64_t dz = gs.own.z-(b->z<<5)+16;
         b->dist = SQ(dx)+SQ(dy)+SQ(dz);
 
         b->inreach = (b->dist<MAXREACH_COARSE);
@@ -1495,9 +1495,9 @@ void build_dump_task() {
     char buf[256];
     for(i=0; i<C(build.task); i++) {
         blk *b = &P(build.task)[i];
-        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d (%.2f) %c%c%c %c%c%c%c%c%c (%3d) material=%s\n",
+        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%.2f %c%c%c %c%c%c%c%c%c (%3d) material=%s\n",
                i, b->x, b->z, b->y, b->b.bid, b->b.meta,
-               b->dist, sqrt((float)b->dist)/32,
+               sqrt((double)b->dist)/32,
                b->inreach?'R':'.',
                b->empty  ?'E':'.',
                b->placed ?'P':'.',
@@ -1520,9 +1520,9 @@ void build_dump_queue() {
     char buf[256];
     for(i=0; i<build.nbq; i++) {
         blk *b = P(build.task)+build.bq[i];
-        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%-5d (%.4f) %c%c%c %c%c%c%c%c%c (%3d) material=%s\n",
+        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%.2f %c%c%c %c%c%c%c%c%c (%3d) material=%s\n",
                build.bq[i], b->x, b->z, b->y, b->b.bid, b->b.meta,
-               b->dist, sqrt((float)b->dist)/32,
+               sqrt((double)b->dist)/32,
                b->inreach?'R':'.',
                b->empty  ?'E':'.',
                b->placed ?'P':'.',
