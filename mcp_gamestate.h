@@ -68,10 +68,11 @@ typedef struct {
 // chunk storage
 
 typedef struct {
-    bid_t blocks[65536];
-    light_t light[32768];
-    light_t skylight[32768];
-    uint8_t  biome[256];
+    bid_t       blocks[65536];
+    light_t     light[32768];
+    light_t     skylight[32768];
+    uint8_t     biome[256];
+    nbt_t      *tent;
 } gschunk;
 
 // chunk coord -> offset within region (1x1 regions, 32x32 chunks, 512x512 blocks)
