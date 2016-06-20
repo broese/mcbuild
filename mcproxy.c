@@ -66,6 +66,7 @@ char         o_baddr[256];
 uint16_t     o_bport;
 char         o_raddr[256];
 uint16_t     o_rport;
+int          o_connactive = 0;
 
 uint32_t     bind_ip;
 uint32_t     remote_ip;
@@ -506,6 +507,47 @@ void process_play_packet(int is_client, struct timeval ts,
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// stop current game session, close and cleanup everything
+void close_session() {
+    // flush MCP saved file
+    if (mitm.output) {
+        fflush(mitm.output);
+        fclose(mitm.output);
+        mitm.output = NULL;
+    }
+
+    // flush debug log if active
+    if (mitm.dbg) {
+        fclose(mitm.dbg);
+        mitm.dbg = NULL;
+    }
+
+    // Cleanup RSA structures
+    if (mitm.s_rsa) RSA_free(mitm.s_rsa);
+    if (mitm.c_rsa) RSA_free(mitm.c_rsa);
+
+    // Cleanup connection buffers
+    lh_free(P(mitm.cs_rx.data));
+    lh_free(P(mitm.cs_tx.data));
+    lh_free(P(mitm.ms_rx.data));
+    lh_free(P(mitm.ms_tx.data));
+
+    // Remove pollarray handlers
+    if (mitm.cs_conn) lh_conn_remove(mitm.cs_conn);
+    if (mitm.ms_conn) lh_conn_remove(mitm.ms_conn);
+
+    // Close connections
+    close(mitm.ms);
+    close(mitm.cs);
+
+    // Clear state
+    CLEAR(mitm);
+    mitm.comptr = -1;
+    mitm.cs = mitm.ms = -1;
+    mitm.state = STATE_IDLE;
+}
+
+
 // handle data incoming on the server or client connection
 ssize_t handle_proxy(lh_conn *conn) {
     int is_client = (conn->priv != NULL);
@@ -514,15 +556,7 @@ ssize_t handle_proxy(lh_conn *conn) {
         // one of the parties has closed the connection.
         // close both sides, deinit the MITM state and
         // remove our descriptors from the pollarray
-
-        close(mitm.cs);
-        close(mitm.ms);
-        mitm.state = STATE_IDLE;
-        mitm.cs = mitm.ms = -1;
-        if (mitm.cs_conn) { lh_conn_remove(mitm.cs_conn); mitm.cs_conn=NULL; }
-        if (mitm.ms_conn) { lh_conn_remove(mitm.ms_conn); mitm.ms_conn=NULL; }
-        mitm.comptr = -1;
-
+        close_session();
         return 0;
     }
 
@@ -846,8 +880,14 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     if (cs < 0)
         LH_ERROR(0, "Failed to accept the client-side connection");
 
-    printf("Accepted from %s:%d\n",
+    printf("Incoming connection from %s:%d\n",
            inet_ntoa(cadr.sin_addr),ntohs(cadr.sin_port));
+
+    if (mitm.state != STATE_IDLE && !o_connactive) {
+        printf("Not accepting connection - session is active. Use -c to override.\n");
+        close(cs);
+        return 0;
+    }
 
     // open connection to the remote server (the real MC server)
     int ms = lh_connect_tcp4(ip, port);
@@ -859,19 +899,7 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     // both client-side and server-side connections are now established
 
     // initialize mitm struct, terminate old state if any
-    if (mitm.output) fclose(mitm.output);
-    if (mitm.dbg)    fclose(mitm.dbg);
-    if (mitm.s_rsa) RSA_free(mitm.s_rsa);
-    if (mitm.c_rsa) RSA_free(mitm.c_rsa);
-    lh_free(P(mitm.cs_rx.data));
-    lh_free(P(mitm.cs_tx.data));
-    lh_free(P(mitm.ms_rx.data));
-    lh_free(P(mitm.ms_tx.data));
-    if (mitm.cs_conn) lh_conn_remove(mitm.cs_conn);
-    if (mitm.ms_conn) lh_conn_remove(mitm.ms_conn);
-
-    CLEAR(mitm);
-    //DISABLED clear_autobuild();
+    close_session();
 
     gs_reset();
     gs_setopt(GSOP_PRUNE_CHUNKS, 1);
@@ -972,33 +1000,8 @@ int proxy_pump() {
     gs_destroy();
     gm_reset();
 
-    close(mitm.ms);
-    close(mitm.cs);
-    if (mitm.cs_conn) lh_conn_remove(mitm.cs_conn);
-    if (mitm.ms_conn) lh_conn_remove(mitm.ms_conn);
+    close_session();
     lh_poll_free(&pa);
-
-    // flush MCP saved file
-    if (mitm.output) {
-        fflush(mitm.output);
-        fclose(mitm.output);
-        mitm.output = NULL;
-    }
-
-    // flush debug log if active
-    if (mitm.dbg) {
-        fclose(mitm.dbg);
-        mitm.dbg = NULL;
-    }
-
-    // free buffers
-    lh_free(P(mitm.cs_rx.data));
-    lh_free(P(mitm.cs_tx.data));
-    lh_free(P(mitm.ms_rx.data));
-    lh_free(P(mitm.ms_tx.data));
-
-    if (mitm.s_rsa) RSA_free(mitm.s_rsa);
-    if (mitm.c_rsa) RSA_free(mitm.c_rsa);
 
     return 0;
 }
@@ -1010,6 +1013,7 @@ void print_usage() {
            "%s [options] [server[:port]]\n"
            "  -h                      : print this help\n"
            "  -b [bindaddr:]bindport] : address and port to bind the proxy socket to. Default: %s:%d\n"
+           "  -c                      : allow connections while session is active\n"
            "  [server[:port]]         : remote Minecraft server address and port. Default: %s:%d\n",
            o_appname, DEFAULT_BIND_ADDR, DEFAULT_BIND_PORT, DEFAULT_REMOTE_ADDR, DEFAULT_REMOTE_PORT);
 }
@@ -1028,7 +1032,7 @@ int parse_args(int ac, char **av) {
     char addr[256];
     int port;
 
-    while ( (opt=getopt(ac,av,"b:h")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:hc")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -1050,6 +1054,9 @@ int parse_args(int ac, char **av) {
                 }
                 break;
             }
+            case 'c':
+                o_connactive = 1;
+                break;
             case '?': {
                 printf("Unknown option -%c", opt);
                 error++;
