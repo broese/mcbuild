@@ -171,15 +171,24 @@ void anvil_insert_chunk(mca * region, int32_t X, int32_t Z, nbt_t *nbt) {
     memmove(w, cdata, clen);
 }
 
+nbt_t * anvil_tile_entities(gschunk * ch) {
+    nbt_t *tent = NULL;
+    if (ch->tent)
+        tent = nbt_clone(ch->tent);
+    else
+        tent = nbt_new(NBT_LIST, "TileEntities", 0);
+    return tent;
+}
+
 // generate chunk NBT from chunk_t data
 nbt_t * anvil_chunk_create(gschunk * ch, int X, int Z) {
     int y,i;
 
     // TODO: export entities and tile entities
     nbt_t * ent = nbt_new(NBT_LIST, "Entities", 0);
-    ent->ltype = NBT_COMPOUND;
-    nbt_t * tent = nbt_new(NBT_LIST, "TileEntities", 0);
-    tent->ltype = NBT_COMPOUND;
+    nbt_t * tent = anvil_tile_entities(ch);
+
+    if (tent->count > 0) nbt_dump(tent);
 
     // Calculate the height map - and fill out the cube mask
     int hmap[256];
@@ -196,7 +205,6 @@ nbt_t * anvil_chunk_create(gschunk * ch, int X, int Z) {
 
     // Block data
     nbt_t * sections = nbt_new(NBT_LIST, "Sections", 0);
-    sections->ltype = NBT_COMPOUND;
 
     for(y=0; y<16; y++) {
         if (!(mask&(1<<y))) continue;
