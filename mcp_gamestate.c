@@ -114,6 +114,8 @@ static void remove_chunk(int32_t X, int32_t Z) {
     gsregion * region = sreg->region[ri];
 
     int32_t ci = CC_0(X,Z);
+    if (region->chunk[ci])
+        nbt_free(region->chunk[ci]->tent);
     lh_free(region->chunk[ci]);
 
     //TODO: deallocate regions/superregions that become empty
@@ -132,6 +134,8 @@ static void free_chunks(gsworld *w) {
                     gsregion * region = sreg->region[ri];
 
                     for(ci=0; ci<32*32; ci++) {
+                        if (region->chunk[ci])
+                            nbt_free(region->chunk[ci]->tent);
                         lh_free(region->chunk[ci]);
                     }
                     lh_free(region);
@@ -202,6 +206,20 @@ int get_stored_area(gsworld *w, int32_t *Xmin, int32_t *Xmax, int32_t *Zmin, int
     }
 
     return set;
+}
+
+// Add a tile entity to the chunk data
+int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
+    gschunk * gc = find_chunk(gs.world, X, Z, 0);
+    if (!gc) return 0;
+
+    // allocate TE list if not done yet
+    if (!gc->tent)
+        gc->tent = nbt_new(NBT_LIST, "TileEntities", 0);
+
+    if (ent->name) lh_free(ent->name);
+    nbt_add(gc->tent, ent);
+    return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1079,6 +1097,16 @@ void gs_packet(MCPacket *pkt) {
 
         GSP(SP_ChunkData) {
             insert_chunk(&tpkt->chunk, tpkt->cont);
+
+            // store tile entities (signs, etc.)
+            assert(tpkt->te);
+            assert(tpkt->te->type == NBT_LIST);
+            int i;
+            for(i=0; i<tpkt->te->count; i++) {
+                nbt_t *te = nbt_aget(tpkt->te, i);
+                assert(te->type == NBT_COMPOUND);
+                store_tile_entity(tpkt->chunk.X, tpkt->chunk.Z, nbt_clone(te));
+            }
         } _GSP;
 
         GSP(SP_UnloadChunk) {

@@ -701,8 +701,7 @@ DECODE_BEGIN(SP_ChunkData,_1_9_4) {
     }
 
     Rvarint(nte); // number of tile entities
-    nbt_t *te = nbt_new(NBT_COMPOUND, "TileEntities", 0);
-    te->ltype = NBT_COMPOUND;
+    nbt_t *te = nbt_new(NBT_LIST, "TileEntities", 0);
     for(i=0; i<nte; i++) {
         nbt_t * tent = nbt_parse(&p);
         if (tent) {
