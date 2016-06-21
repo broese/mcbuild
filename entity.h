@@ -80,6 +80,7 @@ typedef enum {
 
     Horse               = 100,
     Rabbit              = 101,
+    PolarBear           = 102,
 
     Villager            = 120,
 

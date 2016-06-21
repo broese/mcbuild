@@ -289,6 +289,12 @@ const item_id ITEMS[] = {
     [0xd2] = { "Repeating Command Block",   I_OPAQUE|I_CONT },
     [0xd3] = { "Chain Command Block",       I_OPAQUE|I_CONT },
     [0xd4] = { "Frosted Ice",           I_STATE_F|I_OPAQUE },   // S: level
+    [0xd5] = { "Magma Block",           I_OPAQUE },
+    [0xd6] = { "Netherwart Block",      I_OPAQUE },
+    [0xd7] = { "Red Nether Brick",      I_OPAQUE },
+    [0xd8] = { "Bone Block",            I_OPAQUE },
+    [0xd9] = { "Structure Void" },
+
 
     [0xff] = { "Structure Block",       I_OPAQUE },
 

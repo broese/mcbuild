@@ -1111,20 +1111,20 @@ DUMP_BEGIN(SP_UpdateHealth) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x42 SP_SoundEffect
+// 0x46 SP_SoundEffect
 
-DECODE_BEGIN(SP_SoundEffect,_1_9) {
+DECODE_BEGIN(SP_SoundEffect,_1_10) {
     Pvarint(id);
     Pvarint(category);
     Pint(x);
     Pint(y);
     Pint(z);
     Pfloat(vol);
-    Pchar(pitch);
+    Pfloat(pitch);
 } DECODE_END;
 
 DUMP_BEGIN(SP_SoundEffect) {
-    printf("id=%d, category=%d, coord=%.1f,%.1f,%.1f, vol=%.2f, pitch=%d",
+    printf("id=%d, category=%d, coord=%.1f,%.1f,%.1f, vol=%.2f, pitch=%.2f",
            tpkt->id, tpkt->category,
            (float)tpkt->x/8,(float)tpkt->y/8,(float)tpkt->z/8,
            tpkt->vol, tpkt->pitch);
@@ -1502,7 +1502,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_EntityMetadata,_1_8_1),     // 39
         SUPPORT_D   (SP_SetExperience,_1_8_1),      // 3d
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),       // 3e
-        SUPPORT_D   (SP_SoundEffect,_1_9),          // 42
+        SUPPORT_D   (SP_SoundEffect,_1_10),         // 46
         SUPPORT_D   (SP_EntityTeleport,_1_9),       // 49
     },
     {

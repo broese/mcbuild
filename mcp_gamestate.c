@@ -946,6 +946,9 @@ void gs_packet(MCPacket *pkt) {
             // mark all monsters hostile, except bats
             if (e->mtype >= 50 && e->mtype <90 && e->mtype!=65)
                 e->hostile = 1;
+            // polar bears are hostile too
+            if (e->mtype == 102)
+                e->hostile = 1;
             // mark creepers extra hostile to make them priority targets
             if (e->mtype == 50)
                 e->hostile = 2;

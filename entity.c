@@ -312,6 +312,7 @@ const char * ENTITY_NAMES[MaxEntityType] = {
     ENUMNAME(Endermite),
     ENUMNAME(Guardian),
     ENUMNAME(Shulker),
+    ENUMNAME(PolarBear),
 
     ENUMNAME(Pig),
     ENUMNAME(Sheep),

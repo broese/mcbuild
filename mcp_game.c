@@ -966,7 +966,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         GMP(SP_SoundEffect) {
             // thunder protection
             if (tpkt->id == 262) { // entity.lightning.thunder
-                printf("**** THUNDER **** coords=%d,%d,%d vol=%.4f pitch=%d\n",
+                printf("**** THUNDER **** coords=%d,%d,%d vol=%.2f pitch=%.2f\n",
                        tpkt->x/8,tpkt->y/8,tpkt->z/8,
                        tpkt->vol,tpkt->pitch);
                 int i;
