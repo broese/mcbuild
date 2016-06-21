@@ -188,8 +188,6 @@ nbt_t * anvil_chunk_create(gschunk * ch, int X, int Z) {
     nbt_t * ent = nbt_new(NBT_LIST, "Entities", 0);
     nbt_t * tent = anvil_tile_entities(ch);
 
-    if (tent->count > 0) nbt_dump(tent);
-
     // Calculate the height map - and fill out the cube mask
     int hmap[256];
     lh_clear_obj(hmap);
