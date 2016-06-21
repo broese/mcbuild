@@ -217,6 +217,29 @@ int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
     if (!gc->tent)
         gc->tent = nbt_new(NBT_LIST, "TileEntities", 0);
 
+    if (ent->name) lh_free(ent->name);
+
+    nbt_t *xc = nbt_hget(ent, "x");
+    nbt_t *yc = nbt_hget(ent, "y");
+    nbt_t *zc = nbt_hget(ent, "z");
+    assert(xc && yc && zc);
+
+    // if an entity with these coordinates is present in the list, replace it
+    int i;
+    for(i=0; i<gc->tent->count; i++) {
+        nbt_t *e = nbt_aget(gc->tent, i);
+        nbt_t *xe = nbt_hget(e, "x");
+        nbt_t *ye = nbt_hget(e, "y");
+        nbt_t *ze = nbt_hget(e, "z");
+        assert(xe && ye && ze);
+
+        if (xe->i==xc->i && ye->i==yc->i && ze->i==zc->i) {
+            nbt_free(e);
+            gc->tent->li[i] = ent;
+            return 1;
+        }
+    }
+
     nbt_add(gc->tent, ent);
     return 1;
 }
@@ -1098,6 +1121,11 @@ void gs_packet(MCPacket *pkt) {
 
         GSP(SP_ChunkData) {
             insert_chunk(&tpkt->chunk, tpkt->cont);
+        } _GSP;
+
+        GSP(SP_UpdateBlockEntity) {
+            nbt_t *te = tpkt->nbt;
+            store_tile_entity(tpkt->loc.x>>4, tpkt->loc.z>>4, nbt_clone(te));
         } _GSP;
 
         GSP(SP_UnloadChunk) {
