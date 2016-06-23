@@ -565,6 +565,26 @@ FREE_BEGIN(SP_SetSlot) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x19 SP_NamedSoundEffect
+
+DECODE_BEGIN(SP_NamedSoundEffect,_1_10) {
+    Pstr(name);
+    Pvarint(category);
+    Pint(x);
+    Pint(y);
+    Pint(z);
+    Pfloat(vol);
+    Pfloat(pitch);
+} DECODE_END;
+
+DUMP_BEGIN(SP_NamedSoundEffect) {
+    printf("name=%s, category=%d, coord=%.1f,%.1f,%.1f, vol=%.2f, pitch=%.2f",
+           tpkt->name, tpkt->category,
+           (float)tpkt->x/8,(float)tpkt->y/8,(float)tpkt->z/8,
+           tpkt->vol, tpkt->pitch);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x1c SP_Explosion
 
 DECODE_BEGIN(SP_Explosion,_1_8_1) {
@@ -1485,6 +1505,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_OpenWindow,_1_8_1),         // 13
         SUPPORT_DEF (SP_WindowItems,_1_8_1),        // 14
         SUPPORT_DEF (SP_SetSlot,_1_8_1),            // 16
+        SUPPORT_D   (SP_NamedSoundEffect,_1_10),    // 19
         SUPPORT_DF  (SP_Explosion,_1_8_1),          // 1c
         SUPPORT_DE  (SP_UnloadChunk,_1_9),          // 1d
         SUPPORT_DF  (SP_ChunkData,_1_9_4),          // 20

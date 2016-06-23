@@ -155,6 +155,17 @@ typedef struct {
     slot_t   slot;
 } SP_SetSlot_pkt;
 
+// 0x19
+typedef struct {
+    char        name[128];
+    int32_t     category;
+    int32_t     x;     // multiplied by 8
+    int32_t     y;     // multiplied by 8
+    int32_t     z;     // multiplied by 8
+    float       vol;
+    float       pitch;
+} SP_NamedSoundEffect_pkt;
+
 // 0x1c
 typedef struct {
     float    x,y,z;
@@ -519,6 +530,7 @@ typedef struct {
         PKT(SP_OpenWindow);         // 13
         PKT(SP_WindowItems);        // 14
         PKT(SP_SetSlot);            // 16
+        PKT(SP_NamedSoundEffect);   // 19
         PKT(SP_Explosion);          // 1c
         PKT(SP_UnloadChunk);        // 1d
         PKT(SP_ChunkData);          // 20
