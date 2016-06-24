@@ -455,6 +455,54 @@ uint8_t * read_metadata(uint8_t *p, metadata **meta) {
     return p;
 }
 
+uint8_t * write_metadata(uint8_t *w, metadata *meta) {
+    assert(meta);
+
+    int i,j;
+    char bool;
+    for (i=0; i<32; i++) {
+        metadata *mm = meta+i;
+        if (mm->type==META_NONE) continue;
+
+        lh_write_char(w, mm->key);
+        lh_write_char(w, mm->type);
+        switch (mm->type) {
+            case META_BYTE:     write_char(w, mm->b);    break;
+            case META_VARINT:   write_varint(w, mm->i);  break;
+            case META_FLOAT:    write_float(w, mm->f);   break;
+            case META_STRING:   w = write_string(w, mm->str); break;
+            case META_CHAT:     w = write_string(w, mm->chat); break; //VERIFY
+            case META_SLOT:     w = write_slot(w, &mm->slot); break;
+            case META_BOOL:     write_char(w, mm->bool);  break;
+            case META_VEC3:     write_float(w, mm->fx);
+                                write_float(w, mm->fy);
+                                write_float(w, mm->fz); break;
+            case META_POS:      write_long(w, mm->pos.p); break;
+            case META_OPTPOS:   bool = (mm->pos.p == -1);
+								write_char(w, bool);
+                                if (bool) {
+                                    write_long(w, mm->pos.p);
+                                }
+                                break;
+            case META_DIR:      write_varint(w, mm->dir);  break;
+            case META_OPTUUID:  bool = 0;
+								for(j=0; j<16; j++)
+									if (mm->uuid[j])
+										bool = 1;
+								write_char(w, bool);
+								if (bool) {
+									memmove(w, mm->uuid, sizeof(mm->uuid));
+									w+=16;
+								}
+                                break;
+            case META_BID:      write_char(w, mm->block); break;
+        }
+	}
+	lh_write_char(w, 0xff);
+
+    return w;
+}
+
 void dump_metadata(metadata *meta, EntityType et) {
     if (!meta) return;
 

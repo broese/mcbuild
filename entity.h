@@ -176,5 +176,6 @@ extern const char * METATYPES[];
 metadata * clone_metadata(metadata *meta);
 void free_metadata(metadata *meta);
 uint8_t * read_metadata(uint8_t *p, metadata **meta);
+uint8_t * write_metadata(uint8_t *w, metadata *meta);
 void dump_metadata(metadata *meta, EntityType et);
 
