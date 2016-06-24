@@ -989,6 +989,14 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                  (tpkt->id >= 148 && tpkt->id <= 157)) ) {
                 queue_packet(pkt, tq);
             }
+
+            // compatibility to 1.9.4 in the chimera client
+            // mark packet as modified to force re-encode
+            pkt->modified = 1;
+        } _GMP;
+
+        GMP(SP_NamedSoundEffect) {
+            pkt->modified = 1;
         } _GMP;
 
         ////////////////////////////////////////////////////////////////
@@ -1099,6 +1107,33 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
 
             if (pu && pu->status==UUID_DANGER)
                 drop_connection();
+        } _GMP;
+
+        ////////////////////////////////////////////////////////////////
+        // Entities
+
+        GMP(SP_SpawnMob) {
+            // 1.9.4 chimera compatibility - remove meta value at index 5
+            int i;
+            for(i=6; i<32; i++) {
+                tpkt->meta[i-1] = tpkt->meta[i];
+                tpkt->meta[i-1].key--;
+            }
+            tpkt->meta[31].key = 0xff;
+            pkt->modified = 1;
+            queue_packet(pkt, tq);
+        } _GMP;
+
+        GMP(SP_EntityMetadata) {
+            // 1.9.4 chimera compatibility - remove meta value at index 5
+            int i;
+            for(i=6; i<32; i++) {
+                tpkt->meta[i-1] = tpkt->meta[i];
+                tpkt->meta[i-1].key--;
+            }
+            tpkt->meta[31].key = 0xff;
+            pkt->modified = 1;
+            queue_packet(pkt, tq);
         } _GMP;
 
         default:

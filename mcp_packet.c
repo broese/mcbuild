@@ -274,6 +274,22 @@ DECODE_BEGIN(SP_SpawnMob,_1_9) {
     Pmeta(meta);
 } DECODE_END;
 
+ENCODE_BEGIN(SP_SpawnMob,_1_9) {
+    Wvarint(eid);
+    Wuuid(uuid);
+    Wchar(mobtype);
+    Wdouble(x);
+    Wdouble(y);
+    Wdouble(z);
+    Wchar(yaw);
+    Wchar(pitch);
+    Wchar(headpitch);
+    Wshort(vx);
+    Wshort(vy);
+    Wshort(vz);
+    Wmeta(meta);
+} ENCODE_END;
+
 DUMP_BEGIN(SP_SpawnMob) {
     char buf[256];
     printf("eid=%08x, mobtype=%d (%s), coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f,%.1f, vel=%d,%d,%d",
@@ -577,6 +593,16 @@ DECODE_BEGIN(SP_NamedSoundEffect,_1_10) {
     Pfloat(vol);
     Pfloat(pitch);
 } DECODE_END;
+
+ENCODE_BEGIN(SP_NamedSoundEffect,_1_10) {
+    Wstr(name);
+    Wvarint(category);
+    Wint(x);
+    Wint(y);
+    Wint(z);
+    Wfloat(vol);
+    lh_write_char(w, 63);
+} ENCODE_END;
 
 DUMP_BEGIN(SP_NamedSoundEffect) {
     printf("name=%s, category=%d, coord=%.1f,%.1f,%.1f, vol=%.2f, pitch=%.2f",
@@ -1094,6 +1120,11 @@ DECODE_BEGIN(SP_EntityMetadata,_1_8_1) {
     Pmeta(meta);
 } DECODE_END;
 
+ENCODE_BEGIN(SP_EntityMetadata,_1_8_1) {
+    Wvarint(eid);
+    Wmeta(meta);
+} ENCODE_END;
+
 DUMP_BEGIN(SP_EntityMetadata) {
     printf("eid=%08x", tpkt->eid);
     // unfortunately we don't have access to proper entity type here
@@ -1143,6 +1174,16 @@ DECODE_BEGIN(SP_SoundEffect,_1_10) {
     Pfloat(vol);
     Pfloat(pitch);
 } DECODE_END;
+
+ENCODE_BEGIN(SP_SoundEffect,_1_10) {
+    Wvarint(id);
+    Wvarint(category);
+    Wint(x);
+    Wint(y);
+    Wint(z);
+    Wfloat(vol);
+    lh_write_char(w, 63);
+} ENCODE_END;
 
 DUMP_BEGIN(SP_SoundEffect) {
     printf("id=%d, category=%d, coord=%.1f,%.1f,%.1f, vol=%.2f, pitch=%.2f",
@@ -1494,7 +1535,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
     {
         SUPPORT_D   (SP_SpawnObject,_1_9),          // 00
         SUPPORT_D   (SP_SpawnExperienceOrb,_1_9),   // 01
-        SUPPORT_DF  (SP_SpawnMob,_1_9),             // 03
+        SUPPORT_DEF (SP_SpawnMob,_1_9),             // 03
         SUPPORT_D   (SP_SpawnPainting,_1_9),        // 04
         SUPPORT_DF  (SP_SpawnPlayer,_1_9),          // 05
         SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),  // 09
@@ -1506,7 +1547,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_OpenWindow,_1_8_1),         // 13
         SUPPORT_DEF (SP_WindowItems,_1_8_1),        // 14
         SUPPORT_DEF (SP_SetSlot,_1_8_1),            // 16
-        SUPPORT_D   (SP_NamedSoundEffect,_1_10),    // 19
+        SUPPORT_DE  (SP_NamedSoundEffect,_1_10),    // 19
         SUPPORT_DF  (SP_Explosion,_1_8_1),          // 1c
         SUPPORT_DE  (SP_UnloadChunk,_1_9),          // 1d
         SUPPORT_DF  (SP_ChunkData,_1_9_4),          // 20
@@ -1521,10 +1562,10 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
         SUPPORT_D   (SP_Respawn,_1_8_1),            // 33
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),     // 37
-        SUPPORT_DF  (SP_EntityMetadata,_1_8_1),     // 39
+        SUPPORT_DEF (SP_EntityMetadata,_1_8_1),     // 39
         SUPPORT_D   (SP_SetExperience,_1_8_1),      // 3d
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),       // 3e
-        SUPPORT_D   (SP_SoundEffect,_1_10),         // 46
+        SUPPORT_DE  (SP_SoundEffect,_1_10),         // 46
         SUPPORT_D   (SP_EntityTeleport,_1_9),       // 49
     },
     {
@@ -1560,7 +1601,7 @@ void decode_handshake(CI_Handshake_pkt *tpkt, uint8_t *p) {
 }
 
 uint8_t * encode_handshake(CI_Handshake_pkt *tpkt, uint8_t *w) {
-    Wvarint(protocolVer);
+    lh_write_varint(w, 210); // pretend we are 1.10
     Wstr(serverAddr);
     Wshort(serverPort);
     Wvarint(nextState);
