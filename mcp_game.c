@@ -971,8 +971,8 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                        tpkt->vol,tpkt->pitch);
                 int i;
                 for(i=0; i<nbases; i++) {
-                    float dx = (float)(bases[i].x - gs.own.x/32);
-                    float dz = (float)(bases[i].z - gs.own.z/32);
+                    float dx = (float)(bases[i].x - gs.own.x);
+                    float dz = (float)(bases[i].z - gs.own.z);
                     if ( sqrtf(dx*dx+dz*dz) < (float)bases[i].r  ) {
                         printf("Dropping connection because we are too close to base %s at %d,%d : "
                                "dx=%.0f dz=%.0f radius=%d\n",
