@@ -994,12 +994,12 @@ void update_dots() {
             // disable faces looking away from you
             // note - this is opposite from what we do below for building blocks!
             if (!buildopts.anyface) {
-                if (b->y > gs.own.y+1) memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
-                if (b->y < gs.own.y+2) memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
-                if (b->x > gs.own.x)   memset(b->dots[DIR_EAST],  0, sizeof(DOTS_ALL));
-                if (b->x < gs.own.x)   memset(b->dots[DIR_WEST],  0, sizeof(DOTS_ALL));
-                if (b->z > gs.own.z)   memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
-                if (b->z < gs.own.z)   memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
+                if (b->y > gs.own.ly+1) memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
+                if (b->y < gs.own.ly+2) memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
+                if (b->x > gs.own.lx)   memset(b->dots[DIR_EAST],  0, sizeof(DOTS_ALL));
+                if (b->x < gs.own.lx)   memset(b->dots[DIR_WEST],  0, sizeof(DOTS_ALL));
+                if (b->z > gs.own.lz)   memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
+                if (b->z < gs.own.lz)   memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
             }
         }
         else {
@@ -1012,12 +1012,12 @@ void update_dots() {
 
             // disable faces looking away from you
             if (!buildopts.anyface) {
-                if (b->y < gs.own.y+1)   memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
-                if (b->y > gs.own.y+2)   memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
-                if (b->x < gs.own.x)     memset(b->dots[DIR_EAST],  0, sizeof(DOTS_ALL));
-                if (b->x > gs.own.x)     memset(b->dots[DIR_WEST],  0, sizeof(DOTS_ALL));
-                if (b->z < gs.own.z)     memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
-                if (b->z > gs.own.z)     memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
+                if (b->y < gs.own.ly+1) memset(b->dots[DIR_UP],    0, sizeof(DOTS_ALL));
+                if (b->y > gs.own.ly+2) memset(b->dots[DIR_DOWN],  0, sizeof(DOTS_ALL));
+                if (b->x < gs.own.lx)   memset(b->dots[DIR_EAST],  0, sizeof(DOTS_ALL));
+                if (b->x > gs.own.lx)   memset(b->dots[DIR_WEST],  0, sizeof(DOTS_ALL));
+                if (b->z < gs.own.lz)   memset(b->dots[DIR_SOUTH], 0, sizeof(DOTS_ALL));
+                if (b->z > gs.own.lz)   memset(b->dots[DIR_NORTH], 0, sizeof(DOTS_ALL));
             }
         }
     }
