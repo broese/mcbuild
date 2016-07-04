@@ -743,9 +743,9 @@ void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, float yaw) {
 
     // packet to the client
     NEWPACKET(SP_PlayerPositionLook, c);
-    ts->x = x;
-    ts->z = z;
-    ts->y = gs.own.y;
+    tc->x = x;
+    tc->z = z;
+    tc->y = gs.own.y;
     tc->yaw = yaw;
     tc->pitch = DEFAULT_PITCH;
     tc->flags = 0;
