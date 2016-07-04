@@ -89,6 +89,7 @@ int decode_chat_json(const char *json, char *name, char *message) {
 //#define Wslot(n)    p=read_slot(p,&tpkt->n)
 #define Wdata(n,l)  memmove(w,tpkt->n,l); w+=l
 #define Wuuid(n)    Wdata(n,sizeof(uuid_t))
+#define Wmeta(n)    w=write_metadata(w, tpkt->n)
 
 ////////////////////////////////////////////////////////////////////////////////
 
