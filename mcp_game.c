@@ -120,6 +120,14 @@ static inline double mydist(double x, double y, double z) {
     return sqrt(SQ(gs.own.x-x)+SQ(HEADPOSY(gs.own.y)-y)+SQ(gs.own.z-z));
 }
 
+#define GMP(name)                               \
+    case name: {                                \
+        name##_pkt *tpkt = &pkt->_##name;
+
+#define _GMP break; }
+
+
+
 ////////////////////////////////////////////////////////////////////////////////
 // Autokill
 
@@ -911,12 +919,6 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-
-#define GMP(name)                               \
-    case name: {                                \
-        name##_pkt *tpkt = &pkt->_##name;
-
-#define _GMP break; }
 
 void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
     dump_packet(pkt);
