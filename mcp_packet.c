@@ -623,6 +623,23 @@ DUMP_BEGIN(SP_UnloadChunk) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x1e SP_ChangeGameState
+
+DECODE_BEGIN(SP_ChangeGameState, _1_8_1) {
+    Pchar(reason);
+    Pfloat(value);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_ChangeGameState, _1_8_1) {
+    Wchar(reason);
+    Wfloat(value);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_ChangeGameState) {
+    printf("reason=%d, value=%.1f", tpkt->reason, tpkt->value);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x20 SP_ChunkData
 
 static int is_overworld = 1;
@@ -1589,6 +1606,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_SetSlot,_1_8_1),            // 16
         SUPPORT_DF  (SP_Explosion,_1_8_1),          // 1c
         SUPPORT_DE  (SP_UnloadChunk,_1_9),          // 1d
+        SUPPORT_DE  (SP_ChangeGameState,_1_8_1),    // 1e
         SUPPORT_DEF (SP_ChunkData,_1_9_4),          // 20
         SUPPORT_D   (SP_Effect,_1_8_1),             // 21
         SUPPORT_D   (SP_JoinGame,_1_8_1),           // 23

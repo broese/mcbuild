@@ -169,6 +169,12 @@ typedef struct {
     int32_t  X,Z;
 } SP_UnloadChunk_pkt;
 
+// 0x1e
+typedef struct {
+    uint8_t     reason;
+    float       value;
+} SP_ChangeGameState_pkt;
+
 // 0x20
 typedef struct {
     int8_t   cont;          // ground-up continuous
@@ -521,6 +527,7 @@ typedef struct {
         PKT(SP_SetSlot);            // 16
         PKT(SP_Explosion);          // 1c
         PKT(SP_UnloadChunk);        // 1d
+        PKT(SP_ChangeGameState);    // 1e
         PKT(SP_ChunkData);          // 20
         PKT(SP_Effect);             // 21
         PKT(SP_JoinGame);           // 23
