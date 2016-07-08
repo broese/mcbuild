@@ -1173,16 +1173,32 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             break;
         }
 
-        GMP(SP_ChunkData) {
-            if (opt.xray) xray_filter(pkt);
-            queue_packet(pkt, tq);
-        } _GMP;
-
         GMP(CP_TeleportConfirm) {
             // do not forward Teleport Confirm packets from client that
             // resulted from our own SP_PlayerPositionLook (e.g. in #align)
             if (tpkt->tpid != DEFAULT_TELEPORT_ID)
                 queue_packet(pkt, tq);
+        } _GMP;
+
+        ////////////////////////////////////////////////////////////////
+        // World data
+
+        GMP(SP_ChunkData) {
+            if (opt.xray) xray_filter(pkt);
+            queue_packet(pkt, tq);
+        } _GMP;
+
+        GMP(CP_PlayerDigging) {
+            if (opt.xray && tpkt->status==0) { // start digging
+                bid_t db = get_block_at(tpkt->loc.x, tpkt->loc.z, tpkt->loc.y);
+                if (!XRAY[db.bid]) {
+                    NEWPACKET(SP_BlockChange, bc);
+                    tbc->pos = tpkt->loc;
+                    tbc->block = db;
+                    queue_packet(bc, bq);
+                }
+            }
+            queue_packet(pkt, tq);
         } _GMP;
 
         ////////////////////////////////////////////////////////////////
