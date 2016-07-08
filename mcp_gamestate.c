@@ -217,7 +217,7 @@ int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
     if (!gc->tent)
         gc->tent = nbt_new(NBT_LIST, "TileEntities", 0);
 
-    if (ent->name) lh_free(ent->name);
+    //if (ent->name) lh_free(ent->name);
 
     nbt_t *xc = nbt_hget(ent, "x");
     nbt_t *yc = nbt_hget(ent, "y");

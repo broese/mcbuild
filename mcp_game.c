@@ -816,8 +816,64 @@ void xray_filter(MCPacket *pkt) {
                         pkt->modified = 1;
                     }
                 }
+
+                memset(c->skylight, 0xff, 2048);
+                memset(c->light, 0xff, 2048);
             }
         } _GMP;
+    }
+}
+
+void xray_renew(MCPacketQueue *cq) {
+    gsworld *w = gs.world;
+
+    int si,ri,ci,set=0;
+    for(si=0; si<512*512; si++) {
+        gssreg * sreg = w->sreg[si];
+        if (!sreg) continue;
+
+        for(ri=0; ri<256*256; ri++) {
+            gsregion * region = sreg->region[ri];
+            if (!region) continue;
+
+            for(ci=0; ci<32*32; ci++) {
+                gschunk * gc = region->chunk[ci];
+                if (!gc) continue;
+
+                int32_t X = CC_X(si,ri,ci);
+                int32_t Z = CC_Z(si,ri,ci);
+
+                NEWPACKET(SP_ChunkData, cd);
+                tcd->cont = 1;
+                tcd->skylight = (gs.world == &gs.overworld);
+                tcd->chunk.X = X;
+                tcd->chunk.Z = Z;
+                tcd->chunk.mask = 0;
+                memmove(tcd->chunk.biome, gc->biome, sizeof(tcd->chunk.biome));
+                tcd->te = (gc->tent) ? nbt_clone(gc->tent) : nbt_new(NBT_LIST, "TileEntities", 0);
+
+                int i,Y;
+                for(Y=0; Y<16; Y++) {
+                    bid_t *blocks = gc->blocks+4096*Y;
+                    int dirty = 0;
+                    for(i=0; i<4096; i++)
+                        if (blocks[i].raw)
+                            dirty=1;
+                    if (dirty) {
+                        tcd->chunk.mask |= (1<<Y);
+                        lh_alloc_obj(tcd->chunk.cubes[Y]);
+                        cube_t *c = tcd->chunk.cubes[Y];
+                        memmove(c->blocks,   blocks, sizeof(c->blocks));
+                        memmove(c->skylight, gc->skylight+2048*Y, sizeof(c->skylight));
+                        memmove(c->light, gc->light+2048*Y, sizeof(c->light));
+                    }
+                }
+
+                if (opt.xray) xray_filter(cd);
+
+                queue_packet(cd, cq);
+            }
+        }
     }
 }
 
@@ -892,6 +948,7 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         opt.xray = !opt.xray;
         sprintf(reply,"X-Ray is %s",opt.xray?"ON":"OFF");
         rpos = 2;
+        xray_renew(bq);
     }
     else if (!strcmp(words[0],"afk") || !strcmp(words[0],"antiafk")) {
         opt.antiafk = !opt.antiafk;
