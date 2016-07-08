@@ -778,15 +778,21 @@ uint8_t * write_cube(uint8_t *w, cube_t *cube) {
 }
 
 ENCODE_BEGIN(SP_ChunkData,_1_9_4) {
+    int i;
+
     Wint(chunk.X);
     Wint(chunk.Z);
     Wchar(cont);
-    Wvarint(chunk.mask);
+
+    uint16_t mask = 0;
+    for(i=0; i<16; i++)
+        if (tpkt->chunk.cubes[i])
+            mask |= (1<<i);
+    lh_write_varint(w, mask);
 
     uint8_t cubes[256*1024];
     uint8_t *cw = cubes;
 
-    int i;
     for(i=0; i<16; i++)
         if (tpkt->chunk.cubes[i])
             cw = write_cube(cw, tpkt->chunk.cubes[i]);
