@@ -41,6 +41,7 @@ struct {
     int antispam;
     int autoshear;
     int autoeat;
+    int xray;
 } opt;
 
 // loaded base locations - for thunder protection
@@ -761,6 +762,65 @@ void face_direction(MCPacketQueue *sq, MCPacketQueue *cq, float yaw) {
     queue_packet(c, cq);
 }
 
+////////////////////////////////////////////////////////////////////////
+// X-Ray
+
+int XRAY[256] = {
+    [0] = 1,
+    [8] = 1,
+    [9] = 1,
+    [10] = 1,
+    [11] = 1,
+    [14] = 1,
+    [15] = 1,
+    [16] = 1,
+    [19] = 1,
+    [26] = 1,
+    [52] = 1,
+    [56] = 1,
+    [129] = 1,
+    [153] = 1,
+};
+
+bid_t XRAYT = BLOCKTYPE(166, 0); // Barrier
+
+void xray_filter(MCPacket *pkt) {
+    int i;
+
+    switch (pkt->pid) {
+        GMP(SP_BlockChange) {
+            if (!XRAY[tpkt->block.bid]) {
+                tpkt->block = XRAYT;
+                pkt->modified = 1;
+            }
+        } _GMP;
+
+        GMP(SP_MultiBlockChange) {
+            for(i=0; i<tpkt->count; i++) {
+                if (!XRAY[tpkt->blocks[i].bid.bid]) {
+                    tpkt->blocks[i].bid = XRAYT;
+                    pkt->modified = 1;
+                }
+            }
+        } _GMP;
+
+        GMP(SP_ChunkData) {
+            int Y;
+            for(Y=0; Y<16; Y++) {
+                cube_t *c = tpkt->chunk.cubes[Y];
+                if (!c) continue;
+
+                for(i=0; i<4096; i++) {
+                    if (!XRAY[c->blocks[i].bid]) {
+                        c->blocks[i] = XRAYT;
+                        pkt->modified = 1;
+                    }
+                }
+            }
+        } _GMP;
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
 
@@ -826,6 +886,11 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         else
             opt.autokill = !opt.autokill;
         sprintf(reply,"Autokill is %s",opt.autokill?((opt.autokill==2)?"ON (attacks pigmen)":"ON"):"OFF");
+        rpos = 2;
+    }
+    else if (!strcmp(words[0],"xray")) {
+        opt.xray = !opt.xray;
+        sprintf(reply,"X-Ray is %s",opt.xray?"ON":"OFF");
         rpos = 2;
     }
     else if (!strcmp(words[0],"afk") || !strcmp(words[0],"antiafk")) {
@@ -1042,12 +1107,19 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
 
             gs.own.pos_change = 0;
 
-            if (build_packet(pkt, sq, cq))
-                queue_packet(pkt, tq);
+            if (!build_packet(pkt, sq, cq)) break;
 
+            if (opt.xray) xray_filter(pkt);
+
+            queue_packet(pkt, tq);
 
             break;
         }
+
+        GMP(SP_ChunkData) {
+            if (opt.xray) xray_filter(pkt);
+            queue_packet(pkt, tq);
+        } _GMP;
 
         GMP(CP_TeleportConfirm) {
             // do not forward Teleport Confirm packets from client that
