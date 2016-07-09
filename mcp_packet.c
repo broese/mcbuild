@@ -713,6 +713,101 @@ DECODE_BEGIN(SP_ChunkData,_1_9_4) {
     tpkt->skylight = is_overworld;
 } DECODE_END;
 
+uint8_t * write_cube(uint8_t *w, cube_t *cube) {
+    int i;
+
+    // construct the reverse palette - the index in this array
+    // is the raw 13 bit block+meta value, the data is the
+    // resulting palette index. -1 means this block+meta
+    // does not occur in the cube
+    int32_t rpal[8192];
+    memset(rpal, 0xff, sizeof(rpal));
+    int idx=1;
+    rpal[0] = 0; // first index in the pallette is always Air
+    for(i=0; i<4096; i++) {
+        int32_t bid = cube->blocks[i].raw;
+        if (rpal[bid] < 0) rpal[bid] = idx++;
+    }
+
+    // construct the forward palette
+    int32_t pal[256];
+    for(i=0; i<8192; i++)
+        if (rpal[i]>=0)
+            pal[rpal[i]] = i;
+
+    // determine the necessary number of bits per block, to stay
+    // compatible with notchian client (http://wiki.vg/SMP_Map_Format)
+    assert(idx <= 256); //TODO: support non-palettized encoding
+    int bpb = 4; // minimum number of bits per block
+    while ( idx > (1<<bpb)) bpb++;
+
+    // write cube header
+    lh_write_char(w, bpb);
+    lh_write_varint(w, idx);
+    for(i=0; i<idx; i++)
+        lh_write_varint(w, pal[i]);
+    int nlongs = lh_align(4096*bpb, 64)/64;
+    lh_write_varint(w, nlongs);
+
+    // write block data
+    uint64_t data = 0;
+    int nbits = 0;
+    for(i=0; i<4096; i++) {
+        uint64_t j = rpal[cube->blocks[i].raw];
+        assert(j>=0 && j<idx);
+        data |= (j<<nbits);
+        nbits+=bpb;
+        if (nbits >= 64) {
+            lh_write_long_be(w, data);
+            nbits -= 64;
+            data = j>>(bpb-nbits);
+        }
+    }
+    if (nbits > 0)
+        lh_write_long_be(w, data);
+
+    // write block light and skylight data
+    memmove(w, cube->light, sizeof(cube->light));
+    w += sizeof(cube->light);
+    if (is_overworld) {
+        memmove(w, cube->skylight, sizeof(cube->skylight));
+        w += sizeof(cube->skylight);
+    }
+
+    return w;
+}
+
+ENCODE_BEGIN(SP_ChunkData,_1_9_4) {
+    Wint(chunk.X);
+    Wint(chunk.Z);
+    Wchar(cont);
+    Wvarint(chunk.mask);
+
+    uint8_t cubes[256*1024];
+    uint8_t *cw = cubes;
+
+    int i;
+    for(i=0; i<16; i++)
+        if (tpkt->chunk.cubes[i])
+            cw = write_cube(cw, tpkt->chunk.cubes[i]);
+    int32_t size = (int32_t)(cw-cubes);
+
+    lh_write_varint(w, size+((tpkt->cont)?256:0));
+    memmove(w, cubes, size);
+    w+=size;
+
+    if (tpkt->cont) {
+        memmove(w, tpkt->chunk.biome, 256);
+        w+=256;
+    }
+
+    assert(tpkt->te->type == NBT_LIST);
+    assert(tpkt->te->ltype == NBT_COMPOUND || tpkt->te->count==0);
+    lh_write_varint(w, tpkt->te->count);
+    for(i=0; i<tpkt->te->count; i++)
+        nbt_write(&w, tpkt->te->li[i]);
+} ENCODE_END;
+
 DUMP_BEGIN(SP_ChunkData) {
     printf("coord=%4d:%4d, cont=%d, skylight=%d, mask=%04x",
            tpkt->chunk.X, tpkt->chunk.Z, tpkt->cont,
@@ -1487,7 +1582,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DEF (SP_SetSlot,_1_8_1),            // 16
         SUPPORT_DF  (SP_Explosion,_1_8_1),          // 1c
         SUPPORT_DE  (SP_UnloadChunk,_1_9),          // 1d
-        SUPPORT_DF  (SP_ChunkData,_1_9_4),          // 20
+        SUPPORT_DEF (SP_ChunkData,_1_9_4),          // 20
         SUPPORT_D   (SP_Effect,_1_8_1),             // 21
         SUPPORT_D   (SP_JoinGame,_1_8_1),           // 23
         SUPPORT_DF  (SP_Map,_1_9),                  // 24
