@@ -42,6 +42,7 @@ struct {
     int autoshear;
     int autoeat;
     int xray;
+    int freecam;
 } opt;
 
 // loaded base locations - for thunder protection
@@ -878,6 +879,50 @@ void xray_renew(MCPacketQueue *cq) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Freecam
+
+void freecam(MCPacketQueue *cq) {
+    NEWPACKET(SP_PlayerAbilities, pa1);
+    tpa1->flags = opt.freecam ? 7 : 0;
+    tpa1->speed = 0.1;
+    tpa1->fov   = 0.1;
+    queue_packet(pa1, cq);
+
+    NEWPACKET(SP_PlayerListItem, upd);
+    tupd->action = 1; // update gamemode
+    lh_arr_allocate_c(GAR(tupd->list), 1);
+    pli_t *entry = P(tupd->list);
+    memmove(entry->uuid, gs.own.uuid, sizeof(uuid_t));
+    entry->gamemode = opt.freecam ? 3 : gs.own.gamemode;
+    queue_packet(upd, cq);
+
+    NEWPACKET(SP_ChangeGameState, cgs);
+    tcgs->reason = 3; // Change game mode
+    tcgs->value = opt.freecam ? 3 : gs.own.gamemode;
+    queue_packet(cgs, cq);
+
+    NEWPACKET(SP_PlayerAbilities, pa2);
+    tpa2->flags = opt.freecam ? 7 : gs.own.abilities;
+    tpa2->speed = 0.1;
+    tpa2->fov   = 0.1;
+    queue_packet(pa2, cq);
+
+    metadata player[32];
+    lh_clear_obj(player);
+    player[0].key = 0;
+    player[0].type = META_BYTE;
+    player[0].b = opt.freecam ? 0x20 : 0;
+    int i;
+    for(i=1; i<32; i++)
+        player[i].type = META_NONE;
+
+    NEWPACKET(SP_EntityMetadata, em);
+    tem->eid = gs.own.eid;
+    tem->meta = clone_metadata(player);
+    queue_packet(em, cq);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Chat/Commandline
 
 void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos) {
@@ -949,6 +994,12 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"X-Ray is %s",opt.xray?"ON":"OFF");
         rpos = 2;
         xray_renew(bq);
+    }
+    else if (!strcmp(words[0],"freecam") || !strcmp(words[0],"fc")) {
+        opt.freecam = !opt.freecam;
+        sprintf(reply,"Freecam is %s",opt.freecam?"ON":"OFF");
+        rpos = 2;
+        freecam(bq);
     }
     else if (!strcmp(words[0],"afk") || !strcmp(words[0],"antiafk")) {
         opt.antiafk = !opt.antiafk;
@@ -1132,10 +1183,11 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
 
         // use case statements since we don't really need these packets,
         // but just as a trigger that position or world has updated
-        case SP_PlayerPositionLook:
         case CP_PlayerPositionLook:
         case CP_PlayerPosition:
         case CP_PlayerLook:
+            if (opt.freecam) break;
+        case SP_PlayerPositionLook:
         case SP_UpdateHealth:
         case SP_MultiBlockChange:
         case SP_BlockChange:
@@ -1178,6 +1230,14 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             // resulted from our own SP_PlayerPositionLook (e.g. in #align)
             if (tpkt->tpid != DEFAULT_TELEPORT_ID)
                 queue_packet(pkt, tq);
+        } _GMP;
+
+        GMP(SP_EntityMetadata) {
+            if (tpkt->eid==gs.own.eid && opt.freecam) {
+                tpkt->meta[0].b |= 0x20;
+                pkt->modified = 1;
+            }
+            queue_packet(pkt, tq);
         } _GMP;
 
         ////////////////////////////////////////////////////////////////
