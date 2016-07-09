@@ -243,6 +243,13 @@ typedef struct {
     uint8_t     onground;
 } SP_EntityLookRelMove_pkt;
 
+// 0x2b
+typedef struct {
+    uint8_t     flags;
+    float       speed;
+    float       fov;
+} SP_PlayerAbilities_pkt;
+
 // 0x2d
 typedef struct {
     char        pname[64];
@@ -543,6 +550,7 @@ typedef struct {
         PKT(SP_Map);                // 24
         PKT(SP_EntityRelMove);      // 25
         PKT(SP_EntityLookRelMove);  // 26
+        PKT(SP_PlayerAbilities);    // 2b
         PKT(SP_PlayerListItem);     // 2d
         PKT(SP_PlayerPositionLook); // 2e
         PKT(SP_UseBed);             // 2f
