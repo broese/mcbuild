@@ -835,6 +835,10 @@ int query_auth_server() {
     printf("serverId:        >%s<\n",auth);
 #endif
 
+    // store own UUID
+    if (hex_import(userId, gs.own.uuid, 16)!=16)
+        printf("Error parsing UUID '%s'\n",userId);
+
     char buf[4096];
     sprintf(buf,"{\"accessToken\":\"%s\",\"selectedProfile\":\"%s\",\"serverId\":\"%s\"}",
             accessToken, userId, auth);
