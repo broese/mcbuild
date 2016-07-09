@@ -964,6 +964,26 @@ DUMP_BEGIN(SP_EntityLookRelMove) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x2b SP_PlayerAbilities
+
+DECODE_BEGIN(SP_PlayerAbilities,_1_8_1) {
+    Pchar(flags);
+    Pfloat(speed);
+    Pfloat(fov);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_PlayerAbilities,_1_8_1) {
+    Wchar(flags);
+    Wfloat(speed);
+    Wfloat(fov);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_PlayerAbilities) {
+    printf("flags=%02x, speed=%.1f, fov=%.1f",
+           tpkt->flags, tpkt->speed, tpkt->fov);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x2d SP_PlayerListItem
 
 DECODE_BEGIN(SP_PlayerListItem,_1_9) {
@@ -1613,6 +1633,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_Map,_1_9),                  // 24
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
         SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
+        SUPPORT_DE  (SP_PlayerAbilities,_1_8_1),    // 2b
         SUPPORT_DF  (SP_PlayerListItem,_1_9),       // 2d
         SUPPORT_DE  (SP_PlayerPositionLook,_1_9),   // 2e
         SUPPORT_DE  (SP_UseBed,_1_9),               // 2f
