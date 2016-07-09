@@ -1045,6 +1045,28 @@ DECODE_BEGIN(SP_PlayerListItem,_1_9) {
     }
 } DECODE_END;
 
+ENCODE_BEGIN(SP_PlayerListItem,_1_9) {
+    Wvarint(action);
+    int np = C(tpkt->list);
+    lh_write_varint(w, np);
+
+    int i,j;
+    for(i=0; i<np; i++) {
+        pli_t * entry = P(tpkt->list)+i;
+        memmove(w, entry->uuid,16); w+=16;
+
+        switch(tpkt->action) {
+            case 1: { // update gamemode
+                lh_write_varint(w,entry->gamemode);
+                break;
+            }
+            default:
+                assert(0);
+                break;
+        }
+    }
+} ENCODE_END;
+
 DUMP_BEGIN(SP_PlayerListItem) {
     printf("action=%d, np=%zd\n", tpkt->action, C(tpkt->list));
     int i,j;
@@ -1639,7 +1661,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
         SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
         SUPPORT_DE  (SP_PlayerAbilities,_1_8_1),    // 2b
-        SUPPORT_DF  (SP_PlayerListItem,_1_9),       // 2d
+        SUPPORT_DEF (SP_PlayerListItem,_1_9),       // 2d
         SUPPORT_DE  (SP_PlayerPositionLook,_1_9),   // 2e
         SUPPORT_DE  (SP_UseBed,_1_9),               // 2f
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
