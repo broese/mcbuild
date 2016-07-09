@@ -1212,6 +1212,11 @@ DECODE_BEGIN(SP_EntityMetadata,_1_8_1) {
     Pmeta(meta);
 } DECODE_END;
 
+ENCODE_BEGIN(SP_EntityMetadata,_1_8_1) {
+    Wvarint(eid);
+    Wmeta(meta);
+} ENCODE_END;
+
 DUMP_BEGIN(SP_EntityMetadata) {
     printf("eid=%08x", tpkt->eid);
     // unfortunately we don't have access to proper entity type here
@@ -1640,7 +1645,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
         SUPPORT_D   (SP_Respawn,_1_8_1),            // 33
         SUPPORT_DE  (SP_HeldItemChange,_1_8_1),     // 37
-        SUPPORT_DF  (SP_EntityMetadata,_1_8_1),     // 39
+        SUPPORT_DEF (SP_EntityMetadata,_1_8_1),     // 39
         SUPPORT_D   (SP_SetExperience,_1_8_1),      // 3d
         SUPPORT_D   (SP_UpdateHealth,_1_8_1),       // 3e
         SUPPORT_D   (SP_SoundEffect,_1_10),         // 46
