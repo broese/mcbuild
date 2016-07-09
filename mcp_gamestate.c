@@ -1093,10 +1093,21 @@ void gs_packet(MCPacket *pkt) {
         GSP(SP_JoinGame) {
             gs.own.eid = tpkt->eid;
             change_dimension(tpkt->dimension);
+            gs.own.gamemode = tpkt->gamemode;
         } _GSP;
 
         GSP(SP_Respawn) {
             change_dimension(tpkt->dimension);
+            gs.own.gamemode = tpkt->gamemode;
+        } _GSP;
+
+        GSP(SP_ChangeGameState) {
+            if (tpkt->reason == 3)
+                gs.own.gamemode = (int)tpkt->value;
+        } _GSP;
+
+        GSP(SP_PlayerAbilities) {
+            gs.own.abilities = tpkt->flags;
         } _GSP;
 
         GSP(SP_UpdateHealth) {

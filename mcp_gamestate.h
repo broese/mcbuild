@@ -117,6 +117,10 @@ typedef struct _gamestate {
 
     struct {
         uint32_t    eid;
+        uuid_t      uuid;
+        int         gamemode;
+        uint8_t     abilities;
+
         double      x,y,z;
         uint8_t     onground;
         float       yaw,pitch;
