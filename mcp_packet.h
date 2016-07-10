@@ -460,33 +460,50 @@ typedef struct {
 ////////////////////////////////////////////////////////////////////////////////
 // Packet parsing for the login routines in mcproxy
 
-// CI_Handshake
+// CI_Handshake ( 0/0 )
 typedef struct {
-    int32_t  protocolVer;
-    char     serverAddr[1024];
-    uint16_t serverPort;
-    int32_t  nextState;
+    int32_t     protocolVer;
+    char        serverAddr[1024];
+    uint16_t    serverPort;
+    int32_t     nextState;
 } CI_Handshake_pkt;
 
-// SL_EncryptionRequest
+// SL_Disconnect ( 2/0 )
 typedef struct {
-    char     serverID[4096];
-    uint32_t klen;
-    uint8_t  pkey[1024];
-    uint32_t tlen;
-    uint8_t  token[1024];
+    char        reason[4096];
+} SL_Disconnect_pkt;
+
+// SL_EncryptionRequest ( 2/1 )
+typedef struct {
+    char        serverID[4096];
+    uint32_t    klen;
+    uint8_t     pkey[1024];
+    uint32_t    tlen;
+    uint8_t     token[1024];
 } SL_EncryptionRequest_pkt;
 
-// CL_EncryptionResponse
+// SL_LoginSuccess ( 2/2 )
 typedef struct {
-    uint32_t sklen;
-    uint8_t  skey[1024];
-    uint32_t tklen;
-    uint8_t  token[1024];
+    char        uuid[64];
+    char        username[64];
+} SL_LoginSuccess_pkt;
+
+// CL_LoginStart ( 2/0 )
+typedef struct {
+    char        username[64];
+} CL_LoginStart_pkt;
+
+// CL_EncryptionResponse ( 2/1 )
+typedef struct {
+    uint32_t    sklen;
+    uint8_t     skey[1024];
+    uint32_t    tklen;
+    uint8_t     token[1024];
 } CL_EncryptionResponse_pkt;
 
 void decode_handshake(CI_Handshake_pkt *tpkt, uint8_t *p);
 uint8_t * encode_handshake(CI_Handshake_pkt *tpkt, uint8_t *w);
+uint8_t * encode_loginstart(CL_LoginStart_pkt *tpkt, uint8_t *w);
 void decode_encryption_request(SL_EncryptionRequest_pkt *tpkt, uint8_t *p);
 void decode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *p);
 

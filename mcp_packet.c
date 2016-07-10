@@ -1713,6 +1713,11 @@ uint8_t * encode_handshake(CI_Handshake_pkt *tpkt, uint8_t *w) {
     return w;
 }
 
+uint8_t * encode_loginstart(CL_LoginStart_pkt *tpkt, uint8_t *w) {
+    Wstr(username);
+    return w;
+}
+
 void decode_encryption_request(SL_EncryptionRequest_pkt *tpkt, uint8_t *p) {
     Pstr(serverID);
     Pvarint(klen);
@@ -1721,12 +1726,20 @@ void decode_encryption_request(SL_EncryptionRequest_pkt *tpkt, uint8_t *p) {
     Pdata(token,tpkt->tlen);
 }
 
+uint8_t * encode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *w) {
+    Wvarint(sklen);
+    Wdata(skey,tpkt->sklen);
+    Wvarint(tklen);
+    Wdata(token,tpkt->tklen);
+}
+
 void decode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *p) {
     Pvarint(sklen);
     Pdata(skey,tpkt->sklen);
     Pvarint(tklen);
     Pdata(token,tpkt->tklen);
 }
+
 
 
 
