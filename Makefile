@@ -7,9 +7,10 @@ LIBS=$(LIBS_LIBHELPER) -lm -lpng -lz -lcurl -lcrypto -ljson-c
 SRC_BASE=$(addsuffix .c, mcp_packet mcp_ids mcp_types nbt slot entity)
 SRC_MCPROXY=$(addsuffix .c, mcproxy mcp_gamestate mcp_game mcp_build mcp_arg mcp_bplan) $(SRC_BASE)
 SRC_MCPDUMP=$(addsuffix .c, mcpdump mcp_gamestate anvil) $(SRC_BASE)
+SRC_QHOLDER=$(addsuffix .c, qholder) $(SRC_BASE)
 SRC_ALL=$(SRC_MCPROXY) mcpdump.c varint.c
 
-ALLBIN=mcproxy mcpdump varint
+ALLBIN=mcproxy mcpdump varint qholder
 
 HDR_ALL=$(addsuffix .h, mcp_packet mcp_ids mcp_types nbt mcp_game mcp_gamestate mcp_build mcp_arg mcp_bplan slot entity)
 
@@ -32,6 +33,9 @@ mcproxy: $(SRC_MCPROXY:.c=.o)
 	$(CC) -o $@ $^ $(LIBS)
 
 mcpdump: $(SRC_MCPDUMP:.c=.o)
+	$(CC) -o $@ $^ $(LIBS)
+
+qholder: $(SRC_QHOLDER:.c=.o)
 	$(CC) -o $@ $^ $(LIBS)
 
 varint: varint.c
