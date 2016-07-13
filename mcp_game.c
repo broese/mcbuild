@@ -545,6 +545,7 @@ void gmi_change_held(MCPacketQueue *sq, MCPacketQueue *cq, int sid, int notify_c
     queue_packet(cp, sq);
 
     // notify gamestate
+    cp->ver = PROTO_1_8_1;
     gs_packet(cp);
 
     if (notify_client) {
