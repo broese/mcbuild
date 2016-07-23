@@ -214,12 +214,12 @@ static void autoshear(MCPacketQueue *sq) {
         if (!e->mdata) continue;
 
         // skip sheared sheep
-        assert(e->mdata[12].type == META_BYTE);
-        if (e->mdata[12].b >= 0x10) continue;
+        assert(e->mdata[13].type == META_BYTE);
+        if (e->mdata[13].b >= 0x10) continue;
 
         // skip baby sheep
-        assert(e->mdata[11].type == META_BOOL);
-        if (e->mdata[11].bool) continue;
+        assert(e->mdata[12].type == META_BOOL);
+        if (e->mdata[12].bool) continue;
 
         // only take entities that are within our reach
         if (mydist(e->x, e->y, e->z)<=REACH_RANGE)
