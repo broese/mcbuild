@@ -651,47 +651,54 @@ static uint8_t * read_cube(uint8_t *p, cube_t *cube) {
 
     bid_t pal[4096];
     Rvarint(nbits);
-    assert(nbits!=0); //FIXME: support 13-bit packed format w/o palette
+    if (nbits==0) nbits=13; // raw 13-bit values, no palette
     uint64_t mask = ((1<<nbits)-1);
-    if (nbits) {
-        // nbits!=0 - read palette data
-        Rvarint(npal);
-        for(i=0; i<npal; i++) {
-            pal[i].raw = (uint16_t)lh_read_varint(p);
-            char mat[256];
-            //printf("%2d : %03x:%2d (%s)\n", i, pal[i].bid, pal[i].meta, get_bid_name(mat, pal[i]));
-        }
-        Rvarint(nblocks);
-        assert(lh_align(512*nbits, 8) == nblocks*8);
 
-        // read block data, packed nbits palette indices
-        int abits=0, idx=0;
-        uint64_t adata=0;
-        for(i=0; i<4096; i++) {
-            // load more data from array if we don't have enough bits
-            if (abits<nbits) {
-                idx = adata; // save the remaining bits from adata
-                adata = lh_read_long_be(p);
-                idx |= (adata<<abits)&mask;
-                adata >>= (nbits-abits);
-                abits = 64-(nbits-abits);
-            }
-            else {
-                idx = adata&mask;
-                adata>>=nbits;
-                abits-=nbits;
-            }
+    // read the palette data, if available
+    Rvarint(npal);
+    for(i=0; i<npal; i++) {
+        pal[i].raw = (uint16_t)lh_read_varint(p);
+        char mat[256];
+        //printf("%2d : %03x:%2d (%s)\n", i, pal[i].bid, pal[i].meta, get_bid_name(mat, pal[i]));
+    }
+
+    // check if the length of the data matches the expected amount
+    Rvarint(nblocks);
+    assert(lh_align(512*nbits, 8) == nblocks*8);
+
+    // read block data, packed nbits palette indices
+    int abits=0, idx=0;
+    uint64_t adata=0;
+    for(i=0; i<4096; i++) {
+        // load more data from array if we don't have enough bits
+        if (abits<nbits) {
+            idx = adata; // save the remaining bits from adata
+            adata = lh_read_long_be(p);
+            idx |= (adata<<abits)&mask;
+            adata >>= (nbits-abits);
+            abits = 64-(nbits-abits);
+        }
+        else {
+            idx = adata&mask;
+            adata>>=nbits;
+            abits-=nbits;
+        }
+
+        if (npal > 0) {
             assert(idx<npal);
             cube->blocks[i] = pal[idx];
         }
-
-        // read block light and skylight data
-        memmove(cube->light, p, sizeof(cube->light));
-        p += sizeof(cube->light);
-        if (is_overworld) {
-            memmove(cube->skylight, p, sizeof(cube->skylight));
-            p += sizeof(cube->skylight);
+        else {
+            cube->blocks[i].raw = idx;
         }
+    }
+
+    // read block light and skylight data
+    memmove(cube->light, p, sizeof(cube->light));
+    p += sizeof(cube->light);
+    if (is_overworld) {
+        memmove(cube->skylight, p, sizeof(cube->skylight));
+        p += sizeof(cube->skylight);
     }
 
     return p;
@@ -755,15 +762,20 @@ uint8_t * write_cube(uint8_t *w, cube_t *cube) {
 
     // determine the necessary number of bits per block, to stay
     // compatible with notchian client (http://wiki.vg/SMP_Map_Format)
-    assert(idx <= 256); //TODO: support non-palettized encoding
     int bpb = 4; // minimum number of bits per block
     while ( idx > (1<<bpb)) bpb++;
+    if (bpb > 8) bpb = 13; // at more than 256 block types, just use unpalettized coding
 
     // write cube header
     lh_write_char(w, bpb);
-    lh_write_varint(w, idx);
-    for(i=0; i<idx; i++)
-        lh_write_varint(w, pal[i]);
+    if (bpb<13) {
+        lh_write_varint(w, idx);
+        for(i=0; i<idx; i++)
+            lh_write_varint(w, pal[i]);
+    }
+    else {
+        lh_write_varint(w, 0);
+    }
     int nlongs = lh_align(4096*bpb, 64)/64;
     lh_write_varint(w, nlongs);
 
@@ -771,8 +783,11 @@ uint8_t * write_cube(uint8_t *w, cube_t *cube) {
     uint64_t data = 0;
     int nbits = 0;
     for(i=0; i<4096; i++) {
-        uint64_t j = rpal[cube->blocks[i].raw];
-        assert(j>=0 && j<idx);
+        uint64_t j = cube->blocks[i].raw;
+        if (bpb<13) {
+            j = rpal[j];
+            assert(j>=0 && j<idx);
+        }
         data |= (j<<nbits);
         nbits+=bpb;
         if (nbits >= 64) {
