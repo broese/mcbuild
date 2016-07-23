@@ -664,7 +664,10 @@ static uint8_t * read_cube(uint8_t *p, cube_t *cube) {
 
     // check if the length of the data matches the expected amount
     Rvarint(nblocks);
-    assert(lh_align(512*nbits, 8) == nblocks*8);
+    //assert(lh_align(512*nbits, 8) == nblocks*8);
+    if (lh_align(512*nbits, 8) != nblocks*8) {
+        printf("nbits=%d, nblocks=%d, %d != %d\n", nbits, nblocks, lh_align(512*nbits, 8), nblocks*8);
+    }
 
     // read block data, packed nbits palette indices
     int abits=0, idx=0;
