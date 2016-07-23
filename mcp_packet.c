@@ -648,26 +648,29 @@ static int is_overworld = 1;
 // Detailed format description: http://wiki.vg/SMP_Map_Format
 static uint8_t * read_cube(uint8_t *p, cube_t *cube) {
     int i,j;
+    int npal = -1;
 
     bid_t pal[4096];
-    Rvarint(nbits);
-    if (nbits==0) nbits=13; // raw 13-bit values, no palette
+    Rchar(nbits);
+    if (nbits==0) { // raw 13-bit values, no palette
+        nbits=13;
+        npal=0;
+    }
     uint64_t mask = ((1<<nbits)-1);
 
     // read the palette data, if available
-    Rvarint(npal);
-    for(i=0; i<npal; i++) {
-        pal[i].raw = (uint16_t)lh_read_varint(p);
-        char mat[256];
-        //printf("%2d : %03x:%2d (%s)\n", i, pal[i].bid, pal[i].meta, get_bid_name(mat, pal[i]));
+    if ( npal<0 ) {
+        npal = lh_read_varint(p);
+        for(i=0; i<npal; i++) {
+            pal[i].raw = (uint16_t)lh_read_varint(p);
+            char mat[256];
+            //printf("%2d : %03x:%2d (%s)\n", i, pal[i].bid, pal[i].meta, get_bid_name(mat, pal[i]));
+        }
     }
 
     // check if the length of the data matches the expected amount
     Rvarint(nblocks);
-    //assert(lh_align(512*nbits, 8) == nblocks*8);
-    if (lh_align(512*nbits, 8) != nblocks*8) {
-        printf("nbits=%d, nblocks=%d, %d != %d\n", nbits, nblocks, lh_align(512*nbits, 8), nblocks*8);
-    }
+    assert(lh_align(512*nbits, 8) == nblocks*8);
 
     // read block data, packed nbits palette indices
     int abits=0, idx=0;
@@ -1209,9 +1212,21 @@ FREE_BEGIN(SP_DestroyEntities) {
 // 0x33 SP_Respawn
 
 DECODE_BEGIN(SP_Respawn,_1_8_1) {
+    uint8_t *pp = p;
+
     Pint(dimension);
     Pchar(difficulty);
     Pchar(gamemode);
+
+    // workaround for a buggy encoding in Spigot 1.10
+    if (!(tpkt->dimension>=-1 && tpkt->dimension<=1)) {
+        printf("Warning: applying Spigot 1.10 workaround! reported dimension=%d\n", tpkt->dimension);
+        p = pp;
+        Pshort(dimension);
+        Pshort(difficulty);
+        Pshort(gamemode);
+    }
+
     Pstr(leveltype);
 
     // track dimension changes - needed for correct SP_ChunkData decoding
