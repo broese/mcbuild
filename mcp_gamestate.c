@@ -210,6 +210,11 @@ int get_stored_area(gsworld *w, int32_t *Xmin, int32_t *Xmax, int32_t *Zmin, int
 
 // Add a tile entity to the chunk data
 int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
+    // remove name from the tile entity - in the ChunkData they are sent with
+    // an empty name (string of zero lenght), but the on-disk anvil format
+    // uses no name (i.e. NULL) and the chunk fails to load otherwise
+    if (ent->name) lh_free(ent->name);
+
     gschunk * gc = find_chunk(gs.world, X, Z, 0);
     if (!gc) return 0;
 
