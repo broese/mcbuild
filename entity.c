@@ -137,8 +137,8 @@ const char * METANAME[][32] = {
         [13] = "Rabbit type",
     },
     [PolarBear] = {
-		[13] = "Standing",
-	},
+        [13] = "Standing",
+    },
     [Sheep] = {
         [13] = "Sheep color",
     },
@@ -230,15 +230,15 @@ const char * METANAME[][32] = {
         [11] = "Show block",
     },
     [MinecartCommandBlock] = {
-		[12] = "Command",
-		[13] = "Last Output",
-	},
+        [12] = "Command",
+        [13] = "Last Output",
+    },
     [MinecartFurnace] = {
         [12] = "Powered",
     },
     [ActivatedTNT] = {
-		[6]  = "Fuse time",
-	},
+        [6]  = "Fuse time",
+    },
 };
 
 const EntityType ENTITY_HIERARCHY[] = {
@@ -306,6 +306,7 @@ const EntityType ENTITY_HIERARCHY[] = {
 #define ENUMNAME(name) [name] = #name
 
 const char * ENTITY_NAMES[MaxEntityType] = {
+    // Hostile mobs
     ENUMNAME(Creeper),
     ENUMNAME(Skeleton),
     ENUMNAME(Spider),
@@ -328,6 +329,7 @@ const char * ENTITY_NAMES[MaxEntityType] = {
     ENUMNAME(Shulker),
     ENUMNAME(PolarBear),
 
+    // Passive mobs
     ENUMNAME(Pig),
     ENUMNAME(Sheep),
     ENUMNAME(Cow),
@@ -341,6 +343,40 @@ const char * ENTITY_NAMES[MaxEntityType] = {
     ENUMNAME(Horse),
     ENUMNAME(Rabbit),
     ENUMNAME(Villager),
+
+    // Objects
+    ENUMNAME(Boat),
+    ENUMNAME(ItemStack),
+    ENUMNAME(AreaEffectCloud),
+    ENUMNAME(Minecart),
+    ENUMNAME(ChestMinecart),
+    ENUMNAME(MinecartFurnace),
+    ENUMNAME(MinecartCommandBlock),
+    ENUMNAME(ActivatedTNT),
+    ENUMNAME(EnderCrystal),
+    ENUMNAME(FallingObjects),
+    ENUMNAME(ItemFrame),
+    ENUMNAME(LeashKnot),
+    ENUMNAME(ArmorStand),
+
+    // Projectiles
+    ENUMNAME(Arrow),
+    ENUMNAME(Snowball),
+    ENUMNAME(Egg),
+    ENUMNAME(Fireball),
+    ENUMNAME(FireCharge),
+    ENUMNAME(ThrownEnderpearl),
+    ENUMNAME(WitherSkull),
+    ENUMNAME(ShulkerBullet),
+    ENUMNAME(EyeOfEnder),
+    ENUMNAME(ThrownPotion),
+    ENUMNAME(FallingDragonEgg),
+    ENUMNAME(ThrownExpBottle),
+    ENUMNAME(FireworkRocket),
+    ENUMNAME(FishingFloat),
+    ENUMNAME(SpectralArrow),
+    ENUMNAME(TippedArrow),
+    ENUMNAME(DragonFireball),
 };
 
 const char * get_entity_name(char *buf, EntityType type) {
@@ -479,26 +515,26 @@ uint8_t * write_metadata(uint8_t *w, metadata *meta) {
                                 write_float(w, mm->fz); break;
             case META_POS:      write_long(w, mm->pos.p); break;
             case META_OPTPOS:   bool = (mm->pos.p == -1);
-								write_char(w, bool);
+                                write_char(w, bool);
                                 if (bool) {
                                     write_long(w, mm->pos.p);
                                 }
                                 break;
             case META_DIR:      write_varint(w, mm->dir);  break;
             case META_OPTUUID:  bool = 0;
-								for(j=0; j<16; j++)
-									if (mm->uuid[j])
-										bool = 1;
-								write_char(w, bool);
-								if (bool) {
-									memmove(w, mm->uuid, sizeof(mm->uuid));
-									w+=16;
-								}
+                                for(j=0; j<16; j++)
+                                    if (mm->uuid[j])
+                                        bool = 1;
+                                write_char(w, bool);
+                                if (bool) {
+                                    memmove(w, mm->uuid, sizeof(mm->uuid));
+                                    w+=16;
+                                }
                                 break;
             case META_BID:      write_char(w, mm->block); break;
         }
-	}
-	lh_write_char(w, 0xff);
+    }
+    lh_write_char(w, 0xff);
 
     return w;
 }

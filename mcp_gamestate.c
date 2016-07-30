@@ -42,9 +42,11 @@ void dump_entities() {
     int i;
     for(i=0; i<C(gs.entity); i++) {
         entity *e = P(gs.entity)+i;
-        printf("  %4d eid=%08x type=%-7s coord=%.1f,%.1f,%.1f dist=%.1f\n",
-               i,e->id, ENTITY_TYPES[e->type], e->x, e->y, e->z,
+        printf("%4d eid=%08x (%s) type=%d (%s) coord=%.1f,%.1f,%.1f dist=%.1f",
+               i,e->id, ENTITY_TYPES[e->type], e->mtype, ENTITY_NAMES[e->mtype], e->x, e->y, e->z,
                sqrt(SQ(gs.own.x-e->x)+SQ(gs.own.y-e->y)+SQ(gs.own.z-e->z)));
+        dump_metadata(e->mdata, e->mtype);
+        printf("\n");
     }
 }
 
@@ -978,8 +980,8 @@ void gs_packet(MCPacket *pkt) {
             e->y  = tpkt->y;
             e->z  = tpkt->z;
             e->type = ENTITY_OBJECT;
-            e->mtype = Item;
-            e->mdata = NULL; //TODO: object metadata
+            e->mtype = tpkt->objtype+256; // +256 for object entities
+            e->mdata = NULL; // updated separately with SP_EntityMetadata
         } _GSP;
 
         GSP(SP_SpawnExperienceOrb) {
