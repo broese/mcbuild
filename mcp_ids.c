@@ -491,6 +491,7 @@ const item_id ITEMS[] = {
     [0x1a7] = { "Mutton",               I_ITEM },
     [0x1a8] = { "Cooked Mutton",        I_ITEM|I_FOOD },
     [0x1a9] = { "Banner",               I_ITEM|I_NSTACK },
+    [0x1aa] = { "End Crystal",          I_ITEM },
     [0x1ab] = { "Spruce Door",          I_ITEM },
     [0x1ac] = { "Birch Door",           I_ITEM },
     [0x1ad] = { "Jungle Door",          I_ITEM },
