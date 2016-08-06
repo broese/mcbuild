@@ -909,7 +909,7 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     int ms = lh_connect_tcp4(ip, port);
     if (ms < 0) {
         close(mitm.cs);
-        LH_ERROR(0, "Failed to open the client-side connection");
+        LH_ERROR(0, "Failed to open the server-side connection");
     }
 
     // both client-side and server-side connections are now established
