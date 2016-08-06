@@ -535,8 +535,6 @@ const item_id ITEMS[] = {
     [0x8ff] = { NULL }, //Terminator
 };
 
-#define MAXITEMID 0x8ff
-
 // given a specific block ID and meta, return the meta value corresponding
 // to the basic state of the block
 int get_base_meta(int id, int meta) {

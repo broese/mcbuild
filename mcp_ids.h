@@ -279,6 +279,8 @@ typedef struct _item_id {
 
 extern const item_id ITEMS[];
 
+#define MAXITEMID 0x8ff
+
 #define STACKSIZE(item) \
     ( ITEMS[item].flags&I_NSTACK ? 1 : ( ITEMS[item].flags&I_S16 ? 16 : 64 ) )
 
