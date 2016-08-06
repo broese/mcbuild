@@ -224,12 +224,11 @@ int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
     if (!gc->tent)
         gc->tent = nbt_new(NBT_LIST, "TileEntities", 0);
 
-    //if (ent->name) lh_free(ent->name);
-
     nbt_t *xc = nbt_hget(ent, "x");
     nbt_t *yc = nbt_hget(ent, "y");
     nbt_t *zc = nbt_hget(ent, "z");
-    assert(xc && yc && zc);
+    nbt_t *id = nbt_hget(ent, "id");
+    assert(xc && yc && zc && id);
 
     // if an entity with these coordinates is present in the list, replace it
     int i;
@@ -238,9 +237,27 @@ int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
         nbt_t *xe = nbt_hget(e, "x");
         nbt_t *ye = nbt_hget(e, "y");
         nbt_t *ze = nbt_hget(e, "z");
-        assert(xe && ye && ze);
+        nbt_t *ide = nbt_hget(e, "id");
+        assert(xe && ye && ze && ide);
 
         if (xe->i==xc->i && ye->i==yc->i && ze->i==zc->i) {
+            if (!strcmp(id->st, ide->st)) {
+                if (!strcmp(id->st, "Chest") ||
+                    !strcmp(id->st, "Trap") ||
+                    !strcmp(id->st, "Hopper") ||
+                    !strcmp(id->st, "Dropper") ||
+                    !strcmp(id->st, "Furnace") ||
+                    !strcmp(id->st, "Cauldron")) {
+                    // skip tile entity updates for chests that would delete old items information
+                    nbt_t *ItemsNew = nbt_hget(ent, "Items");
+                    nbt_t *ItemsOld = nbt_hget(e, "Items");
+                    if (!ItemsNew && ItemsOld) {
+                        nbt_free(ent);
+                        return;
+                    }
+                }
+            }
+
             nbt_free(e);
             gc->tent->li[i] = ent;
             return 1;
@@ -249,6 +266,139 @@ int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
 
     nbt_add(gc->tent, ent);
     return 1;
+}
+
+void update_container(pos_t p, slot_t *slots, int nslots, const char *id) {
+    int i;
+
+    nbt_t *Items = nbt_new(NBT_LIST, "Items", 0);
+
+    for(i=0; i<nslots; i++) {
+        if (slots[i].item <= 0) continue; // skip empty slots
+        assert(slots[i].item <= MAXITEMID);
+
+        const item_id * iid = ITEMS+slots[i].item;
+        assert(iid->name);
+
+        char id[256];
+        sprintf(id, "minecraft:");
+
+        char *wpos = id+strlen(id);
+        int j;
+        for(j=0; iid->name[j]; j++)
+            wpos[j] = iid->name[j]==' '?'_':tolower(iid->name[j]);
+        wpos[j] = 0;
+
+        nbt_t * Item = nbt_new(NBT_COMPOUND, NULL, 4,
+            nbt_new(NBT_BYTE, "Slot", i),
+            nbt_new(NBT_STRING, "id", id),
+            nbt_new(NBT_BYTE, "Count", slots[i].count),
+            nbt_new(NBT_SHORT, "Damage", slots[i].damage));
+
+        if (slots[i].nbt) {
+            nbt_t * tag = nbt_clone(slots[i].nbt);
+            if (tag->name) lh_free(tag->name);
+            tag->name = strdup("tag");
+            nbt_add(Item, tag);
+        }
+
+        nbt_add(Items, Item);
+    }
+
+    nbt_t *Container = nbt_new(NBT_COMPOUND, NULL, 6,
+        nbt_new(NBT_INT, "x", p.x),
+        nbt_new(NBT_INT, "y", p.y),
+        nbt_new(NBT_INT, "z", p.z),
+        Items,
+        nbt_new(NBT_STRING, "id", id),
+        nbt_new(NBT_STRING, "Lock", ""));
+
+    store_tile_entity(p.x>>4, p.z>>4, Container);
+}
+
+void update_container_items(SP_WindowItems_pkt *wi) {
+    // cb is the block the player clicked at
+    bid_t cb = get_block_at(gs.inv.wpos.x, gs.inv.wpos.z, gs.inv.wpos.y);
+    switch (cb.bid) {
+        case 0x36:
+        case 0x92: { // Chest or Trapped Chest
+            // for chests we need to check if there's a second block next to it
+            pos_t p1 = gs.inv.wpos;
+            int secondary_present = 1;
+            pos_t p2 = gs.inv.wpos;
+
+            bid_t nn = get_block_at(p1.x, p1.z-1, p1.y);
+            bid_t ns = get_block_at(p1.x, p1.z+1, p1.y);
+            bid_t ne = get_block_at(p1.x+1, p1.z, p1.y);
+            bid_t nw = get_block_at(p1.x-1, p1.z, p1.y);
+
+            bid_t cn = BLOCKTYPE(0,0);
+
+            switch (cb.meta) {
+                case 2: // facing north/south
+                case 3:
+                    if (ne.bid == cb.bid) {
+                        p2.x++;
+                    }
+                    else if (nw.bid == cb.bid) {
+                        p1.x--;
+                    }
+                    else {
+                        secondary_present = 0;
+                    }
+                    break;
+                case 4: // facing west/east
+                case 5:
+                    if (ns.bid == cb.bid) {
+                        p2.z++;
+                    }
+                    else if (nn.bid == cb.bid) {
+                        p1.z--;
+                    }
+                    else {
+                        secondary_present = 0;
+                    }
+                    break;
+            }
+
+            cb = get_block_at(p1.x, p1.z, p1.y);
+            cn = get_block_at(p2.x, p2.z, p2.y);
+            if (cb.meta != cn.meta) {
+                printf("Warning: Glitched chest at %d,%d/%d\n", p1.x, p1.z, p1.y);
+                return;
+            }
+
+            update_container(p1, &wi->slots[0], 27, "Chest");
+            if (secondary_present)
+                update_container(p2, &wi->slots[27], 27, "Chest");
+
+            break;
+        }
+        case 0x17: // Dispenser
+            update_container(gs.inv.wpos, &wi->slots[0], 9, "Trap");
+            break;
+
+        case 0x3d:
+        case 0x3e:// Furnace
+            update_container(gs.inv.wpos, &wi->slots[0], 3, "Furnace");
+            break;
+
+        case 0x75: // Brewing Stand
+            update_container(gs.inv.wpos, &wi->slots[0], 5, "Cauldron");
+            break;
+
+        case 0x9a: // Hopper
+            update_container(gs.inv.wpos, &wi->slots[0], 5, "Hopper");
+            break;
+
+        case 0x9e: // Dropper
+            update_container(gs.inv.wpos, &wi->slots[0], 9, "Dropper");
+            break;
+
+        default:
+            // TODO: support other types of containers
+            return;
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1335,6 +1485,7 @@ void gs_packet(MCPacket *pkt) {
 
             gs.inv.windowopen = 1;
             gs.inv.wid = tpkt->wid;
+            sprintf(gs.inv.wtype, "%s", tpkt->wtype);
 
             if (tpkt->nslots) {
                 // this is a window with storable slots
@@ -1415,13 +1566,21 @@ void gs_packet(MCPacket *pkt) {
             // SP_WindowItems first, and then SP_OpenWindow
             if (tpkt->wid != gs.inv.wid) break;
 
+            // Start of player's inventory slots in the dialog window
             int woffset = (tpkt->wid == 0) ? 0 : gs.inv.woffset;
+
+            // Starting slot of player's inventory and number of slots
+            // displayed in the window. Own inventory dialog will have
+            // armor and crafting slots, other dialogs won't
             int ioffset = (tpkt->wid == 0) ? 0 : 9;
             int nslots  = (tpkt->wid == 0) ? 45 : 36;
 
             if (DEBUG_INVENTORY)
                 printf("*** WindowItems, woffset=%d, ioffset=%d, nslots=%d\n",
                        woffset, ioffset, nslots);
+
+            if (tpkt->wid!=0 && tpkt->wid!=255)
+                update_container_items(tpkt);
 
             int i;
             for(i=0; i<nslots; i++) {
@@ -1437,6 +1596,12 @@ void gs_packet(MCPacket *pkt) {
                 clear_slot(islot);
                 clone_slot(wslot, islot);
             }
+        } _GSP;
+
+        GSP(CP_PlayerBlockPlacement) {
+            // block position where player right-clicked
+            // if this is a container we will store its position
+            gs.inv.wpos = tpkt->bpos;
         } _GSP;
     }
 }

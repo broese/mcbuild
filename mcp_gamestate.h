@@ -150,6 +150,8 @@ typedef struct _gamestate {
         int         windowopen;         // nonzero if the client has an open window
         int         wid;                // ID of the currently opened window
         int         woffset;            // main inventory starts in the window from this offset
+        char        wtype[256];         // type of window opened by the last SP_OpenWindow
+        pos_t       wpos;               // last coordinates from CP_PlayerBlockPlacement - possibly a container being opened
     } inv;
 
     // tracked entities
