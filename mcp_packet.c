@@ -353,6 +353,31 @@ FREE_BEGIN(SP_UpdateBlockEntity) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x0a SP_BlockAction
+
+DECODE_BEGIN(SP_BlockAction,_1_8_1) {
+    Plong(loc.p);
+    Pchar(b1);
+    Pchar(b2);
+    Pvarint(type);
+} DECODE_END;
+
+ENCODE_BEGIN(SP_BlockAction,_1_8_1) {
+    Wlong(loc.p);
+    Wchar(b1);
+    Wchar(b2);
+    Wvarint(type);
+} ENCODE_END;
+
+DUMP_BEGIN(SP_BlockAction) {
+    char name[256];
+    printf("pos=%d,%d,%d b1=%d b2=%d type=%d (%s)",
+           tpkt->loc.x, tpkt->loc.y, tpkt->loc.z,
+           tpkt->b1, tpkt->b2, tpkt->type,
+           get_bid_name(name, BLOCKTYPE(tpkt->type, 0)));
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x0b SP_BlockChange
 
 DECODE_BEGIN(SP_BlockChange,_1_8_1) {
@@ -1676,6 +1701,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_D   (SP_SpawnPainting,_1_9),        // 04
         SUPPORT_DF  (SP_SpawnPlayer,_1_9),          // 05
         SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),  // 09
+        SUPPORT_DE  (SP_BlockAction,_1_8_1),        // 0a
         SUPPORT_DE  (SP_BlockChange,_1_8_1),        // 0b
         SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f
         SUPPORT_DEF (SP_MultiBlockChange,_1_8_1),   // 10

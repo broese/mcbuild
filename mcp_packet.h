@@ -101,6 +101,14 @@ typedef struct {
     nbt_t    *nbt;
 } SP_UpdateBlockEntity_pkt;
 
+// 0x0a
+typedef struct {
+    pos_t    loc;
+    uint8_t  b1;
+    uint8_t  b2;
+    int32_t  type;
+} SP_BlockAction_pkt;
+
 // 0x0b
 typedef struct {
     pos_t    pos;
@@ -541,6 +549,7 @@ typedef struct {
         PKT(SP_SpawnPainting);      // 04
         PKT(SP_SpawnPlayer);        // 05
         PKT(SP_UpdateBlockEntity);  // 09
+        PKT(SP_BlockAction);        // 0a
         PKT(SP_BlockChange);        // 0b
         PKT(SP_ChatMessage);        // 0f
         PKT(SP_MultiBlockChange);   // 10
