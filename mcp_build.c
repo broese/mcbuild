@@ -844,8 +844,8 @@ int update_inreach() {
         }
 
         double dx = gs.own.x - b->x + 0.5;
-        double dy = gs.own.x - b->x + 0.5;
-        double dz = gs.own.x - b->x + 0.5;
+        double dy = gs.own.y - b->y + 0.5;
+        double dz = gs.own.z - b->z + 0.5;
         b->dist = sqrt((SQ(dx)+SQ(dy)+SQ(dz)));
 
         b->inreach = (b->dist<MAXREACH_COARSE);
