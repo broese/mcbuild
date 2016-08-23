@@ -850,6 +850,25 @@
     <img src="images/scan_after.jpg">
 
 
+    <a name="spec_mat">
+    <h3>material,mat</h3>
+
+    <p>Prints a summary of required materials to the standard output.
+      By default, takes into account which blocks are already placed and
+      calculates the necessary remaining amount. With -p option, you
+      can print the total amount of materials required by the buildplan.
+      When the amount of a material exceeds its stack size, the number of
+      stacks is printed instead, using dollar sign to denote that.
+    </p>
+
+    <p>Format:</p>
+    <p><tt>#build material [-p]</tt></p>
+
+    <p>Parameters:</p>
+    <ul>
+      <li>-p - print total amount of materials required by the buildplan</li>
+    </ul>
+
     <a name="build_control">
     <h2>Building Control</h2>
 
