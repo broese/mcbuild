@@ -200,13 +200,10 @@ static inline float pos_dist(pos_t a, pos_t b) {
     return sqrtf((float)SQ(dx)+(float)SQ(dy)+(float)SQ(dz));
 }
 
-void track_spawners(SP_UpdateBlockEntity_pkt *ube) {
-    if (ube->action != 1) return; // only process SpawnPotentials updates
-    assert(ube->nbt);
-
+void track_spawners(nbt_t *te) {
     // determine the type of the spawner
     int type = SPAWNER_OTHER;
-    nbt_t * sd = nbt_hget(ube->nbt, "SpawnData");
+    nbt_t * sd = nbt_hget(te, "SpawnData");
     assert(sd && sd->type==NBT_COMPOUND);
     nbt_t * sType = nbt_hget(sd, "id");
     assert(sType && sType->type==NBT_STRING);
@@ -216,15 +213,20 @@ void track_spawners(SP_UpdateBlockEntity_pkt *ube) {
 
     if (type == SPAWNER_OTHER) return;
 
+    nbt_t *x = nbt_hget(te, "x"); assert(x); assert(x->type == NBT_INT);
+    nbt_t *y = nbt_hget(te, "y"); assert(y); assert(y->type == NBT_INT);
+    nbt_t *z = nbt_hget(te, "z"); assert(z); assert(z->type == NBT_INT);
+    pos_t loc = { .x = x->i, .y = y->i, .z = z->i };
+
     // check if this spawner was already recorded in the list
     int i;
     for (i=0; i<C(spawners); i++)
-        if (P(spawners)[i].loc.p == ube->loc.p)
+        if (P(spawners)[i].loc.p == loc.p)
             return;
 
     // store the spawner in the list for later processing
     spawner_t *s = lh_arr_new(GAR(spawners));
-    s->loc = ube->loc;
+    s->loc = loc;
     s->type = type;
 }
 
@@ -510,7 +512,27 @@ int extract_world_data() {
 void mcpd_packet(MCPacket *pkt) {
     switch (pkt->pid) {
         case SP_UpdateBlockEntity: {
-            track_spawners(&pkt->_SP_UpdateBlockEntity);
+            SP_UpdateBlockEntity_pkt *ube = &pkt->_SP_UpdateBlockEntity;
+            if (ube->action != 1) break; // only process SpawnPotentials updates
+            assert(ube->nbt);
+            track_spawners(ube->nbt);
+            break;
+        }
+
+        case SP_ChunkData: {
+            SP_ChunkData_pkt *cd = &pkt->_SP_ChunkData;
+            if (!cd->te) break;
+            assert(cd->te->type == NBT_LIST);
+
+            int i;
+            for(i=0; i<cd->te->count; i++) {
+                nbt_t * te = nbt_aget(cd->te, i);
+                nbt_t * id = nbt_hget(te, "id");
+                assert(id);
+                assert(id->type == NBT_STRING);
+                if (!strcmp(id->st, "MobSpawner"))
+                    track_spawners(te);
+            }
             break;
         }
 
