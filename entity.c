@@ -104,6 +104,40 @@ uint8_t * read_metadata(uint8_t *p, metadata **meta) {
     return p;
 }
 
+uint8_t * write_metadata(uint8_t *w, metadata *meta) {
+    assert(meta);
+
+    int i,j;
+    char bool;
+    for (i=0; i<32; i++) {
+        metadata *mm = meta+i;
+        if (mm->h==0x7f) continue;
+
+        lh_write_char(w, mm->h);
+        switch (mm->type) {
+            case META_BYTE:     write_char(w, mm->b);    break;
+            case META_SHORT:    write_short(w, mm->s);   break;
+            case META_INT:      write_int(w, mm->i);     break;
+            case META_FLOAT:    write_float(w, mm->f);   break;
+            case META_STRING:   w = write_string(w, mm->str); break;
+            case META_SLOT:     w = write_slot(w, &mm->slot); break;
+            case META_COORD:
+                write_int(w, mm->x);
+                write_int(w, mm->y);
+                write_int(w, mm->z);
+                break;
+            case META_ROT:
+                write_float(w, mm->pitch);
+                write_float(w, mm->yaw);
+                write_float(w, mm->roll);
+                break;
+        }
+    }
+    lh_write_char(w, 0x7f);
+
+    return w;
+}
+
 void dump_metadata(metadata *meta, EntityType et) {
     if (!meta) return;
 
