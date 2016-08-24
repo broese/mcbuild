@@ -55,89 +55,6 @@ int decode_chat_json(const char *json, char *name, char *message) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Entity Metadata
-
-static uint8_t * read_metadata(uint8_t *p, metadata **meta) {
-    assert(meta);
-    assert(!*meta);
-    ssize_t mc = 0;
-
-    // allocate a whole set of 32 values
-    lh_alloc_num(*meta, 32);
-    metadata *m = *meta;
-
-    int i;
-
-    // mark all entries as not present - we use the same 0x7f value
-    // that Mojang uses as terminator
-    for(i=0; i<32; i++) m[i].h = 0x7f;
-
-    while (1) {
-        uint8_t kv = read_char(p);
-        if (kv == 0x7f) break; // terminator
-
-        uint8_t k = kv&31;
-        uint8_t type = (kv>>5)&7;
-        metadata *mm = &m[k];
-        mm->h = kv;
-
-        switch (mm->type) {
-            case META_BYTE:   mm->b = read_char(p);    break;
-            case META_SHORT:  mm->s = read_short(p);   break;
-            case META_INT:    mm->i = read_int(p);     break;
-            case META_FLOAT:  mm->f = read_float(p);   break;
-            case META_STRING: p = read_string(p,mm->str); break;
-            case META_SLOT:   p = read_slot(p,&mm->slot); break;
-            case META_COORD:
-                mm->x = read_int(p);
-                mm->y = read_int(p);
-                mm->z = read_int(p);
-                break;
-            case META_ROT:
-                mm->pitch = read_float(p);
-                mm->yaw   = read_float(p);
-                mm->roll  = read_float(p);
-                break;
-        }
-    }
-
-    return p;
-}
-
-static void dump_metadata(metadata *meta, EntityType et) {
-    if (!meta) return;
-
-    int i;
-    for (i=0; i<32; i++) {
-        metadata *mm = meta+i;
-        if (mm->h==0x7f) continue;
-
-        printf("\n    ");
-
-        const char * name = NULL;
-        EntityType ett = et;
-        while ((!name) && (ett!=IllegalEntityType)) {
-            name = METANAME[ett][mm->key];
-            ett = ENTITY_HIERARCHY[ett];
-        }
-
-        printf("%2d %-24s [%-6s] = ", mm->key, name?name:"Unknown",METATYPES[mm->type]);
-        switch (mm->type) {
-            case META_BYTE:   printf("%d",  mm->b);   break;
-            case META_SHORT:  printf("%d",  mm->s);   break;
-            case META_INT:    printf("%d",  mm->i);   break;
-            case META_FLOAT:  printf("%.1f",mm->f);   break;
-            case META_STRING: printf("\"%s\"", mm->str); break;
-            case META_SLOT:   dump_slot(&mm->slot); break;
-            case META_COORD:
-                printf("(%d,%d,%d)",mm->x,mm->y,mm->z); break;
-            case META_ROT:
-                printf("%.1f,%.1f,%.1f",mm->pitch,mm->yaw,mm->roll); break;
-        }
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // Map Chunk
 
 // print block data slice-wise in hex and ANSI
@@ -602,7 +519,7 @@ DUMP_BEGIN(SP_SpawnPlayer) {
            tpkt->eid, limhex(tpkt->uuid,16,16),
            (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
            (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->item);
-    dump_metadata(tpkt->meta, Human);
+    dump_metadata(tpkt->meta, Player);
 } DUMP_END;
 
 FREE_BEGIN(SP_SpawnPlayer) {

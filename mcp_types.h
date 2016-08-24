@@ -84,41 +84,6 @@ typedef struct {
 extent_t ps2extent(pivot_t pv, size3_t sz);
 
 ////////////////////////////////////////////////////////////////////////////////
-// Metadata
-
-// single metadata key-value pair
-typedef struct {
-    union {
-        struct {
-            unsigned char key  : 5;
-            unsigned char type : 3;
-        };
-        uint8_t h;
-    };
-    union {
-        int8_t  b;
-        int16_t s;
-        int32_t i;
-        float   f;
-        char    str[MCP_MAXSTR];
-        slot_t  slot;
-        struct {
-            int32_t x;
-            int32_t y;
-            int32_t z;
-        };
-        struct {
-            float   pitch;
-            float   yaw;
-            float   roll;
-        };
-    };
-} metadata;
-
-metadata * clone_metadata(metadata *meta);
-void free_metadata(metadata *meta);
-
-////////////////////////////////////////////////////////////////////////////////
 // Map data
 
 typedef struct {

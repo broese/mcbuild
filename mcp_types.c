@@ -53,29 +53,6 @@ void free_cuboid(cuboid_t c) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// Metadata
-
-metadata * clone_metadata(metadata *meta) {
-    if (!meta) return NULL;
-    lh_create_num(metadata, newmeta, 32);
-    memmove(newmeta, meta, 32*sizeof(metadata));
-    int i;
-    for(i=0; i<32; i++)
-        if (newmeta[i].type == META_SLOT)
-            clone_slot(&meta[i].slot, &newmeta[i].slot);
-    return newmeta;
-}
-
-void free_metadata(metadata *meta) {
-    if (!meta) return;
-    int i;
-    for(i=0; i<32; i++)
-        if (meta[i].type == META_SLOT)
-            clear_slot(&meta[i].slot);
-    free(meta);
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // String
 
 /*
