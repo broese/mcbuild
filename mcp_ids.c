@@ -502,6 +502,9 @@ int get_base_meta(int id, int meta) {
     // block meta is used for I_MTYPE but not used for position/state => base meta as is
     if (!(it->flags&(I_MPOS|I_STATE_MASK))) return meta;
 
+    // unless I_MTYPE flag is specified, item's meta is used for damage only
+    if (id>=0x100) return 0;
+
     // everything else needs to be determined individually
     switch (id) {
         case 0x06: // Sapling
@@ -638,7 +641,7 @@ const char * get_mat_name(char *buf, int id, int meta) {
         return buf;
     }
 
-    int bmeta = (id<0x100) ? get_base_meta(id, meta) : 0;
+    int bmeta = get_base_meta(id, meta);
 
     const item_id *it = &ITEMS[id];
     if (it->name) {
