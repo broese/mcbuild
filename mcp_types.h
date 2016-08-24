@@ -19,6 +19,7 @@
 #include <stdio.h>
 
 #include "nbt.h"
+#include "slot.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Useful macros
@@ -81,20 +82,6 @@ typedef struct {
 
 // calculate an extent from a pivot and a size
 extent_t ps2extent(pivot_t pv, size3_t sz);
-
-////////////////////////////////////////////////////////////////////////////////
-// Slots and inventory
-
-typedef struct {
-    int16_t item;
-    int16_t count;  // actually int8_t, but we need to have a larger capacity to deal with crafting
-    int16_t damage;
-    nbt_t   *nbt;   // auxiliary data - enchantments etc.
-} slot_t;
-
-void dump_slot(slot_t *s);
-void clear_slot(slot_t *s);
-slot_t * clone_slot(slot_t *src, slot_t *dst);
 
 ////////////////////////////////////////////////////////////////////////////////
 // Metadata

@@ -359,12 +359,6 @@ void dump_inventory() {
     }
 }
 
-// ensure that an emptied slot is in a consistent state
-static inline void prune_slot(slot_t *s) {
-    if (s->count <= 0 || s->item == -1)
-        clear_slot(s);
-}
-
 static void slot_transfer(slot_t *f, slot_t *t, int count) {
     if (DEBUG_INVENTORY) {
         printf("*** Slot transfer of %d items\n",count);
@@ -404,22 +398,6 @@ static void slot_transfer(slot_t *f, slot_t *t, int count) {
     printf("Attempting slot_transfer with different item types:\n");
 
     assert(0);
-}
-
-static void copy_slot(slot_t *f, slot_t *t) {
-    clear_slot(t);
-
-    t->item = f->item;
-    t->damage = f->damage;
-    t->count = f->count;
-    t->nbt = nbt_clone(f->nbt);
-}
-
-static void slot_swap(slot_t *f, slot_t *t) {
-    slot_t temp;
-    temp = *t;
-    *t = *f;
-    *f = temp;
 }
 
 #define GREATERHALF(x) (((x)>>1)+((x)&1))
@@ -578,7 +556,7 @@ static void inv_click(int button, int16_t sid) {
                    gs.inv.drag.count, get_item_name(name,&gs.inv.drag),
                    s->count, get_item_name(name2,s), sid);
 
-        slot_swap(s, &gs.inv.drag);
+        swap_slots(s, &gs.inv.drag);
         return;
     }
 
@@ -1229,7 +1207,7 @@ void gs_packet(MCPacket *pkt) {
                     assert(tpkt->sid>=0 && tpkt->sid<45);
 
                     // copy the slot to our inventory slot
-                    copy_slot(&tpkt->slot, &gs.inv.slots[tpkt->sid]);
+                    clone_slot(&tpkt->slot, &gs.inv.slots[tpkt->sid]);
 
                     if (DEBUG_INVENTORY) {
                         printf("*** set slot sid=%d: ", tpkt->sid);
@@ -1252,7 +1230,7 @@ void gs_packet(MCPacket *pkt) {
                             printf("  tracked: "); dump_slot(ds); printf("\n");
                             printf("  server:  "); dump_slot(&tpkt->slot); printf("\n");
                         }
-                        copy_slot(&tpkt->slot, ds);
+                        clone_slot(&tpkt->slot, ds);
                     }
                     break;
                 }

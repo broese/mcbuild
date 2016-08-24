@@ -19,6 +19,7 @@
 
 #include "mcp_packet.h"
 #include "mcp_ids.h"
+#include "slot.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Helpers
@@ -55,8 +56,6 @@ int decode_chat_json(const char *json, char *name, char *message) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // Entity Metadata
-
-static uint8_t * read_slot(uint8_t *p, slot_t *s);
 
 static uint8_t * read_metadata(uint8_t *p, metadata **meta) {
     assert(meta);
@@ -234,37 +233,6 @@ uint8_t * write_chunk(uint8_t *w, int8_t skylight, chunk_t *chunk) {
     // biome data (only once per chunk)
     memmove(w, chunk->biome, 256);
     w+=256;
-
-    return w;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// Inventory Slot
-
-static uint8_t * read_slot(uint8_t *p, slot_t *s) {
-    s->item = lh_read_short_be(p);
-
-    if (s->item != -1) {
-        s->count  = lh_read_char(p);
-        s->damage = lh_read_short_be(p);
-        s->nbt    = nbt_parse(&p);
-    }
-    else {
-        s->count = 0;
-        s->damage= 0;
-        s->nbt = NULL;
-    }
-    return p;
-}
-
-static uint8_t * write_slot(uint8_t *w, slot_t *s) {
-    lh_write_short_be(w, s->item);
-    if (s->item == -1) return w;
-
-    lh_write_char(w, s->count);
-    lh_write_short_be(w, s->damage);
-
-    nbt_write(&w, s->nbt);
 
     return w;
 }
