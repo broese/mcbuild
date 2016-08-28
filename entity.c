@@ -288,6 +288,9 @@ const char * METANAME[][32] = {
         [19] = "Target 3",
         [20] = "Invulnerable time",
     },
+    [EnderCrystal] = {
+        [8]  = "Health",
+    },
     [Boat] = {
         [17] = "Time since hit",
         [18] = "Forward direction",
@@ -436,6 +439,7 @@ const char * ENTITY_NAMES[MaxEntityType] = {
     ENUMNAME(MinecartFurnace),
     ENUMNAME(MinecartCommandBlock),
     ENUMNAME(ActivatedTNT),
+    ENUMNAME(EnderCrystal),
     ENUMNAME(FallingObjects),
     ENUMNAME(ItemFrame),
     ENUMNAME(LeashKnot),
