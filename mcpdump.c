@@ -28,6 +28,8 @@
 #define STATE_LOGIN    2
 #define STATE_PLAY     3
 
+#define INTSWAP(x,y) { int temp=(x); (x)=(y); (y)=temp; }
+
 ////////////////////////////////////////////////////////////////////////////////
 
 int o_help                      = 0;
@@ -47,6 +49,11 @@ char *o_biomemap                = NULL;
 char *o_heightmap               = NULL;
 char *o_worlddir                = NULL;
 int o_flatbedrock               = 0;
+int o_reglimit                  = 0;
+int o_xmin                      = -60000;
+int o_zmin                      = -60000;
+int o_xmax                      =  60000;
+int o_zmax                      =  60000;
 
 void print_usage() {
     printf("Usage:\n"
@@ -65,6 +72,7 @@ void print_usage() {
            "  -A worlddir               : extract world data to Anvil format - update or create region files in worlddir\n"
            "  -d                        : dump packets\n"
            "  -D dimension              : specify dimension (0:overworld, -1:nether, 1:end)\n"
+           "  -L xmin,zmin,xmax,zmax    : limit the area from which chunks will be stored, in regions\n"
            "  -W                        : search for flat bedrock formations suitable for wither spawning\n"
     );
 }
@@ -72,7 +80,7 @@ void print_usage() {
 int parse_args(int ac, char **av) {
     int opt,error=0;
 
-    while ( (opt=getopt(ac,av,"b:D:B:H:A:sSihmdtpWe")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:D:B:H:A:L:sSihmdtpWe")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -136,6 +144,16 @@ int parse_args(int ac, char **av) {
             }
             case 'A': {
                 o_worlddir = optarg;
+                break;
+            }
+            case 'L': {
+                if (sscanf(optarg,"%d,%d,%d,%d", &o_xmin, &o_zmin, &o_xmax, &o_zmax)!=4) {
+                    printf("Failed to parse limit specification %s - must be in format xmin,zmin,xmax,zmax\n",optarg);
+                    error++;
+                }
+                if (o_xmin > o_xmax) INTSWAP(o_xmin, o_xmax);
+                if (o_zmin > o_zmax) INTSWAP(o_zmin, o_zmax);
+                o_reglimit = 1;
                 break;
             }
             case '?': {
@@ -782,6 +800,14 @@ int main(int ac, char **av) {
 
     if (o_track_inventory)
         gs_setopt(GSOP_TRACK_INVENTORY, 1);
+
+    if (o_reglimit) {
+        gs_setopt(GSOP_REGION_LIMIT, 1);
+        gs_setopt(GSOP_XMIN, o_xmin);
+        gs_setopt(GSOP_ZMIN, o_zmin);
+        gs_setopt(GSOP_XMAX, o_xmax);
+        gs_setopt(GSOP_ZMAX, o_zmax);
+    }
 
     int i;
     for(i=optind; av[i]; i++) {
