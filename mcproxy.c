@@ -925,10 +925,11 @@ int handle_server(int sfd, uint32_t ip, uint16_t port) {
     gm_reset();
 
     // open a new .mcp file to capture MC protocol data
-    char fname[4096];
+    char fname[4096],fdate[4096];
     time_t t;
     time(&t);
-    strftime(fname, sizeof(fname), "saved/%Y%m%d_%H%M%S.mcs",localtime(&t));
+    strftime(fdate, sizeof(fdate), "%Y%m%d_%H%M%S.mcs",localtime(&t));
+    sprintf(fname, "saved/%s_%s", o_raddr, fdate);
     mitm.output = fopen(fname, "w");
     if (!mitm.output) {
         close(mitm.ms);
