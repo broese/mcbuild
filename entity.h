@@ -84,6 +84,10 @@ typedef enum {
 
     Villager            = 120,
 
+    // inofficial entity types so we can track exp orbs and paintings
+    Painting            = 254,
+    ExperienceOrb       = 255,
+
     //// Objects
     Boat                = 1 +256,
     ItemStack           = 2 +256,

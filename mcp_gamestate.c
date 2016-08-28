@@ -968,7 +968,7 @@ void gs_packet(MCPacket *pkt) {
             e->y  = tpkt->pos.y*32;
             e->z  = tpkt->pos.z*32;
             e->type = ENTITY_OTHER;
-            e->mtype = Entity;
+            e->mtype = Painting;
             e->mdata = NULL;
         } _GSP;
 
@@ -979,7 +979,7 @@ void gs_packet(MCPacket *pkt) {
             e->y  = tpkt->y;
             e->z  = tpkt->z;
             e->type = ENTITY_OTHER;
-            e->mtype = Entity;
+            e->mtype = ExperienceOrb;
             e->mdata = NULL;
         } _GSP;
 
