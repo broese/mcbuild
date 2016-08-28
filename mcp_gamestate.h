@@ -146,6 +146,8 @@ typedef struct _gamestate {
         int         windowopen;         // nonzero if the client has an open window
         int         wid;                // ID of the currently opened window
         int         woffset;            // main inventory starts in the window from this offset
+        char        wtype[256];         // type of window opened by the last SP_OpenWindow
+        pos_t       wpos;               // last coordinates from CP_PlayerBlockPlacement - possibly a container being opened
     } inv;
 
     // tracked entities
@@ -178,6 +180,8 @@ gschunk * find_chunk(gsworld *w, int32_t X, int32_t Z, int allocate);
 cuboid_t export_cuboid_extent(extent_t ex);
 bid_t get_block_at(int32_t x, int32_t z, int32_t y);
 int get_stored_area(gsworld *w, int32_t *Xmin, int32_t *Xmax, int32_t *Zmin, int32_t *Zmax);
+
+void update_chunk_containers(gschunk *gc, int X, int Z);
 
 int player_direction();
 int sameitem(slot_t *a, slot_t *b);
