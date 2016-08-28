@@ -555,9 +555,11 @@ DECODE_BEGIN(SP_SpawnObject,_1_8_1) {
     Pchar(pitch);
     Pchar(yaw);
     Pint(objdata);
-    Pshort(vx);
-    Pshort(vy);
-    Pshort(vz);
+    if (tpkt->objdata) {
+        Pshort(vx);
+        Pshort(vy);
+        Pshort(vz);
+    }
 } DECODE_END;
 
 DUMP_BEGIN(SP_SpawnObject) {
