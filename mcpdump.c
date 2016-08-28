@@ -40,6 +40,7 @@ int o_track_thunder             = 0;
 int o_dump_players              = 0;
 int o_extract_maps              = 0;
 int o_dump_packets              = 0;
+int o_dump_entities             = 0;
 int o_dimension                 = 0;
 gsworld * o_world               = NULL;
 char *o_biomemap                = NULL;
@@ -57,6 +58,7 @@ void print_usage() {
            "  -i                        : track inventory transactions and dump inventory\n"
            "  -t                        : track thunder sounds\n"
            "  -p                        : dump player list\n"
+           "  -e                        : dump tracked entities\n"
            "  -m                        : extract in-game maps\n"
            "  -B output.png             : extract biome maps\n"
            "  -H output.png             : extract height maps\n"
@@ -70,7 +72,7 @@ void print_usage() {
 int parse_args(int ac, char **av) {
     int opt,error=0;
 
-    while ( (opt=getopt(ac,av,"b:D:B:H:A:sSihmdtpW")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:D:B:H:A:sSihmdtpWe")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -89,6 +91,9 @@ int parse_args(int ac, char **av) {
                 break;
             case 'p':
                 o_dump_players = 1;
+                break;
+            case 'e':
+                o_dump_entities = 1;
                 break;
             case 'm':
                 o_extract_maps = 1;
@@ -821,6 +826,9 @@ int main(int ac, char **av) {
 
     if (o_flatbedrock)
         search_flat_bedrock();
+
+    if (o_dump_entities)
+        dump_entities();
 
     gs_destroy();
 
