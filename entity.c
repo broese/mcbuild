@@ -178,12 +178,11 @@ const char * METANAME[][32] = {
     [Entity] = {
         [0]  = "Flags",
         [1]  = "Air",
-    },
-    [Living] = {
-        [0]  = "Flags",
-        [1]  = "Air",
         [2]  = "Name tag",
         [3]  = "Always show name tag",
+        [4]  = "Is silent",
+    },
+    [Living] = {
         [6]  = "Health",
         [7]  = "Potion effect color",
         [8]  = "Potion effect ambient",
