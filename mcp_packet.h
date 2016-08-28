@@ -123,7 +123,10 @@ typedef struct {
     fixp     z;
     angle_t  pitch;
     angle_t  yaw;
-    //TODO: object data
+    int32_t  objdata;
+    int16_t  vx;
+    int16_t  vy;
+    int16_t  vz;
 } SP_SpawnObject_pkt;
 
 // 0x0f

@@ -554,14 +554,19 @@ DECODE_BEGIN(SP_SpawnObject,_1_8_1) {
     Pint(z);
     Pchar(pitch);
     Pchar(yaw);
-    //TODO: object data
+    Pint(objdata);
+    Pshort(vx);
+    Pshort(vy);
+    Pshort(vz);
 } DECODE_END;
 
 DUMP_BEGIN(SP_SpawnObject) {
-    printf("eid=%08x, objtype=%d, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f",
+    printf("eid=%08x, objtype=%d, coord=%.1f,%.1f,%.1f, rot=%.1f,%.1f, velocity=%.1f,%.1f,%.1f, data=%d",
            tpkt->eid, tpkt->objtype,
            (float)tpkt->x/32,(float)tpkt->y/32,(float)tpkt->z/32,
-           (float)tpkt->yaw/256,(float)tpkt->pitch/256);
+           (float)tpkt->yaw/256,(float)tpkt->pitch/256,
+           (float)tpkt->vx/8000,(float)tpkt->vy/8000,(float)tpkt->vz/8000,
+           tpkt->objdata);
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
