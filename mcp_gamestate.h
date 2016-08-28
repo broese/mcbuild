@@ -24,6 +24,11 @@
 #define GSOP_SEARCH_SPAWNERS    2
 #define GSOP_TRACK_ENTITIES     3
 #define GSOP_TRACK_INVENTORY    4
+#define GSOP_REGION_LIMIT       5
+#define GSOP_XMIN               6
+#define GSOP_ZMIN               7
+#define GSOP_XMAX               8
+#define GSOP_ZMAX               9
 
 ////////////////////////////////////////////////////////////////////////////////
 // entity tracking
@@ -113,6 +118,7 @@ typedef struct _gamestate {
         int search_spawners;
         int track_entities;
         int track_inventory;
+        int region_limit;
     } opt;
 
     struct {
@@ -163,6 +169,8 @@ typedef struct _gamestate {
     gsworld         end;
     gsworld         nether;
     gsworld        *world;
+
+    int             xmin,zmin,xmax,zmax;
 } gamestate;
 
 extern gamestate gs;

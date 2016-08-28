@@ -56,6 +56,10 @@ void dump_entities() {
 // return pointer to a gschunk with chunk coords X,Z
 // NULL, if chunk, or its region/superregion are not allocated
 gschunk * find_chunk(gsworld *w, int32_t X, int32_t Z, int allocate) {
+    if (gs.opt.region_limit)
+        if ((X>>5)<gs.xmin || (Z>>5)<gs.zmin || (X>>5)>gs.xmax || (Z>>5)>gs.zmax)
+            return NULL;
+
     int32_t si = CC_2(X,Z);
     if (!w->sreg[si]) {
         if (!allocate) return NULL;
@@ -84,6 +88,7 @@ gschunk * find_chunk(gsworld *w, int32_t X, int32_t Z, int allocate) {
 // return pointer to the chunk
 static gschunk * insert_chunk(chunk_t *c, int cont) {
     gschunk * gc = find_chunk(gs.world, c->X, c->Z, 1);
+    if (!gc) return NULL;
 
     int i;
     for(i=0; i<16; i++) {
@@ -165,6 +170,7 @@ static void change_dimension(int dimension) {
 
 static void modify_blocks(int32_t X, int32_t Z, blkrec *blocks, int32_t count) {
     gschunk * gc = find_chunk(gs.world, X, Z, 1);
+    if (!gc) return;
 
     int i;
     for(i=0; i<count; i++) {
@@ -1664,6 +1670,21 @@ int gs_setopt(int optid, int value) {
             break;
         case GSOP_TRACK_INVENTORY:
             gs.opt.track_inventory = value;
+            break;
+        case GSOP_REGION_LIMIT:
+            gs.opt.region_limit = value;
+            break;
+        case GSOP_XMIN:
+            gs.xmin = value;
+            break;
+        case GSOP_ZMIN:
+            gs.zmin = value;
+            break;
+        case GSOP_XMAX:
+            gs.xmax = value;
+            break;
+        case GSOP_ZMAX:
+            gs.zmax = value;
             break;
 
         default:
