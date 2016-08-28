@@ -251,7 +251,7 @@ int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
                     // skip tile entity updates for chests that would delete old items information
                     nbt_t *ItemsNew = nbt_hget(ent, "Items");
                     nbt_t *ItemsOld = nbt_hget(e, "Items");
-                    if (!ItemsNew && ItemsOld) {
+                    if ((!ItemsNew || ItemsNew->count == 0) && ItemsOld) {
                         nbt_free(ent);
                         return;
                     }
