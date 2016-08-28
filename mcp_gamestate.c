@@ -143,10 +143,13 @@ static void free_chunks(gsworld *w) {
                             nbt_free(region->chunk[ci]->tent);
                         lh_free(region->chunk[ci]);
                     }
+                    lh_free(region);
                 }
             }
+            lh_free(sreg);
         }
     }
+    lh_clear_num(w->sreg, 512*512);
 }
 
 static void change_dimension(int dimension) {
@@ -906,6 +909,8 @@ void gs_packet(MCPacket *pkt) {
                     case 4: {
                         for(j=0; j<C(gs.players); j++) {
                             if (memcmp(P(gs.players)[j].uuid, entry->uuid, 16)==0) {
+                                lh_free(P(gs.players)[j].name);
+                                lh_free(P(gs.players)[j].dispname);
                                 lh_arr_delete(GAR(gs.players),j);
                                 break;
                             }
@@ -1450,6 +1455,12 @@ void gs_destroy() {
     free_chunks(&gs.overworld);
     free_chunks(&gs.nether);
     free_chunks(&gs.end);
+
+    for(i=0; i<C(gs.players); i++) {
+        lh_free(P(gs.players)[i].name);
+        lh_free(P(gs.players)[i].dispname);
+    }
+    lh_arr_free(GAR(gs.players));
 }
 
 int gs_setopt(int optid, int value) {

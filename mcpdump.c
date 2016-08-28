@@ -840,6 +840,7 @@ int main(int ac, char **av) {
         dump_entities();
 
     gs_destroy();
+    lh_free(P(spawners));
 
     return 0;
 }
