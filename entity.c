@@ -301,11 +301,20 @@ const EntityType ENTITY_HIERARCHY[] = {
     [MinecartCommandBlock] = Minecart,
     [MinecartFurnace]   = Minecart,
     [ActivatedTNT]      = Entity,
+
+    //// Generic
+    [Painting]        = Entity,
+    [ExperienceOrb]   = Entity,
 };
 
 #define ENUMNAME(name) [name] = #name
 
 const char * ENTITY_NAMES[MaxEntityType] = {
+    // Generic
+    ENUMNAME(Entity),
+    ENUMNAME(Painting),
+    ENUMNAME(ExperienceOrb),
+
     // Hostile mobs
     ENUMNAME(Creeper),
     ENUMNAME(Skeleton),
