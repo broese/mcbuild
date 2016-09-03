@@ -1278,30 +1278,36 @@ void place_pivot(pivot_t pv, MCPacketQueue *sq, MCPacketQueue *cq) {
         bt->z = bp.z;
         bt->b = bp.b;
     }
-    build.active = 1;
 
-    // calculate buildtask boundary
-    build.xmin = build.xmax = P(build.task)[0].x;
-    build.zmin = build.zmax = P(build.task)[0].z;
-    build.ymin = build.ymax = P(build.task)[0].y;
-    for(i=0; i<C(build.task); i++) {
-        build.xmin = MIN(build.xmin, P(build.task)[i].x);
-        build.xmax = MAX(build.xmax, P(build.task)[i].x);
-        build.ymin = MIN(build.ymin, P(build.task)[i].y);
-        build.ymax = MAX(build.ymax, P(build.task)[i].y);
-        build.zmin = MIN(build.zmin, P(build.task)[i].z);
-        build.zmax = MAX(build.zmax, P(build.task)[i].z);
+    if (C(build.task)) {
+        build.active = 1;
+
+        // calculate buildtask boundary
+        build.xmin = build.xmax = P(build.task)[0].x;
+        build.zmin = build.zmax = P(build.task)[0].z;
+        build.ymin = build.ymax = P(build.task)[0].y;
+        for(i=0; i<C(build.task); i++) {
+            build.xmin = MIN(build.xmin, P(build.task)[i].x);
+            build.xmax = MAX(build.xmax, P(build.task)[i].x);
+            build.ymin = MIN(build.ymin, P(build.task)[i].y);
+            build.ymax = MAX(build.ymax, P(build.task)[i].y);
+            build.zmin = MIN(build.zmin, P(build.task)[i].z);
+            build.zmax = MAX(build.zmax, P(build.task)[i].z);
+        }
+        //printf("Buildtask boundary: X: %d - %d   Z: %d - %d   Y: %d - %d\n",
+        //       build.xmin, build.xmax, build.zmin, build.zmax, build.ymin, build.ymax);
+
+        // store the coordinates and direction so they can be reused for 'place again'
+        build.pv = pv;
+        build_update();
     }
 
-    // store the coordinates and direction so they can be reused for 'place again'
-    build.pv = pv;
+    if (trimmed > 0) {
+        char reply[4096];
+        sprintf(reply, "Warning: Removed %d blocks that were outside of allowed y range\n", trimmed);
+        chat_message(reply, cq, "green", 0);
+    }
 
-    //printf("Buildtask boundary: X: %d - %d   Z: %d - %d   Y: %d - %d\n",
-    //       build.xmin, build.xmax, build.zmin, build.zmax, build.ymin, build.ymax);
-    if (trimmed > 0)
-        printf("Warning: %d blocks exceeded the y range and were trimmed\n", trimmed);
-
-    build_update();
 }
 
 // handler for placing the pivot block in-game ("place once" or "place many")
