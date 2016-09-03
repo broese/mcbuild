@@ -561,7 +561,7 @@ void mcpd_packet(MCPacket *pkt) {
 
         case SP_SoundEffect: {
             SP_SoundEffect_pkt *tpkt = (SP_SoundEffect_pkt *)&pkt->_SP_SoundEffect;
-            if (tpkt->id == 262) { // entity.lightning.thunder
+            if (tpkt->id == 267) { // entity.lightning.thunder
                 double tx = (double)tpkt->x/8;
                 double tz = (double)tpkt->z/8;
                 track_remote_sounds(tx, tz, tpkt->y/8, pkt->ts);
