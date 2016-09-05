@@ -234,7 +234,14 @@ int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
     nbt_t *yc = nbt_hget(ent, "y");
     nbt_t *zc = nbt_hget(ent, "z");
     nbt_t *id = nbt_hget(ent, "id");
-    assert(xc && yc && zc && id);
+    assert(xc && yc && zc);
+
+    if (!(id)) {
+        //printf("Ignoring incorrect tile entity for chunk %d,%d\n", X, Z);
+        //nbt_dump(ent);
+        nbt_free(ent);
+        return;
+    }
 
     // if an entity with these coordinates is present in the list, replace it
     int i;
