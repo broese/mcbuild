@@ -924,7 +924,7 @@ int update_placed() {
         nbl = b->nblocks[DIR_UP] = get_block_at(b->x,b->z,b->y+1);
         b->n_yp = !ISEMPTY(nbl.bid);
         nbl = b->nblocks[DIR_DOWN] = get_block_at(b->x,b->z,b->y-1);
-        b->n_yn = nbl.bid!=0; //!ISEMPTY(nbl.bid);
+        b->n_yn = !ISEMPTY(nbl.bid);
         nbl = b->nblocks[DIR_SOUTH] = get_block_at(b->x,b->z+1,b->y);
         b->n_zp = !ISEMPTY(nbl.bid);
         nbl = b->nblocks[DIR_NORTH] = get_block_at(b->x,b->z-1,b->y);
