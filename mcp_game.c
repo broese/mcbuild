@@ -26,6 +26,7 @@
 #include "mcp_build.h"
 #include "mcp_arg.h"
 #include "mcp_types.h"
+#include "helpers.h"
 
 // from mcproxy.c
 void drop_connection();
@@ -74,47 +75,6 @@ int nuuids = 0;
 
 ////////////////////////////////////////////////////////////////////////////////
 // helpers
-
-uint64_t gettimestamp() {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    uint64_t ts = (uint64_t)tv.tv_sec*1000000+(uint64_t)tv.tv_usec;
-    return ts;
-}
-
-typedef struct {
-    uint64_t    last;       // last timestamp when an event was allowed by rate-limiting
-    uint64_t    level;      // current number of tokens
-    uint64_t    interval;   // average interval, in us
-    uint64_t    burst;      // burst size, in tokens
-} tokenbucket;
-
-#define TBDEF(name, i, b)                                                      \
-    tokenbucket name = { .last=0, .level=b, .interval=i, .burst=b };
-
-tokenbucket * tb_init(tokenbucket *tb, int64_t interval, int64_t burst) {
-    if (!tb) tb = (tokenbucket *)malloc(sizeof(tokenbucket));
-    assert(tb);
-
-    tb->last = gettimestamp();
-    tb->level = burst;
-    tb->interval = interval;
-    tb->burst = burst;
-
-    return tb;
-}
-
-int tb_event(tokenbucket *tb, uint64_t size) {
-    uint64_t ts = gettimestamp();
-    uint64_t level = tb->level + (ts-tb->last)/tb->interval; // currently available token level
-    if (level > tb->burst) level = tb->burst;
-
-    if (size > level) return 0; // disallow this event
-
-    tb->level = level-size;
-    tb->last = ts;
-    return size;
-}
 
 #define HEADPOSY(y) ((double)(y)+1.62)
 
