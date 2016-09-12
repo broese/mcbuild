@@ -1058,7 +1058,7 @@ void build_update() {
 }
 
 // randomly choose which of the suitable dots we are going to use to place the block
-static void choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz) {
+static int choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz) {
     int f,dr,dc;
     int i=random()%b->ndots;
 
@@ -1077,14 +1077,20 @@ static void choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz)
                         *cy = (dotpos.y+dotpos.ry*dr+dotpos.cy*dc)/2;
                         *cz = (dotpos.z+dotpos.rz*dr+dotpos.cz*dc)/2;
                         //printf("choose_dot: face=%d dot=%d,%d, cur=%d,%d,%d\n",*face,dr,dc,*cx,*cy,*cz);
-                        return;
+                        return 1;
                     }
                 }
             }
         }
     }
-    printf("Fail: i=%d\n",i);
-    assert(0);
+
+    char name[256];
+    double dist = sqrt(SQ((double)b->x-gs.own.x)+SQ((double)b->y-gs.own.y)+SQ((double)b->z-gs.own.z));
+    printf("Warning: choose_dot failed : coord=%d,%d,%d, dist=%.1f (%.1f), mat=%d:%d (%s), state=%02x, neigh=%02x, ndots=%d\n",
+        b->x,b->y,b->z,b->dist,dist,b->b.bid,b->b.meta,get_bid_name(name, b->b),
+        b->state, b->neigh, b->ndots);
+
+    return 0;
 }
 
 // asynchronous building method - check the buildqueue and try to build up to maxbld blocks
@@ -1120,7 +1126,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         slot_t * hslot = &gs.inv.slots[islot+36];
 
         int8_t face, cx, cy, cz;
-        choose_dot(b, &face, &cx, &cy, &cz);
+        if (!choose_dot(b, &face, &cx, &cy, &cz)) continue;
 
         // dot's absolute 3D coordinates (fixed point)
         double tx = b->x+NOFF[face][0] + (double)cx/16;
