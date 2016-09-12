@@ -1704,28 +1704,13 @@ void build_show_preview(MCPacketQueue *sq, MCPacketQueue *cq, int mode) {
 
 // rate-limited sending of preview packets to the client
 #define PREVIEW_MAXPACKETS 5
-#define PREVIEW_INTERVAL   1000000
+#define PREVIEW_INTERVAL   200000
 
+TBDEF(tb_preview, PREVIEW_INTERVAL, PREVIEW_MAXPACKETS);
 
 void build_preview_transmit(MCPacketQueue *cq) {
-    MCPacketQueue *pq = &build.preview_queue;
-
-    if (!C(pq->queue)) return; // no preview packets queued
-
-    int64_t ts = gettimestamp();
-    if (ts - build.preview_last_ts < PREVIEW_INTERVAL) return;
-    build.preview_last_ts = ts;
-
-    int i;
-    //printf("build_preview_transmit: transmitting %zd packets to the client\n",
-    //       C(pq->queue)>PREVIEW_MAXPACKETS ? PREVIEW_MAXPACKETS : C(pq->queue));
-    for(i=0; i<PREVIEW_MAXPACKETS && C(pq->queue)>0; i++) {
-        queue_packet(P(pq->queue)[0], cq);
-        lh_arr_delete(GAR(pq->queue),0);
-    }
+    packet_queue_transmit(cq, &build.preview_queue, &tb_preview);
 }
-
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // Canceling Build

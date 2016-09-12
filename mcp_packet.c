@@ -1895,3 +1895,12 @@ void free_packet(MCPacket *pkt) {
 void queue_packet (MCPacket *pkt, MCPacketQueue *q) {
     *lh_arr_new(GAR(q->queue)) = pkt;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+
+void packet_queue_transmit(MCPacketQueue *q, MCPacketQueue *pq, tokenbucket *tb) {
+    if (!tb_event(tb, 1)) return;
+    if (!C(pq->queue)) return; // no preview packets queued
+    queue_packet(P(pq->queue)[0], q);
+    lh_arr_delete(GAR(pq->queue),0);
+}

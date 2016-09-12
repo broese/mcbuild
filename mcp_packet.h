@@ -24,6 +24,7 @@
 #include "mcp_types.h"
 #include "slot.h"
 #include "entity.h"
+#include "helpers.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Misc
@@ -610,6 +611,7 @@ ssize_t    encode_packet(MCPacket *pkt, uint8_t *buf);
 void       dump_packet(MCPacket *pkt);
 void       free_packet  (MCPacket *pkt);
 void       queue_packet (MCPacket *pkt, MCPacketQueue *q);
+void       packet_queue_transmit(MCPacketQueue *q, MCPacketQueue *pq, tokenbucket *tb);
 
 #define NEWPACKET(type,name)                     \
     lh_create_obj(MCPacket,name);                \
