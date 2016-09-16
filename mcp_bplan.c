@@ -673,6 +673,37 @@ void bplan_shrink(bplan *bp) {
     bplan_update(bp);
 }
 
+// scale up the buildplan
+void bplan_scale(bplan *bp, int scale) {
+    assert(bp);
+
+    // new list for the build plan to hold the blocks from the scaled model
+    lh_arr_declare_i(blkr, keep);
+
+    int i,x,y,z;
+    for(i=0; i<BPC; i++) {
+        blkr *b = BPP+i;
+        for(x=0; x<scale; x++) {
+            for(y=0; y<scale; y++) {
+                for(z=0; z<scale; z++) {
+                    blkr *k = lh_arr_new(GAR(keep));
+                    k->x = b->x*scale+x;
+                    k->y = b->y*scale+y;
+                    k->z = b->z*scale+z;
+                    k->b = b->b;
+                }
+            }
+        }
+    }
+
+    // replace the buildplan with the reduced list
+    lh_arr_free(BP);
+    BPC = C(keep);
+    BPP = P(keep);
+
+    bplan_update(bp);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 int bplan_save(bplan *bp, const char *name) {

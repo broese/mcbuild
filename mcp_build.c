@@ -2096,6 +2096,15 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         goto Place;
     }
 
+    CMD(scale) {
+        NEEDBP;
+        ARGDEF(count, NULL, count, 2);
+        bplan_scale(build.bp, count);
+        sprintf(reply, "Scale %d times to %zd blocks in a %dx%dx%d area\n",
+                count, C(build.bp->plan), build.bp->sx, build.bp->sz, build.bp->sy);
+        goto Place;
+    }
+
     // Save/load/import
     CMD(save) {
         NEEDBP;
