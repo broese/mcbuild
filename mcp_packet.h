@@ -531,11 +531,12 @@ typedef struct {
             unsigned int _cl   : 3;
         };
     };
+    int32_t   rawtype;  // on-wire protocol type
 
     int32_t   ver;      // decoder will mark this with its version, so in
                         // difficult cases you can differentiate between
                         // changed interpretation
-    int modified;
+    int modified;       // flag to indicate this packet was modified or is new
 
     uint8_t * raw;      // raw packet data
     ssize_t   rawlen;

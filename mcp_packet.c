@@ -99,6 +99,7 @@ typedef struct {
     void    (*dump_method)(MCPacket *);
     void    (*free_method)(MCPacket *);
     const char * dump_name;
+    int     pid;
 } packet_methods;
 
 #define DECODE_BEGIN(name,version)                                  \
@@ -137,83 +138,102 @@ typedef struct {
 // macros to fill the SUPPORT table
 
 // decode, encode, dump and free
-#define SUPPORT_DEDF(id,name,version)           \
-    [id] = {                                    \
-        decode_##name##version,                 \
-        encode_##name##version,                 \
-        dump_##name,                            \
-        free_##name,                            \
-        #name                                   \
+#define SUPPORT_DEDF(id,name,version)                                          \
+    [id] = {                                                                   \
+        decode_##name##version,                                                \
+        encode_##name##version,                                                \
+        dump_##name,                                                           \
+        free_##name,                                                           \
+        #name,                                                                 \
+        name,                                                                  \
     }
 
 // decode, dump and free
-#define SUPPORT_DDF(id,name,version)            \
-    [id] = {                                    \
-        decode_##name##version,                 \
-        NULL,                                   \
-        dump_##name,                            \
-        free_##name,                            \
-        #name                                   \
+#define SUPPORT_DDF(id,name,version)                                           \
+    [id] = {                                                                   \
+        decode_##name##version,                                                \
+        NULL,                                                                  \
+        dump_##name,                                                           \
+        free_##name,                                                           \
+        #name,                                                                 \
+        name,                                                                  \
     }
 
 // decode, encode and free
-#define SUPPORT_DEF(id,name,version)            \
-    [id] = {                                    \
-        decode_##name##version,                 \
-        encode_##name##version,                 \
-        NULL,                                   \
-        free_##name,                            \
-        #name                                   \
+#define SUPPORT_DEF(id,name,version)                                           \
+    [id] = {                                                                   \
+        decode_##name##version,                                                \
+        encode_##name##version,                                                \
+        NULL,                                                                  \
+        free_##name,                                                           \
+        #name,                                                                 \
+        name,                                                                  \
     }
 
 // decode and free
-#define SUPPORT_DF(id,name,version)             \
-    [id] = {                                    \
-        decode_##name##version,                 \
-        NULL,                                   \
-        NULL,                                   \
-        free_##name,                            \
-        #name                                   \
+#define SUPPORT_DF(id,name,version)                                            \
+    [id] = {                                                                   \
+        decode_##name##version,                                                \
+        NULL,                                                                  \
+        NULL,                                                                  \
+        free_##name,                                                           \
+        #name,                                                                 \
+        name,                                                                  \
     }
 
 // decode, encode and dump
-#define SUPPORT_DED(id,name,version)            \
-    [id] = {                                    \
-        decode_##name##version,                 \
-        encode_##name##version,                 \
-        dump_##name,                            \
-        NULL,                                   \
-        #name                                   \
+#define SUPPORT_DED(id,name,version)                                           \
+    [id] = {                                                                   \
+        decode_##name##version,                                                \
+        encode_##name##version,                                                \
+        dump_##name,                                                           \
+        NULL,                                                                  \
+        #name,                                                                 \
+        name,                                                                  \
     }
 
 // decode and dump
-#define SUPPORT_DD(id,name,version)             \
-    [id] = {                                    \
-        decode_##name##version,                 \
-        NULL,                                   \
-        dump_##name,                            \
-        NULL,                                   \
-        #name                                   \
+#define SUPPORT_DD(id,name,version)                                            \
+    [id] = {                                                                   \
+        decode_##name##version,                                                \
+        NULL,                                                                  \
+        dump_##name,                                                           \
+        NULL,                                                                  \
+        #name,                                                                 \
+        name,                                                                  \
     }
 
 // decode and encode
-#define SUPPORT_DE(id,name,version)             \
-    [id] = {                                    \
-        decode_##name##version,                 \
-        encode_##name##version,                 \
-        NULL,                                   \
-        NULL,                                   \
-        #name                                   \
+#define SUPPORT_DE(id,name,version)                                            \
+    [id] = {                                                                   \
+        decode_##name##version,                                                \
+        encode_##name##version,                                                \
+        NULL,                                                                  \
+        NULL,                                                                  \
+        #name,                                                                 \
+        name,                                                                  \
     }
 
 // decode only
-#define SUPPORT_D(id,name,version)              \
-    [id] = {                                    \
-        decode_##name##version,                 \
-        NULL,                                   \
-        NULL,                                   \
-        NULL,                                   \
-        #name                                   \
+#define SUPPORT_D(id,name,version)                                             \
+    [id] = {                                                                   \
+        decode_##name##version,                                                \
+        NULL,                                                                  \
+        NULL,                                                                  \
+        NULL,                                                                  \
+        #name,                                                                 \
+        name,                                                                  \
+    }
+
+// no supported methods
+#define SUPPORT_(id,name)                                                      \
+    [id] = {                                                                   \
+        NULL,                                                                  \
+        NULL,                                                                  \
+        NULL,                                                                  \
+        NULL,                                                                  \
+        #name,                                                                 \
+        name,                                                                  \
     }
 
 // Server -> Client
@@ -1697,57 +1717,112 @@ const static packet_methods SUPPORT_1_10[2][MAXPACKETTYPES] = {
     {
         SUPPORT_D   (0x00,SP_SpawnObject,_1_9),
         SUPPORT_D   (0x01,SP_SpawnExperienceOrb,_1_9),
+        SUPPORT_    (0x02,SP_SpawnGlobalEntity),
         SUPPORT_DF  (0x03,SP_SpawnMob,_1_9),
         SUPPORT_D   (0x04,SP_SpawnPainting,_1_9),
         SUPPORT_DF  (0x05,SP_SpawnPlayer,_1_9),
+        SUPPORT_    (0x06,SP_Animation),
+        SUPPORT_    (0x07,SP_Statistics),
+        SUPPORT_    (0x08,SP_BlockBreakAnimation),
         SUPPORT_DF  (0x09,SP_UpdateBlockEntity,_1_8_1),
         SUPPORT_DE  (0x0a,SP_BlockAction,_1_8_1),
         SUPPORT_DE  (0x0b,SP_BlockChange,_1_8_1),
+        SUPPORT_    (0x0c,SP_BossBar),
+        SUPPORT_    (0x0d,SP_ServerDifficulty),
+        SUPPORT_    (0x0e,SP_TabComplete),
         SUPPORT_DEF (0x0f,SP_ChatMessage,_1_8_1),
         SUPPORT_DEF (0x10,SP_MultiBlockChange,_1_8_1),
         SUPPORT_D   (0x11,SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DE  (0x12,SP_CloseWindow,_1_8_1),
         SUPPORT_DEF (0x13,SP_OpenWindow,_1_8_1),
         SUPPORT_DEF (0x14,SP_WindowItems,_1_8_1),
+        SUPPORT_    (0x15,SP_WindowProperty),
         SUPPORT_DEF (0x16,SP_SetSlot,_1_8_1),
+        SUPPORT_    (0x17,SP_SetCooldown),
+        SUPPORT_    (0x18,SP_PluginMessage),
+        SUPPORT_    (0x19,SP_NamedSoundEffect),
+        SUPPORT_    (0x1a,SP_Disconnect),
+        SUPPORT_    (0x1b,SP_EntityStatus),
         SUPPORT_DF  (0x1c,SP_Explosion,_1_8_1),
         SUPPORT_DE  (0x1d,SP_UnloadChunk,_1_9),
         SUPPORT_DE  (0x1e,SP_ChangeGameState,_1_8_1),
+        SUPPORT_    (0x1f,SP_KeepAlive),
         SUPPORT_DEF (0x20,SP_ChunkData,_1_9_4),
         SUPPORT_D   (0x21,SP_Effect,_1_8_1),
+        SUPPORT_    (0x22,SP_Particle),
         SUPPORT_D   (0x23,SP_JoinGame,_1_8_1),
         SUPPORT_DF  (0x24,SP_Map,_1_9),
         SUPPORT_D   (0x25,SP_EntityRelMove,_1_9),
         SUPPORT_D   (0x26,SP_EntityLookRelMove,_1_9),
+        SUPPORT_    (0x27,SP_EntityLook),
+        SUPPORT_    (0x28,SP_Entity),
+        SUPPORT_    (0x29,SP_VehicleMove),
+        SUPPORT_    (0x2a,SP_OpenSignEditor),
         SUPPORT_DE  (0x2b,SP_PlayerAbilities,_1_8_1),
+        SUPPORT_    (0x2c,SP_CombatEffect),
         SUPPORT_DEF (0x2d,SP_PlayerListItem,_1_9),
         SUPPORT_DE  (0x2e,SP_PlayerPositionLook,_1_9),
         SUPPORT_DE  (0x2f,SP_UseBed,_1_9),
         SUPPORT_DF  (0x30,SP_DestroyEntities,_1_8_1),
+        SUPPORT_    (0x31,SP_RemoveEntityEffect),
+        SUPPORT_    (0x32,SP_ResourcePackSent),
         SUPPORT_D   (0x33,SP_Respawn,_1_8_1),
+        SUPPORT_    (0x34,SP_EntityHeadLook),
+        SUPPORT_    (0x35,SP_WorldBorder),
+        SUPPORT_    (0x36,SP_Camera),
         SUPPORT_DE  (0x37,SP_HeldItemChange,_1_8_1),
+        SUPPORT_    (0x38,SP_DisplayScoreboard),
         SUPPORT_DEF (0x39,SP_EntityMetadata,_1_8_1),
+        SUPPORT_    (0x3a,SP_AttachEntity),
+        SUPPORT_    (0x3b,SP_EntityVelocity),
+        SUPPORT_    (0x3c,SP_EntityEquipment),
         SUPPORT_D   (0x3d,SP_SetExperience,_1_8_1),
         SUPPORT_D   (0x3e,SP_UpdateHealth,_1_8_1),
+        SUPPORT_    (0x3f,SP_ScoreboardObjective),
+        SUPPORT_    (0x40,SP_SetPassengers),
+        SUPPORT_    (0x41,SP_Teams),
+        SUPPORT_    (0x42,SP_UpdateScore),
+        SUPPORT_    (0x43,SP_SpawnPosition),
+        SUPPORT_    (0x44,SP_TimeUpdate),
+        SUPPORT_    (0x45,SP_Title),
         SUPPORT_D   (0x46,SP_SoundEffect,_1_10),
+        SUPPORT_    (0x47,SP_PlayerListHeader),
+        SUPPORT_    (0x48,SP_CollectItem),
         SUPPORT_D   (0x49,SP_EntityTeleport,_1_9),
+        SUPPORT_    (0x4f,SP___),
     },
     {
         SUPPORT_DE  (0x00,CP_TeleportConfirm,_1_9),
+        SUPPORT_    (0x01,CP_TabComplete),
         SUPPORT_D   (0x02,CP_ChatMessage,_1_8_1),
+        SUPPORT_    (0x03,CP_ClientStatus),
+        SUPPORT_    (0x04,CP_ClientSettings),
+        SUPPORT_    (0x05,CP_ConfirmTransaction),
+        SUPPORT_    (0x06,CP_EnchantItem),
         SUPPORT_DEF (0x07,CP_ClickWindow,_1_8_1),
         SUPPORT_DE  (0x08,CP_CloseWindow,_1_8_1),
+        SUPPORT_    (0x09,CP_PluginMessage),
         SUPPORT_DE  (0x0a,CP_UseEntity,_1_9),
+        SUPPORT_    (0x0b,CP_KeepAlive),
         SUPPORT_D   (0x0c,CP_PlayerPosition,_1_8_1),
         SUPPORT_DE  (0x0d,CP_PlayerPositionLook,_1_8_1),
         SUPPORT_DE  (0x0e,CP_PlayerLook,_1_8_1),
         SUPPORT_D   (0x0f,CP_Player,_1_8_1),
+        SUPPORT_    (0x10,CP_VehicleMode),
+        SUPPORT_    (0x11,CP_SteerBoat),
+        SUPPORT_    (0x12,CP_PlayerAbilities),
         SUPPORT_DE  (0x13,CP_PlayerDigging,_1_9),
         SUPPORT_DE  (0x14,CP_EntityAction,_1_8_1),
+        SUPPORT_    (0x15,CP_SteerVehicle),
+        SUPPORT_    (0x16,CP_ResourcePackStatus),
         SUPPORT_DE  (0x17,CP_HeldItemChange,_1_8_1),
+        SUPPORT_    (0x18,CP_CreativeInventoryAct),
+        SUPPORT_    (0x19,CP_UpdateSign),
         SUPPORT_DE  (0x1a,CP_Animation,_1_9),
+        SUPPORT_    (0x1b,CP_Spectate),
         SUPPORT_DE  (0x1c,CP_PlayerBlockPlacement,_1_9),
         SUPPORT_DE  (0x1d,CP_UseItem,_1_9),
+        SUPPORT_    (0x1f,CP___),
     },
 };
 
@@ -1813,14 +1888,13 @@ void decode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *p) {
 MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
 
     uint8_t * p = data;
-    Rvarint(type);              // type field
+    Rvarint(rawtype);           // on-wire packet type
 
     lh_create_obj(MCPacket, pkt);
 
     // fill in basic data
-    pkt->type = type;
-    pkt->cl   = is_client;
-    pkt->mode = STATE_PLAY;
+    pkt->rawtype = rawtype;
+    pkt->pid  = SUPPORT[is_client][rawtype].pid;
     pkt->ver  = PROTO_NONE;
 
     // make a raw data copy
@@ -1829,8 +1903,8 @@ MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
     memmove(pkt->raw, p, pkt->rawlen);
 
     // decode packet if supported
-    if (SUPPORT[pkt->cl][pkt->type].decode_method) {
-        SUPPORT[pkt->cl][pkt->type].decode_method(pkt);
+    if (SUPPORT[pkt->cl][rawtype].decode_method) {
+        SUPPORT[pkt->cl][rawtype].decode_method(pkt);
     }
 
     return pkt;
@@ -1841,16 +1915,27 @@ MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
 ssize_t encode_packet(MCPacket *pkt, uint8_t *buf) {
     uint8_t * p = buf;
 
+    // look up packet's native ID
+    if (pkt->modified || !pkt->raw) {
+        int i;
+        for(i=0; i<0x100 && ((SUPPORT[pkt->cl][i].pid&0xff) < 0xff); i++) {
+            if (SUPPORT[pkt->cl][i].pid == pkt->pid) {
+                pkt->rawtype = i;
+                break;
+            }
+        }
+    }
+
     // write packet type
-    lh_write_varint(p, pkt->type);
+    lh_write_varint(p, pkt->rawtype);
     ssize_t ll = p-buf;
 
     if (!pkt->modified && pkt->raw) {
         memmove(p, pkt->raw, pkt->rawlen);
         return ll+pkt->rawlen;
     }
-    else if ( SUPPORT[pkt->cl][pkt->type].encode_method ) {
-        return ll+SUPPORT[pkt->cl][pkt->type].encode_method(pkt, p);
+    else if ( SUPPORT[pkt->cl][pkt->rawtype].encode_method ) {
+        return ll+SUPPORT[pkt->cl][pkt->rawtype].encode_method(pkt, p);
     }
     else {
         assert(0);

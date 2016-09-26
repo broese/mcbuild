@@ -111,7 +111,7 @@
 #define SP_EntityLook           SP(27)
 #define SP_Entity               SP(28)
 #define SP_VehicleMove          SP(29)
-#define SP_SignEditorOpen       SP(2a)
+#define SP_OpenSignEditor       SP(2a)
 #define SP_PlayerAbilities      SP(2b)
 #define SP_CombatEffect         SP(2c)
 #define SP_PlayerListItem       SP(2d)
@@ -145,6 +145,7 @@
 #define SP_EntityTeleport       SP(49)
 #define SP_EntityProperties     SP(4a)
 #define SP_EntityEffect         SP(4b)
+#define SP___                   SP(ff)
 
 #define CP_TeleportConfirm      CP(00)
 #define CP_TabComplete          CP(01)
@@ -176,6 +177,7 @@
 #define CP_Spectate             CP(1b)
 #define CP_PlayerBlockPlacement CP(1c)
 #define CP_UseItem              CP(1d)
+#define CP___                   CP(ff)
 
 #define MAXPACKETTYPES          0x100
 
