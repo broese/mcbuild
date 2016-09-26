@@ -44,6 +44,7 @@ struct {
     int autoeat;
     int xray;
     int freecam;
+    int healthlimit;
 } opt;
 
 // loaded base locations - for thunder protection
@@ -972,6 +973,15 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         sprintf(reply,"Autoshear is %s",opt.autoshear?"ON":"OFF");
         rpos = 2;
     }
+    else if (!strcmp(words[0],"autologout") || !strcmp(words[0],"al")) {
+        if (!words[1] || sscanf(words[1],"%d",&opt.healthlimit)!=1)
+            opt.healthlimit=15;
+        if (opt.healthlimit > 0)
+            sprintf(reply,"Autologout at health himit %d",opt.healthlimit);
+        else
+            sprintf(reply,"Autologout disabled\n");
+        rpos = 2;
+    }
 #if 0
     else if (!strcmp(words[0],"ae") || !strcmp(words[0],"autoeat")) {
         opt.autoeat = !opt.autoeat;
@@ -1154,6 +1164,15 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         case SP_BlockChange:
         case CP_PlayerBlockPlacement:
         case SP_Explosion: {
+
+            if (pkt->pid == SP_UpdateHealth) {
+                SP_UpdateHealth_pkt * tpkt = &pkt->_SP_UpdateHealth;
+                if (opt.healthlimit > 0 && tpkt->health < opt.healthlimit) {
+                    printf("Dropping connection, health=%.1f limit=%d\n",
+                        tpkt->health, opt.healthlimit);
+                    exit(1);
+                }
+            }
 
             // check if our position or orientation have changed
             int32_t x = floor(gs.own.x);
