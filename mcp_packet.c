@@ -137,8 +137,8 @@ typedef struct {
 // macros to fill the SUPPORT table
 
 // decode, encode, dump and free
-#define SUPPORT_DEDF(name,version)              \
-    [PID(name)] = {                             \
+#define SUPPORT_DEDF(id,name,version)           \
+    [id] = {                                    \
         decode_##name##version,                 \
         encode_##name##version,                 \
         dump_##name,                            \
@@ -147,8 +147,8 @@ typedef struct {
     }
 
 // decode, dump and free
-#define SUPPORT_DDF(name,version)               \
-    [PID(name)] = {                             \
+#define SUPPORT_DDF(id,name,version)            \
+    [id] = {                                    \
         decode_##name##version,                 \
         NULL,                                   \
         dump_##name,                            \
@@ -157,8 +157,8 @@ typedef struct {
     }
 
 // decode, encode and free
-#define SUPPORT_DEF(name,version)               \
-    [PID(name)] = {                             \
+#define SUPPORT_DEF(id,name,version)            \
+    [id] = {                                    \
         decode_##name##version,                 \
         encode_##name##version,                 \
         NULL,                                   \
@@ -167,8 +167,8 @@ typedef struct {
     }
 
 // decode and free
-#define SUPPORT_DF(name,version)                \
-    [PID(name)] = {                             \
+#define SUPPORT_DF(id,name,version)             \
+    [id] = {                                    \
         decode_##name##version,                 \
         NULL,                                   \
         NULL,                                   \
@@ -177,8 +177,8 @@ typedef struct {
     }
 
 // decode, encode and dump
-#define SUPPORT_DED(name,version)               \
-    [PID(name)] = {                             \
+#define SUPPORT_DED(id,name,version)            \
+    [id] = {                                    \
         decode_##name##version,                 \
         encode_##name##version,                 \
         dump_##name,                            \
@@ -187,8 +187,8 @@ typedef struct {
     }
 
 // decode and dump
-#define SUPPORT_DD(name,version)                \
-    [PID(name)] = {                             \
+#define SUPPORT_DD(id,name,version)             \
+    [id] = {                                    \
         decode_##name##version,                 \
         NULL,                                   \
         dump_##name,                            \
@@ -197,8 +197,8 @@ typedef struct {
     }
 
 // decode and encode
-#define SUPPORT_DE(name,version)                \
-    [PID(name)] = {                             \
+#define SUPPORT_DE(id,name,version)             \
+    [id] = {                                    \
         decode_##name##version,                 \
         encode_##name##version,                 \
         NULL,                                   \
@@ -207,8 +207,8 @@ typedef struct {
     }
 
 // decode only
-#define SUPPORT_D(name,version)                 \
-    [PID(name)] = {                             \
+#define SUPPORT_D(id,name,version)              \
+    [id] = {                                    \
         decode_##name##version,                 \
         NULL,                                   \
         NULL,                                   \
@@ -1693,61 +1693,61 @@ DUMP_BEGIN(CP_UseItem) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
+const static packet_methods SUPPORT_1_10[2][MAXPACKETTYPES] = {
     {
-        SUPPORT_D   (SP_SpawnObject,_1_9),          // 00
-        SUPPORT_D   (SP_SpawnExperienceOrb,_1_9),   // 01
-        SUPPORT_DF  (SP_SpawnMob,_1_9),             // 03
-        SUPPORT_D   (SP_SpawnPainting,_1_9),        // 04
-        SUPPORT_DF  (SP_SpawnPlayer,_1_9),          // 05
-        SUPPORT_DF  (SP_UpdateBlockEntity,_1_8_1),  // 09
-        SUPPORT_DE  (SP_BlockAction,_1_8_1),        // 0a
-        SUPPORT_DE  (SP_BlockChange,_1_8_1),        // 0b
-        SUPPORT_DEF (SP_ChatMessage,_1_8_1),        // 0f
-        SUPPORT_DEF (SP_MultiBlockChange,_1_8_1),   // 10
-        SUPPORT_D   (SP_ConfirmTransaction,_1_8_1), // 11
-        SUPPORT_DE  (SP_CloseWindow,_1_8_1),        // 12
-        SUPPORT_DEF (SP_OpenWindow,_1_8_1),         // 13
-        SUPPORT_DEF (SP_WindowItems,_1_8_1),        // 14
-        SUPPORT_DEF (SP_SetSlot,_1_8_1),            // 16
-        SUPPORT_DF  (SP_Explosion,_1_8_1),          // 1c
-        SUPPORT_DE  (SP_UnloadChunk,_1_9),          // 1d
-        SUPPORT_DE  (SP_ChangeGameState,_1_8_1),    // 1e
-        SUPPORT_DEF (SP_ChunkData,_1_9_4),          // 20
-        SUPPORT_D   (SP_Effect,_1_8_1),             // 21
-        SUPPORT_D   (SP_JoinGame,_1_8_1),           // 23
-        SUPPORT_DF  (SP_Map,_1_9),                  // 24
-        SUPPORT_D   (SP_EntityRelMove,_1_9),        // 25
-        SUPPORT_D   (SP_EntityLookRelMove,_1_9),    // 26
-        SUPPORT_DE  (SP_PlayerAbilities,_1_8_1),    // 2b
-        SUPPORT_DEF (SP_PlayerListItem,_1_9),       // 2d
-        SUPPORT_DE  (SP_PlayerPositionLook,_1_9),   // 2e
-        SUPPORT_DE  (SP_UseBed,_1_9),               // 2f
-        SUPPORT_DF  (SP_DestroyEntities,_1_8_1),    // 30
-        SUPPORT_D   (SP_Respawn,_1_8_1),            // 33
-        SUPPORT_DE  (SP_HeldItemChange,_1_8_1),     // 37
-        SUPPORT_DEF (SP_EntityMetadata,_1_8_1),     // 39
-        SUPPORT_D   (SP_SetExperience,_1_8_1),      // 3d
-        SUPPORT_D   (SP_UpdateHealth,_1_8_1),       // 3e
-        SUPPORT_D   (SP_SoundEffect,_1_10),         // 46
-        SUPPORT_D   (SP_EntityTeleport,_1_9),       // 49
+        SUPPORT_D   (0x00,SP_SpawnObject,_1_9),
+        SUPPORT_D   (0x01,SP_SpawnExperienceOrb,_1_9),
+        SUPPORT_DF  (0x03,SP_SpawnMob,_1_9),
+        SUPPORT_D   (0x04,SP_SpawnPainting,_1_9),
+        SUPPORT_DF  (0x05,SP_SpawnPlayer,_1_9),
+        SUPPORT_DF  (0x09,SP_UpdateBlockEntity,_1_8_1),
+        SUPPORT_DE  (0x0a,SP_BlockAction,_1_8_1),
+        SUPPORT_DE  (0x0b,SP_BlockChange,_1_8_1),
+        SUPPORT_DEF (0x0f,SP_ChatMessage,_1_8_1),
+        SUPPORT_DEF (0x10,SP_MultiBlockChange,_1_8_1),
+        SUPPORT_D   (0x11,SP_ConfirmTransaction,_1_8_1),
+        SUPPORT_DE  (0x12,SP_CloseWindow,_1_8_1),
+        SUPPORT_DEF (0x13,SP_OpenWindow,_1_8_1),
+        SUPPORT_DEF (0x14,SP_WindowItems,_1_8_1),
+        SUPPORT_DEF (0x16,SP_SetSlot,_1_8_1),
+        SUPPORT_DF  (0x1c,SP_Explosion,_1_8_1),
+        SUPPORT_DE  (0x1d,SP_UnloadChunk,_1_9),
+        SUPPORT_DE  (0x1e,SP_ChangeGameState,_1_8_1),
+        SUPPORT_DEF (0x20,SP_ChunkData,_1_9_4),
+        SUPPORT_D   (0x21,SP_Effect,_1_8_1),
+        SUPPORT_D   (0x23,SP_JoinGame,_1_8_1),
+        SUPPORT_DF  (0x24,SP_Map,_1_9),
+        SUPPORT_D   (0x25,SP_EntityRelMove,_1_9),
+        SUPPORT_D   (0x26,SP_EntityLookRelMove,_1_9),
+        SUPPORT_DE  (0x2b,SP_PlayerAbilities,_1_8_1),
+        SUPPORT_DEF (0x2d,SP_PlayerListItem,_1_9),
+        SUPPORT_DE  (0x2e,SP_PlayerPositionLook,_1_9),
+        SUPPORT_DE  (0x2f,SP_UseBed,_1_9),
+        SUPPORT_DF  (0x30,SP_DestroyEntities,_1_8_1),
+        SUPPORT_D   (0x33,SP_Respawn,_1_8_1),
+        SUPPORT_DE  (0x37,SP_HeldItemChange,_1_8_1),
+        SUPPORT_DEF (0x39,SP_EntityMetadata,_1_8_1),
+        SUPPORT_D   (0x3d,SP_SetExperience,_1_8_1),
+        SUPPORT_D   (0x3e,SP_UpdateHealth,_1_8_1),
+        SUPPORT_D   (0x46,SP_SoundEffect,_1_10),
+        SUPPORT_D   (0x49,SP_EntityTeleport,_1_9),
     },
     {
-        SUPPORT_DE  (CP_TeleportConfirm,_1_9),      // 00
-        SUPPORT_D   (CP_ChatMessage,_1_8_1),        // 02
-        SUPPORT_DEF (CP_ClickWindow,_1_8_1),        // 07
-        SUPPORT_DE  (CP_CloseWindow,_1_8_1),        // 08
-        SUPPORT_DE  (CP_UseEntity,_1_9),            // 0a
-        SUPPORT_D   (CP_PlayerPosition,_1_8_1),     // 0c
-        SUPPORT_DE  (CP_PlayerPositionLook,_1_8_1), // 0d
-        SUPPORT_DE  (CP_PlayerLook,_1_8_1),         // 0e
-        SUPPORT_D   (CP_Player,_1_8_1),             // 0f
-        SUPPORT_DE  (CP_PlayerDigging,_1_9),        // 13
-        SUPPORT_DE  (CP_EntityAction,_1_8_1),       // 14
-        SUPPORT_DE  (CP_HeldItemChange,_1_8_1),     // 17
-        SUPPORT_DE  (CP_Animation,_1_9),            // 1a
-        SUPPORT_DE  (CP_PlayerBlockPlacement,_1_9), // 1c
-        SUPPORT_DE  (CP_UseItem,_1_9),              // 1d
+        SUPPORT_DE  (0x00,CP_TeleportConfirm,_1_9),
+        SUPPORT_D   (0x02,CP_ChatMessage,_1_8_1),
+        SUPPORT_DEF (0x07,CP_ClickWindow,_1_8_1),
+        SUPPORT_DE  (0x08,CP_CloseWindow,_1_8_1),
+        SUPPORT_DE  (0x0a,CP_UseEntity,_1_9),
+        SUPPORT_D   (0x0c,CP_PlayerPosition,_1_8_1),
+        SUPPORT_DE  (0x0d,CP_PlayerPositionLook,_1_8_1),
+        SUPPORT_DE  (0x0e,CP_PlayerLook,_1_8_1),
+        SUPPORT_D   (0x0f,CP_Player,_1_8_1),
+        SUPPORT_DE  (0x13,CP_PlayerDigging,_1_9),
+        SUPPORT_DE  (0x14,CP_EntityAction,_1_8_1),
+        SUPPORT_DE  (0x17,CP_HeldItemChange,_1_8_1),
+        SUPPORT_DE  (0x1a,CP_Animation,_1_9),
+        SUPPORT_DE  (0x1c,CP_PlayerBlockPlacement,_1_9),
+        SUPPORT_DE  (0x1d,CP_UseItem,_1_9),
     },
 };
 
@@ -1808,7 +1808,7 @@ void decode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *p) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define SUPPORT SUPPORT_1_9
+#define SUPPORT SUPPORT_1_10
 
 MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
 
