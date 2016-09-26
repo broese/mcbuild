@@ -239,7 +239,7 @@ void track_spawners(nbt_t *te) {
     nbt_t *x = nbt_hget(te, "x"); assert(x); assert(x->type == NBT_INT);
     nbt_t *y = nbt_hget(te, "y"); assert(y); assert(y->type == NBT_INT);
     nbt_t *z = nbt_hget(te, "z"); assert(z); assert(z->type == NBT_INT);
-    pos_t loc = { .x = x->i, .y = y->i, .z = z->i };
+    pos_t loc = POS(x->i,y->i,z->i);
 
     // check if this spawner was already recorded in the list
     int i;
