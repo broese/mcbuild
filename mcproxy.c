@@ -147,6 +147,7 @@ struct {
 
     int enable_encryption;
     int encryption_active;
+    int disconnect_required;
 
     FILE * output;
     FILE * dbg;
@@ -299,7 +300,7 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
    phase here. Everything else will go to process_play_packet in
    mcp_game module
 */
-void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
+void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx, lh_buf_t *bx) {
     // one nice advantage - we can be sure that we have all data in the buffer,
     // so there's no need for limit checking with the new protocol
 
@@ -331,6 +332,18 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx) {
         case CI_Handshake: {
             CI_Handshake_pkt pkt;
             decode_handshake(&pkt, p);
+
+            if (pkt.nextState == STATE_LOGIN && pkt.protocolVer != 210) {
+                // an unsupported client version - refuse connection with a message
+                SL_Disconnect_pkt dpkt;
+                sprintf(dpkt.reason,"{ text:\"The Minecraft protocol version of your client (%d) is not supported by this release of MCBuild\" }", pkt.protocolVer);
+                write_varint(w, PID(SL_Disconnect));
+                w = encode_disconnect(&dpkt, w);
+                write_packet_raw(output, w-output, bx);
+                mitm.disconnect_required = 1;
+                break;
+            }
+
             mitm.state = pkt.nextState;
             //printf("C %-30s protocol=%d server=%s:%d nextState=%d\n","Handshake",
             //       pkt.protocolVer,pkt.serverAddr,pkt.serverPort,pkt.nextState);
@@ -646,7 +659,7 @@ ssize_t handle_proxy(lh_conn *conn) {
         }
         else {
             // handle IDLE, STATUS and LOGIN packets here
-            process_packet(is_client, p, plen, tx);
+            process_packet(is_client, p, plen, tx, bx);
         }
         // remove processed packet from the buffer
         lh_arr_delete_range(GAR4(rx->data),0,ll+plen);
@@ -686,6 +699,11 @@ ssize_t handle_proxy(lh_conn *conn) {
         // send everything
         lh_conn_write(is_client?mitm.cs_conn:mitm.ms_conn, AR(bx->data));
         bx->C(data) = bx->ridx = 0;
+    }
+
+    if (mitm.disconnect_required) {
+        close_session();
+        return 0;
     }
 
     if (mitm.enable_encryption) {

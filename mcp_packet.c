@@ -1852,6 +1852,11 @@ uint8_t * encode_loginstart(CL_LoginStart_pkt *tpkt, uint8_t *w) {
     return w;
 }
 
+uint8_t * encode_disconnect(SL_Disconnect_pkt *tpkt, uint8_t *w) {
+    Wstr(reason);
+    return w;
+}
+
 void decode_encryption_request(SL_EncryptionRequest_pkt *tpkt, uint8_t *p) {
     Pstr(serverID);
     Pvarint(klen);
