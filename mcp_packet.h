@@ -608,12 +608,15 @@ typedef struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-MCPacket * decode_packet(int is_client, uint8_t *p, ssize_t len);
-ssize_t    encode_packet(MCPacket *pkt, uint8_t *buf);
-void       dump_packet(MCPacket *pkt);
-void       free_packet  (MCPacket *pkt);
-void       queue_packet (MCPacket *pkt, MCPacketQueue *q);
-void       packet_queue_transmit(MCPacketQueue *q, MCPacketQueue *pq, tokenbucket *tb);
+extern int  currentProtocol;
+int         set_protocol(int protocol, char * reply);
+
+MCPacket *  decode_packet(int is_client, uint8_t *p, ssize_t len);
+ssize_t     encode_packet(MCPacket *pkt, uint8_t *buf);
+void        dump_packet(MCPacket *pkt);
+void        free_packet  (MCPacket *pkt);
+void        queue_packet (MCPacket *pkt, MCPacketQueue *q);
+void        packet_queue_transmit(MCPacketQueue *q, MCPacketQueue *pq, tokenbucket *tb);
 
 #define NEWPACKET(type,name)                     \
     lh_create_obj(MCPacket,name);                \

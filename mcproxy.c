@@ -333,10 +333,10 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx, lh_b
             CI_Handshake_pkt pkt;
             decode_handshake(&pkt, p);
 
-            if (pkt.nextState == STATE_LOGIN && pkt.protocolVer != 210) {
-                // an unsupported client version - refuse connection with a message
-                SL_Disconnect_pkt dpkt;
-                sprintf(dpkt.reason,"{ text:\"The Minecraft protocol version of your client (%d) is not supported by this release of MCBuild\" }", pkt.protocolVer);
+            // configure protocol version in mcp_packet module
+            // disconnect with error message if this protocol is not supported
+            SL_Disconnect_pkt dpkt;
+            if (pkt.nextState == STATE_LOGIN && !set_protocol(pkt.protocolVer, dpkt.reason)) {
                 write_varint(w, PID(SL_Disconnect));
                 w = encode_disconnect(&dpkt, w);
                 write_packet_raw(output, w-output, bx);

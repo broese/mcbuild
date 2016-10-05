@@ -651,6 +651,10 @@ void parse_mcp(uint8_t *data, ssize_t size, char * name) {
                 CI_Handshake_pkt tpkt;
                 decode_handshake(&tpkt, p);
                 state = tpkt.nextState;
+                if (!set_protocol(tpkt.protocolVer, NULL)) {
+                    printf("Unsupported protocol version %d\n", tpkt.protocolVer);
+                    max = 0;
+                }
                 break;
             }
             case SL_LoginSuccess: {

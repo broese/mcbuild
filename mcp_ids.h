@@ -21,6 +21,7 @@
 #define PROTO_NONE   0x00000000
 #define PROTO_1_8_1  0x00010801
 #define PROTO_1_9    0x00010900
+#define PROTO_1_9_2  0x00010902
 #define PROTO_1_9_4  0x00010904
 #define PROTO_1_10   0x00011000
 

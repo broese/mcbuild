@@ -1888,7 +1888,55 @@ void decode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *p) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define SUPPORT SUPPORT_1_10
+int currentProtocol = PROTO_NONE;
+
+const static packet_methods (* SUPPORT)[MAXPACKETTYPES] = NULL;
+
+typedef struct {
+    int         protocolVersion;
+    int         protocolId;
+    char *      minecraftVersion;
+    const packet_methods (* supportTable)[MAXPACKETTYPES];
+} protocol_support_t;
+
+static protocol_support_t supported[] = {
+    {  47, PROTO_1_8_1, "1.8.x",    NULL },
+    { 107, PROTO_1_9,   "1.9.0",    NULL },
+    { 109, PROTO_1_9_2, "1.9.2-3",  NULL },
+    { 110, PROTO_1_9_4, "1.9.4",    NULL },
+    { 210, PROTO_1_10,  "1.10.x",   SUPPORT_1_10 },
+    {  -1, PROTO_NONE,  NULL,       NULL },
+};
+
+int set_protocol(int protocol, char * reply) {
+    SUPPORT = NULL;
+
+    int i;
+    for(i=0; supported[i].protocolVersion >= 0; i++) {
+        if (supported[i].protocolVersion == protocol && supported[i].supportTable) {
+            SUPPORT = supported[i].supportTable;
+            currentProtocol = supported[i].protocolId;
+            return 1;
+        }
+    }
+
+    // protocol is not supported
+    if (reply) {
+        int p = sprintf(reply, "{ text:\"The Minecraft protocol version of your client (%d) is not supported by this release of MCBuild\nSupported protocols are: ", protocol);
+        int nsupp = 0;
+        for(i=0; supported[i].protocolVersion >= 0; i++) {
+            if (supported[i].supportTable) {
+                p += sprintf(reply+p, "%s%d(%s)", (nsupp>0)?", ":"",
+                    supported[i].protocolVersion, supported[i].minecraftVersion);
+                nsupp++;
+            }
+        }
+        sprintf(reply+p, "%s\" }", nsupp?"":"none");
+    }
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
 
@@ -1947,8 +1995,6 @@ ssize_t encode_packet(MCPacket *pkt, uint8_t *buf) {
     }
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
 void dump_packet(MCPacket *pkt) {
     char *states="ISLP";
 
@@ -1971,8 +2017,6 @@ void dump_packet(MCPacket *pkt) {
 
 }
 
-////////////////////////////////////////////////////////////////////////////////
-
 void free_packet(MCPacket *pkt) {
     lh_free(pkt->raw);
 
@@ -1982,11 +2026,11 @@ void free_packet(MCPacket *pkt) {
     free(pkt);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
 void queue_packet (MCPacket *pkt, MCPacketQueue *q) {
     *lh_arr_new(GAR(q->queue)) = pkt;
 }
-
-////////////////////////////////////////////////////////////////////////////////
 
 void packet_queue_transmit(MCPacketQueue *q, MCPacketQueue *pq, tokenbucket *tb) {
     if (!tb_event(tb, 1)) return;
