@@ -1257,19 +1257,14 @@ FREE_BEGIN(SP_DestroyEntities) {
 // 0x33 SP_Respawn
 
 DECODE_BEGIN(SP_Respawn,_1_8_1) {
-    uint8_t *pp = p;
-
     Pint(dimension);
     Pchar(difficulty);
     Pchar(gamemode);
 
-    // workaround for a buggy encoding in Spigot 1.10
+    // workaround for different world IDs leaking in TotalFreedom mod
     if (!(tpkt->dimension>=-1 && tpkt->dimension<=1)) {
-        printf("Warning: applying Spigot 1.10 workaround! reported dimension=%d\n", tpkt->dimension);
-        p = pp;
-        Pshort(dimension);
-        Pshort(difficulty);
-        Pshort(gamemode);
+        printf("Warning: applying TotalFreedom/Spigot 1.10 workaround! reported dimension=%d\n", tpkt->dimension);
+        tpkt->dimension = 0;
     }
 
     Pstr(leveltype);
