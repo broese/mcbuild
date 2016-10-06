@@ -175,12 +175,14 @@ static void autoshear(MCPacketQueue *sq) {
         if (!e->mdata) continue;
 
         // skip sheared sheep
-        assert(e->mdata[13].type == META_BYTE);
-        if (e->mdata[13].b >= 0x10) continue;
+        int midx_color = currentProtocol<PROTO_1_10 ? 12 : 13;
+        assert(e->mdata[midx_color].type == META_BYTE);
+        if (e->mdata[midx_color].b >= 0x10) continue;
 
         // skip baby sheep
-        assert(e->mdata[12].type == META_BOOL);
-        if (e->mdata[12].bool) continue;
+        int midx_baby = currentProtocol<PROTO_1_10 ? 11 : 12;
+        assert(e->mdata[midx_baby].type == META_BOOL);
+        if (e->mdata[midx_baby].bool) continue;
 
         // only take entities that are within our reach
         if (mydist(e->x, e->y, e->z)<=REACH_RANGE)
