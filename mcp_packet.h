@@ -204,7 +204,7 @@ typedef struct {
 typedef struct {
     uint32_t eid;
     uint8_t  gamemode;
-    int8_t   dimension;
+    int32_t  dimension;
     uint8_t  difficulty;
     uint8_t  maxplayers;
     char     leveltype[32];
