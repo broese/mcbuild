@@ -146,6 +146,7 @@
 #define SP_EntityTeleport       SP(49)
 #define SP_EntityProperties     SP(4a)
 #define SP_EntityEffect         SP(4b)
+#define SP_UpdateSign           SP(80) // removed since 1.9.4
 #define SP___                   SP(ff)
 
 #define CP_TeleportConfirm      CP(00)

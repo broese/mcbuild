@@ -357,6 +357,14 @@ typedef struct {
     uint8_t     onground;
 } SP_EntityTeleport_pkt;
 
+// removed in 1.9.4
+typedef struct {
+    pos_t       pos;
+    char        line1[64];
+    char        line2[64];
+    char        line3[64];
+    char        line4[64];
+} SP_UpdateSign_pkt;
 
 
 
@@ -582,6 +590,8 @@ typedef struct {
         PKT(SP_UpdateHealth);       // 3e
         PKT(SP_SoundEffect);        // 46
         PKT(SP_EntityTeleport);     // 4a
+
+        PKT(SP_UpdateSign);         // removed in 1.9.4
 
         PKT(CP_TeleportConfirm);    // 00
         PKT(CP_ChatMessage);        // 02
