@@ -48,7 +48,7 @@ int calculate_yaw_pitch(double x, double z, double y, double *yaw, double *pitch
     *yaw = (dz<0) ? (180+alpha) : (360-alpha);
     if (*yaw >= 360.0) *yaw-=360; // normalize yaw
 
-    *pitch = -atan(dy/c)/M_PI*180;
+    *pitch = -atan2(dy,c)/M_PI*180;
 
     if (*yaw < 45-YAWMARGIN || *yaw > 315+YAWMARGIN) {
         return DIR_SOUTH;
