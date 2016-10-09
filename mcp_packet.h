@@ -154,7 +154,7 @@ typedef struct {
 typedef struct {
     uint8_t  wid;
     int16_t  count;
-    slot_t   slots[256];
+    slot_t   *slots;
 } SP_WindowItems_pkt;
 
 // 0x16

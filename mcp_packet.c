@@ -555,6 +555,7 @@ FREE_BEGIN(SP_OpenWindow) {
 DECODE_BEGIN(SP_WindowItems,_1_8_1) {
     Pchar(wid);
     Pshort(count);
+    lh_alloc_num(tpkt->slots, tpkt->count);
     int i;
     for(i=0; i<tpkt->count; i++) {
         p = read_slot(p, &tpkt->slots[i]);
@@ -584,6 +585,7 @@ FREE_BEGIN(SP_WindowItems) {
     int i;
     for(i=0; i<tpkt->count; i++)
         clear_slot(&tpkt->slots[i]);
+    lh_free(tpkt->slots);
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
