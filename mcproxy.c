@@ -474,8 +474,12 @@ void process_play_packet(int is_client, struct timeval ts,
         if (usize>0) {
             // packet is compressed - uncompress into temp buffer
             comp = '*';
-            plen = lh_zlib_decode_to(p,plen,ubuf,sizeof(ubuf));
-            assert(plen==usize);
+            plen = lh_zlib_decode_to(p,plen,ubuf,usize);
+            if (plen != usize) {
+                printf("Failed to decompress packet, expected %d bytes, zlib returned %zd. Skipping packet. Some decompressed data shown below:\n", usize, plen);
+                hexdump(ubuf, 64);
+                return;
+            }
 
             // correct p and lim to match the decompressed packet
             p=ubuf;
@@ -499,7 +503,8 @@ void process_play_packet(int is_client, struct timeval ts,
 
     MCPacket *pkt=decode_packet(is_client, p, plen);
     if (!pkt) {
-        printf("Failed to decode packet\n");
+        printf("Failed to decode packet. Some packet data shown below (len=%zd):\n", plen);
+        hexdump(p, (plen<64)?plen:64);
         return;
     }
     pkt->ts = ts;

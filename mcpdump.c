@@ -601,7 +601,6 @@ void parse_mcp(uint8_t *data, ssize_t size, char * name) {
         int usec      = read_int(p);
         int len       = read_int(p);
 
-        //printf("%d.%06d: len=%d\n",sec,usec,len);
         uint8_t *lim = p+len;
         if (lim > data+size) {printf("incomplete packet\n"); break;}
 
@@ -612,7 +611,12 @@ void parse_mcp(uint8_t *data, ssize_t size, char * name) {
                 // this packet is compressed, unpack and move the decoding pointer to the decoded buffer
                 arr_resize(GAR(udata), usize);
                 ssize_t usize_ret = zlib_decode_to(p, data+size-p, AR(udata));
-                if (usize_ret < 0) { printf("failed to decompress packet\n"); break;}
+                if (usize_ret != usize) {
+                    printf("Failed to decompress packet, expected %d bytes, zlib returned %zd. Skipping packet. Some decompressed data shown below:\n", usize, usize_ret);
+                    hexdump(P(udata), 64);
+                    hdr+=16+len;
+                    continue;
+                }
                 p = P(udata);
                 lim = p+usize;
             }
@@ -621,6 +625,7 @@ void parse_mcp(uint8_t *data, ssize_t size, char * name) {
         }
 
         ssize_t plen=lim-p;
+        //char *states = "ISLP";
         //printf("%d.%06d: %c %c type=?? plen=%6zd    ",sec,usec,is_client?'C':'S',states[state],plen);
         //hexprint(p, (plen>64)?64:plen);
 
@@ -638,13 +643,7 @@ void parse_mcp(uint8_t *data, ssize_t size, char * name) {
         // while p will move to the next field to be parsed.
 
         int type = lh_read_varint(p);
-        //printf("%d.%06d: %c type=%x len=%zd\n",sec,usec,is_client?'C':'S',type,len);
-
         uint32_t stype = ((state<<24)|(is_client<<28)|(type&0xffffff));
-
-
-        //if (state == STATE_PLAY)
-        //    import_packet(pkt, len, is_client);
 
         switch (stype) {
             case CI_Handshake: {
@@ -672,7 +671,7 @@ void parse_mcp(uint8_t *data, ssize_t size, char * name) {
     }
 
     lh_free(P(udata));
-    printf("Imported %s : %d packets\n", name, numpackets);
+    printf("Imported %s : %d packets, protocol %08x\n", name, numpackets, currentProtocol);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

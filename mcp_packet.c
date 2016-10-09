@@ -2337,6 +2337,7 @@ int set_protocol(int protocol, char * reply) {
         if (supported[i].protocolVersion == protocol && supported[i].supportTable) {
             SUPPORT = supported[i].supportTable;
             currentProtocol = supported[i].protocolId;
+            printf("Selecting protocol %d (%s) ID=%08x\n", protocol, supported[i].minecraftVersion, currentProtocol);
             return 1;
         }
     }
@@ -2360,6 +2361,7 @@ int set_protocol(int protocol, char * reply) {
 ////////////////////////////////////////////////////////////////////////////////
 
 MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
+    if (len <= 0) return NULL;  // some servers send empty packets
 
     uint8_t * p = data;
     Rvarint(rawtype);           // on-wire packet type
@@ -2373,6 +2375,11 @@ MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
 
     // make a raw data copy
     pkt->rawlen = data+len-p;
+    if (pkt->rawlen <= 0) {
+        printf("Incorrect length in decode_packet : data=%p, len=%zd, rawtype=%02x, pid=%08x, ver=%08x, rawlen=%p+%zd-%p=%zd\n",
+               data, len, rawtype, pkt->pid, pkt->ver, data, len, p, pkt->rawlen);
+        hexdump(data, len);
+    }
     pkt->raw = malloc(pkt->rawlen);
     memmove(pkt->raw, p, pkt->rawlen);
 
