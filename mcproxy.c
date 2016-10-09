@@ -824,6 +824,9 @@ int parse_profile(char *accessToken, char *userId, char *userName) {
     JSON_PARSE(prof, "accessToken", at, json_type_string);
     sprintf(accessToken, "%s", json_object_get_string(at));
 
+    json_object_put(json);
+    lh_free(buf);
+
     return 1;
 }
 
