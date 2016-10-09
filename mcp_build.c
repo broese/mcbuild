@@ -2451,6 +2451,7 @@ int build_packet(MCPacket *pkt, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (build.placemode && pkt->pid == CP_PlayerBlockPlacement) {
         build_placemode(pkt, sq, cq);
+        free_packet(pkt);
         return 0; // do not forward the packet to the server
     }
 
