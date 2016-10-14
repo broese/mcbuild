@@ -230,21 +230,21 @@ nbt_t * anvil_chunk_create(gschunk * ch, int X, int Z) {
     }
 
     // Chunk compound
-    nbt_t *chunk = nbt_new(NBT_COMPOUND, "", 1,
-        nbt_new(NBT_COMPOUND, "Level", 12,
+    nbt_t *chunk = nbt_new(NBT_COMPOUND, "", 2,
+        nbt_new(NBT_COMPOUND, "Level", 11,
             nbt_new(NBT_BYTE, "LightPopulated", 0),
             nbt_new(NBT_INT, "zPos", Z),
             nbt_new(NBT_INT_ARRAY, "HeightMap", hmap, 256),
             sections,        // Block/light data
             nbt_new(NBT_LONG, "LastUpdate", 1240000000), //TODO: adjust timestamp
-            nbt_new(NBT_BYTE, "V", 1),
             nbt_new(NBT_BYTE_ARRAY, "Biomes", ch->biome, 256 ),
             nbt_new(NBT_LONG, "InhabitedTime", 0),
             nbt_new(NBT_INT, "xPos", X),
             nbt_new(NBT_BYTE, "TerrainPopulated", 1),
             tent,           // TileEntities
             ent             // Entities
-        )
+        ),
+        nbt_new(NBT_INT, "DataVersion", 512)
     );
 
     return chunk;
