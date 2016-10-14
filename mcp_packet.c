@@ -964,7 +964,7 @@ DECODE_BEGIN(SP_JoinGame,_1_8_1) {
     Pint(eid);
     Pchar(gamemode);
     Rchar(dimension);
-    tpkt->dimension = (int32_t)dimension;
+    tpkt->dimension = (int32_t)((char)dimension);
     Pchar(difficulty);
     Pchar(maxplayers);
     Pstr(leveltype);
