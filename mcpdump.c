@@ -515,6 +515,7 @@ int extract_world_data() {
                 int32_t X = CC_X(s,r,c);
                 int32_t Z = CC_Z(s,r,c);
 
+                update_chunk_containers(ch, X, Z);
                 nbt_t * nbtch = anvil_chunk_create(ch, X, Z);
                 anvil_insert_chunk(reg, X, Z, nbtch);
                 nch++;

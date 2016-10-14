@@ -414,6 +414,23 @@ void update_container_items(SP_WindowItems_pkt *wi) {
     }
 }
 
+void update_chunk_containers(gschunk *gc, int X, int Z) {
+    int i;
+    for(i=0; i<65536; i++) {
+        pos_t pos = { .x=(X<<4)+(i&15), .y=i>>8, .z=(Z<<4)+((i>>4)&15) };
+        switch(gc->blocks[i].bid) {
+            case  54:
+            case 146: update_container(pos, NULL, 0, "Chest"); break;
+            case  23: update_container(pos, NULL, 0, "Trap"); break;
+            case 154: update_container(pos, NULL, 0, "Hopper"); break;
+            case 158: update_container(pos, NULL, 0, "Dropper"); break;
+            case  61:
+            case  62: update_container(pos, NULL, 0, "Furnace"); break;
+            case 117: update_container(pos, NULL, 0, "Cauldron"); break;
+        }
+    }
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 cuboid_t export_cuboid_extent(extent_t ex) {

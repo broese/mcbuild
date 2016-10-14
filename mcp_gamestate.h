@@ -192,5 +192,7 @@ cuboid_t export_cuboid_extent(extent_t ex);
 bid_t get_block_at(int32_t x, int32_t z, int32_t y);
 int get_stored_area(gsworld *w, int32_t *Xmin, int32_t *Xmax, int32_t *Zmin, int32_t *Zmax);
 
+void update_chunk_containers(gschunk *gc, int X, int Z);
+
 int player_direction();
 int sameitem(slot_t *a, slot_t *b);
