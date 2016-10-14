@@ -552,8 +552,11 @@ void mcpd_packet(MCPacket *pkt) {
             for(i=0; i<cd->te->count; i++) {
                 nbt_t * te = nbt_aget(cd->te, i);
                 nbt_t * id = nbt_hget(te, "id");
-                assert(id);
-                assert(id->type == NBT_STRING);
+                if (!id || id->type != NBT_STRING) {
+                    printf("Warning: tile entity id is missing or incorrect:\n");
+                    nbt_dump(te);
+                    continue;
+                }
                 if (!strcmp(id->st, "MobSpawner"))
                     track_spawners(te);
             }
