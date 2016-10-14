@@ -281,7 +281,7 @@ int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
     return 1;
 }
 
-void update_container(pos_t p, slot_t *slots, int nslots, const char *id) {
+void update_container(pos_t p, slot_t *slots, int nslots, const char *cid) {
     int i;
 
     nbt_t *Items = nbt_new(NBT_LIST, "Items", 0);
@@ -318,13 +318,22 @@ void update_container(pos_t p, slot_t *slots, int nslots, const char *id) {
         nbt_add(Items, Item);
     }
 
-    nbt_t *Container = nbt_new(NBT_COMPOUND, NULL, 6,
+    nbt_t *Container = nbt_new(NBT_COMPOUND, NULL, 4,
         nbt_new(NBT_INT, "x", p.x),
         nbt_new(NBT_INT, "y", p.y),
         nbt_new(NBT_INT, "z", p.z),
-        Items,
-        nbt_new(NBT_STRING, "id", id),
-        nbt_new(NBT_STRING, "Lock", ""));
+        nbt_new(NBT_STRING, "id", cid));
+
+    if (!strcmp(cid, "EnderChest")) {
+        nbt_free(Items);
+    }
+    else {
+        nbt_add(Container, Items);
+        nbt_add(Container, nbt_new(NBT_STRING, "Lock", ""));
+        if (!strcmp(cid, "Hopper")) {
+            nbt_add(Container, nbt_new(NBT_INT, "TransferCooldown", 0));
+        }
+    }
 
     store_tile_entity(p.x>>4, p.z>>4, Container);
 }
@@ -427,6 +436,7 @@ void update_chunk_containers(gschunk *gc, int X, int Z) {
             case  61:
             case  62: update_container(pos, NULL, 0, "Furnace"); break;
             case 117: update_container(pos, NULL, 0, "Cauldron"); break;
+            case 130: update_container(pos, NULL, 0, "EnderChest"); break;
         }
     }
 }
