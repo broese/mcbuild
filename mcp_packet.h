@@ -628,9 +628,10 @@ void        free_packet  (MCPacket *pkt);
 void        queue_packet (MCPacket *pkt, MCPacketQueue *q);
 void        packet_queue_transmit(MCPacketQueue *q, MCPacketQueue *pq, tokenbucket *tb);
 
-#define NEWPACKET(type,name)                     \
-    lh_create_obj(MCPacket,name);                \
-    name->pid = type;                            \
+#define NEWPACKET(type,name)                                                   \
+    lh_create_obj(MCPacket,name);                                              \
+    name->pid = type;                                                          \
+    name->ver = currentProtocol;                                               \
     type##_pkt *t##name = &name->_##type;
 
 ////////////////////////////////////////////////////////////////////////////////
