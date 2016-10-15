@@ -27,6 +27,7 @@
 #include "mcp_arg.h"
 #include "mcp_types.h"
 #include "helpers.h"
+#include "hud.h"
 
 // from mcproxy.c
 void drop_connection();
@@ -1029,6 +1030,9 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         opt.holeradar = !opt.holeradar;
         sprintf(reply,"Hole radar is %s",opt.holeradar?"ON":"OFF");
         rpos = 2;
+    }
+    else if (!strcmp(words[0],"map") || !strcmp(words[0],"hud")) {
+        hud_cmd(words, tq, bq);
     }
     else if (!strcmp(words[0],"align")) {
         float yaw = 0;

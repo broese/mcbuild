@@ -5,7 +5,7 @@ LIBS_LIBHELPER=-L../libhelper -lhelper
 LIBS=$(LIBS_LIBHELPER) -lm -lpng -lz -lcurl -lcrypto -ljson-c
 
 SRC_BASE=$(addsuffix .c, mcp_packet mcp_ids mcp_types nbt slot entity helpers)
-SRC_MCPROXY=$(addsuffix .c, mcproxy mcp_gamestate mcp_game mcp_build mcp_arg mcp_bplan) $(SRC_BASE)
+SRC_MCPROXY=$(addsuffix .c, mcproxy mcp_gamestate mcp_game mcp_build mcp_arg mcp_bplan hud) $(SRC_BASE)
 SRC_MCPDUMP=$(addsuffix .c, mcpdump mcp_gamestate anvil) $(SRC_BASE)
 SRC_QHOLDER=$(addsuffix .c, qholder) $(SRC_BASE)
 SRC_DUMPREG=$(addsuffix .c, dumpreg anvil) $(SRC_BASE)

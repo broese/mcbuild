@@ -22,6 +22,7 @@
 #include <lh_compress.h>
 
 #include "mcp_gamestate.h"
+#include "hud.h"
 
 gamestate gs;
 static int gs_used = 0;
