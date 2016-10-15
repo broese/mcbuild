@@ -1426,6 +1426,13 @@ void gs_packet(MCPacket *pkt) {
                     // main inventory window (wid=0)
                     assert(tpkt->sid>=0 && tpkt->sid<46);
 
+                    // prevent the HUD map item to be deleted
+                    if (tpkt->sid >= 9 && tpkt->sid <= 45) {
+                        slot_t *ls = &gs.inv.slots[tpkt->sid];
+                        if (tpkt->slot.item == -1 && ls->item == 358 && ls->damage == DEFAULT_MAP_ID)
+                            break;
+                    }
+
                     // copy the slot to our inventory slot
                     clone_slot(&tpkt->slot, &gs.inv.slots[tpkt->sid]);
 
@@ -1450,6 +1457,11 @@ void gs_packet(MCPacket *pkt) {
                             printf("  tracked: "); dump_slot(ds); printf("\n");
                             printf("  server:  "); dump_slot(&tpkt->slot); printf("\n");
                         }
+
+                        // prevent the HUD map item to be deleted from the drag slot
+                        if (tpkt->slot.item == -1 && ds->item == 358 && ds->damage == DEFAULT_MAP_ID)
+                            break;
+
                         clone_slot(&tpkt->slot, ds);
                     }
                     break;
@@ -1662,6 +1674,11 @@ void gs_packet(MCPacket *pkt) {
                     dump_slot(wslot);
                     printf("\n");
                 }
+
+                // prevent the HUD map item to be deleted
+                if (islot->item == 358 && islot->damage == DEFAULT_MAP_ID &&
+                    wslot->item <= 0)
+                    continue;
 
                 clear_slot(islot);
                 clone_slot(wslot, islot);

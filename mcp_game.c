@@ -1250,6 +1250,49 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         ////////////////////////////////////////////////////////////////
         // Inventory
 
+        GMP(SP_SetSlot) {
+            slot_t *ls = NULL;
+            if (tpkt->wid==0 && tpkt->sid >= 9 && tpkt->sid <= 45) {
+                ls = &gs.inv.slots[tpkt->sid];
+            }
+            else if (tpkt->wid==255 && tpkt->sid==-1) {
+                ls = &gs.inv.drag;
+            }
+
+            if (ls && tpkt->slot.item == -1 &&
+                ls->item == 358 && ls->damage == DEFAULT_MAP_ID) {
+
+                clone_slot(ls, &tpkt->slot);
+                pkt->modified = 1;
+            }
+            queue_packet(pkt, tq);
+        } _GMP;
+
+        GMP(SP_WindowItems) {
+            // Start of player's inventory slots in the dialog window
+            int woffset = (tpkt->wid == 0) ? 0 : gs.inv.woffset;
+
+            // Starting slot of player's inventory and number of slots
+            // displayed in the window. Own inventory dialog will have
+            // armor and crafting slots, other dialogs won't
+            int ioffset = (tpkt->wid == 0) ? 0 : 9;
+            int nslots  = (tpkt->wid == 0) ? 45 : 36;
+
+            int i;
+            for(i=0; i<nslots; i++) {
+                slot_t * islot = &gs.inv.slots[i+ioffset];
+                slot_t * wslot = &tpkt->slots[i+woffset];
+
+                // prevent the HUD map item to be deleted
+                if (islot->item == 358 && islot->damage == DEFAULT_MAP_ID &&
+                    wslot->item <= 0) {
+
+                    clone_slot(islot, wslot);
+                    pkt->modified = 1;
+                }
+            }
+        } _GMP;
+
         GMP(SP_ConfirmTransaction) {
             gmi_confirm(tpkt, sq, cq);
             queue_packet(pkt, tq);
