@@ -1244,6 +1244,33 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                     queue_packet(bc, bq);
                 }
             }
+            if (tpkt->status==6) { // swap hands
+                // The server will not send you SetSlot if you swap empty hands
+                // If we hold a bogus HUD map item, we need to update the client
+                slot_t *rhand = &gs.inv.slots[gs.inv.held+36];
+                slot_t *lhand = &gs.inv.slots[45];
+
+                int sid1=-1, sid2=-1;
+                if (rhand->item == 358 && rhand->damage == DEFAULT_MAP_ID && lhand->item == -1) {
+                    sid1 = 45; sid2=gs.inv.held+36;
+                }
+                if (lhand->item == 358 && lhand->damage == DEFAULT_MAP_ID && rhand->item == -1) {
+                    sid1=gs.inv.held+36; sid2 = 45;
+                }
+                if (sid1 >= 0) {
+                    NEWPACKET(SP_SetSlot, ss1);
+                    tss1->wid = 0;
+                    tss1->sid = sid1;
+                    clone_slot(&gs.inv.slots[sid1], &tss1->slot);
+                    queue_packet(ss1, bq);
+
+                    NEWPACKET(SP_SetSlot, ss2);
+                    tss2->wid = 0;
+                    tss2->sid = sid2;
+                    clone_slot(&gs.inv.slots[sid2], &tss2->slot);
+                    queue_packet(ss2, bq);
+                }
+            }
             queue_packet(pkt, tq);
         } _GMP;
 
