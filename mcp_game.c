@@ -1477,4 +1477,5 @@ void gm_async(MCPacketQueue *sq, MCPacketQueue *cq) {
 
     build_preview_transmit(cq);
     build_progress(sq, cq);
+    hud_update(cq);
 }

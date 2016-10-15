@@ -19,6 +19,7 @@
 #include <lh_files.h>
 #include <lh_debug.h>
 #include <lh_bytes.h>
+#include <lh_image.h>
 
 #include "mcp_ids.h"
 #include "mcp_build.h"
@@ -29,9 +30,56 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define CMD(name) if (!strcmp(cmd, #name))
-
+int hud_mode  = HUDMODE_NONE;
+int hud_valid = 1;
 int hud_id=-1;
+
+uint8_t hud_image[16384];
+
+// TODO: color constants
+uint8_t draw_color = 34;
+
+lhimage * fonts = NULL;
+
+#define FONTS_OFFSET 0
+#define FONTS_W      4
+#define FONTS_H      6
+
+// TODO: selectable fonts
+int font_w = FONTS_W;
+int font_h = FONTS_H;
+int font_o = FONTS_OFFSET;
+
+////////////////////////////////////////////////////////////////////////////////
+
+void draw_clear() {
+    memset(hud_image, draw_color, sizeof(hud_image));
+}
+
+void draw_glyph(int col, int row, char l) {
+    if (l<0x20 || l>0x7f) return;
+
+    uint32_t *glyph = &IMGDOT(fonts, (l&15)*font_w, ((l>>4)-2)*font_h+font_o);
+    uint8_t  *hud   = hud_image+col+row*128;
+
+    int r,c;
+    for(r=0; r<font_h; r++) {
+        uint32_t *glyr = glyph+r*fonts->stride;
+        uint8_t  *hudr = hud+r*128;
+        for(c=0; c<font_w; c++) {
+            if ((glyr[c]&0xffffff) == 0xffffff)
+                hudr[c] = draw_color;
+        }
+    }
+}
+
+void draw_text(int col, int row, char *s) {
+    int i;
+    for(i=0; s[i]; i++)
+        draw_glyph(col+i*FONTS_W, row, s[i]);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 
 int hud_new(char * reply, MCPacketQueue *cq) {
     // find a free slot in user's inventory (including the off-hand slot)
@@ -63,6 +111,14 @@ int hud_new(char * reply, MCPacketQueue *cq) {
 int hud_bind(char *reply, int id) {
     if (id<0 || id>32767) {
         sprintf(reply, "Map ID must be in range 0..32767");
+        return -1;
+    }
+
+    if (!fonts)
+        fonts = import_png_file("hudfonts.png");
+
+    if (!fonts) {
+        sprintf(reply, "Failed to load fonts");
         return -1;
     }
 
@@ -99,9 +155,26 @@ void hud_unbind(char *reply, MCPacketQueue *cq) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void huddraw_test() {
+    int i;
+    for (i=1; i<=21; i++) {
+        uint8_t color = i*4+2;
+        int row = (i-1)*6+1;
+        char text[256];
+        sprintf(text, "Color %d\n",color);
+        draw_color = color;
+        draw_text(5, row, text);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 /*
  * hud new  # give player a new fake map (32767) and bind HUD to it
  * hud NNN  # bind HUD to a specific map ID
+ * hud -    # unbind HUD and remove the fake map from player's inventory
+ *
+ * hud test         # test picture
  */
 
 void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
@@ -110,19 +183,67 @@ void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     int rpos = 0;
 
     int id;
+    int oldmode = hud_mode;
 
     if (!words[1] || !strcmp(words[1],"new")) {
         id = hud_new(reply, cq);
         if (id < 0) goto Error;
         hud_bind(reply, id);
+        hud_valid = 0;
     }
     else if (sscanf(words[1], "%u", &id)==1) {
         hud_bind(reply, id);
+        hud_valid = 0;
     }
     else if (!strcmp(words[1],"-")) {
         hud_unbind(reply, cq);
     }
 
+    else if (!strcmp(words[1],"test")) {
+        hud_mode = HUDMODE_TEST;
+    }
+
+    if (oldmode != hud_mode) hud_valid = 0;
+
  Error:
     if (reply[0]) chat_message(reply, cq, "green", rpos);
+}
+
+void hud_update(MCPacketQueue *cq) {
+    if (hud_id < 0 || hud_valid) return;
+
+    draw_color = 34;
+    draw_clear();
+
+    switch(hud_mode) {
+        case HUDMODE_TEST:
+            huddraw_test();
+            break;
+
+        case HUDMODE_NONE:
+        default:
+            break;
+    }
+
+    NEWPACKET(SP_Map, map);
+    tmap->mapid    = hud_id;
+    tmap->scale    = 0;
+    tmap->trackpos = 0;
+    tmap->nicons   = 0;
+    tmap->icons    = NULL;
+    tmap->ncols    = 128;
+    tmap->nrows    = 128;
+    tmap->X        = 0;
+    tmap->Z        = 0;
+    tmap->len      = sizeof(hud_image);
+    lh_alloc_num(tmap->data, sizeof(hud_image));
+    memmove(tmap->data, hud_image, sizeof(hud_image));
+
+    queue_packet(map, cq);
+
+    hud_valid = 1;
+}
+
+void hud_invalidate(int mode) {
+    if (mode == hud_mode) hud_valid = 0;
 }

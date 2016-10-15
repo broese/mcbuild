@@ -14,4 +14,9 @@
 
 #define DEFAULT_MAP_ID 32767
 
+#define HUDMODE_NONE            0
+#define HUDMODE_TEST            1
+
 void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq);
+void hud_update(MCPacketQueue *cq);
+void hud_invalidate(int mode);
