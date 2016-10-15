@@ -1539,6 +1539,13 @@ void gs_packet(MCPacket *pkt) {
             }
         } _GSP;
 
+        GSP(CP_PlayerDigging) {
+            if (tpkt->status == 6) { // Swap hands
+                if (!gs.opt.track_inventory) break;
+                swap_slots(&gs.inv.slots[45], &gs.inv.slots[gs.inv.held+36]);
+            }
+        } _GSP;
+
         GSP(SP_OpenWindow) {
             if (DEBUG_INVENTORY) {
                 printf("*** Open Window wid=%d type=%s\n",
