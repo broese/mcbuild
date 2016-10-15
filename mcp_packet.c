@@ -1025,6 +1025,28 @@ DECODE_BEGIN(SP_Map,_1_9) {
     }
 } DECODE_END;
 
+ENCODE_BEGIN(SP_Map,_1_9) {
+    Wvarint(mapid);
+    Wchar(scale);
+    Wchar(trackpos);
+    Wvarint(nicons);
+
+    int i;
+    for(i=0; i<tpkt->nicons; i++) {
+        Wchar(icons[i].type);
+        Wchar(icons[i].x);
+        Wchar(icons[i].z);
+    }
+    Wchar(ncols);
+    if (tpkt->ncols > 0) {
+        Wchar(nrows);
+        Wchar(X);
+        Wchar(Z);
+        Wvarint(len);
+        Wdata(data, tpkt->len);
+    }
+} ENCODE_END;
+
 DUMP_BEGIN(SP_Map) {
     printf("id=%d, scale=%d, trackpos=%d, icons=%d, size=%d,%d, at=%d,%d, len=%d",
            tpkt->mapid, tpkt->scale, tpkt->trackpos, tpkt->nicons,
@@ -1819,7 +1841,7 @@ const static packet_methods SUPPORT_1_10[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (0x21,SP_Effect,_1_8_1),
         SUPPORT_    (0x22,SP_Particle),
         SUPPORT_DD  (0x23,SP_JoinGame,_1_9_2),
-        SUPPORT_DDF (0x24,SP_Map,_1_9),
+        SUPPORT_DEDF(0x24,SP_Map,_1_9),
         SUPPORT_DD  (0x25,SP_EntityRelMove,_1_9),
         SUPPORT_DD  (0x26,SP_EntityLookRelMove,_1_9),
         SUPPORT_    (0x27,SP_EntityLook),
@@ -1936,7 +1958,7 @@ const static packet_methods SUPPORT_1_9_4[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (0x21,SP_Effect,_1_8_1),
         SUPPORT_    (0x22,SP_Particle),
         SUPPORT_DD  (0x23,SP_JoinGame,_1_9_2),
-        SUPPORT_DDF (0x24,SP_Map,_1_9),
+        SUPPORT_DEDF(0x24,SP_Map,_1_9),
         SUPPORT_DD  (0x25,SP_EntityRelMove,_1_9),
         SUPPORT_DD  (0x26,SP_EntityLookRelMove,_1_9),
         SUPPORT_    (0x27,SP_EntityLook),
@@ -2053,7 +2075,7 @@ const static packet_methods SUPPORT_1_9_2[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (0x21,SP_Effect,_1_8_1),
         SUPPORT_    (0x22,SP_Particle),
         SUPPORT_DD  (0x23,SP_JoinGame,_1_9_2),
-        SUPPORT_DDF (0x24,SP_Map,_1_9),
+        SUPPORT_DEDF(0x24,SP_Map,_1_9),
         SUPPORT_DD  (0x25,SP_EntityRelMove,_1_9),
         SUPPORT_DD  (0x26,SP_EntityLookRelMove,_1_9),
         SUPPORT_    (0x27,SP_EntityLook),
@@ -2171,7 +2193,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (0x21,SP_Effect,_1_8_1),
         SUPPORT_    (0x22,SP_Particle),
         SUPPORT_DD  (0x23,SP_JoinGame,_1_8_1),
-        SUPPORT_DDF (0x24,SP_Map,_1_9),
+        SUPPORT_DEDF(0x24,SP_Map,_1_9),
         SUPPORT_DD  (0x25,SP_EntityRelMove,_1_9),
         SUPPORT_DD  (0x26,SP_EntityLookRelMove,_1_9),
         SUPPORT_    (0x27,SP_EntityLook),
