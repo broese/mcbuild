@@ -71,6 +71,34 @@ int hud_bind(char *reply, int id) {
     return id;
 }
 
+void hud_unbind(char *reply, MCPacketQueue *cq) {
+    int sid;
+    for(sid=0; sid<=45; sid++) {
+        if (gs.inv.slots[sid].item == 358 && gs.inv.slots[sid].damage == DEFAULT_MAP_ID) {
+            NEWPACKET(SP_SetSlot, ss);
+            tss->wid = 0;
+            tss->sid = sid;
+            clear_slot(&tss->slot);
+
+            gs_packet(ss);
+            queue_packet(ss,cq);
+        }
+    }
+
+    if (gs.inv.drag.item == 358 && gs.inv.drag.damage == DEFAULT_MAP_ID) {
+        NEWPACKET(SP_SetSlot, ss);
+        tss->wid = 255;
+        tss->sid = -1;
+        clear_slot(&tss->slot);
+
+        gs_packet(ss);
+        queue_packet(ss,cq);
+    }
+
+    hud_id = -1;
+    sprintf(reply, "Unbinding HUD");
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -92,6 +120,9 @@ void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else if (sscanf(words[1], "%u", &id)==1) {
         hud_bind(reply, id);
+    }
+    else if (!strcmp(words[1],"-")) {
+        hud_unbind(reply, cq);
     }
 
  Error:
