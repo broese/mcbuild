@@ -1200,6 +1200,8 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
 
             build_update();
 
+            hud_invalidate(HUDMODE_NAV);
+
             gs.own.pos_change = 0;
 
             if (!build_packet(pkt, sq, cq)) break;

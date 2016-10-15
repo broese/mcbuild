@@ -14,6 +14,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <strings.h>
+#include <math.h>
 
 #include <lh_buffers.h>
 #include <lh_files.h>
@@ -167,6 +168,32 @@ void huddraw_test() {
     }
 }
 
+void huddraw_nav() {
+    char text[256];
+
+    draw_color = 18;
+
+    sprintf(text, "X:%7d Z:%7d", (int32_t)floor(gs.own.x), (int32_t)floor(gs.own.z));
+    draw_text(4, 4, text);
+
+    if (gs.world==&gs.nether)
+        sprintf(text, "X:%7d Z:%7d Overworld", (int32_t)floor(gs.own.x)*8, (int32_t)floor(gs.own.z)*8);
+    else
+        sprintf(text, "X:%7d Z:%7d Nether", (int32_t)floor(gs.own.x)/8, (int32_t)floor(gs.own.z)/8);
+    draw_text(4, 12, text);
+
+    char * dir = "UNKNOWN";
+    switch(player_direction()) {
+        case DIR_NORTH : dir = "NORTH"; break;
+        case DIR_SOUTH : dir = "SOUTH"; break;
+        case DIR_EAST  : dir = "EAST"; break;
+        case DIR_WEST  : dir = "WEST"; break;
+    }
+
+    sprintf(text, "Y:%7d D:%s", (int32_t)floor(gs.own.y), dir);
+    draw_text(4, 20, text);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -203,6 +230,10 @@ void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         hud_mode = HUDMODE_TEST;
     }
 
+    else if (!strcmp(words[1],"nav")) {
+        hud_mode = HUDMODE_NAV;
+    }
+
     if (oldmode != hud_mode) hud_valid = 0;
 
  Error:
@@ -218,6 +249,10 @@ void hud_update(MCPacketQueue *cq) {
     switch(hud_mode) {
         case HUDMODE_TEST:
             huddraw_test();
+            break;
+
+        case HUDMODE_NAV:
+            huddraw_nav();
             break;
 
         case HUDMODE_NONE:

@@ -16,6 +16,7 @@
 
 #define HUDMODE_NONE            0
 #define HUDMODE_TEST            1
+#define HUDMODE_NAV             2
 
 void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq);
 void hud_update(MCPacketQueue *cq);
