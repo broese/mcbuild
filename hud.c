@@ -79,9 +79,8 @@ void hud_unbind(char *reply, MCPacketQueue *cq) {
             tss->wid = 0;
             tss->sid = sid;
             clear_slot(&tss->slot);
-
-            gs_packet(ss);
             queue_packet(ss,cq);
+            clear_slot(&gs.inv.slots[sid]);
         }
     }
 
@@ -90,9 +89,8 @@ void hud_unbind(char *reply, MCPacketQueue *cq) {
         tss->wid = 255;
         tss->sid = -1;
         clear_slot(&tss->slot);
-
-        gs_packet(ss);
         queue_packet(ss,cq);
+        clear_slot(&gs.inv.drag);
     }
 
     hud_id = -1;
