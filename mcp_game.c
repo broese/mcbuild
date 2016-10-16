@@ -1201,6 +1201,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             build_update();
 
             hud_invalidate(HUDMODE_NAV);
+            hud_invalidate(HUDMODE_TUNNEL);
 
             gs.own.pos_change = 0;
 

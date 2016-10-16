@@ -194,6 +194,51 @@ void huddraw_nav() {
     draw_text(4, 20, text);
 }
 
+void huddraw_tunnel() {
+    draw_color = 140;
+    draw_clear();
+    draw_color = 122;
+
+    int32_t x = (int32_t)floor(gs.own.x);
+    int32_t y = (int32_t)floor(gs.own.y);
+    int32_t z = (int32_t)floor(gs.own.z);
+    extent_t ex = { { x-80, y-2, z-80 }, { x+80, y+2, z+80 } };
+    cuboid_t cb = export_cuboid_extent(ex);
+
+    int r,c,i,j;
+    int32_t off = cb.boff + 16*cb.sa.x + 16;
+    for(r=0; r<128; r++) {
+        for(c=0; c<128; c++) {
+            int poff = off+r*cb.sa.x+c;
+            int s=0;
+            for(i=-8; i<8; i++) {
+                for(j=0; j<5; j++) {
+                    s += (cb.data[j][poff-1+i*cb.sa.x].bid != 0)
+                      -2*(cb.data[j][poff+0+i*cb.sa.x].bid != 0)
+                      +  (cb.data[j][poff+1+i*cb.sa.x].bid != 0)
+                      +  (cb.data[j][poff+i  -cb.sa.x].bid != 0)
+                      -2*(cb.data[j][poff+i          ].bid != 0)
+                      +  (cb.data[j][poff+i  +cb.sa.x].bid != 0);
+                }
+            }
+            if (s>10) hud_image[r*128+c] = 114;
+            if (s>30) hud_image[r*128+c] = 62;
+            if (s>60) hud_image[r*128+c] = 74;
+            if (s>80) hud_image[r*128+c] = 34;
+        }
+    }
+
+    for(i=0; i<256; i++) lh_free(cb.data[i]);
+
+    hud_image[64*128+64] = 126;
+
+    char text[256];
+    sprintf(text, "X:%6d", x);
+    draw_text(2, 2, text);
+    sprintf(text, "Z:%6d", z);
+    draw_text(2, 9, text);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 /*
@@ -234,6 +279,10 @@ void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         hud_mode = HUDMODE_NAV;
     }
 
+    else if (!strcmp(words[1],"tunnel") || !strcmp(words[1],"tun")) {
+        hud_mode = HUDMODE_TUNNEL;
+    }
+
     if (oldmode != hud_mode) hud_valid = 0;
 
  Error:
@@ -253,6 +302,10 @@ void hud_update(MCPacketQueue *cq) {
 
         case HUDMODE_NAV:
             huddraw_nav();
+            break;
+
+        case HUDMODE_TUNNEL:
+            huddraw_tunnel();
             break;
 
         case HUDMODE_NONE:
