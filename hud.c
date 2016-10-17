@@ -250,17 +250,18 @@ void huddraw_tunnel() {
     for(r=0; r<128; r++) {
         for(c=0; c<128; c++) {
             int poff = off+r*cb.sa.x+c;
-            int s=0;
+            int s1=0,s2=0;
             for(i=-8; i<8; i++) {
                 for(j=0; j<5; j++) {
-                    s += (cb.data[j][poff-1+i*cb.sa.x].bid != 0)
+                    s1+= (cb.data[j][poff-1+i*cb.sa.x].bid != 0)
                       -2*(cb.data[j][poff+0+i*cb.sa.x].bid != 0)
-                      +  (cb.data[j][poff+1+i*cb.sa.x].bid != 0)
-                      +  (cb.data[j][poff+i  -cb.sa.x].bid != 0)
+                      +  (cb.data[j][poff+1+i*cb.sa.x].bid != 0);
+                    s2+= (cb.data[j][poff+i  -cb.sa.x].bid != 0)
                       -2*(cb.data[j][poff+i          ].bid != 0)
                       +  (cb.data[j][poff+i  +cb.sa.x].bid != 0);
                 }
             }
+            int s = MAX(s1,s2);
             if (s>10) hud_image[r*128+c] = 114;
             if (s>30) hud_image[r*128+c] = 62;
             if (s>60) hud_image[r*128+c] = 74;
