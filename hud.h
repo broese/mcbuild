@@ -12,13 +12,13 @@
 
 #include "mcp_packet.h"
 
-#define DEFAULT_MAP_ID 32767
-
 #define HUDMODE_NONE            0
 #define HUDMODE_TEST            1
 #define HUDMODE_NAV             2
 #define HUDMODE_TUNNEL          3
 
+int  hud_bogus_map(slot_t *s);
 void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq);
+void hud_renew(MCPacketQueue *cq);
 void hud_update(MCPacketQueue *cq);
 void hud_invalidate(int mode);

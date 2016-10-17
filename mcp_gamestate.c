@@ -1429,7 +1429,7 @@ void gs_packet(MCPacket *pkt) {
                     // prevent the HUD map item to be deleted
                     if (tpkt->sid >= 9 && tpkt->sid <= 45) {
                         slot_t *ls = &gs.inv.slots[tpkt->sid];
-                        if (tpkt->slot.item == -1 && ls->item == 358 && ls->damage == DEFAULT_MAP_ID)
+                        if (hud_bogus_map(ls) && tpkt->slot.item <= 0)
                             break;
                     }
 
@@ -1459,7 +1459,7 @@ void gs_packet(MCPacket *pkt) {
                         }
 
                         // prevent the HUD map item to be deleted from the drag slot
-                        if (tpkt->slot.item == -1 && ds->item == 358 && ds->damage == DEFAULT_MAP_ID)
+                        if (hud_bogus_map(ds) && tpkt->slot.item <= 0)
                             break;
 
                         clone_slot(&tpkt->slot, ds);
@@ -1655,7 +1655,7 @@ void gs_packet(MCPacket *pkt) {
             // displayed in the window. Own inventory dialog will have
             // armor and crafting slots, other dialogs won't
             int ioffset = (tpkt->wid == 0) ? 0 : 9;
-            int nslots  = (tpkt->wid == 0) ? 45 : 36;
+            int nslots  = (tpkt->wid == 0) ? (currentProtocol >= PROTO_1_9 ? 46 : 45) : 36;
 
             if (DEBUG_INVENTORY)
                 printf("*** WindowItems, woffset=%d, ioffset=%d, nslots=%d\n",
@@ -1676,8 +1676,7 @@ void gs_packet(MCPacket *pkt) {
                 }
 
                 // prevent the HUD map item to be deleted
-                if (islot->item == 358 && islot->damage == DEFAULT_MAP_ID &&
-                    wslot->item <= 0)
+                if (hud_bogus_map(islot) && wslot->item <= 0)
                     continue;
 
                 clear_slot(islot);

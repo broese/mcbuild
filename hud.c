@@ -31,8 +31,11 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define DEFAULT_MAP_ID 32767
+
 int hud_mode  = HUDMODE_NONE;
 int hud_valid = 1;
+int hud_autoid = DEFAULT_MAP_ID;
 int hud_id=-1;
 
 uint8_t hud_image[16384];
@@ -82,7 +85,16 @@ void draw_text(int col, int row, char *s) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void hud_unbind(char *reply, MCPacketQueue *cq);
+
+int hud_bogus_map(slot_t *s) {
+    return (s->item == 358 && s->damage == hud_autoid);
+}
+
 int hud_new(char * reply, MCPacketQueue *cq) {
+    hud_unbind(reply, cq);
+    reply[0] = 0;
+
     // find a free slot in user's inventory (including the off-hand slot)
     // search in descending order, so the hotbar gets preference
     int sid=(currentProtocol>=PROTO_1_9)?45:44;
@@ -100,13 +112,13 @@ int hud_new(char * reply, MCPacketQueue *cq) {
     tss->sid = sid;
     tss->slot.item = 358;
     tss->slot.count = 1;
-    tss->slot.damage = DEFAULT_MAP_ID;
+    tss->slot.damage = hud_autoid;
     tss->slot.nbt = NULL;
 
     gs_packet(ss);
     queue_packet(ss,cq);
 
-    return DEFAULT_MAP_ID;
+    return hud_autoid;
 }
 
 int hud_bind(char *reply, int id) {
@@ -131,7 +143,7 @@ int hud_bind(char *reply, int id) {
 void hud_unbind(char *reply, MCPacketQueue *cq) {
     int sid;
     for(sid=0; sid<=45; sid++) {
-        if (gs.inv.slots[sid].item == 358 && gs.inv.slots[sid].damage == DEFAULT_MAP_ID) {
+        if (hud_bogus_map(&gs.inv.slots[sid])) {
             NEWPACKET(SP_SetSlot, ss);
             tss->wid = 0;
             tss->sid = sid;
@@ -141,7 +153,7 @@ void hud_unbind(char *reply, MCPacketQueue *cq) {
         }
     }
 
-    if (gs.inv.drag.item == 358 && gs.inv.drag.damage == DEFAULT_MAP_ID) {
+    if (hud_bogus_map(&gs.inv.drag)) {
         NEWPACKET(SP_SetSlot, ss);
         tss->wid = 255;
         tss->sid = -1;
@@ -152,6 +164,34 @@ void hud_unbind(char *reply, MCPacketQueue *cq) {
 
     hud_id = -1;
     sprintf(reply, "Unbinding HUD");
+}
+
+// workaround for bug MC-46345 - renew map ID when changing dimension
+void hud_renew(MCPacketQueue *cq) {
+    int sid;
+    int hud_newid = hud_autoid-1;
+
+    for(sid=0; sid<=45; sid++) {
+        if (hud_bogus_map(&gs.inv.slots[sid])) {
+            gs.inv.slots[sid].damage = hud_newid;
+            NEWPACKET(SP_SetSlot, ss);
+            tss->wid = 0;
+            tss->sid = sid;
+            clone_slot(&gs.inv.slots[sid], &tss->slot);
+            queue_packet(ss,cq);
+        }
+    }
+    if (hud_bogus_map(&gs.inv.drag)) {
+        gs.inv.drag.damage = hud_newid;
+        NEWPACKET(SP_SetSlot, ss);
+        tss->wid = 255;
+        tss->sid = -1;
+        clone_slot(&gs.inv.drag, &tss->slot);
+        queue_packet(ss,cq);
+    }
+
+    if (hud_id == hud_autoid) hud_id = hud_newid;
+    hud_autoid = hud_newid;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

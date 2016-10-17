@@ -32,6 +32,13 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+// fake hud_bogus_map function to make mcpdump not dependent on hud.c
+int  hud_bogus_map(slot_t *s) {
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 int o_help                      = 0;
 int o_block_id                  = -1;
 int o_block_meta                = -1;

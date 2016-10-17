@@ -1254,10 +1254,10 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 slot_t *lhand = &gs.inv.slots[45];
 
                 int sid1=-1, sid2=-1;
-                if (rhand->item == 358 && rhand->damage == DEFAULT_MAP_ID && lhand->item == -1) {
+                if (hud_bogus_map(rhand) && lhand->item <= 0) {
                     sid1 = 45; sid2=gs.inv.held+36;
                 }
-                if (lhand->item == 358 && lhand->damage == DEFAULT_MAP_ID && rhand->item == -1) {
+                if (hud_bogus_map(lhand) && rhand->item <= 0) {
                     sid1=gs.inv.held+36; sid2 = 45;
                 }
                 if (sid1 >= 0) {
@@ -1289,9 +1289,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 ls = &gs.inv.drag;
             }
 
-            if (ls && tpkt->slot.item == -1 &&
-                ls->item == 358 && ls->damage == DEFAULT_MAP_ID) {
-
+            if (ls && hud_bogus_map(ls) && tpkt->slot.item <=0) {
                 clone_slot(ls, &tpkt->slot);
                 pkt->modified = 1;
             }
@@ -1302,11 +1300,11 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
             // Start of player's inventory slots in the dialog window
             int woffset = (tpkt->wid == 0) ? 0 : gs.inv.woffset;
 
-            // Starting slot of player's inventory and number of slots
-            // displayed in the window. Own inventory dialog will have
-            // armor and crafting slots, other dialogs won't
+            // Starting slot of player's inventory.
+            // Dialogs other than own inventory do not have armor and
+            // crafting slots, so we start with the main inventory
             int ioffset = (tpkt->wid == 0) ? 0 : 9;
-            int nslots  = (tpkt->wid == 0) ? 45 : 36;
+            int nslots  = (tpkt->wid == 0) ? (currentProtocol >= PROTO_1_9 ? 46 : 45) : 36;
 
             int i;
             for(i=0; i<nslots; i++) {
@@ -1314,18 +1312,24 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
                 slot_t * wslot = &tpkt->slots[i+woffset];
 
                 // prevent the HUD map item to be deleted
-                if (islot->item == 358 && islot->damage == DEFAULT_MAP_ID &&
-                    wslot->item <= 0) {
-
+                if (hud_bogus_map(islot) && wslot->item <= 0) {
                     clone_slot(islot, wslot);
                     pkt->modified = 1;
                 }
             }
+            queue_packet(pkt, tq);
         } _GMP;
 
         GMP(SP_ConfirmTransaction) {
             gmi_confirm(tpkt, sq, cq);
             queue_packet(pkt, tq);
+        } _GMP;
+
+        GMP(SP_Respawn) {
+            queue_packet(pkt, tq);
+            hud_renew(tq);
+            hud_invalidate(HUDMODE_NAV);
+            hud_invalidate(HUDMODE_TUNNEL);
         } _GMP;
 
         ////////////////////////////////////////////////////////////////
