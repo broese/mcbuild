@@ -1200,8 +1200,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
 
             build_update();
 
-            hud_invalidate(HUDMODE_NAV);
-            hud_invalidate(HUDMODE_TUNNEL);
+            hud_invalidate(HUDINV_BLOCKS|HUDINV_POSITION);
 
             gs.own.pos_change = 0;
 
@@ -1328,8 +1327,7 @@ void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
         GMP(SP_Respawn) {
             queue_packet(pkt, tq);
             hud_renew(tq);
-            hud_invalidate(HUDMODE_NAV);
-            hud_invalidate(HUDMODE_TUNNEL);
+            hud_invalidate(HUDINV_ANY);
         } _GMP;
 
         ////////////////////////////////////////////////////////////////

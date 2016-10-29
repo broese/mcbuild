@@ -31,12 +31,16 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define HUDMODE_TEST            0
+#define HUDMODE_NAV             1
+#define HUDMODE_TUNNEL          2
+
 #define DEFAULT_MAP_ID 32767
 
-int hud_mode  = HUDMODE_NONE;
-int hud_valid = 1;
-int hud_autoid = DEFAULT_MAP_ID;
-int hud_id=-1;
+int hud_mode        = HUDMODE_TEST;
+uint64_t hud_inv    = HUDINV_NONE;
+int hud_autoid      = DEFAULT_MAP_ID;
+int hud_id          = -1;
 
 uint8_t hud_image[16384];
 
@@ -87,10 +91,12 @@ void draw_text(int col, int row, char *s) {
 
 void hud_unbind(char *reply, MCPacketQueue *cq);
 
+// returns True if the slot contains the bogus map item
 int hud_bogus_map(slot_t *s) {
     return (s->item == 358 && s->damage == hud_autoid);
 }
 
+// create a new bogus map item for the client
 int hud_new(char * reply, MCPacketQueue *cq) {
     hud_unbind(reply, cq);
     reply[0] = 0;
@@ -121,6 +127,7 @@ int hud_new(char * reply, MCPacketQueue *cq) {
     return hud_autoid;
 }
 
+// bind the HUD to a specific map ID - from now on updates will be sent to that ID
 int hud_bind(char *reply, int id) {
     if (id<0 || id>32767) {
         sprintf(reply, "Map ID must be in range 0..32767");
@@ -135,11 +142,11 @@ int hud_bind(char *reply, int id) {
         return -1;
     }
 
-    sprintf(reply, "Binding HUD to Map ID %d", id);
     hud_id = id;
     return id;
 }
 
+// unbind the HUD
 void hud_unbind(char *reply, MCPacketQueue *cq) {
     int sid;
     for(sid=0; sid<=45; sid++) {
@@ -163,7 +170,6 @@ void hud_unbind(char *reply, MCPacketQueue *cq) {
     }
 
     hud_id = -1;
-    sprintf(reply, "Unbinding HUD");
 }
 
 // workaround for bug MC-46345 - renew map ID when changing dimension
@@ -196,7 +202,12 @@ void hud_renew(MCPacketQueue *cq) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void huddraw_test() {
+#define HUDINVMASK_TUNNEL   (HUDINV_BLOCKS|HUDINV_POSITION|HUDINV_ENTITIES)
+#define HUDINVMASK_NAV      (HUDINV_POSITION)
+#define HUDINVMASK_MAP      (HUDINV_POSITION|HUDINV_BLOCKS|HUDINV_ENTITIES)
+#define HUDINVMASK_BUILD    (HUDINV_INVENTORY|HUDINV_BUILD)
+
+int huddraw_test() {
     int i;
     for (i=1; i<=21; i++) {
         uint8_t color = i*4+2;
@@ -206,9 +217,12 @@ void huddraw_test() {
         draw_color = color;
         draw_text(5, row, text);
     }
+    return 1;
 }
 
-void huddraw_nav() {
+int huddraw_nav() {
+    if (!(hud_inv & HUDINVMASK_NAV)) return 0;
+
     char text[256];
 
     draw_color = 18;
@@ -232,9 +246,13 @@ void huddraw_nav() {
 
     sprintf(text, "Y:%7d D:%s", (int32_t)floor(gs.own.y), dir);
     draw_text(4, 20, text);
+
+    return 1;
 }
 
-void huddraw_tunnel() {
+int huddraw_tunnel() {
+    if (!(hud_inv & HUDINVMASK_TUNNEL)) return 0;
+
     draw_color = 140;
     draw_clear();
     draw_color = 122;
@@ -278,38 +296,48 @@ void huddraw_tunnel() {
     draw_text(2, 2, text);
     sprintf(text, "Z:%6d", z);
     draw_text(2, 9, text);
+
+    return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 
+void hud_prune() {
+    if (hud_id < 0) return;
+
+    int sid;
+    for(sid=0; sid<=45; sid++)
+        if (hud_bogus_map(&gs.inv.slots[sid]))
+            return;
+
+    hud_id = -1; // HUD item not found in the inventory - invalidate ID
+}
+
 /*
  * hud new  # give player a new fake map (32767) and bind HUD to it
- * hud NNN  # bind HUD to a specific map ID
  * hud -    # unbind HUD and remove the fake map from player's inventory
  *
  * hud test         # test picture
+ * hud nav          # basic navigation info
+ * hud tunnel       # tunnel radar
  */
 
 void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
+    hud_prune();
+
     char reply[32768];
     reply[0] = 0;
     int rpos = 0;
+    int bind_needed = 1;
 
-    int id;
-    int oldmode = hud_mode;
-
-    if (!words[1] || !strcmp(words[1],"new")) {
-        id = hud_new(reply, cq);
-        if (id < 0) goto Error;
-        hud_bind(reply, id);
-        hud_valid = 0;
-    }
-    else if (sscanf(words[1], "%u", &id)==1) {
-        hud_bind(reply, id);
-        hud_valid = 0;
-    }
-    else if (!strcmp(words[1],"-")) {
-        hud_unbind(reply, cq);
+    if (!words[1] || !strcmp(words[1],"toggle")) {
+        if (hud_id<0) {
+            bind_needed = 1;
+        }
+        else {
+            hud_unbind(reply, cq);
+            bind_needed = 0;
+        }
     }
 
     else if (!strcmp(words[1],"test")) {
@@ -324,55 +352,60 @@ void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         hud_mode = HUDMODE_TUNNEL;
     }
 
-    if (oldmode != hud_mode) hud_valid = 0;
+    else {
+        bind_needed = 0;
+        goto Error;
+    }
+
+    if (bind_needed && hud_id<0) {
+        int id = hud_new(reply, cq);
+        if (id < 0) goto Error;
+        hud_bind(reply, id);
+    }
+
+    hud_inv = HUDINV_ANY;
 
  Error:
     if (reply[0]) chat_message(reply, cq, "green", rpos);
 }
 
 void hud_update(MCPacketQueue *cq) {
-    if (hud_id < 0 || hud_valid) return;
+    hud_prune();
+    if (hud_id < 0 || !hud_inv) return;
 
     draw_color = 34;
     draw_clear();
 
+    int updated = 0;
+
     switch(hud_mode) {
-        case HUDMODE_TEST:
-            huddraw_test();
-            break;
-
-        case HUDMODE_NAV:
-            huddraw_nav();
-            break;
-
-        case HUDMODE_TUNNEL:
-            huddraw_tunnel();
-            break;
-
-        case HUDMODE_NONE:
-        default:
-            break;
+        case HUDMODE_TEST:      updated = huddraw_test(); break;
+        case HUDMODE_NAV:       updated = huddraw_nav(); break;
+        case HUDMODE_TUNNEL:    updated = huddraw_tunnel(); break;
+        default:                break;
     }
 
-    NEWPACKET(SP_Map, map);
-    tmap->mapid    = hud_id;
-    tmap->scale    = 0;
-    tmap->trackpos = 0;
-    tmap->nicons   = 0;
-    tmap->icons    = NULL;
-    tmap->ncols    = 128;
-    tmap->nrows    = 128;
-    tmap->X        = 0;
-    tmap->Z        = 0;
-    tmap->len      = sizeof(hud_image);
-    lh_alloc_num(tmap->data, sizeof(hud_image));
-    memmove(tmap->data, hud_image, sizeof(hud_image));
+    if (updated) {
+        NEWPACKET(SP_Map, map);
+        tmap->mapid    = hud_id;
+        tmap->scale    = 0;
+        tmap->trackpos = 0;
+        tmap->nicons   = 0;
+        tmap->icons    = NULL;
+        tmap->ncols    = 128;
+        tmap->nrows    = 128;
+        tmap->X        = 0;
+        tmap->Z        = 0;
+        tmap->len      = sizeof(hud_image);
+        lh_alloc_num(tmap->data, sizeof(hud_image));
+        memmove(tmap->data, hud_image, sizeof(hud_image));
 
-    queue_packet(map, cq);
+        queue_packet(map, cq);
+    }
 
-    hud_valid = 1;
+    hud_inv = HUDINV_NONE;
 }
 
-void hud_invalidate(int mode) {
-    if (mode == hud_mode) hud_valid = 0;
+void hud_invalidate(uint64_t flags) {
+    hud_inv |= flags;
 }
