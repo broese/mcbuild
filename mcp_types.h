@@ -18,13 +18,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-////////////////////////////////////////////////////////////////////////////////
-// Useful macros
-
-#define MIN(a,b) ((a)<(b)?(a):(b))
-#define MAX(a,b) ((a)>(b)?(a):(b))
-#define SGN(x)   (((x)>=0)?1:-1)
-#define SQ(x)    ((x)*(x))
+#include "helpers.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // various constants and helpers
