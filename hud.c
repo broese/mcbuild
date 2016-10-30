@@ -45,7 +45,8 @@ int hud_id          = -1;
 uint8_t hud_image[16384];
 
 // TODO: color constants
-uint8_t draw_color = 34;
+uint8_t fg_color    = 119; // Black
+uint8_t bg_color    = 0;   // Transparent
 
 lhimage * fonts = NULL;
 
@@ -61,7 +62,7 @@ int font_o = FONTS_OFFSET;
 ////////////////////////////////////////////////////////////////////////////////
 
 void draw_clear() {
-    memset(hud_image, draw_color, sizeof(hud_image));
+    memset(hud_image, bg_color, sizeof(hud_image));
 }
 
 void draw_glyph(int col, int row, char l) {
@@ -75,8 +76,12 @@ void draw_glyph(int col, int row, char l) {
         uint32_t *glyr = glyph+r*fonts->stride;
         uint8_t  *hudr = hud+r*128;
         for(c=0; c<font_w; c++) {
-            if ((glyr[c]&0xffffff) == 0xffffff)
-                hudr[c] = draw_color;
+            if ((glyr[c]&0xffffff) == 0xffffff) {
+                hudr[c] = fg_color;
+            }
+            else if (bg_color != 0) {
+                hudr[c] = bg_color;
+            }
         }
     }
 }
@@ -214,7 +219,7 @@ int huddraw_test() {
         int row = (i-1)*6+1;
         char text[256];
         sprintf(text, "Color %d\n",color);
-        draw_color = color;
+        fg_color = color;
         draw_text(5, row, text);
     }
     return 1;
@@ -225,7 +230,8 @@ int huddraw_nav() {
 
     char text[256];
 
-    draw_color = 18;
+    fg_color = 18; // redstone red
+    bg_color = 0;  // transparent
 
     sprintf(text, "X:%7d Z:%7d", (int32_t)floor(gs.own.x), (int32_t)floor(gs.own.z));
     draw_text(4, 4, text);
@@ -253,9 +259,9 @@ int huddraw_nav() {
 int huddraw_tunnel() {
     if (!(hud_inv & HUDINVMASK_TUNNEL)) return 0;
 
-    draw_color = 140;
+    bg_color = 140; // neterrack dark red
     draw_clear();
-    draw_color = 122;
+    fg_color = 122; // gold yellow
 
     int32_t x = (int32_t)floor(gs.own.x);
     int32_t y = (int32_t)floor(gs.own.y);
@@ -373,8 +379,9 @@ void hud_update(MCPacketQueue *cq) {
     hud_prune();
     if (hud_id < 0 || !hud_inv) return;
 
-    draw_color = 34;
+    bg_color = 34;
     draw_clear();
+    bg_color = 0;
 
     int updated = 0;
 
