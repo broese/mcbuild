@@ -84,6 +84,32 @@ void draw_blit(lhimage *img, int ic, int ir, int wd, int hg, int col, int row) {
     }
 }
 
+void draw_line(int c1, int r1, int c2, int r2) {
+    uint8_t  *hud = hud_image+c1+r1*128;
+
+    int dc=(c2-c1), dr=(r2-r1);
+    int cs=SGN(dc), rs=SGN(dr)*128;
+
+    int h = abs(dc) > abs(dr); // line is more horizontal
+    int ml = h ? abs(dc) : abs(dr);
+    int ol = h ? abs(dr) : abs(dc);
+    int ms = h ? cs : rs;
+    int os = h ? rs : cs;
+
+    int state = ml/2;
+    int pl = ml;
+    while (pl>=0) {
+        hud[0] = fg_color;
+        hud+=ms;
+        state -= ol;
+        if (state < 0) {
+            state += ml;
+            hud+=os;
+        }
+        pl --;
+    }
+}
+
 void draw_glyph(int col, int row, char l) {
     if (l<0x20 || l>0x7f) return;
     draw_blit(fonts, (l&15)*font_w, ((l>>4)-2)*font_h+font_o, font_w, font_h, col, row);
