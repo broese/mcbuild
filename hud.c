@@ -32,8 +32,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #define HUDMODE_TEST            0
-#define HUDMODE_NAV             1
+#define HUDMODE_INFO            1
 #define HUDMODE_TUNNEL          2
+#define HUDMODE_MAP             3
 
 #define DEFAULT_MAP_ID 32767
 
@@ -252,39 +253,107 @@ void hud_renew(MCPacketQueue *cq) {
 ////////////////////////////////////////////////////////////////////////////////
 
 #define HUDINVMASK_TUNNEL   (HUDINV_BLOCKS|HUDINV_POSITION|HUDINV_ENTITIES)
-#define HUDINVMASK_NAV      (HUDINV_POSITION)
+#define HUDINVMASK_INFO     (HUDINV_POSITION|HUDINV_HEALTH|HUDINV_INVENTORY)
 #define HUDINVMASK_MAP      (HUDINV_POSITION|HUDINV_BLOCKS|HUDINV_ENTITIES)
 #define HUDINVMASK_BUILD    (HUDINV_INVENTORY|HUDINV_BUILD)
 
 int huddraw_test() {
     int i;
-    for (i=1; i<=21; i++) {
-        uint8_t color = i*4+2;
-        int row = (i-1)*6+1;
-        char text[256];
-        sprintf(text, "Color %d\n",color);
-        fg_color = color;
-        draw_text(5, row, text);
+
+    bg_color = 34; // white
+    draw_clear();
+
+    fg_color = 119;
+    for (i=0; i<36; i++) {
+        int c=(i%6)*10+2;
+        int r=(i/6)*10+2;
+        bg_color = i*4+2;
+        draw_rect(c, r, 8, 8, 1);
     }
+
+    int x1=95, y1=95, r=29;
+    double a;
+    for (a=0; a<2*M_PI; a+=M_PI/6) {
+        int x2 = x1+(int)(sin(a)*r);
+        int y2 = y1+(int)(cos(a)*r);
+        draw_line(x1,y1,x2,y2);
+    }
+
     return 1;
 }
 
-int huddraw_nav() {
-    if (!(hud_inv & HUDINVMASK_NAV)) return 0;
+#define FONTS_DIAL_C    0
+#define FONTS_DIAL_R    36
+#define FONTS_DIAL_SZ   31
+
+void huddraw_compass(int center_c, int center_r, int color_dial, int color_needle) {
+    int old_color = fg_color;
+
+    fg_color = color_dial;
+    draw_blit(fonts, FONTS_DIAL_C, FONTS_DIAL_R, FONTS_DIAL_SZ, FONTS_DIAL_SZ,
+        center_c-FONTS_DIAL_SZ/2, center_r-FONTS_DIAL_SZ/2);
+
+    fg_color = color_needle;
+    double yaw = gs.own.yaw/180*M_PI;
+    int x1 = -sin(yaw)*13;
+    int y1 = cos(yaw)*13;
+    int x2 = -sin(yaw-M_PI/2)*1.5;
+    int y2 = cos(yaw-M_PI/2)*1.5;
+    int x3 = -sin(yaw+M_PI/2)*1.5;
+    int y3 = cos(yaw+M_PI/2)*1.5;
+    draw_line(center_c, center_r, center_c+x1, center_r+y1);
+    draw_line(center_c+x2, center_r+y2, center_c+x1, center_r+y1);
+    draw_line(center_c+x3, center_r+y3, center_c+x1, center_r+y1);
+
+    fg_color = old_color;
+}
+
+int huddraw_info() {
+    if (!(hud_inv & HUDINVMASK_INFO)) return 0;
 
     char text[256];
 
-    fg_color = 18; // redstone red
-    bg_color = 0;  // transparent
+    // draw section rectangles
 
-    sprintf(text, "X:%7d Z:%7d", (int32_t)floor(gs.own.x), (int32_t)floor(gs.own.z));
-    draw_text(4, 4, text);
+    fg_color = 119; // black
+    bg_color = 10;  // sandstone yellow
+    draw_rect(0,0,128,35,1);
+    draw_rect(0,0,9,35,1);
+    draw_rect(8,0,42,35,1);
+    draw_rect(49,0,42,35,1);
 
-    if (gs.world==&gs.nether)
-        sprintf(text, "X:%7d Z:%7d Overworld", (int32_t)floor(gs.own.x)*8, (int32_t)floor(gs.own.z)*8);
-    else
-        sprintf(text, "X:%7d Z:%7d Nether", (int32_t)floor(gs.own.x)/8, (int32_t)floor(gs.own.z)/8);
-    draw_text(4, 12, text);
+    bg_color = 6;   // grass green
+    draw_rect(0,34,128,30,1);
+    bg_color = 70;  // light blue
+    draw_rect(0,63,128,33,1);
+    bg_color = 62;  // orange
+    draw_rect(0,95,128,33,1);
+
+    fg_color = 9;   // medium sandstone yellow
+    draw_rect(35,2,12,14,0);
+    draw_rect(76,2,12,14,0);
+
+    // coordinates
+
+    fg_color = 18;  // redstone red
+    bg_color = 0;   // transparent
+
+    int32_t x = (int32_t)floor(gs.own.x);
+    int32_t z = (int32_t)floor(gs.own.z);
+    int32_t x_= (gs.world==&gs.nether) ? x*8 : x/8;
+    int32_t z_= (gs.world==&gs.nether) ? z*8 : z/8;
+    char *  n_= (gs.world==&gs.nether) ? "Overworld" : "Nether";
+
+    draw_text(3,  3, "X");
+    draw_text(3, 10, "Z");
+    draw_text(3, 19, "Y");
+    draw_text(3, 26, "D");
+
+    sprintf(text, "%9d", x);  draw_text(11,3,text);
+    sprintf(text, "%9d", x_); draw_text(53,3,text);
+    sprintf(text, "%9d", z);  draw_text(11,10,text);
+    sprintf(text, "%9d", z_); draw_text(53,10,text);
+    sprintf(text, "%9d", (int32_t)floor(gs.own.y)); draw_text(11,19,text);
 
     char * dir = "UNKNOWN";
     switch(player_direction()) {
@@ -293,9 +362,19 @@ int huddraw_nav() {
         case DIR_EAST  : dir = "EAST"; break;
         case DIR_WEST  : dir = "WEST"; break;
     }
+    sprintf(text, "%9s", dir); draw_text(11,26,text);
 
-    sprintf(text, "Y:%7d D:%s", (int32_t)floor(gs.own.y), dir);
-    draw_text(4, 20, text);
+    int pos = (42-(strlen(n_)*4-1))/2+49;
+    draw_text(pos, 23, n_);
+
+    // compass
+    huddraw_compass(108,17,119,18);
+
+    // health
+
+    // inventory
+
+    // server
 
     return 1;
 }
@@ -364,9 +443,7 @@ void hud_prune() {
 }
 
 /*
- * hud new  # give player a new fake map (32767) and bind HUD to it
- * hud -    # unbind HUD and remove the fake map from player's inventory
- *
+ * hud              # toggle HUD
  * hud test         # test picture
  * hud nav          # basic navigation info
  * hud tunnel       # tunnel radar
@@ -394,8 +471,8 @@ void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         hud_mode = HUDMODE_TEST;
     }
 
-    else if (!strcmp(words[1],"nav")) {
-        hud_mode = HUDMODE_NAV;
+    else if (!strcmp(words[1],"info")) {
+        hud_mode = HUDMODE_INFO;
     }
 
     else if (!strcmp(words[1],"tunnel") || !strcmp(words[1],"tun")) {
@@ -431,7 +508,7 @@ void hud_update(MCPacketQueue *cq) {
 
     switch(hud_mode) {
         case HUDMODE_TEST:      updated = huddraw_test(); break;
-        case HUDMODE_NAV:       updated = huddraw_nav(); break;
+        case HUDMODE_INFO:      updated = huddraw_info(); break;
         case HUDMODE_TUNNEL:    updated = huddraw_tunnel(); break;
         default:                break;
     }
