@@ -65,18 +65,16 @@ void draw_clear() {
     memset(hud_image, bg_color, sizeof(hud_image));
 }
 
-void draw_glyph(int col, int row, char l) {
-    if (l<0x20 || l>0x7f) return;
-
-    uint32_t *glyph = &IMGDOT(fonts, (l&15)*font_w, ((l>>4)-2)*font_h+font_o);
-    uint8_t  *hud   = hud_image+col+row*128;
+void draw_blit(lhimage *img, int ic, int ir, int wd, int hg, int col, int row) {
+    uint32_t *bm  = &IMGDOT(img, ic, ir);
+    uint8_t  *hud = hud_image+col+row*128;
 
     int r,c;
-    for(r=0; r<font_h; r++) {
-        uint32_t *glyr = glyph+r*fonts->stride;
+    for(r=0; r<hg; r++) {
+        uint32_t *bmr  = bm+r*img->stride;
         uint8_t  *hudr = hud+r*128;
-        for(c=0; c<font_w; c++) {
-            if ((glyr[c]&0xffffff) == 0xffffff) {
+        for(c=0; c<wd; c++) {
+            if ((bmr[c]&0xffffff) == 0xffffff) {
                 hudr[c] = fg_color;
             }
             else if (bg_color != 0) {
@@ -86,10 +84,30 @@ void draw_glyph(int col, int row, char l) {
     }
 }
 
+void draw_glyph(int col, int row, char l) {
+    if (l<0x20 || l>0x7f) return;
+    draw_blit(fonts, (l&15)*font_w, ((l>>4)-2)*font_h+font_o, font_w, font_h, col, row);
+}
+
 void draw_text(int col, int row, char *s) {
     int i;
     for(i=0; s[i]; i++)
         draw_glyph(col+i*FONTS_W, row, s[i]);
+}
+
+void draw_rect(int col, int row, int wd, int hg, int hollow) {
+    uint8_t  *hud   = hud_image+col+row*128;
+    int c,r;
+    for(r=0; r<hg && r<(128-row); r++) {
+        uint8_t  *hudr = hud+r*128;
+        for(c=0; c<wd && c<(128-col); c++) {
+            int inside = hollow && (c>0 && c<wd-1) && (r>0 && r<hg-1);
+            if (inside && bg_color>0)
+                hudr[c] = bg_color;
+            else
+                hudr[c] = fg_color;
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////
