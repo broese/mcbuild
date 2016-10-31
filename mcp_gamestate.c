@@ -1655,11 +1655,11 @@ void gs_packet(MCPacket *pkt) {
             // displayed in the window. Own inventory dialog will have
             // armor and crafting slots, other dialogs won't
             int ioffset = (tpkt->wid == 0) ? 0 : 9;
-            int nslots  = (tpkt->wid == 0) ? (currentProtocol >= PROTO_1_9 ? 46 : 45) : 36;
+            int nslots  = (tpkt->wid == 0) ? tpkt->count : 36;
 
             if (DEBUG_INVENTORY)
-                printf("*** WindowItems, woffset=%d, ioffset=%d, nslots=%d\n",
-                       woffset, ioffset, nslots);
+                printf("*** WindowItems, woffset=%d, ioffset=%d, nslots=%d tpkt->count=%d\n",
+                       woffset, ioffset, nslots, tpkt->count);
 
             if (tpkt->wid!=0 && tpkt->wid!=255)
                 update_container_items(tpkt);
