@@ -31,6 +31,50 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#define COLOR_TRANSPARENT       0
+#define COLOR_GRASS_GREEN       1
+#define COLOR_SAND_YELLOW       2
+#define COLOR_COBWEB_GRAY       3
+#define COLOR_REDSTONE_RED      4
+#define COLOR_ICE_BLUE          5
+#define COLOR_IRON_GRAY         6
+#define COLOR_LEAF_GREEN        7
+#define COLOR_WHITE             8
+#define COLOR_CLAY_GRAY         9
+#define COLOR_DIRT_BROWN        10
+#define COLOR_STONE_GRAY        11
+#define COLOR_WATER_BLUE        12
+#define COLOR_OAK_BROWN         13
+#define COLOR_QUARTZ_WHITE      14
+#define COLOR_ORANGE            15
+#define COLOR_MAGENTA           16
+#define COLOR_LIGHT_BLUE        17
+#define COLOR_YELLOW            18
+#define COLOR_LIME              19
+#define COLOR_PINK              20
+#define COLOR_GRAY              21
+#define COLOR_LIGHT_GRAY        22
+#define COLOR_CYAN              23
+#define COLOR_PURPLE            24
+#define COLOR_BLUE              25
+#define COLOR_BROWN             26
+#define COLOR_GREEN             27
+#define COLOR_RED               28
+#define COLOR_BLACK             29
+#define COLOR_GOLD_YELLOW       30
+#define COLOR_DIAMOND_BLUE      31
+#define COLOR_LAPIS_BLUE        32
+#define COLOR_EMERALD_GREEN     33
+#define COLOR_SPRUCE_BROWN      34
+#define COLOR_NETHER_RED        35
+
+#define B3(x)   ((x)*4+2)
+#define B2(x)   ((x)*4+1)
+#define B1(x)   ((x)*4+0)
+#define B0(x)   ((x)*4+3)
+
+////////////////////////////////////////////////////////////////////////////////
+
 #define HUDMODE_TEST            0
 #define HUDMODE_INFO            1
 #define HUDMODE_TUNNEL          2
@@ -260,7 +304,7 @@ void hud_renew(MCPacketQueue *cq) {
 int huddraw_test() {
     int i;
 
-    bg_color = 34; // white
+    bg_color = B3(COLOR_WHITE);
     draw_clear();
 
     fg_color = 119;
@@ -315,28 +359,28 @@ int huddraw_info() {
 
     // draw section rectangles
 
-    fg_color = 119; // black
-    bg_color = 10;  // sandstone yellow
+    fg_color = B0(COLOR_BLACK);
+    bg_color = B3(COLOR_SAND_YELLOW);
     draw_rect(0,0,128,35,1);
     draw_rect(0,0,9,35,1);
     draw_rect(8,0,42,35,1);
     draw_rect(49,0,42,35,1);
 
-    bg_color = 6;   // grass green
+    bg_color = B3(COLOR_GRASS_GREEN);
     draw_rect(0,34,128,30,1);
-    bg_color = 70;  // light blue
+    bg_color = B3(COLOR_LIGHT_BLUE);
     draw_rect(0,63,128,33,1);
-    bg_color = 62;  // orange
+    bg_color = B3(COLOR_ORANGE);
     draw_rect(0,95,128,33,1);
 
-    fg_color = 9;   // medium sandstone yellow
+    fg_color = B2(COLOR_SAND_YELLOW);
     draw_rect(35,2,12,14,0);
     draw_rect(76,2,12,14,0);
 
     // coordinates
 
-    fg_color = 18;  // redstone red
-    bg_color = 0;   // transparent
+    fg_color = B3(COLOR_REDSTONE_RED);
+    bg_color = COLOR_TRANSPARENT;
 
     int32_t x = (int32_t)floor(gs.own.x);
     int32_t z = (int32_t)floor(gs.own.z);
@@ -368,7 +412,7 @@ int huddraw_info() {
     draw_text(pos, 23, n_);
 
     // compass
-    huddraw_compass(108,17,119,18);
+    huddraw_compass(108,17,B0(COLOR_BLACK), B3(COLOR_REDSTONE_RED));
 
     // health
 
@@ -382,9 +426,9 @@ int huddraw_info() {
 int huddraw_tunnel() {
     if (!(hud_inv & HUDINVMASK_TUNNEL)) return 0;
 
-    bg_color = 140; // neterrack dark red
+    bg_color = B1(COLOR_NETHER_RED);
     draw_clear();
-    fg_color = 122; // gold yellow
+    fg_color = B3(COLOR_GOLD_YELLOW);
 
     int32_t x = (int32_t)floor(gs.own.x);
     int32_t y = (int32_t)floor(gs.own.y);
@@ -409,10 +453,10 @@ int huddraw_tunnel() {
                 }
             }
             int s = MAX(s1,s2);
-            if (s>10) hud_image[r*128+c] = 114;
-            if (s>30) hud_image[r*128+c] = 62;
-            if (s>60) hud_image[r*128+c] = 74;
-            if (s>80) hud_image[r*128+c] = 34;
+            if (s>10) hud_image[r*128+c] = B3(COLOR_RED);
+            if (s>30) hud_image[r*128+c] = B3(COLOR_ORANGE);
+            if (s>60) hud_image[r*128+c] = B3(COLOR_YELLOW);
+            if (s>80) hud_image[r*128+c] = B3(COLOR_WHITE);
         }
     }
 
