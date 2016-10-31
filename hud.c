@@ -73,6 +73,262 @@
 #define B1(x)   ((x)*4+0)
 #define B0(x)   ((x)*4+3)
 
+#define SAMECOLOR(x) {x,x,x,x,x,x,x,x,x,x,x,x,x,x,x,x}
+#define WOOLCOLOR    {8,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29}
+
+static int8_t BLOCK_COLORMAP[256][16] = {
+    [0] = SAMECOLOR(0),
+    [1] = SAMECOLOR(11),
+    [2] = SAMECOLOR(1),
+    [3] = SAMECOLOR(1),
+    [4] = SAMECOLOR(11),
+    [5] = { 13, 34, 2, 10, 15, 26 }, // Woodplanks
+    [6] = SAMECOLOR(7),
+    [7] = SAMECOLOR(11),
+    [8] = SAMECOLOR(12),
+    [9] = SAMECOLOR(12),
+    [10] = SAMECOLOR(4),
+    [11] = SAMECOLOR(4),
+    [12] = { 2, 10 },       // Sand
+    [13] = SAMECOLOR(11),
+    [14] = SAMECOLOR(11),
+    [15] = SAMECOLOR(11),
+
+    [16] = SAMECOLOR(11),
+    [17] = { 13, 34, 2, 10, 13, 34, 2, 10, 13, 34, 2, 10, 13, 34, 2, 10 }, // Woodlogs
+    [18] = SAMECOLOR(7),
+    [19] = SAMECOLOR(18),   // Sponge
+    [20] = SAMECOLOR(14),   // Glass
+    [21] = SAMECOLOR(11),
+    [22] = SAMECOLOR(32),
+    [23] = SAMECOLOR(11),
+    [24] = SAMECOLOR(2),
+    [25] = SAMECOLOR(13),
+    [26] = SAMECOLOR(3),
+    [27] = SAMECOLOR(6),    // Powered rail
+    [28] = SAMECOLOR(6),    // Detector rail
+    [29] = SAMECOLOR(11),
+    [30] = SAMECOLOR(3),    // Cobweb
+    [31] = SAMECOLOR(7),
+
+    [32] = SAMECOLOR(7),
+    [33] = SAMECOLOR(11),
+    [34] = SAMECOLOR(11),
+    [35] = WOOLCOLOR,       // Wool
+    [36] = SAMECOLOR(11),
+    [37] = SAMECOLOR(7),
+    [38] = SAMECOLOR(7),
+    [39] = SAMECOLOR(7),
+    [40] = SAMECOLOR(7),
+    [41] = SAMECOLOR(30),
+    [42] = SAMECOLOR(6),
+    [43] = SAMECOLOR(11),
+    [44] = SAMECOLOR(11),
+    [45] = SAMECOLOR(28),
+    [46] = SAMECOLOR(4),
+    [47] = SAMECOLOR(13),
+
+    [48] = SAMECOLOR(11),
+    [49] = SAMECOLOR(29),
+    [50] = SAMECOLOR(18),   // Torch
+    [51] = SAMECOLOR(4),
+    [52] = SAMECOLOR(11),
+    [53] = SAMECOLOR(13),
+    [54] = SAMECOLOR(11),
+    [55] = { 35, 35, 35, 35, 28, 28, 28, 28, 4, 4, 4, 4, 4, 4, 4, 4 },  // Redstone wire
+    [56] = SAMECOLOR(11),
+    [57] = SAMECOLOR(31),
+    [58] = SAMECOLOR(11),
+    [59] = SAMECOLOR(7),
+    [60] = SAMECOLOR(10),
+    [61] = SAMECOLOR(11),
+    [62] = SAMECOLOR(11),
+    [63] = SAMECOLOR(13),
+
+    [64] = SAMECOLOR(13),
+    [65] = SAMECOLOR(13),
+    [66] = SAMECOLOR(6),
+    [67] = SAMECOLOR(11),
+    [68] = SAMECOLOR(13),
+    [69] = SAMECOLOR(11),
+    [70] = SAMECOLOR(11),
+    [71] = SAMECOLOR(6),
+    [72] = SAMECOLOR(13),
+    [73] = SAMECOLOR(11),
+    [74] = SAMECOLOR(11),
+    [75] = SAMECOLOR(35),
+    [76] = SAMECOLOR(4),
+    [77] = SAMECOLOR(11),
+    [78] = SAMECOLOR(8),
+    [79] = SAMECOLOR(5),
+
+    [80] = SAMECOLOR(8),
+    [81] = SAMECOLOR(7),
+    [82] = SAMECOLOR(9),
+    [83] = SAMECOLOR(7),
+    [84] = SAMECOLOR(10),
+    [85] = SAMECOLOR(13),
+    [86] = SAMECOLOR(15),
+    [87] = SAMECOLOR(35),
+    [88] = SAMECOLOR(26),
+    [89] = SAMECOLOR(2),
+    [90] = SAMECOLOR(16),
+    [91] = SAMECOLOR(15),
+    [92] = SAMECOLOR(11),
+    [93] = SAMECOLOR(35),
+    [94] = SAMECOLOR(4),
+    [95] = WOOLCOLOR,
+
+    [96] = SAMECOLOR(13),
+    [97] = SAMECOLOR(9),
+    [98] = SAMECOLOR(11),
+    [99] = SAMECOLOR(2),
+    [100] = SAMECOLOR(2),
+    [101] = SAMECOLOR(6),
+    [102] = SAMECOLOR(11),
+    [103] = SAMECOLOR(19),
+    [104] = SAMECOLOR(7),
+    [105] = SAMECOLOR(7),
+    [106] = SAMECOLOR(7),
+    [107] = SAMECOLOR(13),
+    [108] = SAMECOLOR(28),
+    [109] = SAMECOLOR(11),
+    [110] = SAMECOLOR(11),
+    [111] = SAMECOLOR(7),
+
+    [112] = SAMECOLOR(35),
+    [113] = SAMECOLOR(35),
+    [114] = SAMECOLOR(35),
+    [115] = SAMECOLOR(28),
+    [116] = SAMECOLOR(28),
+    [117] = SAMECOLOR(6),
+    [118] = SAMECOLOR(11),
+    [119] = SAMECOLOR(29),
+    [120] = SAMECOLOR(27),
+    [121] = SAMECOLOR(2),
+    [122] = SAMECOLOR(29),
+    [123] = SAMECOLOR(10),
+    [124] = SAMECOLOR(18),
+    [125] = SAMECOLOR(13),
+    [126] = SAMECOLOR(13),
+    [127] = SAMECOLOR(10),
+
+    [128] = SAMECOLOR(2),
+    [129] = SAMECOLOR(11),
+    [130] = SAMECOLOR(11),
+    [131] = SAMECOLOR(11),
+    [132] = SAMECOLOR(11),
+    [133] = SAMECOLOR(33),
+    [134] = SAMECOLOR(34),
+    [135] = SAMECOLOR(2),
+    [136] = SAMECOLOR(10),
+    [137] = SAMECOLOR(26),
+    [138] = SAMECOLOR(31),
+    [139] = SAMECOLOR(11),
+    [140] = SAMECOLOR(10),
+    [141] = SAMECOLOR(7),
+    [142] = SAMECOLOR(7),
+    [143] = SAMECOLOR(13),
+
+    [144] = SAMECOLOR(11),
+    [145] = SAMECOLOR(6),
+    [146] = SAMECOLOR(11),
+    [147] = SAMECOLOR(30),
+    [148] = SAMECOLOR(6),
+    [149] = SAMECOLOR(35),
+    [150] = SAMECOLOR(4),
+    [151] = SAMECOLOR(13),
+    [152] = SAMECOLOR(4),
+    [153] = SAMECOLOR(35),
+    [154] = SAMECOLOR(6),
+    [155] = SAMECOLOR(14),
+    [156] = SAMECOLOR(14),
+    [157] = SAMECOLOR(6),
+    [158] = SAMECOLOR(11),
+    [159] = WOOLCOLOR,
+
+    [160] = WOOLCOLOR,
+    [161] = SAMECOLOR(7),
+    [162] = { 15, 26, 0, 0, 15, 26, 0, 0, 15, 26, 0, 0, 15, 26, 0, 0 },
+    [163] = SAMECOLOR(15),
+    [164] = SAMECOLOR(26),
+    [165] = SAMECOLOR(1),
+    [166] = SAMECOLOR(11),
+    [167] = SAMECOLOR(6),
+    [168] = SAMECOLOR(23),
+    [169] = SAMECOLOR(14),
+    [170] = SAMECOLOR(18),
+    [171] = WOOLCOLOR,
+    [172] = SAMECOLOR(15),
+    [173] = SAMECOLOR(29),
+    [174] = SAMECOLOR(11),
+    [175] = SAMECOLOR(7),
+
+    [176] = SAMECOLOR(13),
+    [177] = SAMECOLOR(13),
+    [178] = SAMECOLOR(13),
+    [179] = SAMECOLOR(15),
+    [180] = SAMECOLOR(15),
+    [181] = SAMECOLOR(15),
+    [182] = SAMECOLOR(15),
+    [183] = SAMECOLOR(34),
+    [184] = SAMECOLOR(2),
+    [185] = SAMECOLOR(10),
+    [186] = SAMECOLOR(26),
+    [187] = SAMECOLOR(15),
+    [188] = SAMECOLOR(34),
+    [189] = SAMECOLOR(2),
+    [190] = SAMECOLOR(10),
+    [191] = SAMECOLOR(26),
+
+    [192] = SAMECOLOR(15),
+    [193] = SAMECOLOR(34),
+    [194] = SAMECOLOR(2),
+    [195] = SAMECOLOR(10),
+    [196] = SAMECOLOR(26),
+    [197] = SAMECOLOR(15),
+    [198] = SAMECOLOR(20),
+    [199] = SAMECOLOR(24),
+    [200] = SAMECOLOR(24),
+    [201] = SAMECOLOR(24),
+    [202] = SAMECOLOR(24),
+    [203] = SAMECOLOR(24),
+    [204] = SAMECOLOR(24),
+    [205] = SAMECOLOR(24),
+    [206] = SAMECOLOR(2),
+    [207] = SAMECOLOR(7),
+
+    [208] = SAMECOLOR(10),
+    [209] = SAMECOLOR(29),
+    [210] = SAMECOLOR(24),
+    [211] = SAMECOLOR(27),
+    [212] = SAMECOLOR(5),
+    [213] = SAMECOLOR(15),
+    [214] = SAMECOLOR(28),
+    [215] = SAMECOLOR(35),
+    [216] = SAMECOLOR(3),
+    [217] = SAMECOLOR(11),
+    [218] = SAMECOLOR(11),
+    [219] = SAMECOLOR(24), // Shulker boxes
+    [220] = SAMECOLOR(24),
+    [221] = SAMECOLOR(24),
+    [222] = SAMECOLOR(24),
+    [223] = SAMECOLOR(24),
+
+    [224] = SAMECOLOR(24),
+    [225] = SAMECOLOR(24),
+    [226] = SAMECOLOR(24),
+    [227] = SAMECOLOR(24),
+    [228] = SAMECOLOR(24),
+    [229] = SAMECOLOR(24),
+    [230] = SAMECOLOR(24),
+    [231] = SAMECOLOR(24),
+    [232] = SAMECOLOR(24),
+    [233] = SAMECOLOR(24),
+    [234] = SAMECOLOR(24),
+    [255] = SAMECOLOR(22),
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 
 #define HUDMODE_TEST            0
@@ -423,6 +679,49 @@ int huddraw_info() {
     return 1;
 }
 
+int huddraw_map() {
+    int shading[6] = { 3, 0, 0, 1, 2, 2 };
+
+    if (!(hud_inv & HUDINVMASK_TUNNEL)) return 0;
+
+    bg_color = B0(COLOR_BLACK);
+    draw_clear();
+
+    int32_t x = (int32_t)floor(gs.own.x);
+    int32_t y = (int32_t)floor(gs.own.y);
+    int32_t z = (int32_t)floor(gs.own.z);
+    extent_t ex = { { x-80, y-4, z-80 }, { x+80, y+1, z+80 } };
+    cuboid_t cb = export_cuboid_extent(ex);
+
+    int r,c,i,j;
+    int32_t off = cb.boff + 16*cb.sa.x + 16;
+    for(r=0; r<128; r++) {
+        for(c=0; c<128; c++) {
+            int poff = off+r*cb.sa.x+c;
+            for(j=0; j<6; j++) {
+                if ( cb.data[j][poff].bid ) {
+                    int8_t color = BLOCK_COLORMAP[cb.data[j][poff].bid][cb.data[j][poff].meta];
+                    hud_image[r*128+c] = color*4 + shading[j];
+                }
+            }
+        }
+    }
+
+    for(i=0; i<256; i++) lh_free(cb.data[i]);
+
+    hud_image[64*128+64] = 126;
+
+    char text[256];
+    bg_color = B3(COLOR_WHITE);
+    fg_color = B3(COLOR_REDSTONE_RED);
+    sprintf(text, "X:%6d", x);
+    draw_text(2, 2, text);
+    sprintf(text, "Z:%6d", z);
+    draw_text(2, 9, text);
+
+    return 1;
+}
+
 int huddraw_tunnel() {
     if (!(hud_inv & HUDINVMASK_TUNNEL)) return 0;
 
@@ -523,6 +822,10 @@ void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         hud_mode = HUDMODE_TUNNEL;
     }
 
+    else if (!strcmp(words[1],"map")) {
+        hud_mode = HUDMODE_MAP;
+    }
+
     else {
         bind_needed = 0;
         goto Error;
@@ -554,6 +857,7 @@ void hud_update(MCPacketQueue *cq) {
         case HUDMODE_TEST:      updated = huddraw_test(); break;
         case HUDMODE_INFO:      updated = huddraw_info(); break;
         case HUDMODE_TUNNEL:    updated = huddraw_tunnel(); break;
+        case HUDMODE_MAP:       updated = huddraw_map(); break;
         default:                break;
     }
 
