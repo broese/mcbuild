@@ -582,15 +582,14 @@ int huddraw_test() {
     return 1;
 }
 
-#define FONTS_DIAL_C    0
-#define FONTS_DIAL_R    36
+#define FONTS_DIAL      0,36
 #define FONTS_DIAL_SZ   31
 
 void huddraw_compass(int center_c, int center_r, int color_dial, int color_needle) {
     int old_color = fg_color;
 
     fg_color = color_dial;
-    draw_blit(fonts, FONTS_DIAL_C, FONTS_DIAL_R, FONTS_DIAL_SZ, FONTS_DIAL_SZ,
+    draw_blit(fonts, FONTS_DIAL, FONTS_DIAL_SZ, FONTS_DIAL_SZ,
         center_c-FONTS_DIAL_SZ/2, center_r-FONTS_DIAL_SZ/2);
 
     fg_color = color_needle;
@@ -608,33 +607,18 @@ void huddraw_compass(int center_c, int center_r, int color_dial, int color_needl
     fg_color = old_color;
 }
 
-int huddraw_info() {
-    if (!(hud_inv & HUDINVMASK_INFO)) return 0;
-
+void huddraw_info_nav(int r) {
     char text[256];
-
-    // draw section rectangles
 
     fg_color = B0(COLOR_BLACK);
     bg_color = B3(COLOR_SAND_YELLOW);
-    draw_rect(0,0,128,35,1);
-    draw_rect(0,0,9,35,1);
-    draw_rect(8,0,42,35,1);
-    draw_rect(49,0,42,35,1);
-
-    bg_color = B3(COLOR_GRASS_GREEN);
-    draw_rect(0,34,128,30,1);
-    bg_color = B3(COLOR_LIGHT_BLUE);
-    draw_rect(0,63,128,33,1);
-    bg_color = B3(COLOR_ORANGE);
-    draw_rect(0,95,128,33,1);
+    draw_rect(0,r,128,35,1);
 
     fg_color = B2(COLOR_SAND_YELLOW);
-    draw_rect(35,2,12,14,0);
-    draw_rect(76,2,12,14,0);
+    draw_rect(35,r+2,12,14,0);
+    draw_rect(76,r+2,12,14,0);
 
     // coordinates
-
     fg_color = B3(COLOR_REDSTONE_RED);
     bg_color = COLOR_TRANSPARENT;
 
@@ -644,16 +628,16 @@ int huddraw_info() {
     int32_t z_= (gs.world==&gs.nether) ? z*8 : z/8;
     char *  n_= (gs.world==&gs.nether) ? "Overworld" : "Nether";
 
-    draw_text(3,  3, "X");
-    draw_text(3, 10, "Z");
-    draw_text(3, 19, "Y");
-    draw_text(3, 26, "D");
+    draw_text(3, r+ 3, "X");
+    draw_text(3, r+10, "Z");
+    draw_text(3, r+19, "Y");
+    draw_text(3, r+26, "DIR");
 
-    sprintf(text, "%9d", x);  draw_text(11,3,text);
-    sprintf(text, "%9d", x_); draw_text(53,3,text);
-    sprintf(text, "%9d", z);  draw_text(11,10,text);
-    sprintf(text, "%9d", z_); draw_text(53,10,text);
-    sprintf(text, "%9d", (int32_t)floor(gs.own.y)); draw_text(11,19,text);
+    sprintf(text, "%9d", x);  draw_text(11,r+3,text);
+    sprintf(text, "%9d", x_); draw_text(53,r+3,text);
+    sprintf(text, "%9d", z);  draw_text(11,r+10,text);
+    sprintf(text, "%9d", z_); draw_text(53,r+10,text);
+    sprintf(text, "%9d", (int32_t)floor(gs.own.y)); draw_text(11,r+19,text);
 
     char * dir = "UNKNOWN";
     switch(player_direction()) {
@@ -662,18 +646,155 @@ int huddraw_info() {
         case DIR_EAST  : dir = "EAST"; break;
         case DIR_WEST  : dir = "WEST"; break;
     }
-    sprintf(text, "%9s", dir); draw_text(11,26,text);
+    sprintf(text, "%9s", dir); draw_text(11,r+26,text);
 
     int pos = (42-(strlen(n_)*4-1))/2+49;
-    draw_text(pos, 23, n_);
+    draw_text(pos, r+26, n_);
 
     // compass
-    huddraw_compass(108,17,B0(COLOR_BLACK), B3(COLOR_REDSTONE_RED));
+    huddraw_compass(108,r+17,B0(COLOR_BLACK), B3(COLOR_REDSTONE_RED));
+}
 
-    // health
+#define FONTS_ICON_HEART  32,36
+#define FONTS_ICON_FOOD   40,36
+#define FONTS_ICON_SAT    48,36
 
-    // inventory
+void huddraw_info_health(int r) {
+    char text[256];
 
+    fg_color = B0(COLOR_BLACK);
+    bg_color = B3(COLOR_GRASS_GREEN);
+    draw_rect(0,r,128,12,1);
+
+    bg_color = COLOR_TRANSPARENT;
+    fg_color = B3(COLOR_REDSTONE_RED);
+    draw_blit(fonts, FONTS_ICON_HEART, 8, 8, 2, r+2);
+    fg_color = B0(COLOR_BLACK);
+    sprintf(text, "%.1f", gs.own.health);
+    draw_text(12, r+3, text);
+
+    fg_color = B2(COLOR_ORANGE);
+    draw_blit(fonts, FONTS_ICON_FOOD, 8, 8, 33, r+2);
+    fg_color = B0(COLOR_BLACK);
+    sprintf(text, "%d (%.1f)", gs.own.food, gs.own.saturation);
+    draw_text(43, r+3, text);
+}
+
+#define FONTS_ICON_EQ_C 32
+#define FONTS_ICON_EQ_R 44
+
+void huddraw_info_inv_item(int id, float damage, int r) {
+    int col = 4+31*(id%4);
+    int row = r+2+10*(id/4);
+
+    int fcol = FONTS_ICON_EQ_C+8*(id%4);
+    int frow = FONTS_ICON_EQ_R+8*(id/4);
+
+    bg_color = COLOR_TRANSPARENT;
+    fg_color = (damage<0) ? B0(COLOR_CLAY_GRAY) : B3(COLOR_DIAMOND_BLUE);
+    draw_blit(fonts, fcol, frow, 8, 8, col, row);
+
+    fg_color = B2(COLOR_CLAY_GRAY);
+    draw_rect(col+10, row+1, 16, 6, 1);
+
+    if (damage >= 0) {
+        fg_color = B3(COLOR_LAPIS_BLUE);
+        if (damage < 1.0)  fg_color = B3(COLOR_EMERALD_GREEN);
+        if (damage < 0.5)  fg_color = B3(COLOR_GOLD_YELLOW);
+        if (damage < 0.25) fg_color = B3(COLOR_ORANGE);
+        if (damage < 0.1)  fg_color = B3(COLOR_REDSTONE_RED);
+
+        draw_rect(col+10, row+1, 16*damage, 6, 0);
+    }
+}
+
+typedef struct {
+    int pos;
+    int iid;
+    int ssid;
+    int lsid;
+    int dur;
+} hudinvitem;
+
+hudinvitem hii[] = {
+    { 0, 298,  5,  5,  56 }, // Leather Helmet
+    { 0, 314,  5,  5,  78 }, // Gold Helmet
+    { 0, 302,  5,  5, 166 }, // Chainmail Helmet
+    { 0, 306,  5,  5, 166 }, // Iron Helmet
+    { 0, 310,  5,  5, 364 }, // Diamond Helmet
+
+    { 1, 299,  6,  6,  81 }, // Leather Chestplate
+    { 1, 315,  6,  6, 113 }, // Gold Chestplate
+    { 1, 303,  6,  6, 241 }, // Chainmail Chestplate
+    { 1, 307,  6,  6, 241 }, // Iron Chestplate
+    { 1, 311,  6,  6, 529 }, // Diamond Chestplate
+
+    { 2, 300,  7,  7,  76 }, // Leather Leggings
+    { 2, 316,  7,  7, 106 }, // Gold Leggings
+    { 2, 304,  7,  7, 226 }, // Chainmail Leggings
+    { 2, 308,  7,  7, 226 }, // Iron Leggings
+    { 2, 312,  7,  7, 496 }, // Diamond Leggings
+
+    { 3, 301,  8,  8,  66 }, // Leather Boots
+    { 3, 317,  8,  8,  92 }, // Gold Boots
+    { 3, 305,  8,  8, 196 }, // Chainmail Boots
+    { 3, 309,  8,  8, 196 }, // Iron Boots
+    { 3, 313,  8,  8, 430 }, // Diamond Boots
+
+    { 4, 442, 36, 45, 337 }, // Shield
+
+    { 5, 267, 36, 45,  60 }, // Wooden Sword
+    { 5, 268, 36, 45, 251 }, // Iron Sword
+    { 5, 272, 36, 45, 132 }, // Stone Sword
+    { 5, 283, 36, 45,  33 }, // Gold Sword
+    { 5, 276, 36, 45,1562 }, // Diamond Sword
+
+    { 6, 270, 36, 45,  60 }, // Wooden Pickaxe
+    { 6, 257, 36, 45, 251 }, // Iron Pickaxe
+    { 6, 274, 36, 45, 132 }, // Stone Pickaxe
+    { 6, 285, 36, 45,  33 }, // Gold Pickaxe
+    { 6, 278, 36, 45,1562 }, // Diamond Pickaxe
+
+    { 7, 269, 36, 45,  60 }, // Wooden Shovel
+    { 7, 256, 36, 45, 251 }, // Iron Shovel
+    { 7, 273, 36, 45, 132 }, // Stone Shovel
+    { 7, 284, 36, 45,  33 }, // Gold Shovel
+    { 7, 277, 36, 45,1562 }, // Diamond Shovel
+
+    { -1, 0, 0, 0, 0 },
+};
+
+void huddraw_info_inv(int r) {
+    bg_color = B3(COLOR_PINK);
+    fg_color = B0(COLOR_BLACK);
+    draw_rect(0,r,128,22,1);
+
+    int present[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+
+    int i,j;
+    for(j=0; hii[j].pos>=0; j++) {
+        hudinvitem *h = hii+j;
+        for(i=h->ssid; i<=h->lsid; i++) {
+            slot_t *s = gs.inv.slots+i;
+            if (s->item == h->iid) {
+                float damage = ((float)h->dur-(float)s->damage)/(float)h->dur;
+                huddraw_info_inv_item(h->pos, damage, r);
+                present[h->pos] = 1;
+            }
+        }
+    }
+
+    for(i=0; i<8; i++)
+        if (!present[i])
+            huddraw_info_inv_item(i, -1, r);
+}
+
+int huddraw_info() {
+    if (!(hud_inv & HUDINVMASK_INFO)) return 0;
+
+    huddraw_info_nav(0);
+    huddraw_info_health(34);
+    huddraw_info_inv(45);
     // server
 
     return 1;
