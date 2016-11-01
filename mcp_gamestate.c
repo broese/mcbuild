@@ -1316,6 +1316,7 @@ void gs_packet(MCPacket *pkt) {
         GSP(SP_UpdateHealth) {
             gs.own.health = tpkt->health;
             gs.own.food   = tpkt->food;
+            gs.own.saturation = tpkt->saturation;
         } _GSP;
 
         GSP(CP_EntityAction) {

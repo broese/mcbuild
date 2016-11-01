@@ -139,6 +139,7 @@ typedef struct _gamestate {
 
         float       health;
         int32_t     food;
+        float       saturation;
     } own;
 
     struct {
