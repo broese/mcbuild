@@ -801,7 +801,7 @@ int huddraw_info() {
 }
 
 int huddraw_map() {
-    int shading[6] = { 3, 0, 0, 1, 2, 2 };
+    int shading[16] = { 3, 3, 3, 3, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2 };
 
     if (!(hud_inv & HUDINVMASK_TUNNEL)) return 0;
 
@@ -811,7 +811,7 @@ int huddraw_map() {
     int32_t x = (int32_t)floor(gs.own.x);
     int32_t y = (int32_t)floor(gs.own.y);
     int32_t z = (int32_t)floor(gs.own.z);
-    extent_t ex = { { x-80, y-4, z-80 }, { x+80, y+1, z+80 } };
+    extent_t ex = { { x-80, y-12, z-80 }, { x+80, y+3, z+80 } };
     cuboid_t cb = export_cuboid_extent(ex);
 
     int r,c,i,j;
@@ -819,7 +819,7 @@ int huddraw_map() {
     for(r=0; r<128; r++) {
         for(c=0; c<128; c++) {
             int poff = off+r*cb.sa.x+c;
-            for(j=0; j<6; j++) {
+            for(j=0; j<16; j++) {
                 if ( cb.data[j][poff].bid ) {
                     int8_t color = BLOCK_COLORMAP[cb.data[j][poff].bid][cb.data[j][poff].meta];
                     hud_image[r*128+c] = color*4 + shading[j];
@@ -835,10 +835,13 @@ int huddraw_map() {
     char text[256];
     bg_color = B3(COLOR_WHITE);
     fg_color = B3(COLOR_REDSTONE_RED);
-    sprintf(text, "X:%6d", x);
+    sprintf(text, "%d,%d", x, z);
     draw_text(2, 2, text);
-    sprintf(text, "Z:%6d", z);
+    sprintf(text, "Y:%d", y);
     draw_text(2, 9, text);
+
+    bg_color = COLOR_TRANSPARENT;
+    huddraw_compass(111, 16, B3(COLOR_GOLD_YELLOW), B3(COLOR_WHITE));
 
     return 1;
 }
@@ -882,13 +885,16 @@ int huddraw_tunnel() {
 
     for(i=0; i<256; i++) lh_free(cb.data[i]);
 
-    hud_image[64*128+64] = 126;
+    hud_image[64*128+64] = B3(COLOR_DIAMOND_BLUE);
 
     char text[256];
-    sprintf(text, "X:%6d", x);
+    sprintf(text, "%d,%d", x, z);
     draw_text(2, 2, text);
-    sprintf(text, "Z:%6d", z);
-    draw_text(2, 9, text);
+    sprintf(text, "Y:%d", y);
+    draw_text(2, 10, text);
+
+    bg_color = COLOR_TRANSPARENT;
+    huddraw_compass(111, 16, B3(COLOR_GOLD_YELLOW), B3(COLOR_WHITE));
 
     return 1;
 }
