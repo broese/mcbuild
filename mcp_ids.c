@@ -703,10 +703,11 @@ const char * get_mat_name(char *buf, int id, int meta) {
 
         if ((it->flags&I_MTYPE) && it->mname[bmeta])
             pos += sprintf(buf+pos, " (%s)",it->mname[bmeta]);
-
+#if 0
         //TODO: support other block types with I_MPOS
         if (it->flags&I_SLAB)
             sprintf(buf+pos, " (%s)",(meta&8)?"upper":"lower");
+#endif
     }
     else {
         printf(buf, "???");

@@ -289,69 +289,102 @@ int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
     return -2; //material being fetched
 }
 
-// print a table of required materials for the buildplan (if plan=1) or buildtask
-void calculate_material(int plan) {
-    int i;
+static int build_info_compar(const void *a, const void *b) {
+    const build_info_material *ma = a;
+    const build_info_material *mb = b;
 
-    if (plan) {
-        printf("=== Material Demand for the Buildplan ===\n");
-    }
-    else {
-        printf("=== Material Demand for the Buildtask ===\n");
-        build_update_placed();
-    }
+    int a_needed = ma->total - ma->placed;
+    int b_needed = mb->total - mb->placed;
 
-    // buildplan/task count per material type
-    int bc[65536];
-    lh_clear_obj(bc);
+    if (a_needed < b_needed) return 1;
+    if (a_needed > b_needed) return -1;
+    return 0;
+}
 
+build_info * get_build_info(int plan) {
+    lh_create_obj(build_info, bi)
+
+    if (!plan) build_update_placed();
+
+    int total[65536], placed[65536], available[65536];
+    lh_clear_obj(total);
+    lh_clear_obj(placed);
+    lh_clear_obj(available);
+
+    // process build task or plan to calculate amounts of each material
+    int i,j;
     if (plan) {
         for (i=0; i<C(build.bp->plan); i++) {
             bid_t bmat = get_base_material(P(build.bp->plan)[i].b);
-            bc[bmat.raw]++;
+            total[bmat.raw]++;
+            bi->total ++;
         }
     }
     else {
         for (i=0; i<C(build.task); i++) {
             if (P(build.task)[i].placed) continue;
             bid_t bmat = get_base_material(P(build.task)[i].b);
-            bc[bmat.raw]++;
-        }
-    }
-
-    // inventory count, per material type
-    int ic[65536];
-    lh_clear_obj(ic);
-
-    for (i=9; i<45; i++) {
-        if (gs.inv.slots[i].item<0 || gs.inv.slots[i].item>=0x100) continue;
-        bid_t bmat = BLOCKTYPE(gs.inv.slots[i].item, gs.inv.slots[i].damage);
-        ic[bmat.raw] += gs.inv.slots[i].count;
-    }
-
-    printf("BL/MT Name                             Count   Have   Need\n");
-    // print material demand
-    for(i=0; i<65536; i++) {
-        if (bc[i] > 0) {
-            bid_t mat;
-            mat.raw = (uint16_t)i;
-
-            char buf[256];
-            printf("%02x/%02x %-32s %5d  %5d  ",mat.bid,mat.meta,get_bid_name(buf, mat),bc[i],ic[i]);
-
-            int need = bc[i]-ic[i];
-            if (need <= 0)
-                printf("-\n");
-            else {
-                if (need >= STACKSIZE(mat.bid))
-                    printf("%5.1f$\n", (float)need/STACKSIZE(mat.bid));
-                else
-                    printf("%3d\n",need);
+            total[bmat.raw]++;
+            bi->total++;
+            if (P(build.task)[i].placed) {
+                placed[bmat.raw]++;
+                bi->placed ++;
             }
         }
     }
 
-    printf("=========================================\n");
+    // available materials in the inventory
+    for (i=9; i<45; i++) {
+        if (gs.inv.slots[i].item<0 || gs.inv.slots[i].item>=0x100) continue;
+        bid_t bmat = BLOCKTYPE(gs.inv.slots[i].item, gs.inv.slots[i].damage);
+        available[bmat.raw] += gs.inv.slots[i].count;
+        if (total[bmat.raw] > 0)
+            bi->available += gs.inv.slots[i].count;
+    }
+
+    // store all stats where more blocks need to be placed into build_info struct
+    for(i=0; i<65536; i++) {
+        if (total[i] - placed[i] > 0) {
+            build_info_material * m = lh_arr_new_c(GAR1(bi->mat));
+            m->material.raw = i;
+            m->total = total[i];
+            m->placed = placed[i];
+            m->available = available[i];
+        }
+    }
+
+    // sort by number of blocks to be placed
+    qsort(P(bi->mat), C(bi->mat), sizeof(P(bi->mat)[0]), build_info_compar);
+
+    return bi;
+}
+
+// print a table of required materials for the buildplan (if plan=1) or buildtask
+void calculate_material(int plan) {
+    build_info * bi = get_build_info(plan);
+    printf("=== Material Demand for the %s ===\n", plan ? "Buildplan" : "Buildtask");
+
+    printf("BL/MT Name                          To place   Have   Need\n");
+    int i;
+    for(i=0; i<C(bi->mat); i++) {
+        build_info_material *m = P(bi->mat)+i;
+        char buf[256];
+        printf("%02x/%02x %-32s %5d  %5d  ",
+            m->material.bid, m->material.meta,
+            get_bid_name(buf, m->material),
+            m->total-m->placed, m->available);
+
+        int need = m->total-m->placed-m->available;
+        if (need <= 0)
+            printf("-\n");
+        else
+            printf("%5d ($%.1f)\n", need, (float)need/STACKSIZE(m->material.bid));
+    }
+
+    printf("==================================\n");
+
+    lh_free(P(bi->mat));
+    lh_free(bi);
 }
 
 
@@ -1622,8 +1655,6 @@ void build_dump_queue() {
                get_bid_name(buf, get_base_material(b->b)));
     }
 }
-
-
 
 
 ////////////////////////////////////////////////////////////////////////////////
