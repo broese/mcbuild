@@ -23,6 +23,7 @@ typedef struct {
     int     total;
     int     placed;
     int     available;
+    int     limit;      // current build limit, 0 if not active
     lh_arr_declare(build_info_material,mat);
 } build_info;
 
