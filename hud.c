@@ -335,6 +335,7 @@ static int8_t BLOCK_COLORMAP[256][16] = {
 #define HUDMODE_INFO            1
 #define HUDMODE_TUNNEL          2
 #define HUDMODE_MAP             3
+#define HUDMODE_BUILD           4
 
 #define DEFAULT_MAP_ID 32767
 
@@ -342,6 +343,9 @@ int hud_mode        = HUDMODE_TEST;
 uint64_t hud_inv    = HUDINV_NONE;
 int hud_autoid      = DEFAULT_MAP_ID;
 int hud_id          = -1;
+
+int hud_build_page  = 1;
+int hud_build_plan  = 0;
 
 uint8_t hud_image[16384];
 
@@ -899,6 +903,93 @@ int huddraw_tunnel() {
     return 1;
 }
 
+#define MATS_PER_PAGE 20
+
+int huddraw_build() {
+    build_info * bi = get_build_info(hud_build_plan);
+    int pages = C(bi->mat)/MATS_PER_PAGE + ((C(bi->mat)%MATS_PER_PAGE) > 0);
+    if (pages < 1) pages = 1;
+    if (hud_build_page > pages) hud_build_page = pages;
+    int poff = (hud_build_page-1)*MATS_PER_PAGE;
+
+    char buf[256];
+
+    // placed/total blocks
+    if (hud_build_plan)
+        sprintf(buf, "Plan:%d", bi->total);
+    else
+        sprintf(buf, "%d/%d", bi->placed, bi->total);
+    fg_color = B3(COLOR_BLACK);
+    draw_text(1, 1, buf);
+
+    // available total material
+    sprintf(buf, "%d", bi->available);
+    int remain = bi->total-bi->placed;
+    if (hud_build_plan) {
+        fg_color = B0(COLOR_BLACK);
+    }
+    else {
+        if (bi->available >= remain)
+            fg_color = B3(COLOR_EMERALD_GREEN);
+        else if (bi->available >= remain/2)
+            fg_color = B3(COLOR_GOLD_YELLOW);
+        else if (bi->available >= remain/4)
+            fg_color = B3(COLOR_ORANGE);
+        else
+            fg_color = B3(COLOR_REDSTONE_RED);
+    }
+    draw_text(48, 1, buf);
+
+    // build limit
+    if (!hud_build_plan && bi->limit > 0) {
+        sprintf(buf, "%3d", bi->limit);
+        fg_color = B3(COLOR_YELLOW);
+        bg_color = B2(COLOR_BLUE);
+        draw_text(72, 1, buf);
+        bg_color = 0;
+    }
+
+    // current page
+    sprintf(buf, "%d/%d", hud_build_page, pages);
+    bg_color = B0(COLOR_NETHER_RED);
+    fg_color = B3(COLOR_YELLOW);
+    draw_text(115, 1, buf);
+    bg_color = 0;
+
+    int i;
+    for(i=0; i<MATS_PER_PAGE; i++) {
+        int mi = i+poff;
+        if (mi>=C(bi->mat)) break;
+        build_info_material * m = P(bi->mat)+mi;
+
+        char name[256];
+        get_bid_name(name, m->material);
+        name[22] = 0;
+
+        int toplace = m->total-m->placed;
+        int stacksize = STACKSIZE(m->material.bid);
+        if (hud_build_plan) {
+            int stacks = toplace/stacksize + ((toplace%stacksize)>0);
+            sprintf(buf, "%4d $%-3d %s", toplace, stacks, name);
+            fg_color = B0(COLOR_BLACK);
+        }
+        else {
+            sprintf(buf, "%4d/%4d %s", toplace, m->available, name);
+            if (m->available >= toplace)
+                fg_color = B3(COLOR_EMERALD_GREEN);
+            else if (m->available >= toplace/2)
+                fg_color = B3(COLOR_GOLD_YELLOW);
+            else if (m->available >= toplace/4)
+                fg_color = B3(COLOR_ORANGE);
+            else
+                fg_color = B3(COLOR_REDSTONE_RED);
+        }
+        draw_text(0, 6*i+8, buf);
+    }
+
+    return 1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void hud_prune() {
@@ -917,6 +1008,7 @@ void hud_prune() {
  * hud test         # test picture
  * hud nav          # basic navigation info
  * hud tunnel       # tunnel radar
+ * hud build        # build and material info
  */
 
 void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
@@ -927,7 +1019,13 @@ void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     int rpos = 0;
     int bind_needed = 1;
 
-    if (!words[1] || !strcmp(words[1],"toggle")) {
+    char *cmd = words[1];
+    words+=2;
+
+    arg_defaults ad;
+    int ARG_NOTFOUND=0;
+
+    if (!cmd || !strcmp(cmd,"toggle")) {
         if (hud_id<0) {
             bind_needed = 1;
         }
@@ -937,19 +1035,25 @@ void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         }
     }
 
-    else if (!strcmp(words[1],"test")) {
+    else if (!strcmp(cmd,"test")) {
         hud_mode = HUDMODE_TEST;
     }
 
-    else if (!strcmp(words[1],"info")) {
+    else if (!strcmp(cmd,"info")) {
         hud_mode = HUDMODE_INFO;
     }
 
-    else if (!strcmp(words[1],"tunnel") || !strcmp(words[1],"tun")) {
+    else if (!strcmp(cmd,"tunnel") || !strcmp(cmd,"tun")) {
         hud_mode = HUDMODE_TUNNEL;
     }
 
-    else if (!strcmp(words[1],"map")) {
+    else if (!strcmp(cmd,"build")) {
+        hud_mode = HUDMODE_BUILD;
+        hud_build_plan = argflag(words, WORDLIST("plan","p"));
+        ARGDEF(page, NULL, hud_build_page, 1);
+    }
+
+    else if (!strcmp(cmd,"map")) {
         hud_mode = HUDMODE_MAP;
     }
 
@@ -985,6 +1089,7 @@ void hud_update(MCPacketQueue *cq) {
         case HUDMODE_INFO:      updated = huddraw_info(); break;
         case HUDMODE_TUNNEL:    updated = huddraw_tunnel(); break;
         case HUDMODE_MAP:       updated = huddraw_map(); break;
+        case HUDMODE_BUILD:     updated = huddraw_build(); break;
         default:                break;
     }
 
