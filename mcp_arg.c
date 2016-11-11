@@ -514,3 +514,28 @@ int argf_count(arg_defaults *ad, char **words, char **names, int *count) {
 }
 
 const char *argfmt_count = "count=<n>";
+
+////////////////////
+
+int argf_page(arg_defaults *ad, char **words, char **names, int *page) {
+    // default name list
+    if (!names) names = WORDLIST("page","pg","p");
+
+    // possible option formats
+    char ** fmt_page = WORDLIST("%d");
+
+    int fi = argparse(words, names, fmt_page, page);
+    switch(fi) {
+        case 0:
+            break;
+        case MCPARG_NOT_FOUND:
+        case MCPARG_NOT_PARSED:
+            return fi;
+        default:
+            assert(0);
+    }
+
+    return 0;
+}
+
+const char *argfmt_page = "page=<n>";
