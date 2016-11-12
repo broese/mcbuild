@@ -1058,6 +1058,26 @@ void update_dots() {
     }
 }
 
+void update_boundary() {
+    if (!C(build.task)) return;
+
+    // calculate buildtask boundary
+    int i;
+    build.xmin = build.xmax = P(build.task)[0].x;
+    build.zmin = build.zmax = P(build.task)[0].z;
+    build.ymin = build.ymax = P(build.task)[0].y;
+    for(i=0; i<C(build.task); i++) {
+        build.xmin = MIN(build.xmin, P(build.task)[i].x);
+        build.xmax = MAX(build.xmax, P(build.task)[i].x);
+        build.ymin = MIN(build.ymin, P(build.task)[i].y);
+        build.ymax = MAX(build.ymax, P(build.task)[i].y);
+        build.zmin = MIN(build.zmin, P(build.task)[i].z);
+        build.zmax = MAX(build.zmax, P(build.task)[i].z);
+    }
+    //printf("Buildtask boundary: X: %d - %d   Z: %d - %d   Y: %d - %d\n",
+    //       build.xmin, build.xmax, build.zmin, build.zmax, build.ymin, build.ymax);
+}
+
 // called when player position or look have changed - update our placeable blocks list
 void build_update() {
     if (!build.active) return;
@@ -1323,23 +1343,9 @@ void place_pivot(pivot_t pv, MCPacketQueue *sq, MCPacketQueue *cq) {
     if (C(build.task)) {
         build.active = 1;
 
-        // calculate buildtask boundary
-        build.xmin = build.xmax = P(build.task)[0].x;
-        build.zmin = build.zmax = P(build.task)[0].z;
-        build.ymin = build.ymax = P(build.task)[0].y;
-        for(i=0; i<C(build.task); i++) {
-            build.xmin = MIN(build.xmin, P(build.task)[i].x);
-            build.xmax = MAX(build.xmax, P(build.task)[i].x);
-            build.ymin = MIN(build.ymin, P(build.task)[i].y);
-            build.ymax = MAX(build.ymax, P(build.task)[i].y);
-            build.zmin = MIN(build.zmin, P(build.task)[i].z);
-            build.zmax = MAX(build.zmax, P(build.task)[i].z);
-        }
-        //printf("Buildtask boundary: X: %d - %d   Z: %d - %d   Y: %d - %d\n",
-        //       build.xmin, build.xmax, build.zmin, build.zmax, build.ymin, build.ymax);
-
         // store the coordinates and direction so they can be reused for 'place again'
         build.pv = pv;
+        update_boundary();
         build_update();
     }
 
