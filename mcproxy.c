@@ -1129,6 +1129,7 @@ int main(int ac, char **av) {
     // create directories if they don't exist yet
     MKDIR(saved);
     MKDIR(bplan);
+    MKDIR(tasks);
     MKDIR(schematic);
     MKDIR(png);
     MKDIR(csv);

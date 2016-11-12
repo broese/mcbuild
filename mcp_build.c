@@ -1309,6 +1309,63 @@ void build_pause() {
 
 
 
+////////////////////////////////////////////////////////////////////////////////
+// Task saving/loading
+
+#define DEFAULT_TASK_FILENAME "autosave"
+
+int build_tsave(const char *name) {
+    char fname[256];
+    sprintf(fname, "tasks/%s.bplan", name);
+
+    // write all encoded blocks from the buildtask to the buffer
+    lh_create_buf(buf, sizeof(blkr)*C(build.task));
+    int i;
+    uint8_t *w = buf;
+    for(i=0; i<C(build.task); i++) {
+        blk *b = P(build.task)+i;
+        lh_write_int_be(w, b->x);
+        lh_write_int_be(w, b->y);
+        lh_write_int_be(w, b->z);
+        lh_write_short_be(w, b->b.raw);
+    }
+
+    // write out to file
+    ssize_t sz = lh_save(fname, buf, w-buf);
+    lh_free(buf);
+
+    // return nonzero on success
+    return (sz>0) ? 1 : 0;
+}
+
+int build_tload(const char *name) {
+    char fname[256];
+    sprintf(fname, "tasks/%s.bplan", name);
+
+    // load the file into a buffer
+    uint8_t *buf;
+    ssize_t sz = lh_load_alloc(fname, &buf);
+    if (sz <= 0) return 0; // error reading file
+
+    // read the blocks and add them to the buildplan
+    uint8_t *p = buf;
+    while(p<buf+sz-13) {
+        blk *b = lh_arr_new_c(BTASK);
+        b->x = lh_read_int_be(p);
+        b->y = lh_read_int_be(p);
+        b->z = lh_read_int_be(p);
+        b->b.raw = lh_read_short_be(p);
+    }
+
+    lh_free(buf);
+
+    update_boundary();
+    build_update_placed();
+
+    return 1;
+}
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // Pivot placement
@@ -1347,6 +1404,7 @@ void place_pivot(pivot_t pv, MCPacketQueue *sq, MCPacketQueue *cq) {
         build.pv = pv;
         update_boundary();
         build_update();
+        build_tsave(DEFAULT_TASK_FILENAME);
     }
 
     if (trimmed > 0) {
@@ -1818,9 +1876,14 @@ static void get_argdefaults(arg_defaults *ad) {
 #define CMD(name) if (!strcmp(cmd, #name))
 #define CMD2(name1,name2) if (!strcmp(cmd, #name1) || !strcmp(cmd, #name2))
 
-#define NEEDBP if (!build.bp || !C(build.bp->plan)) {                       \
-        sprintf(reply, "You need a non-empty buildplan for this command");  \
-        goto Error;                                                         \
+#define NEEDBP if (!build.bp || !C(build.bp->plan)) {                          \
+        sprintf(reply, "You need a non-empty buildplan for this command");     \
+        goto Error;                                                            \
+    }
+
+#define NEEDBT if (!C(build.task)) {                                           \
+        sprintf(reply, "You need an active buildtask for this command");       \
+        goto Error;                                                            \
     }
 
 static inline int arg_trim(char **words, int *value) {
@@ -2177,6 +2240,29 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         }
 
         sprintf(reply, "Failed to load %s.bplan\n",words[0]);
+        goto Error;
+    }
+
+    CMD(tsave) {
+        NEEDBT;
+        char *name = words[0] ? words[0] : DEFAULT_TASK_FILENAME;
+        if (!build_tsave(name))
+            sprintf(reply, "Error saving buildtask to %s.bplan",name);
+        else
+            sprintf(reply, "Saved %zd blocks to %s.bplan\n", C(build.task),name);
+
+        goto Error;
+    }
+
+    CMD(tload) {
+        char *name = words[0] ? words[0] : DEFAULT_TASK_FILENAME;
+        build_clear(sq, cq);
+        if (!build_tload(name))
+            sprintf(reply, "Failed to load %s.bplan\n",name);
+        else
+            sprintf(reply, "Loaded %zd blocks from %s.bplan\n", C(build.task),name);
+        build.active =1;
+
         goto Error;
     }
 
