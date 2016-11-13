@@ -2350,21 +2350,31 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     }
 
     CMD2(pngload,png) {
-        if (!words[0]) {
+        char *fname = words[0];
+        if (!fname) {
             sprintf(reply, "You must specify a filename (w/o .png extension)");
             goto Error;
         }
+        words++;
 
-        bplan *bp = bplan_pngload(words[0],words[1]);
+        char **names_set = WORDLIST("set","s");
+        char **fmt_set   = WORDLIST("%s");
+        char set[256];
+        if (argparse(words, names_set, fmt_set, set))
+            sprintf(set, "wool");
+
+        bplan *bp = bplan_pngload(fname,set);
 
         if (bp) {
             build_clear(sq, cq);
+            if (argflag(words, WORDLIST("flat","f")))
+                bplan_tilt(bp, 'x');
             build.bp = bp;
-            sprintf(reply, "Loaded %zd blocks from %s.png\n", C(bp->plan),words[0]);
+            sprintf(reply, "Loaded %zd blocks from %s.png\n", C(bp->plan),fname);
             goto Place;
         }
 
-        sprintf(reply, "Failed to load %s.png\n",words[0]);
+        sprintf(reply, "Failed to load %s.png\n",fname);
         goto Error;
     }
 
