@@ -1276,6 +1276,19 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
             queue_packet(anim, sq);
         }
 
+        if (currentProtocol >= PROTO_1_9) {
+            // send a sound effect to the client
+            NEWPACKET(SP_SoundEffect, se);
+            tse->id = 98; // block.stone.place
+            tse->category = 5; // BLOCKS
+            tse->x = b->x*8;
+            tse->y = b->y*8;
+            tse->z = b->z*8;
+            tse->vol = 1.0;
+            tse->pitch = 1.0;
+            queue_packet(se,cq);
+        }
+
         // uncrouch again
         if (needcrouch) {
             NEWPACKET(CP_EntityAction, uncrouch);
