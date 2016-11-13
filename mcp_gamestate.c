@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 
 #define LH_DECLARE_SHORT_NAMES 1
 
@@ -241,7 +242,7 @@ int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
         //printf("Ignoring incorrect tile entity for chunk %d,%d\n", X, Z);
         //nbt_dump(ent);
         nbt_free(ent);
-        return;
+        return 0;
     }
 
     // if an entity with these coordinates is present in the list, replace it
@@ -267,7 +268,7 @@ int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
                     nbt_t *ItemsOld = nbt_hget(e, "Items");
                     if ((!ItemsNew || ItemsNew->count == 0) && ItemsOld) {
                         nbt_free(ent);
-                        return;
+                        return 0;
                     }
                 }
             }

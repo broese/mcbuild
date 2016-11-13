@@ -35,6 +35,7 @@ typedef struct {
 
 int mcparg_parse(char **words, mcpopt *opt, ...);
 int mcparg_find(char **words, ...);
+int argparse(char **words, char **names, char **fmt, ...);
 
 ////////////////////////////////////////////////////////////////////////////////
 

@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <strings.h>
 
 #define MNAMES_WOOD     { "Oak", "Spruce", "Birch", "Jungle", "Acacia", "Dark Oak" }
 #define MNAMES_OLDWOOD  { "Oak", "Spruce", "Birch", "Jungle" }

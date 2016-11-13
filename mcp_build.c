@@ -2141,7 +2141,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         int32_t value;
         int type;
         int removed = 0;
-        while (type = arg_trim(words, &value)) {
+        while ((type = arg_trim(words, &value))) {
             if (type < 0) {
                 sprintf(reply, "Cannot parse trim constraint %s", words[0]);
                 goto Error;

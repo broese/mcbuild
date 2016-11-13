@@ -23,4 +23,6 @@ int main(int ac, char ** av) {
     //hexdump(buf,len);
     int32_t v = lh_parse_varint(buf);
     printf("%x %d\n",v,v);
+
+    return 0;
 }

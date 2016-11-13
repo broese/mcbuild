@@ -20,6 +20,7 @@
 #define LH_DECLARE_SHORT_NAMES 1
 #include <lh_buffers.h>
 #include <lh_bytes.h>
+#include <lh_debug.h>
 
 #include "entity.h"
 #include "mcp_packet.h"

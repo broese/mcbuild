@@ -809,7 +809,7 @@ int parse_profile(char *accessToken, char *userId, char *userName) {
     lh_resize(buf, sz+1);
     buf[sz] = 0;
 
-    json_object *json = json_tokener_parse(buf);
+    json_object *json = json_tokener_parse((char *)buf);
     json_object *su, *adb, *prof, *dn, *at;
 
     JSON_PARSE(json, "selectedUser", su, json_type_string);

@@ -2455,6 +2455,7 @@ uint8_t * encode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *w
     Wdata(skey,tpkt->sklen);
     Wvarint(tklen);
     Wdata(token,tpkt->tklen);
+    return w;
 }
 
 void decode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *p) {

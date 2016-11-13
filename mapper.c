@@ -167,4 +167,6 @@ int main(int ac, char **av) {
         process_column(img, col, 1, out);
 
     fclose(out);
+
+    return 0;
 }
