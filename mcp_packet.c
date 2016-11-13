@@ -1437,6 +1437,26 @@ DECODE_BEGIN(SP_SoundEffect,_1_9) {
     tpkt->pitch = (float)pitch / 63.5;
 } DECODE_END;
 
+ENCODE_BEGIN(SP_SoundEffect,_1_10) {
+    Wvarint(id);
+    Wvarint(category);
+    Wint(x);
+    Wint(y);
+    Wint(z);
+    Wfloat(vol);
+    Wfloat(pitch);
+} ENCODE_END;
+
+ENCODE_BEGIN(SP_SoundEffect,_1_9) {
+    Wvarint(id);
+    Wvarint(category);
+    Wint(x);
+    Wint(y);
+    Wint(z);
+    Wfloat(vol);
+    lh_write_char(w,(char)(tpkt->pitch*63.5));
+} ENCODE_END;
+
 DUMP_BEGIN(SP_SoundEffect) {
     printf("id=%d, category=%d, coord=%.1f,%.1f,%.1f, vol=%.2f, pitch=%.2f",
            tpkt->id, tpkt->category,
@@ -1875,7 +1895,7 @@ const static packet_methods SUPPORT_1_10[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x43,SP_SpawnPosition),
         SUPPORT_    (0x44,SP_TimeUpdate),
         SUPPORT_    (0x45,SP_Title),
-        SUPPORT_DD  (0x46,SP_SoundEffect,_1_10),
+        SUPPORT_DED (0x46,SP_SoundEffect,_1_10),
         SUPPORT_    (0x47,SP_PlayerListHeader),
         SUPPORT_    (0x48,SP_CollectItem),
         SUPPORT_DD  (0x49,SP_EntityTeleport,_1_9),
@@ -1992,7 +2012,7 @@ const static packet_methods SUPPORT_1_9_4[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x43,SP_SpawnPosition),
         SUPPORT_    (0x44,SP_TimeUpdate),
         SUPPORT_    (0x45,SP_Title),
-        SUPPORT_DD  (0x46,SP_SoundEffect,_1_9),
+        SUPPORT_DED (0x46,SP_SoundEffect,_1_9),
         SUPPORT_    (0x47,SP_PlayerListHeader),
         SUPPORT_    (0x48,SP_CollectItem),
         SUPPORT_DD  (0x49,SP_EntityTeleport,_1_9),
@@ -2110,7 +2130,7 @@ const static packet_methods SUPPORT_1_9_2[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x44,SP_TimeUpdate),
         SUPPORT_    (0x45,SP_Title),
         SUPPORT_DD  (0x46,SP_UpdateSign,_1_8_1),
-        SUPPORT_DD  (0x47,SP_SoundEffect,_1_9),
+        SUPPORT_DED (0x47,SP_SoundEffect,_1_9),
         SUPPORT_    (0x48,SP_PlayerListHeader),
         SUPPORT_    (0x49,SP_CollectItem),
         SUPPORT_DD  (0x4a,SP_EntityTeleport,_1_9),
@@ -2228,7 +2248,7 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x44,SP_TimeUpdate),
         SUPPORT_    (0x45,SP_Title),
         SUPPORT_DD  (0x46,SP_UpdateSign,_1_8_1),
-        SUPPORT_DD  (0x47,SP_SoundEffect,_1_9),
+        SUPPORT_DED (0x47,SP_SoundEffect,_1_9),
         SUPPORT_    (0x48,SP_PlayerListHeader),
         SUPPORT_    (0x49,SP_CollectItem),
         SUPPORT_DD  (0x4a,SP_EntityTeleport,_1_9),
