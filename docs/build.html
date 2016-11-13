@@ -776,19 +776,33 @@
       color. Transparent pixels result in empty blocks. PNG will
       be loaded from the png subdirectory.</p>
 
+    <p>You can use this function to create custom map art. At the moment,
+      only flat maps are supported and therefore the number of available
+      colors is limited to the base map item colors. There are 4 sets you
+      can use depending on availability of materials:</p>
+    <ul>
+      <li>map - use all available materials but omit bed and water blocks, losing 2 colors.</li>
+      <li>mapall - use all available materials</li>
+      <li>mapcheap - omit expensive or difficult to obtain blocks like gold, redstone, prismarine, etc.</li>
+      <li>mapgray - only use materials producing gray colors.</li>
+    </ul>
+
     <p>Format:</p>
-    <p><tt>#build pngload [setname]</tt></p>
+    <p><tt>#build pngload [-f] [setname]</tt></p>
 
     <p>Parameters:</p>
     <ul>
       <li>[setname] - Name of the block set used for mapping the colors.
       Currently supported: wool, clay and glass. Default is wool.</li>
+      <li>[-flat|f] - produce a horizontal flat pixel art instead of a wall.
+      You can use this to create map art.</li>
     </ul>
 
     <p>Examples and usage tips:</p>
     <p><tt>#build png bucket_lava</tt></p>
     <p><tt>#build png bucket_lava clay</tt></p>
     <p><tt>#build png bucket_lava glass</tt></p>
+    <p><tt>#build png art_image mapcheap -f</tt></p>
     <p>Examples of minecraft's lava bucket icon rendered in wool,
       clay and glass</p>
 

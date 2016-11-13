@@ -1046,6 +1046,124 @@ bplan * bplan_pngload(const char *name, const char *setname) {
         { 0x000000, BLOCKTYPE(0,0) },   // terminator
     };
 
+    // all colors
+    cmap_t CMAP_MAP_ALL[] = {
+        { 0x6e9a30, BLOCKTYPE(  2,  0) },   // Grass
+        { 0xd5c98d, BLOCKTYPE( 44,  1) },   // Sandtone slab
+        { 0x909090, BLOCKTYPE( 30,  0) },   // Cobweb
+        { 0xdc0000, BLOCKTYPE(152,  0) },   // Redstone block
+        { 0x8a8adc, BLOCKTYPE(174,  0) },   // Packed ice
+        { 0x909090, BLOCKTYPE(148,  0) },   // Iron pressure plate
+        { 0x006b00, BLOCKTYPE( 18,  0) },   // Oak leaves
+        { 0xdcdcdc, BLOCKTYPE(171,  0) },   // White carpet
+        { 0x8d919f, BLOCKTYPE( 82,  0) },   // Clay block
+        { 0x9e5b29, BLOCKTYPE(126,  3) },   // Jungle wood slab
+        { 0x616161, BLOCKTYPE( 44,  3) },   // Cobblestone slab
+        { 0x3737dc, BLOCKTYPE(  9,  0) },   // Water
+        { 0x5a482b, BLOCKTYPE(126,  0) },   // Oak wood slab
+        { 0xdcd9d3, BLOCKTYPE(  1,  3) },   // Diorite
+        { 0xba6e2c, BLOCKTYPE(171,  1) },   // Orange carpet
+        { 0x9a42ba, BLOCKTYPE(171,  2) },   // Magenta carpet
+        { 0x5884ba, BLOCKTYPE(171,  3) },   // Light blue carpet
+        { 0xc6c62c, BLOCKTYPE(171,  4) },   // Yellow carpet
+        { 0x6eb016, BLOCKTYPE(171,  5) },   // Lime carpet
+        { 0xd16e8e, BLOCKTYPE(171,  6) },   // Pink carpet
+        { 0x424242, BLOCKTYPE(171,  7) },   // Gray carpet
+        { 0x848484, BLOCKTYPE(171,  8) },   // Light gray carpet
+        { 0x426e84, BLOCKTYPE(171,  9) },   // Cyan carpet
+        { 0x6e369a, BLOCKTYPE(171, 10) },   // Purple carpet
+        { 0x2c429a, BLOCKTYPE(171, 11) },   // Blue carpet
+        { 0x58422c, BLOCKTYPE(171, 12) },   // Brown carpet
+        { 0x586e2c, BLOCKTYPE(171, 13) },   // Green carpet
+        { 0x842c2c, BLOCKTYPE(171, 14) },   // Red carpet
+        { 0x161616, BLOCKTYPE(171, 15) },   // Black carpet
+        { 0xd8cd42, BLOCKTYPE(147,  0) },   // Gold pressure plate
+        { 0x4fbdb8, BLOCKTYPE(168,  1) },   // Prismarine bricks
+        { 0x406edc, BLOCKTYPE( 22,  0) },   // Lapis lazuli block
+        { 0x00bb32, BLOCKTYPE(133,  0) },   // Emerald block
+        { 0x12111b, BLOCKTYPE(126,  1) },   // Spruce Wood Slab
+        { 0x610200, BLOCKTYPE( 87,  0) },   // Netherrack
+        { 0x000000, BLOCKTYPE(0,0) },       // terminator
+    };
+
+    // all colors except inconvenient ones (cobweb/bed and water)
+    cmap_t CMAP_MAP_DEFAULT[] = {
+        { 0x6e9a30, BLOCKTYPE(  2,  0) },   // Grass
+        { 0xd5c98d, BLOCKTYPE( 44,  1) },   // Sandtone slab
+        { 0xdc0000, BLOCKTYPE(152,  0) },   // Redstone block
+        { 0x8a8adc, BLOCKTYPE(174,  0) },   // Packed ice
+        { 0x909090, BLOCKTYPE(148,  0) },   // Iron pressure plate
+        { 0x006b00, BLOCKTYPE( 18,  0) },   // Oak leaves
+        { 0xdcdcdc, BLOCKTYPE(171,  0) },   // White carpet
+        { 0x8d919f, BLOCKTYPE( 82,  0) },   // Clay block
+        { 0x9e5b29, BLOCKTYPE(126,  3) },   // Jungle wood slab
+        { 0x616161, BLOCKTYPE( 44,  3) },   // Cobblestone slab
+        { 0x5a482b, BLOCKTYPE(126,  0) },   // Oak wood slab
+        { 0xdcd9d3, BLOCKTYPE(  1,  3) },   // Diorite
+        { 0xba6e2c, BLOCKTYPE(171,  1) },   // Orange carpet
+        { 0x9a42ba, BLOCKTYPE(171,  2) },   // Magenta carpet
+        { 0x5884ba, BLOCKTYPE(171,  3) },   // Light blue carpet
+        { 0xc6c62c, BLOCKTYPE(171,  4) },   // Yellow carpet
+        { 0x6eb016, BLOCKTYPE(171,  5) },   // Lime carpet
+        { 0xd16e8e, BLOCKTYPE(171,  6) },   // Pink carpet
+        { 0x424242, BLOCKTYPE(171,  7) },   // Gray carpet
+        { 0x848484, BLOCKTYPE(171,  8) },   // Light gray carpet
+        { 0x426e84, BLOCKTYPE(171,  9) },   // Cyan carpet
+        { 0x6e369a, BLOCKTYPE(171, 10) },   // Purple carpet
+        { 0x2c429a, BLOCKTYPE(171, 11) },   // Blue carpet
+        { 0x58422c, BLOCKTYPE(171, 12) },   // Brown carpet
+        { 0x586e2c, BLOCKTYPE(171, 13) },   // Green carpet
+        { 0x842c2c, BLOCKTYPE(171, 14) },   // Red carpet
+        { 0x161616, BLOCKTYPE(171, 15) },   // Black carpet
+        { 0xd8cd42, BLOCKTYPE(147,  0) },   // Gold pressure plate
+        { 0x4fbdb8, BLOCKTYPE(168,  1) },   // Prismarine bricks
+        { 0x406edc, BLOCKTYPE( 22,  0) },   // Lapis lazuli block
+        { 0x00bb32, BLOCKTYPE(133,  0) },   // Emerald block
+        { 0x12111b, BLOCKTYPE(126,  1) },   // Spruce Wood Slab
+        { 0x610200, BLOCKTYPE( 87,  0) },   // Netherrack
+        { 0x000000, BLOCKTYPE(0,0) },       // terminator
+    };
+
+    // colors only using cheaply available materials
+    cmap_t CMAP_MAP_CHEAP[] = {
+        { 0x6e9a30, BLOCKTYPE(  2,  0) },   // Grass
+        { 0xd5c98d, BLOCKTYPE( 44,  1) },   // Sandtone slab
+        { 0x006b00, BLOCKTYPE( 18,  0) },   // Oak leaves
+        { 0xdcdcdc, BLOCKTYPE(171,  0) },   // White carpet
+        { 0x9e5b29, BLOCKTYPE(126,  3) },   // Jungle wood slab
+        { 0x616161, BLOCKTYPE( 44,  3) },   // Cobblestone slab
+        { 0x5a482b, BLOCKTYPE(126,  0) },   // Oak wood slab
+        { 0xdcd9d3, BLOCKTYPE(  1,  3) },   // Diorite
+        { 0xba6e2c, BLOCKTYPE(171,  1) },   // Orange carpet
+        { 0x9a42ba, BLOCKTYPE(171,  2) },   // Magenta carpet
+        { 0x5884ba, BLOCKTYPE(171,  3) },   // Light blue carpet
+        { 0xc6c62c, BLOCKTYPE(171,  4) },   // Yellow carpet
+        { 0x6eb016, BLOCKTYPE(171,  5) },   // Lime carpet
+        { 0xd16e8e, BLOCKTYPE(171,  6) },   // Pink carpet
+        { 0x424242, BLOCKTYPE(171,  7) },   // Gray carpet
+        { 0x848484, BLOCKTYPE(171,  8) },   // Light gray carpet
+        { 0x426e84, BLOCKTYPE(171,  9) },   // Cyan carpet
+        { 0x6e369a, BLOCKTYPE(171, 10) },   // Purple carpet
+        { 0x2c429a, BLOCKTYPE(171, 11) },   // Blue carpet
+        { 0x58422c, BLOCKTYPE(171, 12) },   // Brown carpet
+        { 0x586e2c, BLOCKTYPE(171, 13) },   // Green carpet
+        { 0x842c2c, BLOCKTYPE(171, 14) },   // Red carpet
+        { 0x161616, BLOCKTYPE(171, 15) },   // Black carpet
+        { 0x12111b, BLOCKTYPE(126,  1) },   // Spruce Wood Slab
+        { 0x610200, BLOCKTYPE( 87,  0) },   // Netherrack
+        { 0x000000, BLOCKTYPE(0,0) },       // terminator
+    };
+
+    // colors suitable for grayscale images
+    cmap_t CMAP_MAP_GRAY[] = {
+        { 0xdcdcdc, BLOCKTYPE(171,  0) },   // White carpet
+        { 0x616161, BLOCKTYPE( 44,  3) },   // Cobblestone slab
+        { 0xdcd9d3, BLOCKTYPE(  1,  3) },   // Diorite
+        { 0x424242, BLOCKTYPE(171,  7) },   // Gray carpet
+        { 0x848484, BLOCKTYPE(171,  8) },   // Light gray carpet
+        { 0x161616, BLOCKTYPE(171, 15) },   // Black carpet
+        { 0x000000, BLOCKTYPE(0,0) },       // terminator
+    };
 
     char fname[256];
     sprintf(fname, "png/%s.png", name);
@@ -1056,9 +1174,13 @@ bplan * bplan_pngload(const char *name, const char *setname) {
         set=CMAP_WOOL;
     }
     else {
-        if (!strcasecmp(setname, "wool")) set = CMAP_WOOL;
-        if (!strcasecmp(setname, "clay")) set = CMAP_CLAY;
-        if (!strcasecmp(setname, "glass")) set = CMAP_GLASS;
+        if (!strcasecmp(setname, "wool"))       set = CMAP_WOOL;
+        if (!strcasecmp(setname, "clay"))       set = CMAP_CLAY;
+        if (!strcasecmp(setname, "glass"))      set = CMAP_GLASS;
+        if (!strcasecmp(setname, "map"))        set = CMAP_MAP_DEFAULT;
+        if (!strcasecmp(setname, "mapall"))     set = CMAP_MAP_ALL;
+        if (!strcasecmp(setname, "mapcheap"))   set = CMAP_MAP_CHEAP;
+        if (!strcasecmp(setname, "mapgray"))    set = CMAP_MAP_GRAY;
         if (!set) LH_ERROR(NULL, "No such color set \"%s\"", setname);
     }
 
