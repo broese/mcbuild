@@ -977,12 +977,16 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
         rpos = 2;
     }
     else if (!strcmp(words[0],"autologout") || !strcmp(words[0],"al")) {
-        if (!words[1] || sscanf(words[1],"%d",&opt.healthlimit)!=1)
-            opt.healthlimit=15;
-        if (opt.healthlimit > 0)
-            sprintf(reply,"Autologout at health himit %d",opt.healthlimit);
-        else
-            sprintf(reply,"Autologout disabled\n");
+        int thr = 15;
+        if (words[1]) sscanf(words[1],"%d",&thr);
+        if (!words[1] && opt.healthlimit > 0) {
+            sprintf(reply,"Autologout disabled");
+            opt.healthlimit = 0;
+        }
+        else {
+            sprintf(reply,"Autologout at health himit %d",thr);
+            opt.healthlimit = thr;
+        }
         rpos = 2;
     }
 #if 0
