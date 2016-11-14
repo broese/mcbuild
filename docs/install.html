@@ -30,12 +30,18 @@
     <p>Currently 64-bit Linux and Windows are supported. Windows version
       uses Cygwin to simulate a POSIX-compatible environment and uses
       exactly the same source code and compiled the same way as the
-      Linux version.</p>
+      Linux version. </p>
 
-    <p>32-bit platforms should work as well, but that wasn't tested
-      for a long time, so I cannot confirm that. Other architectures
-      (e.g. ARM on Raspberry Pie) should also work, but that wasn't
-      tested - feel free to try.</p>
+    <p>Building it involves only a few standard tools and libraries, which
+      are easy set up on any Linux distribution or in Cygwin. I am
+      also providing a prebuilt package for Windows, which is probably
+      the most convenient choice for most users.</p>
+
+    <p>32-bit platforms work as well and there is a prebuilt package
+      for 32-bit Windows available. However, 32-bit versions are not
+      properly tested so there might be issues that went unnoticed.
+      Other architectures (e.g. ARM on Raspberry Pie) should also work,
+      but that wasn't tested - feel free to try.</p>
 
     <p>What about OSX? Good question. OSX is UNIX-based and all the
       necessary tools and libraries are available - it should just work
@@ -48,20 +54,15 @@
     <p>MCBuild is written completely in C, so it's very fast and lightweight.
       You should be able to run it even on low-end hardware.</p>
 
-    <p>Building it involves only a few standard tools and libraries, which
-      are easy set up on any Linux distribution or in Cygwin. I am
-      also providing a prebuilt package for Windows, which is probably
-      the most convenient choice for most users.</p>
-
     <p>Follow one of the three sections below that suits you best.</p>
-
 
     <a name="inst_windows_prebuilt">
     <h2>Installation Procedure on Windows (precompiled package)</h2>
 
     <p>Download the package from the link provided on the forums and
       unpack it to your C:\ drive. At the end, you should have a C:\cygwin64
-      directory with a bunch of other files and directories in it.</p>
+      directory (C:\cygwin for the 32-bit version) with a bunch of
+      other files and directories in it.</p>
 
     <p>In the C:\cygwin64 directory, launch the cygwin.bat file.
       On the first launch you will see a bunch of files being copied -
@@ -91,7 +92,7 @@
       <li>Libs/libisl10</li>
       <li>Libs/libcloog-isl4</li>
       <li>Libs/libjson-c-devel</li>
-      <li>Devel/openssl-devel</li>
+      <li>Net/openssl-devel</li>
       <li>Devel/git</li>
       <li>Devel/gcc-core</li>
       <li>Devel/make</li>

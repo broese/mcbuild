@@ -22,35 +22,35 @@
     <a name="principles">
     <h2>Building Process Principles</h2>
 
-    <p>When the building functions are used you will be dealing with
+    <p>When using the building functions, you will be dealing with
       two things called <b>buildplan</b> and <b>buildtask</b>.</p>
 
     <p>A buildplan is like a blueprint of a structure. It defines a
       list of blocks, including their meta values (which define
-      subtype and/or orientation for some block types). The block
+      variant and/or orientation for some block types). The block
       coordinates within the buildplan are relative to a block at
       0,0,0 called <b>pivot</b>. The pivot block may be itself
       a part of the buildplan or not - it does not matter. The pivot
       however represents the &quot;origin&quot; of the buildplan</p>
 
     <p>A buildplan can be created using one of the parametric building
-      functions, imported from external files, and manipulated in
+      functions or imported from external files, and then manipulated in
       various ways.</p>
 
-    <p>In order to start actual building, you need to start a buildtask
-      from the buildplan by placing its pivot somewhere in the world.
-      Both position and direction of the placement define how the
-      blocks will be placed. The block coordinates are translated from
-      the relative to the world coordinates. The orientation-dependent
-      meta values are rotated to match the new direction. In the
-      buildplan, the metas are encoded as if the pivot direction is
-      towards north. When pivot is placed, you define the new direction.</p>
+    <p>In order to start actual building, you need to create a buildtask
+      from the buildplan by placing it at some coordinates in the world
+      thus binding it to absolute coordinates and direction. The placement
+      coordinates correspond to the position where the pivot block of the
+      buildplan will be placed, and the placement direction causes the
+      structure to be appropriately rotated - at the pivot block. Within
+      the buildplan, the block coordinates and their meta values are defined
+      as if the structure was placed in the direction North.</p>
 
-    <p>The actual placement may be done either by specifying explicit
-      coordinates and direction as parameter, or more conveniently by
-      placing a block. The coordinates and the direction of the placement
-      are taken as pivot parameters, and the placement itself is not
-      forwarded to the server.</p>
+    <p>The placement coordinates and direction can be specified explicitly,
+      but MCBuild provides an easy and intuitive alternative. You can simply
+      place any block at the desired pivot position and looking to desired
+      placement direction. MCBuild will intercept this placement and will
+      not forward it to the server, just use the information as parameters.</p>
 
     <p>Some other parameters used in the various commands behave that
       way - you can either specify them explicitly, or omit them, and
@@ -140,7 +140,7 @@
       will interpret this.</p>
 
     <hr>
-    <p><tt>#build stairs size=5,20 material=brick</tt></p>
+    <p><tt>#build stairs size=5,10 material=brick</tt></p>
     <p>This creates a buildplan of stairs, 5 blocks wide, and 10 blocks
       high, made of brick blocks and the default minimal base -
       one column of blocks under the stairs to provide connection
@@ -163,13 +163,13 @@
 
     <hr>
     <p><tt>#build stairs brick 5,10</tt></p>
-    <p>This however will give you an error - the parameters have no names
-      so the default order is assumed, and &quot;brick&quot; cannot
+    <p>This command will give you an error - the parameters have no names
+      so MCBuild assumes the default order, and &quot;brick&quot; cannot
       be parsed as size.</p>
 
     <hr>
     <p><tt>#build stairs m=brick 5,10</tt></p>
-    <p>This however works - the material parameter is identified by the
+    <p>This form works - the material parameter is identified by the
       explicit name, while the size as the first unnamed parameter</p>
 
     <hr>
@@ -457,7 +457,7 @@
     <p><tt>#build scaf 15,5 -l</tt> - scaffolding 15 blocks wide and 5 floors high</p>
 
 
-
+    <!--
     <a name="para_seal">
     <h3>seal</h3>
 
@@ -485,7 +485,7 @@
     <p>Examples and usage tips:</p>
 
     <p><tt>#build seal</tt> 1x2x1000 wall of neterrack</p>
-
+    -->
 
 
     <a name="build_manipulate">
@@ -718,6 +718,36 @@
 
     <p>Format:</p>
     <p><tt>#build load filename</tt></p>
+
+
+
+    <a name="file_tsave">
+    <h3>tsave</h3>
+
+    <p>Save current buildtask to a .bplan file located in tasks/ subdirectory.
+      This is useful if you want to interrupt your build, but want to preserve
+      it for later times. If you don't specify the name, the buildtask will be
+      saved as &quot;autosave&quot;. When you start any new buildtask, it is
+      automatically saved as &quot;autosave&quot;.
+    </p>
+
+    <p>Format:</p>
+    <p><tt>#build tsave [filename]</tt></p>
+
+
+    <a name="file_tload">
+    <h3>tload</h3>
+
+    <p>Load the saved buildtask from a .bplan file in tasks/ subdirectory.
+      If you were working on a build and had to interrupt or exit your client
+      for any reason, you can always restore it from the saved state and
+      continue from there. If no filename is specified, tload will load
+      &quot;autosave&quot; file, which is automatically created when you
+      start a new buildtask.
+    </p>
+
+    <p>Format:</p>
+    <p><tt>#build tload [filename]</tt></p>
 
 
 
@@ -1086,12 +1116,14 @@
             there are better methods.</td>
           <td>0 (off)</td>
         </tr>
+        <!--
         <tr>
           <td>sm</td>
           <td>Seal Mode: if 1 (on), only blocks located in front of player are placed.
             May be useful when sealing tunnels or similar.</td>
           <td>0 (off)</td>
         </tr>
+        -->
         <tr>
           <td>anyface</td>
           <td>When 1 (on), MCBuild does not check if the placement point is located

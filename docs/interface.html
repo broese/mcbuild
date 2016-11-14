@@ -74,10 +74,19 @@
         </tr>
 
         <tr>
-          <td>build</td>
-          <td>bu</td>
+          <td>align</td>
+          <td></td>
           <td>params</td>
-          <td>Build functions. Refer to the <a href="build.html">building guide</a> or the summary table of building commands below</td>
+          <td>Align the player exactly to a world direction and block center. Useful for autowalking nether tunnels.<br>
+            <tt>align</tt> - align to exact axial direction in the player's look direction<br>
+            <tt>align &lt;yaw&gt;</tt> - align to exact yaw angle (float value). 0: South, 90: West, 180: North, 270:East
+          </td>
+        </tr>
+        <tr>
+          <td>antiafk</td>
+          <td>afk</td>
+          <td>toggle</td>
+          <td>Anti-AFKing - repeatedly places and removes a torch beneath your feet. You must have torches in your inventory</td>
         </tr>
         <tr>
           <td>autokill</td>
@@ -87,6 +96,33 @@
             <tt>ak</tt> - toggle autokill<br>
             <tt>ak -p</tt> - enable autokill and allow attacking pigmen too.
           </td>
+        </tr>
+        <tr>
+          <td>autologout</td>
+          <td>al</td>
+          <td>params</td>
+          <td>Automatically log out when health falls below defined level.<br>
+            <tt>autologout</tt>Automatic logout when heal<br>
+            <tt>align &lt;yaw&gt;</tt> - align to exact yaw angle (float value). 0: South, 90: West, 180: North, 270:East
+          </td>
+        </tr>
+        <tr>
+          <td>autoshear</td>
+          <td>ash</td>
+          <td>toggle</td>
+          <td>Automatically shear sheep in your vicinity. Only activates when you hold shears as your active item</td>
+        </tr>
+        <tr>
+          <td>build</td>
+          <td>bu</td>
+          <td>params</td>
+          <td>Build functions. Refer to the <a href="build.html">building guide</a> or the summary table of building commands below</td>
+        </tr>
+        <tr>
+          <td>freecam</td>
+          <td>fc</td>
+          <td>toggle</td>
+          <td>Freecam - switches into spectator mode allowing you to freely move the camera around available chunks.</td>
         </tr>
         <tr>
           <td>grind</td>
@@ -99,31 +135,25 @@
           </td>
         </tr>
         <tr>
-          <td>antiafk</td>
-          <td>afk</td>
-          <td>toggle</td>
-          <td>Anti-AFKing - repeatedly places and removes a torch beneath your feet. You must have torches in your inventory</td>
-        </tr>
-        <tr>
-          <td>autoshear</td>
-          <td>ash</td>
-          <td>toggle</td>
-          <td>Automatically shear sheep in your vicinity. Only activates when you hold shears as your active item</td>
-        </tr>
-        <tr>
           <td>holeradar</td>
           <td>hr</td>
           <td>toggle</td>
           <td>Warn about holes on your way. Useful when walking or digging nether tunnels</td>
         </tr>
         <tr>
-          <td>align</td>
+          <td>hud</td>
           <td></td>
           <td>params</td>
-          <td>Align the player exactly to a world direction and block center. Useful for autowalking nether tunnels.<br>
-            <tt>align</tt> - align to exact axial direction in the player's look direction<br>
-            <tt>align &lt;yaw;&gt;</tt> - align to exact yaw angle (float value). 0: South, 90: West, 180: North, 270:East
+          <td>Enable a HUD for representing various graphical information on your screen using a map item.
+            You need at least one free slot to receive a bogus map item which you can hold to display one
+            of the screens. Best to keep it in the left-hand slot.
           </td>
+        </tr>
+        <tr>
+          <td>xray</td>
+          <td></td>
+          <td>toggle</td>
+          <td>X-Ray - make common blocks transparent. Currently not customizable.</td>
         </tr>
         <tr>
           <td>test</td>
@@ -233,11 +263,13 @@
           <td>size,material,[-none|minimal|full],[-exact]</td>
           <td>Stairs</td>
         </tr>
+        <!--
         <tr>
           <td>seal</td>
           <td></td>
           <td>Seal for the nether tunnels</td>
         </tr>
+        -->
 
         <tr><td colspan=3 class="separator">Buildplan Manipulation</td></tr>
         <tr>
@@ -283,7 +315,7 @@
         <tr>
           <td>scale</td>
           <td>[factor]</td>
-          <td>Scale up the buildplan by given factor. Only works well for solid builds</td>
+          <td>Scale up the buildplan by given integer factor. Only works well for solid builds</td>
         </tr>
 
         <tr><td colspan=3 class="separator">Import/Export</td></tr>
@@ -291,6 +323,11 @@
           <td>save</td>
           <td>filename</td>
           <td>Export buildplan to .bplan format</td>
+        </tr>
+        <tr>
+          <td>tsave</td>
+          <td>[filename]</td>
+          <td>Save current buildtask to a backup .bplan file</td>
         </tr>
         <tr>
           <td>ssave</td>
@@ -306,6 +343,11 @@
           <td>load</td>
           <td>filename</td>
           <td>Import buildplan from .bplan file</td>
+        </tr>
+        <tr>
+          <td>tload</td>
+          <td>[filename]</td>
+          <td>Load buildtask from a backup .bplan file</td>
         </tr>
         <tr>
           <td>sload</td>
