@@ -1144,15 +1144,23 @@ void gs_packet(MCPacket *pkt) {
             e->type = ENTITY_MOB;
 
             e->mtype = tpkt->mobtype;
-            // mark all monsters hostile, except bats
-            if (e->mtype >= 50 && e->mtype <90 && e->mtype!=65)
-                e->hostile = 1;
-            // polar bears are hostile too
-            if (e->mtype == 102)
-                e->hostile = 1;
-            // mark creepers extra hostile to make them priority targets
-            if (e->mtype == 50)
-                e->hostile = 2;
+            switch (e->mtype) {
+                // Mark all monsters as hostile
+                case 4 ... 6:
+                case 23:
+                case 27 ... 29:
+                case 51 ... 64:
+                case 66 ... 68:
+                case 102:
+                    e->hostile = 1;
+                    break;
+                // Illagers, creepers and shulkers are extra hostile - priority targets
+                case 33 ... 36:
+                case 50:
+                case 69:
+                    e->hostile = 2;
+                    break;
+            }
 
             e->mdata = clone_metadata(tpkt->meta);
         } _GSP;

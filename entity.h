@@ -28,9 +28,11 @@ typedef enum {
     Living              = 1,
     Ageable             = 2,
     Player              = 3,
-    TameableAnimal      = 4,
-    Item                = 5,
-    Fireworks           = 6,
+
+    ElderGuardian       = 4,
+    WitherSkeleton      = 5,
+    Stray               = 6,
+
     Potion              = 7,
     FallingBlock        = 8,
     Hanging             = 9,
@@ -40,6 +42,18 @@ typedef enum {
     Animal              = 13,
     Golem               = 14,
     Flying              = 15,
+
+    Husk                = 23,
+    ZombieVillager      = 27,
+    SkeletonHorse       = 28,
+    ZombieHorse         = 29,
+    Donkey              = 31,
+    Mule                = 32,
+    EvocationFangs      = 33,
+    EvocationIllager    = 34,
+    Vex                 = 35,
+    VindicationIllager  = 36,
+
     Mob                 = 48,
     Monster             = 49,
 
@@ -81,10 +95,16 @@ typedef enum {
     Horse               = 100,
     Rabbit              = 101,
     PolarBear           = 102,
+    Llama               = 103,
+    LlamaSpit           = 104,
 
     Villager            = 120,
 
     // inofficial entity types so we can track exp orbs and paintings
+    TameableAnimal      = 244,
+    Item                = 245,
+    Fireworks           = 246,
+
     Painting            = 254,
     ExperienceOrb       = 255,
 
