@@ -699,6 +699,39 @@ void set_block_dots(blk *b) {
         }
     }
 
+    else if (it->flags&I_OBSERVER) { // Observer blocks
+        int px = floor(gs.own.x);
+        int pz = floor(gs.own.z);
+        int py = round(gs.own.y); // rounded
+
+        int dx = b->x-px;
+        int dz = b->z-pz;
+
+        if (dx>-2 && dx<3 && dz>-2 && dz<3) {
+            // placing in a 4x4 block zone around the player
+            // (1 block to the north and west, 2 blocks to south and east)
+            // printf("Dead zone dx=%d, dz=%d, by=%d py=%d\n", dx, dz, b->y, py);
+            switch(b->b.meta&7) {
+                case 0: if (b->y>=py+2) { PLACE_ALL(b); } else { PLACE_NONE(b); } break;
+                case 1: if (b->y<py) { PLACE_ALL(b); } else { PLACE_NONE(b); } break;
+                case 2: if (b->y>=py && b->y<py+2) { PLACE_ALL(b); b->rdir=DIR_NORTH; } else { PLACE_NONE(b); } break;
+                case 3: if (b->y>=py && b->y<py+2) { PLACE_ALL(b); b->rdir=DIR_SOUTH; } else { PLACE_NONE(b); } break;
+                case 4: if (b->y>=py && b->y<py+2) { PLACE_ALL(b); b->rdir=DIR_WEST; } else { PLACE_NONE(b); } break;
+                case 5: if (b->y>=py && b->y<py+2) { PLACE_ALL(b); b->rdir=DIR_EAST; } else { PLACE_NONE(b); } break;
+                default: PLACE_NONE(b); break;
+            }
+        }
+        else {
+            switch(b->b.meta&7) {
+                case 2:  PLACE_ALL(b);  b->rdir=DIR_NORTH; break;
+                case 3:  PLACE_ALL(b);  b->rdir=DIR_SOUTH; break;
+                case 4:  PLACE_ALL(b);  b->rdir=DIR_WEST;  break;
+                case 5:  PLACE_ALL(b);  b->rdir=DIR_EAST;  break;
+                default: PLACE_NONE(b); break;
+            }
+        }
+    }
+
     else if (it->flags&I_DOOR) { // Doors
         if (b->b.meta&8) {
             // top half can't be placed

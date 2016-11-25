@@ -296,7 +296,24 @@ const item_id ITEMS[] = {
     [0xd7] = { "Red Nether Brick",      I_OPAQUE },
     [0xd8] = { "Bone Block",            I_OPAQUE|I_LOG },
     [0xd9] = { "Structure Void" },
+    [0xda] = { "Observer",              I_OBSERVER },
+    [0xdb] = { "White Shulker Box",     I_CHEST },
+    [0xdc] = { "Orange Shulker Box",    I_CHEST },
+    [0xdd] = { "Magenta Shulker Box",   I_CHEST },
+    [0xde] = { "Light Blue Shulker Box",I_CHEST },
+    [0xdf] = { "Yellow Shulker Box",    I_CHEST },
 
+    [0xe0] = { "Lime Shulker Box",      I_CHEST },
+    [0xe1] = { "Pink Shulker Box",      I_CHEST },
+    [0xe2] = { "Gray Shulker Box",      I_CHEST },
+    [0xe3] = { "Light Gray Shulker Box",I_CHEST },
+    [0xe4] = { "Cyan Shulker Box",      I_CHEST },
+    [0xe5] = { "Purple Shulker Box",    I_CHEST },
+    [0xe6] = { "Blue Shulker Box",      I_CHEST },
+    [0xe7] = { "Brown Shulker Box",     I_CHEST },
+    [0xe8] = { "Green Shulker Box",     I_CHEST },
+    [0xe9] = { "Red Shulker Box",       I_CHEST },
+    [0xea] = { "Black Shulker Box",     I_CHEST },
 
     [0xff] = { "Structure Block",       I_OPAQUE },
 
@@ -518,6 +535,8 @@ const item_id ITEMS[] = {
     [0x1bf] = { "Acacia Boat",          I_ITEM },
 
     [0x1c0] = { "Dark Oak Boat",        I_ITEM },
+    [0x1c1] = { "Totem of Undying",     I_ITEM },
+    [0x1c2] = { "Shulker Shell",        I_ITEM },
 
     [0x8d0] = { "Record 13",            I_ITEM|I_NSTACK },
     [0x8d1] = { "Record Cat",           I_ITEM|I_NSTACK },
@@ -944,6 +963,15 @@ static metagroup MM_QUARTZ[16] = {
     METAO(4,4,4,3,3), // North-South
 };
 
+// I_OBSERVER - it's almost same as droppers/dispensers, but nooo,
+// Mojang had to use different codes for direction again
+static metagroup MM_OBSERVER[16] = {
+    METAO(2,2,3,4,5),
+    METAO(3,2,3,4,5),
+    METAO(4,2,3,4,5),
+    METAO(5,2,3,4,5),
+};
+
 #define GETMETAGROUP(mmname) mmname[b.meta].inuse ? mmname[b.meta].meta : NULL
 static inline int8_t *get_metagroup(bid_t b) {
     uint64_t flags = ITEMS[b.bid].flags;
@@ -960,6 +988,7 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (b.bid==77 || b.bid==143) return GETMETAGROUP(MM_TORCH);
     if (b.bid==155)     return GETMETAGROUP(MM_QUARTZ);
     if (flags&I_GATE)   return GETMETAGROUP(MM_BED);
+    if (flags&I_OBSERVER)   return GETMETAGROUP(MM_OBSERVER);
 
     if ((flags&I_RSDEV) || b.bid==154 || b.bid==198)
         return GETMETAGROUP(MM_ONWALL);
