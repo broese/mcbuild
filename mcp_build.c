@@ -1285,12 +1285,12 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
             tpbp->bpos = POS(b->x+NOFF[face][0],b->y+NOFF[face][2],b->z+NOFF[face][1]);
         }
         tpbp->face = face;
-        tpbp->hand = 0; //TODO: support second hand
-        tpbp->cx = cx;
-        tpbp->cy = cy;
-        tpbp->cz = cz;
+        tpbp->hand = 0;
+        tpbp->cx = (float)cx/16;
+        tpbp->cy = (float)cy/16;
+        tpbp->cz = (float)cz/16;
         queue_packet(pbp,sq);
-        //dump_packet(pbp);
+        dump_packet(pbp);
 
         if (hslot->item == 326 || hslot->item == 327) {
             // Placing a water or lava - requires a different procedure

@@ -593,9 +593,9 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
             tpbp->bpos = POS(x,y-1,z);
             tpbp->face   = 1;
             tpbp->hand   = 0;
-            tpbp->cx     = 8;
-            tpbp->cy     = 16;
-            tpbp->cz     = 8;
+            tpbp->cx     = 0.5;
+            tpbp->cy     = 1;
+            tpbp->cz     = 0.5;
             queue_packet(pbp,sq);
             dump_packet(pbp);
 
