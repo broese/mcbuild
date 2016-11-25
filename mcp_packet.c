@@ -10,6 +10,7 @@
 
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 
 #define LH_DECLARE_SHORT_NAMES 1
 #include <lh_buffers.h>
@@ -282,6 +283,22 @@ DECODE_BEGIN(SP_SpawnMob,_1_9) {
     Pvarint(eid);
     Puuid(uuid);
     Pchar(mobtype);
+    Pdouble(x);
+    Pdouble(y);
+    Pdouble(z);
+    Pchar(yaw);
+    Pchar(pitch);
+    Pchar(headpitch);
+    Pshort(vx);
+    Pshort(vy);
+    Pshort(vz);
+    Pmeta(meta);
+} DECODE_END;
+
+DECODE_BEGIN(SP_SpawnMob,_1_11) {
+    Pvarint(eid);
+    Puuid(uuid);
+    Pvarint(mobtype);
     Pdouble(x);
     Pdouble(y);
     Pdouble(z);
@@ -1777,22 +1794,40 @@ DECODE_BEGIN(CP_PlayerBlockPlacement,_1_9) {
     Plong(bpos.p);
     Pvarint(face);
     Pvarint(hand);
-    Pchar(cx);
-    Pchar(cy);
-    Pchar(cz);
+    tpkt->cx = (float)(lh_read_char_be(p))/16.0;
+    tpkt->cy = (float)(lh_read_char_be(p))/16.0;
+    tpkt->cz = (float)(lh_read_char_be(p))/16.0;
 } DECODE_END;
 
 ENCODE_BEGIN(CP_PlayerBlockPlacement,_1_9) {
     Wlong(bpos.p);
     Wvarint(face);
     Wvarint(hand);
-    Wchar(cx);
-    Wchar(cy);
-    Wchar(cz);
+    lh_write_char_be(w, (char)lrintf(tpkt->cx*16));
+    lh_write_char_be(w, (char)lrintf(tpkt->cy*16));
+    lh_write_char_be(w, (char)lrintf(tpkt->cz*16));
+} ENCODE_END;
+
+DECODE_BEGIN(CP_PlayerBlockPlacement,_1_11) {
+    Plong(bpos.p);
+    Pvarint(face);
+    Pvarint(hand);
+    Pfloat(cx);
+    Pfloat(cy);
+    Pfloat(cz);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_PlayerBlockPlacement,_1_11) {
+    Wlong(bpos.p);
+    Wvarint(face);
+    Wvarint(hand);
+    Wfloat(cx);
+    Wfloat(cy);
+    Wfloat(cz);
 } ENCODE_END;
 
 DUMP_BEGIN(CP_PlayerBlockPlacement) {
-    printf("bpos=%d,%d,%d, face=%d, cursor=%d,%d,%d, hand=%d",
+    printf("bpos=%d,%d,%d, face=%d, cursor=%.2f,%.2f,%.2f, hand=%d",
            tpkt->bpos.x,  tpkt->bpos.y,  tpkt->bpos.z,
            tpkt->face, tpkt->cx, tpkt->cy, tpkt->cz, tpkt->hand);
 } DUMP_END;
@@ -1821,8 +1856,125 @@ DUMP_BEGIN(CP_UseItem) {
 ////////////////////////////////////////////////////////////////////////////////
 // Packet ID mapping to packet handlers
 
-// MC protocol v210 - clients 1.10.x
+// MC protocol v310 - clients 1.11.x
 // http://wiki.vg/Protocol
+const static packet_methods SUPPORT_1_11[2][MAXPACKETTYPES] = {
+    {
+        SUPPORT_DD  (0x00,SP_SpawnObject,_1_9),
+        SUPPORT_DD  (0x01,SP_SpawnExperienceOrb,_1_9),
+        SUPPORT_    (0x02,SP_SpawnGlobalEntity),
+        SUPPORT_DDF (0x03,SP_SpawnMob,_1_11),
+        SUPPORT_DD  (0x04,SP_SpawnPainting,_1_9),
+        SUPPORT_DDF (0x05,SP_SpawnPlayer,_1_9),
+        SUPPORT_    (0x06,SP_Animation),
+        SUPPORT_    (0x07,SP_Statistics),
+        SUPPORT_    (0x08,SP_BlockBreakAnimation),
+        SUPPORT_DDF (0x09,SP_UpdateBlockEntity,_1_8_1),
+        SUPPORT_DED (0x0a,SP_BlockAction,_1_8_1),
+        SUPPORT_DED (0x0b,SP_BlockChange,_1_8_1),
+        SUPPORT_    (0x0c,SP_BossBar),
+        SUPPORT_    (0x0d,SP_ServerDifficulty),
+        SUPPORT_    (0x0e,SP_TabComplete),
+        SUPPORT_DEDF(0x0f,SP_ChatMessage,_1_8_1),
+        SUPPORT_DEDF(0x10,SP_MultiBlockChange,_1_8_1),
+        SUPPORT_DD  (0x11,SP_ConfirmTransaction,_1_8_1),
+        SUPPORT_DED (0x12,SP_CloseWindow,_1_8_1),
+        SUPPORT_DEDF(0x13,SP_OpenWindow,_1_8_1),
+        SUPPORT_DEDF(0x14,SP_WindowItems,_1_8_1),
+        SUPPORT_    (0x15,SP_WindowProperty),
+        SUPPORT_DEDF(0x16,SP_SetSlot,_1_8_1),
+        SUPPORT_    (0x17,SP_SetCooldown),
+        SUPPORT_    (0x18,SP_PluginMessage),
+        SUPPORT_    (0x19,SP_NamedSoundEffect),
+        SUPPORT_    (0x1a,SP_Disconnect),
+        SUPPORT_    (0x1b,SP_EntityStatus),
+        SUPPORT_DDF (0x1c,SP_Explosion,_1_8_1),
+        SUPPORT_DED (0x1d,SP_UnloadChunk,_1_9),
+        SUPPORT_DED (0x1e,SP_ChangeGameState,_1_8_1),
+        SUPPORT_    (0x1f,SP_KeepAlive),
+        SUPPORT_DEDF(0x20,SP_ChunkData,_1_9_4),
+        SUPPORT_DD  (0x21,SP_Effect,_1_8_1),
+        SUPPORT_    (0x22,SP_Particle),
+        SUPPORT_DD  (0x23,SP_JoinGame,_1_9_2),
+        SUPPORT_DEDF(0x24,SP_Map,_1_9),
+        SUPPORT_DD  (0x25,SP_EntityRelMove,_1_9),
+        SUPPORT_DD  (0x26,SP_EntityLookRelMove,_1_9),
+        SUPPORT_    (0x27,SP_EntityLook),
+        SUPPORT_    (0x28,SP_Entity),
+        SUPPORT_    (0x29,SP_VehicleMove),
+        SUPPORT_    (0x2a,SP_OpenSignEditor),
+        SUPPORT_DED (0x2b,SP_PlayerAbilities,_1_8_1),
+        SUPPORT_    (0x2c,SP_CombatEffect),
+        SUPPORT_DEDF(0x2d,SP_PlayerListItem,_1_9),
+        SUPPORT_DED (0x2e,SP_PlayerPositionLook,_1_9),
+        SUPPORT_DED (0x2f,SP_UseBed,_1_9),
+        SUPPORT_DDF (0x30,SP_DestroyEntities,_1_8_1),
+        SUPPORT_    (0x31,SP_RemoveEntityEffect),
+        SUPPORT_    (0x32,SP_ResourcePackSent),
+        SUPPORT_DD  (0x33,SP_Respawn,_1_8_1),
+        SUPPORT_    (0x34,SP_EntityHeadLook),
+        SUPPORT_    (0x35,SP_WorldBorder),
+        SUPPORT_    (0x36,SP_Camera),
+        SUPPORT_DED (0x37,SP_HeldItemChange,_1_8_1),
+        SUPPORT_    (0x38,SP_DisplayScoreboard),
+        SUPPORT_DEDF(0x39,SP_EntityMetadata,_1_8_1),
+        SUPPORT_    (0x3a,SP_AttachEntity),
+        SUPPORT_    (0x3b,SP_EntityVelocity),
+        SUPPORT_    (0x3c,SP_EntityEquipment),
+        SUPPORT_DD  (0x3d,SP_SetExperience,_1_8_1),
+        SUPPORT_DD  (0x3e,SP_UpdateHealth,_1_8_1),
+        SUPPORT_    (0x3f,SP_ScoreboardObjective),
+        SUPPORT_    (0x40,SP_SetPassengers),
+        SUPPORT_    (0x41,SP_Teams),
+        SUPPORT_    (0x42,SP_UpdateScore),
+        SUPPORT_    (0x43,SP_SpawnPosition),
+        SUPPORT_    (0x44,SP_TimeUpdate),
+        SUPPORT_    (0x45,SP_Title),
+        SUPPORT_DED (0x46,SP_SoundEffect,_1_10),
+        SUPPORT_    (0x47,SP_PlayerListHeader),
+        SUPPORT_    (0x48,SP_CollectItem),
+        SUPPORT_DD  (0x49,SP_EntityTeleport,_1_9),
+        SUPPORT_    (0x4a,SP_EntityProperties),
+        SUPPORT_    (0x4b,SP_EntityEffect),
+        SUPPORT_    (0x4f,SP___),
+    },
+    {
+        SUPPORT_DED (0x00,CP_TeleportConfirm,_1_9),
+        SUPPORT_    (0x01,CP_TabComplete),
+        SUPPORT_DD  (0x02,CP_ChatMessage,_1_8_1),
+        SUPPORT_    (0x03,CP_ClientStatus),
+        SUPPORT_    (0x04,CP_ClientSettings),
+        SUPPORT_    (0x05,CP_ConfirmTransaction),
+        SUPPORT_    (0x06,CP_EnchantItem),
+        SUPPORT_DEDF(0x07,CP_ClickWindow,_1_8_1),
+        SUPPORT_DED (0x08,CP_CloseWindow,_1_8_1),
+        SUPPORT_    (0x09,CP_PluginMessage),
+        SUPPORT_DED (0x0a,CP_UseEntity,_1_9),
+        SUPPORT_    (0x0b,CP_KeepAlive),
+        SUPPORT_DD  (0x0c,CP_PlayerPosition,_1_8_1),
+        SUPPORT_DED (0x0d,CP_PlayerPositionLook,_1_8_1),
+        SUPPORT_DED (0x0e,CP_PlayerLook,_1_8_1),
+        SUPPORT_DD  (0x0f,CP_Player,_1_8_1),
+        SUPPORT_    (0x10,CP_VehicleMode),
+        SUPPORT_    (0x11,CP_SteerBoat),
+        SUPPORT_    (0x12,CP_PlayerAbilities),
+        SUPPORT_DED (0x13,CP_PlayerDigging,_1_9),
+        SUPPORT_DED (0x14,CP_EntityAction,_1_8_1),
+        SUPPORT_    (0x15,CP_SteerVehicle),
+        SUPPORT_    (0x16,CP_ResourcePackStatus),
+        SUPPORT_DED (0x17,CP_HeldItemChange,_1_8_1),
+        SUPPORT_    (0x18,CP_CreativeInventoryAct),
+        SUPPORT_    (0x19,CP_UpdateSign),
+        SUPPORT_DED (0x1a,CP_Animation,_1_9),
+        SUPPORT_    (0x1b,CP_Spectate),
+        SUPPORT_DED (0x1c,CP_PlayerBlockPlacement,_1_11),
+        SUPPORT_DED (0x1d,CP_UseItem,_1_9),
+        SUPPORT_    (0x1f,CP___),
+    },
+};
+
+// MC protocol v210 - clients 1.10.x
+// http://wiki.vg/index.php?title=Protocol&oldid=8235
 const static packet_methods SUPPORT_1_10[2][MAXPACKETTYPES] = {
     {
         SUPPORT_DD  (0x00,SP_SpawnObject,_1_9),
@@ -2491,6 +2643,7 @@ static protocol_support_t supported[] = {
     { 109, PROTO_1_9_2, "1.9.2",    SUPPORT_1_9_2 },
     { 110, PROTO_1_9_4, "1.9.4",    SUPPORT_1_9_4 },
     { 210, PROTO_1_10,  "1.10.x",   SUPPORT_1_10 },
+    { 315, PROTO_1_11,  "1.11.x",   SUPPORT_1_11 },
     {  -1, PROTO_NONE,  NULL,       NULL },
 };
 

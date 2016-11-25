@@ -60,7 +60,7 @@ typedef struct {
 typedef struct {
     uint32_t    eid;
     uuid_t      uuid;
-    uint8_t     mobtype;
+    int         mobtype;
     double      x;
     double      y;
     double      z;
@@ -379,7 +379,7 @@ typedef struct {
 
 // 0x02
 typedef struct {
-    char        str[256];
+    char        str[320];
 } CP_ChatMessage_pkt;
 
 // 0x07
@@ -464,7 +464,7 @@ typedef struct {
     pos_t   bpos;
     int32_t face;
     int32_t hand;
-    int8_t  cx,cy,cz;
+    float   cx,cy,cz;
 } CP_PlayerBlockPlacement_pkt;
 
 // 0x1d
