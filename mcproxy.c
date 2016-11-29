@@ -17,6 +17,8 @@
 #include <signal.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <assert.h>
@@ -1123,6 +1125,71 @@ int parse_args(int ac, char **av) {
 #define MKDIR(name) if (mkdir( #name ,0777)<0 && errno!=EEXIST)         \
         { printf("Failed to create directory '%s'\n", #name ); return 1; }
 
+uint8_t * read_dns_name(uint8_t *p, uint8_t *lim, char *name, ssize_t nlen) {
+    int pos = 0;
+    while (1) {
+        uint8_t slen = lh_read_char_be(p);
+        if (slen == 0) break;
+        if (pos+slen >= nlen-1) return NULL;
+        if (pos > 0) name[pos++]='.';
+        memmove(name+pos, p, slen);
+        p += slen;
+        pos += slen;
+    }
+
+    name[pos] = 0;
+    return p;
+}
+
+uint32_t lookup_srv(const char *addr) {
+    // first try to resolve the server address via SRV record
+    char srvname[512];
+    sprintf(srvname, "_minecraft._tcp.%s", addr);
+
+    unsigned char srvbuf[PACKETSZ];
+    int srvlen = res_search(srvname, C_IN, T_SRV, srvbuf, sizeof(srvbuf));
+    HEADER *hdr = (HEADER *)srvbuf;
+
+    // return if the query fails or has no records
+    if (srvlen < 0) return;
+    if ( ntohs(hdr->ancount)==0 ) return 0xffffffff;
+
+    // skip the query entry
+    unsigned char *p = srvbuf+sizeof(HEADER);
+    p=read_dns_name(p, srvbuf+srvlen, srvname, sizeof(srvname));
+    if (!p) { printf("Failed to parse SRV record\n"); return 0xffffffff; }
+    //printf("Query addr: %s\n", srvname);
+    p += 4; // skip QTYPE and QCLASS fields
+
+    // read the RRs
+    int i;
+    for(i=0; i<ntohs(hdr->ancount); i++) {
+        short rrName = lh_read_short_be(p);
+        if ((rrName&0xc000) != 0xc000) {
+            printf("Unsupported RR format or type while parsing SRV response\n");
+            return 0xffffffff;
+        }
+
+        short type   = lh_read_short_be(p);
+        short class  = lh_read_short_be(p);
+        int   ttl    = lh_read_int_be(p);
+        short length = lh_read_short_be(p);
+
+        if (type != T_SRV || class != C_IN) {
+            p += length;
+            continue;
+        }
+
+        p += 4; // skip priority and weight fields of SRV RR
+        o_rport = lh_read_short_be(p);
+        p=read_dns_name(p, srvbuf+srvlen, srvname, sizeof(srvname));
+        printf("resolved SRV: %s => %s:%d\n", addr, srvname, o_rport);
+        return lh_dns_addr_ipv4(srvname);
+    }
+
+    return 0xffffffff;
+}
+
 int main(int ac, char **av) {
     printf("MCBuild 2.0 for Minecraft 1.9.x-1.11.x\nmulti-protocol support: 107,109,110,210,315\n");
 
@@ -1139,7 +1206,10 @@ int main(int ac, char **av) {
         return !o_help;
     }
 
-    remote_ip = lh_dns_addr_ipv4(o_raddr);
+    // resolve remote server's IP, first try SRV, then A queries
+    remote_ip = lookup_srv(o_raddr);
+    if (remote_ip == 0xffffffff)
+        remote_ip = lh_dns_addr_ipv4(o_raddr);
     if (remote_ip == 0xffffffff)
         LH_ERROR(-1, "Failed to resolve remote server address %s",o_raddr);
 
