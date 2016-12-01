@@ -1151,7 +1151,7 @@ uint32_t lookup_srv(const char *addr) {
     HEADER *hdr = (HEADER *)srvbuf;
 
     // return if the query fails or has no records
-    if (srvlen < 0) return;
+    if (srvlen < 0) return 0xffffffff;
     if ( ntohs(hdr->ancount)==0 ) return 0xffffffff;
 
     // skip the query entry
