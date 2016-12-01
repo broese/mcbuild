@@ -15,8 +15,10 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Useful macros
 
+#ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
 #define MAX(a,b) ((a)>(b)?(a):(b))
+#endif
 #define SGN(x)   ((x)?(((x)>0)?1:-1):0)
 #define SQ(x)    ((x)*(x))
 
