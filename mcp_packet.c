@@ -939,8 +939,11 @@ ENCODE_BEGIN(SP_ChunkData,_1_9_4) {
     assert(tpkt->te->type == NBT_LIST);
     assert(tpkt->te->ltype == NBT_COMPOUND || tpkt->te->count==0);
     lh_write_varint(w, tpkt->te->count);
-    for(i=0; i<tpkt->te->count; i++)
+    for(i=0; i<tpkt->te->count; i++) {
+        tpkt->te->li[i]->name = ""; // Tile Entity compounds must have name
         nbt_write(&w, tpkt->te->li[i]);
+        tpkt->te->li[i]->name = NULL;
+    }
 } ENCODE_END;
 
 DUMP_BEGIN(SP_ChunkData) {
