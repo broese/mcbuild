@@ -2641,13 +2641,14 @@ typedef struct {
 } protocol_support_t;
 
 static protocol_support_t supported[] = {
-    {  47, PROTO_1_8_1, "1.8.x",    NULL },
-    { 107, PROTO_1_9,   "1.9.0",    SUPPORT_1_9 },
-    { 109, PROTO_1_9_2, "1.9.2",    SUPPORT_1_9_2 },
-    { 110, PROTO_1_9_4, "1.9.4",    SUPPORT_1_9_4 },
-    { 210, PROTO_1_10,  "1.10.x",   SUPPORT_1_10 },
-    { 315, PROTO_1_11,  "1.11.x",   SUPPORT_1_11 },
-    {  -1, PROTO_NONE,  NULL,       NULL },
+    {  47, PROTO_1_8_1,   "1.8.x",    NULL },
+    { 107, PROTO_1_9,     "1.9.0",    SUPPORT_1_9 },
+    { 109, PROTO_1_9_2,   "1.9.2",    SUPPORT_1_9_2 },
+    { 110, PROTO_1_9_4,   "1.9.4",    SUPPORT_1_9_4 },
+    { 210, PROTO_1_10,    "1.10.x",   SUPPORT_1_10 },
+    { 315, PROTO_1_11,    "1.11.0",   SUPPORT_1_11 },
+    { 316, PROTO_1_11_1,  "1.11.1",   SUPPORT_1_11 },
+    {  -1, PROTO_NONE,    NULL,       NULL },
 };
 
 int set_protocol(int protocol, char * reply) {
