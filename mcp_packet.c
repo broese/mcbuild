@@ -1859,7 +1859,8 @@ DUMP_BEGIN(CP_UseItem) {
 ////////////////////////////////////////////////////////////////////////////////
 // Packet ID mapping to packet handlers
 
-// MC protocol v310 - clients 1.11.x
+// MC protocol v315/v316 - clients 1.11 and 1.11.1/2
+// (no change in protocol, only metadata)
 // http://wiki.vg/Protocol
 const static packet_methods SUPPORT_1_11[2][MAXPACKETTYPES] = {
     {
@@ -2646,7 +2647,8 @@ static protocol_support_t supported[] = {
     { 109, PROTO_1_9_2, "1.9.2",    SUPPORT_1_9_2 },
     { 110, PROTO_1_9_4, "1.9.4",    SUPPORT_1_9_4 },
     { 210, PROTO_1_10,  "1.10.x",   SUPPORT_1_10 },
-    { 315, PROTO_1_11,  "1.11.x",   SUPPORT_1_11 },
+    { 315, PROTO_1_11,  "1.11",     SUPPORT_1_11 },
+    { 316, PROTO_1_11_2,"1.11.2",   SUPPORT_1_11 },
     {  -1, PROTO_NONE,  NULL,       NULL },
 };
 

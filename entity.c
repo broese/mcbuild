@@ -78,6 +78,7 @@ const char * METANAME[][32] = {
     },
     [Fireworks] = {
         [6] = "Firework info",
+        [7] = "Boosted entity ID",
     },
     [Hanging] = {
     },
@@ -134,6 +135,7 @@ const char * METANAME[][32] = {
     },
     [Pig] = {
         [13] = "Has saddle",
+        [14] = "Carrot boost time",
     },
     [Rabbit] = {
         [13] = "Rabbit type",

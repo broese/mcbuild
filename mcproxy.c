@@ -1191,7 +1191,8 @@ uint32_t lookup_srv(const char *addr) {
 }
 
 int main(int ac, char **av) {
-    printf("MCBuild 2.0 for Minecraft 1.9.x-1.11.x\nmulti-protocol support: 107,109,110,210,315\n");
+    printf("MCBuild 2.0 for Minecraft 1.9.x-1.11.x\n"
+           "Multi-protocol support: 107,109,110,210,315,316\n");
 
     // create directories if they don't exist yet
     MKDIR(saved);
