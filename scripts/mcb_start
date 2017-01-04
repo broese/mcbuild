@@ -16,7 +16,7 @@ if [[ "$(git status | grep 'Your branch is behind' | wc | awk '{ print $1 }')" -
     printf "${RED}Update is available, please run mcb_update${NC}\n"
     touch .update
 else
-    rm .update
+    rm .update 2> /dev/null
 fi
 
 ./"$APPNAME" "$@"
