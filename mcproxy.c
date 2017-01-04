@@ -1063,7 +1063,7 @@ int parse_args(int ac, char **av) {
 
     int opt,error=0;
     char addr[256];
-    int port;
+    int port,nchars;
 
     while ( (opt=getopt(ac,av,"b:hc")) != -1 ) {
         switch (opt) {
@@ -1075,7 +1075,7 @@ int parse_args(int ac, char **av) {
                     sprintf(o_baddr, "%s", addr);
                     o_bport = port;
                 }
-                else if (sscanf(optarg,"%d",&port)==1) {
+                else if (sscanf(optarg,"%d%n",&port,&nchars)==1 && nchars==strlen(optarg)) {
                     o_bport = port;
                 }
                 else if (sscanf(optarg,"%[^:]",addr)==1) {
@@ -1103,11 +1103,11 @@ int parse_args(int ac, char **av) {
             sprintf(o_raddr, "%s", addr);
             o_rport = port;
         }
+        else if (sscanf(av[optind],"%d%n",&port,&nchars)==1 && nchars==strlen(av[optind])) {
+            o_rport = port;
+        }
         else if (sscanf(av[optind],"%[^:]",addr)==1) {
             sprintf(o_raddr, "%s", addr);
-        }
-        else if (sscanf(av[optind],"%d",&port)==1) {
-            o_bport = port;
         }
         else {
             printf("Failed to parse remote server address/port \"%s\"\n",av[optind]);
