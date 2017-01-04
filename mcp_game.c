@@ -19,6 +19,7 @@
 
 #include <lh_bytes.h>
 #include <lh_debug.h>
+#include <lh_files.h>
 
 #include "mcp_ids.h"
 #include "mcp_gamestate.h"
