@@ -20,6 +20,7 @@
 #define HUDINV_ENTITIES         (1LL<<4)
 #define HUDINV_BLOCKS           (1LL<<5)
 #define HUDINV_BUILD            (1LL<<6)
+#define HUDINV_HELP             (1LL<<7)
 
 int  hud_bogus_map(slot_t *s);
 void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq);

@@ -336,10 +336,11 @@ static int8_t BLOCK_COLORMAP[256][16] = {
 #define HUDMODE_TUNNEL          2
 #define HUDMODE_MAP             3
 #define HUDMODE_BUILD           4
+#define HUDMODE_HELP            5
 
 #define DEFAULT_MAP_ID 32767
 
-int hud_mode        = HUDMODE_TEST;
+int hud_mode        = HUDMODE_INFO;
 uint64_t hud_inv    = HUDINV_NONE;
 int hud_autoid      = DEFAULT_MAP_ID;
 int hud_id          = -1;
@@ -560,6 +561,7 @@ void hud_renew(MCPacketQueue *cq) {
 #define HUDINVMASK_INFO     (HUDINV_POSITION|HUDINV_HEALTH|HUDINV_INVENTORY)
 #define HUDINVMASK_MAP      (HUDINV_POSITION|HUDINV_BLOCKS|HUDINV_ENTITIES)
 #define HUDINVMASK_BUILD    (HUDINV_INVENTORY|HUDINV_BUILD)
+#define HUDINVMASK_HELP     (HUDINV_HELP)
 
 int huddraw_test() {
     int i;
@@ -990,6 +992,160 @@ int huddraw_build() {
     return 1;
 }
 
+char hud_help_page[256] = { 0 };
+
+typedef struct {
+    const char * title;
+    const char * text;
+} hud_help_text;
+
+hud_help_text HUD_HELP[] = {
+    { "build",      "Build commands\n"
+                    "Select sub-topic:\n"
+                    "bu_common: common usage\n"
+                    "bu_par: parametric builds\n"
+                    "bu_man: manipulate buildplan\n"
+                    "bu_file: export/import\n"
+                    "bu_ctrl: build control\n"
+                    "bu_debug: debug commands\n" },
+    { "align",      "#align\n"
+                    "  Align yourself to exact axial\n"
+                    "  direction and center of the  \n"
+                    "  block. Useful for autowalking\n"
+                    "  in a narrow tunnel           \n"
+                    "\n"
+                    "#align <yaw>\n"
+                    "  Align to exact yaw angle:    \n"
+                    "    0: south                   \n"
+                    "   90: west                    \n"
+                    "  180: north                   \n"
+                    "  270: east                    \n"
+                    "   45: south-west etc.         \n" },
+    { "antiafk",    "#antiafk\n"
+                    "#afk                           \n"
+                    "  Toggle anti-afk mode. Player \n"
+                    "  will place and remove a torch\n"
+                    "  to avoid AFK kick. You must  \n"
+                    "  have torches in the inventory\n" },
+    { "autokill",   "#autokill\n"
+                    "#ak\n"
+                    "  Toggle kill aura. It attacks \n"
+                    "  only monsters and avoids     \n"
+                    "  pigmen.                      \n"
+                    "\n"
+                    "#ak -p\n"
+                    "  Allow attacking pigmen       \n" },
+    { "autologout", "#autologout\n"
+                    "#al\n"
+                    "  Toggle auto-logout if hurt   \n"
+                    "  and your HP drop below 15    \n"
+                    "\n"
+                    "#al <hp>\n"
+                    "  Auto-logout when health drops\n"
+                    "  below specified HP\n" },
+    { "autoshear",  "#autoshear\n"
+                    "#ash\n"
+                    "  Automatically shear nearby   \n"
+                    "  sheep. You need to hold      \n"
+                    "  shears in your active hand   \n" },
+    { "freecam",    "#freecam\n"
+                    "#fc\n"
+                    "  Toggle freecam mode by       \n"
+                    "  switching to spectator mode. \n"
+                    "  May not work on all servers  \n" },
+    { "grind",      "#grind\n"
+                    "  Activate automatic grinding  \n"
+                    "  on an XP farm until Lv 30 is \n"
+                    "  reached.\n"
+                    "\n"
+                    "#grind <lv>\n"
+                    "  Grind until specified level  \n"
+                    "\n"
+                    "#grind stop\n"
+                    "  Cancel grinding\n" },
+    { "holeradar",  "#holeradar\n"
+                    "#hr\n"
+                    "  Toggle detection of holes and\n"
+                    "  lava pockets on your way.    \n"
+                    "  Useful for early warning when\n"
+                    "  digging tunnels in the nether\n" },
+    { "hud",        "#hud\n"
+                    "  Toggle on-screen display for \n"
+                    "  various info using a map item\n"
+                    "  If you're reading this you're\n"
+                    "  using one right now :)       \n"
+                    "\n"
+                    "#hud <type>\n"
+                    "  Switch to specific display:  \n"
+                    "  test - test picture          \n"
+                    "  info - basic navigation info \n"
+                    "  tunnel - nether tunnel radar \n"
+                    "  map - overhead map           \n"
+                    "  help - help for commands     \n"
+                    "  build - build and mat. info  \n" },
+    { "xray",       "#xray\n"
+                    "  Toggle X-Ray mode to show ore\n"
+                    "  blocks. Customization is not \n"
+                    "  implemented at the moment.   \n" },
+    { "",           "Select with '#hud help <title>'\n"
+                    "TITLE              (SHORT NAME)\n"
+                    "align                          \n"
+                    "antifk                    (afk)\n"
+                    "autokill                   (ak)\n"
+                    "autologout                 (al)\n"
+                    "autoshear                 (ash)\n"
+                    "build                      (bu)\n"
+                    "freecam                    (fc)\n"
+                    "grind                          \n"
+                    "holeradar                  (hr)\n"
+                    "hud                            \n"
+                    "xray                     (xray)\n" },
+    { NULL, NULL } // terminator
+};
+
+void huddraw_help_text(const char *text) {
+    int i, col=1, row=1;
+
+    for(i=0; text[i]; i++) {
+        if (text[i] == '\n') {
+            col = 1;
+            row += 6;
+        }
+        else {
+            draw_glyph(col, row, text[i]);
+            col += FONTS_W;
+        }
+    }
+}
+
+int huddraw_help() {
+    fg_color = B0(COLOR_BLACK);
+    bg_color = B3(COLOR_WHITE);
+
+    int i,l;
+
+    for(i=0; HUD_HELP[i].title; i++) {
+        if (!strcmp(hud_help_page, HUD_HELP[i].title)) {
+            huddraw_help_text(HUD_HELP[i].text);
+            return 1;
+        }
+    }
+
+    char text[4096];
+    sprintf(text,   "No help available for topic     \n"
+                    "%s\n"
+                    "\n"
+                    "Use #hud help to see the list of\n"
+                    "available commands and topics   \n"
+                    "\n"
+                    "Use #hud help <topic> for help  \n"
+                    "on specific topic               \n",
+                    hud_help_page);
+    huddraw_help_text(text);
+
+    return 1;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 void hud_prune() {
@@ -1006,9 +1162,11 @@ void hud_prune() {
 /*
  * hud              # toggle HUD
  * hud test         # test picture
- * hud nav          # basic navigation info
+ * hud info         # basic navigation info
  * hud tunnel       # tunnel radar
  * hud build        # build and material info
+ * hud help         # help pages
+ * hud map          # overhead map
  */
 
 void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
@@ -1057,6 +1215,12 @@ void hud_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         hud_mode = HUDMODE_MAP;
     }
 
+    else if (!strcmp(cmd,"help")) {
+        hud_mode = HUDMODE_HELP;
+        hud_help_page[0] = 0;
+        if (words[0]) sprintf(hud_help_page, "%s", words[0]);
+    }
+
     else {
         bind_needed = 0;
         goto Error;
@@ -1085,11 +1249,12 @@ void hud_update(MCPacketQueue *cq) {
     int updated = 0;
 
     switch(hud_mode) {
-        case HUDMODE_TEST:      updated = huddraw_test(); break;
-        case HUDMODE_INFO:      updated = huddraw_info(); break;
+        case HUDMODE_TEST:      updated = huddraw_test();   break;
+        case HUDMODE_INFO:      updated = huddraw_info();   break;
         case HUDMODE_TUNNEL:    updated = huddraw_tunnel(); break;
-        case HUDMODE_MAP:       updated = huddraw_map(); break;
-        case HUDMODE_BUILD:     updated = huddraw_build(); break;
+        case HUDMODE_MAP:       updated = huddraw_map();    break;
+        case HUDMODE_BUILD:     updated = huddraw_build();  break;
+        case HUDMODE_HELP:      updated = huddraw_help();   break;
         default:                break;
     }
 
