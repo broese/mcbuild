@@ -1,8 +1,22 @@
 #!/bin/bash
 
-APPNAME=mcproxy
-if [ "$(uname -o)" == "Cygwin" ]; then APPNAME="$APPNAME.exe" ; fi
+RED='\033[0;31m'
+NC='\033[0m'
 
-find ~/mcbuild/ -name "*.exe" -exec chmod +x {} \;
-cd ~/mcbuild
+APPNAME=mcproxy
+APPDIR=~/mcbuild
+
+if [ "$(uname -o)" == "Cygwin" ]; then APPNAME="$APPNAME.exe" ; fi
+find "$APPDIR" -name "*.exe" -exec chmod +x {} \;
+
+cd "$APPDIR"
+
+git fetch
+if [[ "$(git status | grep 'Your branch is behind' | wc | awk '{ print $1 }')" -gt 0 ]] ; then
+    printf "${RED}Update is available, please run mcb_update${NC}\n"
+    touch .update
+else
+    rm .update
+fi
+
 ./"$APPNAME" "$@"

@@ -1,13 +1,19 @@
 #!/bin/bash
 
+RED='\033[0;31m'
+NC='\033[0m'
+
+APPDIR=~/mcbuild
+LIBDIR=~/libhelper
+
 if [ "$(uname -o)" == 'Cygwin' ] ; then
     IGNORE_ATTR="-c core.filemode=false"
 fi
 
-cd ~/libhelper
+cd "$LIBDIR"
 git $IGNORE_ATTR pull && make
 
-cd ~/mcbuild
+cd "$APPDIR"
 if [ "x$1" != 'x' ] ; then
     if [ "$1" == 'dev' ] ; then
         BRANCH="master"
@@ -19,5 +25,4 @@ fi
 
 git $IGNORE_ATTR pull && make clean && make && make install
 
-echo "MCBuild updated"
-
+printf "${RED}MCBuild updated${NC}\n"
