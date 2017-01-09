@@ -1182,6 +1182,11 @@ uint32_t lookup_srv(const char *addr) {
 
         p += 4; // skip priority and weight fields of SRV RR
         o_rport = lh_read_short_be(p);
+        if ((p[0]&0xc0)==0xc0) {
+            // name is encoded as pointer
+            uint16_t lptr = lh_read_short_be(p);
+            p = srvbuf + (lptr&0x3fff);
+        }
         p=read_dns_name(p, srvbuf+srvlen, srvname, sizeof(srvname));
         printf("resolved SRV: %s => %s:%d\n", addr, srvname, o_rport);
         return lh_dns_addr_ipv4(srvname);
