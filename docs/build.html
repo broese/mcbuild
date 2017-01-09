@@ -361,13 +361,14 @@
 
     <p>Flat disk, or ring (i.e. border only). The ring is obtained by applying the 2D hollow function to the disk of the same diameter</p>
     <p>Format:</p>
-    <p><tt>#build disk diameter=D [material=matspec]</tt></p>
-    <p><tt>#build ring diameter=D [material=matspec]</tt></p>
+    <p><tt>#build disk diameter=D [material=matspec] [-e]</tt></p>
+    <p><tt>#build ring diameter=D [material=matspec] [-e]</tt></p>
 
     <p>Parameters:</p>
     <ul>
-      <li>diameter,diam,d=D : diameter of the disk or ring.</li>
+      <li>diameter,diam,d=D : diameter of the disk or ring. Note - you can use non-integer numbers as well, giving you closest approximation</li>
       <li>material|mat|m=<a href="#par_mat">material</a> : material to build with. If omitted, assuming the block you hold in your hand</li>
+      <li>-e : center is at the edge of the blocks, instead of in the middle of a block - use to get disks with even diameter right.</li>
     </ul>
 
     <p>Pivot: center</p>
@@ -376,6 +377,7 @@
 
     <p><tt>#build ring d=15 m=cobblestone</tt> - cobblestone ring with diameter 15</p>
     <p><tt>#build disk 5</tt> - disk of diameter 5 made with whatever block you were holding in your hand</p>
+    <p><tt>#build disk 10 -e</tt> - disk of diameter 10, with the center located between 4 blocks - this will give you a proper disk of 10 block diameter instead of approximation that spills to 11 blocks wide.</p>
 
 
 
