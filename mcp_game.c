@@ -900,12 +900,12 @@ void chat_message(const char *str, MCPacketQueue *q, const char *color, int pos)
     char msg[65536];
     if (color)
         jlen = sprintf(msg,
-                       "{\"extra\":[{\"color\":\"%s\",\"text\":\"\\u003cMCP\\u003e %s\"}],"
+                       "{\"extra\":[{\"color\":\"%s\",\"text\":\"\\u003cMCB\\u003e %s\"}],"
                        "\"text\":\"\"}",
                        color,str);
     else
         jlen = sprintf(msg,
-                       "{\"extra\":[\"\\u003cMCP\\u003e %s\"],"
+                       "{\"extra\":[\"\\u003cMCB\\u003e %s\"],"
                        "\"text\":\"\"}",
                        str);
 
