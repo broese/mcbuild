@@ -1292,16 +1292,25 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         queue_packet(pbp,sq);
         dump_packet(pbp);
 
-        if (hslot->item == 326 || hslot->item == 327) {
+        if ((hslot->item == 326 || hslot->item == 327)) {
             // Placing a water or lava - requires a different procedure
-            NEWPACKET(CP_PlayerBlockPlacement, pbucket);
-            tpbucket->bpos = POS(-1,-1,-1);
-            tpbucket->face = -1;
-            tpbucket->hand = 0; //TODO: support second hand
-            tpbucket->cx = 0;
-            tpbucket->cy = 0;
-            tpbucket->cz = 0;
-            queue_packet(pbucket,sq);
+            if (currentProtocol >= PROTO_1_9) {
+                // 1.9+ clients send CP_UseItem after the placement
+                NEWPACKET(CP_UseItem, pui);
+                tpui->hand = 0;
+                queue_packet(pui,sq);
+            }
+            else {
+                // pre-1.9 client sent another CP_PlayerBlockPlacement but with position and face set to -1
+                NEWPACKET(CP_PlayerBlockPlacement, pbucket);
+                tpbucket->bpos = POS(-1,-1,-1);
+                tpbucket->face = -1;
+                tpbucket->hand = 0; //TODO: support second hand
+                tpbucket->cx = 0;
+                tpbucket->cy = 0;
+                tpbucket->cz = 0;
+                queue_packet(pbucket,sq);
+            }
         }
         else {
             // Wave arm
