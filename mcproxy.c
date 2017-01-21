@@ -69,6 +69,7 @@ uint16_t     o_bport;
 char         o_raddr[256];
 uint16_t     o_rport;
 int          o_connactive = 0;
+char *       o_profile_path = NULL;
 
 uint32_t     bind_ip;
 uint32_t     remote_ip;
@@ -790,15 +791,23 @@ void print_hex(char *buf, const char *data, ssize_t len) {
     }
 
 int parse_profile(char *accessToken, char *userId, char *userName) {
-    const char * homedir = getenv("APPDATA");
-    if (!homedir) homedir = getenv("HOME");
-    if (!homedir) {
-        printf("Failed to locate Minecraft profile directory - check your environment\n");
-        return 0;
-    }
-
     char path[PATH_MAX];
-    sprintf(path, "%s/%s",homedir,PROFILE_PATH);
+
+    if (o_profile_path) {
+        // User has specified the location of the profile explicitly
+        sprintf(path, "%s", o_profile_path);
+    }
+    else {
+        // Look up at default location
+        const char * homedir = getenv("APPDATA");
+        if (!homedir) homedir = getenv("HOME");
+        if (!homedir) {
+            printf("Failed to locate Minecraft profile directory - check your environment\n");
+            return 0;
+        }
+
+        sprintf(path, "%s/%s",homedir,PROFILE_PATH);
+    }
 
     uint8_t * buf;
     ssize_t sz = lh_load_alloc(path, &buf);
@@ -1045,8 +1054,9 @@ void print_usage() {
     printf("Usage:\n"
            "%s [options] [server[:port]]\n"
            "  -h                      : print this help\n"
-           "  -b [bindaddr:]bindport] : address and port to bind the proxy socket to. Default: %s:%d\n"
+           "  -b [bindaddr:]bindport  : address and port to bind the proxy socket to. Default: %s:%d\n"
            "  -c                      : allow connections while session is active\n"
+           "  -p profile_path         : location of Minecraft profile, default is %%APPDATA%%/.minecraft/launcher_profile.json\n"
            "  [server[:port]]         : remote Minecraft server address and port. Default: %s:%d\n",
            o_appname, DEFAULT_BIND_ADDR, DEFAULT_BIND_PORT, DEFAULT_REMOTE_ADDR, DEFAULT_REMOTE_PORT);
 }
@@ -1065,7 +1075,7 @@ int parse_args(int ac, char **av) {
     char addr[256];
     int port,nchars;
 
-    while ( (opt=getopt(ac,av,"b:hc")) != -1 ) {
+    while ( (opt=getopt(ac,av,"b:hcp:")) != -1 ) {
         switch (opt) {
             case 'h':
                 o_help = 1;
@@ -1089,6 +1099,9 @@ int parse_args(int ac, char **av) {
             }
             case 'c':
                 o_connactive = 1;
+                break;
+            case 'p':
+                o_profile_path = strdup(optarg);
                 break;
             case '?': {
                 printf("Unknown option -%c", opt);
