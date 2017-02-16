@@ -821,19 +821,54 @@ int parse_profile(char *accessToken, char *userId, char *userName) {
     buf[sz] = 0;
 
     json_object *json = json_tokener_parse((char *)buf);
-    json_object *su, *adb, *prof, *dn, *at;
+    json_object *ver, *form, *su, *adb, *prof, *dn, *at, *acc,
+        *account, *profile, *profiles, *dprof;
 
-    JSON_PARSE(json, "selectedUser", su, json_type_string);
-    sprintf(userId, "%s", json_object_get_string(su));
+    JSON_PARSE(json, "launcherVersion", ver, json_type_object);
+    JSON_PARSE(ver, "format", form, json_type_int);
+    int format = json_object_get_int(form);
 
-    JSON_PARSE(json, "authenticationDatabase", adb, json_type_object);
-    JSON_PARSE(adb, userId, prof, json_type_object);
+    switch (format) {
+        case 18:
+            JSON_PARSE(json, "selectedUser", su, json_type_string);
+            sprintf(userId, "%s", json_object_get_string(su));
 
-    JSON_PARSE(prof, "displayName", dn, json_type_string);
-    sprintf(userName, "%s", json_object_get_string(dn));
+            JSON_PARSE(json, "authenticationDatabase", adb, json_type_object);
+            JSON_PARSE(adb, userId, prof, json_type_object);
 
-    JSON_PARSE(prof, "accessToken", at, json_type_string);
-    sprintf(accessToken, "%s", json_object_get_string(at));
+            JSON_PARSE(prof, "displayName", dn, json_type_string);
+            sprintf(userName, "%s", json_object_get_string(dn));
+
+            JSON_PARSE(prof, "accessToken", at, json_type_string);
+            sprintf(accessToken, "%s", json_object_get_string(at));
+
+            break;
+
+        case 20:
+            JSON_PARSE(json, "selectedUser", su, json_type_object);
+            JSON_PARSE(su, "account", account, json_type_string);
+            JSON_PARSE(su, "profile", profile, json_type_string);
+            sprintf(userId, "%s", json_object_get_string(profile));
+
+            JSON_PARSE(json, "authenticationDatabase", adb, json_type_object);
+            JSON_PARSE(adb, json_object_get_string(account), prof, json_type_object);
+
+            JSON_PARSE(prof, "profiles", profiles, json_type_object);
+            JSON_PARSE(profiles, userId, dprof, json_type_object);
+            JSON_PARSE(dprof, "displayName", dn, json_type_string);
+            sprintf(userName, "%s", json_object_get_string(dn));
+
+            JSON_PARSE(prof, "accessToken", at, json_type_string);
+            sprintf(accessToken, "%s", json_object_get_string(at));
+
+            break;
+
+        default:
+            printf("Unknown/unsupported profile format %d, please report as issue on Github\n", format);
+            json_object_put(json);
+            lh_free(buf);
+            return 0;
+    }
 
     json_object_put(json);
     lh_free(buf);
