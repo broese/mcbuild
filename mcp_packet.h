@@ -449,17 +449,17 @@ typedef struct {
     uint32_t    jumpboost;
 } CP_EntityAction_pkt;
 
-// 0x19
+// 0x1a
 typedef struct {
     int16_t sid;
 } CP_HeldItemChange_pkt;
 
-// 0x1c
+// 0x1d
 typedef struct {
     uint32_t    hand;
 } CP_Animation_pkt;
 
-// 0x1e
+// 0x1f
 typedef struct {
     pos_t   bpos;
     int32_t face;
