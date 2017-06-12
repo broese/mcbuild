@@ -625,6 +625,7 @@ const char * METATYPES[] = {
     [META_DIR]      = "direction",
     [META_OPTUUID]  = "optional_uuid",
     [META_BID]      = "block_id",
+    [META_NBT]      = "nbt",
     [META_NONE]     = "-"
 };
 
@@ -633,18 +634,32 @@ metadata * clone_metadata(metadata *meta) {
     lh_create_num(metadata, newmeta, 32);
     memmove(newmeta, meta, 32*sizeof(metadata));
     int i;
-    for(i=0; i<32; i++)
-        if (newmeta[i].type == META_SLOT)
-            clone_slot(&meta[i].slot, &newmeta[i].slot);
+    for(i=0; i<32; i++) {
+        switch (newmeta[i].type) {
+            case META_SLOT:
+                clone_slot(&meta[i].slot, &newmeta[i].slot);
+                break;
+            case META_NBT:
+                newmeta[i].nbt = nbt_clone(meta[i].nbt);
+                break;
+        }
+    }
     return newmeta;
 }
 
 void free_metadata(metadata *meta) {
     if (!meta) return;
     int i;
-    for(i=0; i<32; i++)
-        if (meta[i].type == META_SLOT)
-            clear_slot(&meta[i].slot);
+    for(i=0; i<32; i++) {
+        switch (meta[i].type) {
+            case META_SLOT:
+                clear_slot(&meta[i].slot);
+                break;
+            case META_NBT:
+                nbt_free(meta[i].nbt);
+                break;
+        }
+    }
     free(meta);
 }
 
@@ -701,6 +716,7 @@ uint8_t * read_metadata(uint8_t *p, metadata **meta) {
                                 }
                                 break;
             case META_BID:      mm->block = read_char(p); break; // note- block ID only, no meta
+            case META_NBT:      mm->nbt = nbt_parse(&p); break;
         }
     }
 

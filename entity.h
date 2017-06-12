@@ -169,6 +169,7 @@ const char * get_entity_name(char *buf, EntityType type);
 #define META_DIR     10
 #define META_OPTUUID 11
 #define META_BID     12
+#define META_NBT     13
 #define META_NONE    255
 
 // single metadata key-value pair
@@ -192,6 +193,7 @@ typedef struct {
         int32_t     dir;
         uuid_t      uuid;   // missing UUID is encoded in all-zeros
         uint8_t     block;  // block ID only
+        nbt_t*      nbt;
     };
 } metadata;
 
