@@ -1320,8 +1320,12 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
         if (currentProtocol >= PROTO_1_9) {
             // send a sound effect to the client
+            // block.stone.place
             NEWPACKET(SP_SoundEffect, se);
-            tse->id = 98; // block.stone.place
+            if (currentProtocol >= PROTO_1_12)
+                tse->id = 104;
+            else
+                tse->id = 98;
             tse->category = 5; // BLOCKS
             tse->x = b->x*8;
             tse->y = b->y*8;
