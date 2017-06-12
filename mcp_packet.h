@@ -232,7 +232,7 @@ typedef struct {
     uint8_t  *data;
 } SP_Map_pkt;
 
-// 0x25
+// 0x26
 typedef struct {
     uint32_t    eid;
     int16_t     dx;
@@ -241,7 +241,7 @@ typedef struct {
     uint8_t     onground;
 } SP_EntityRelMove_pkt;
 
-// 0x26
+// 0x27
 typedef struct {
     uint32_t    eid;
     int16_t     dx;
@@ -296,13 +296,13 @@ typedef struct {
     pos_t       pos;
 } SP_UseBed_pkt;
 
-// 0x30
+// 0x31
 typedef struct {
     uint32_t    count;
     uint32_t   *eids;
 } SP_DestroyEntities_pkt;
 
-// 0x33
+// 0x34
 typedef struct {
     int32_t dimension;
     uint8_t difficulty;
@@ -310,32 +310,32 @@ typedef struct {
     char    leveltype[32];
 } SP_Respawn_pkt;
 
-// 0x37
+// 0x39
 typedef struct {
     int8_t sid;
 } SP_HeldItemChange_pkt;
 
-// 0x39
+// 0x3b
 typedef struct {
     uint32_t    eid;
     metadata *  meta;
 } SP_EntityMetadata_pkt;
 
-// 0x3d
+// 0x3f
 typedef struct {
     float    bar;
     int32_t  level;
     int32_t  exp;
 } SP_SetExperience_pkt;
 
-// 0x3e
+// 0x40
 typedef struct {
     float    health;
     int32_t  food;
     float    saturation;
 } SP_UpdateHealth_pkt;
 
-// 0x46
+// 0x48
 typedef struct {
     int32_t     id;
     int32_t     category;
@@ -346,7 +346,7 @@ typedef struct {
     float       pitch;
 } SP_SoundEffect_pkt;
 
-// 0x4a
+// 0x4b
 typedef struct {
     uint32_t    eid;
     double      x;
@@ -377,12 +377,12 @@ typedef struct {
     uint32_t    tpid;
 } CP_TeleportConfirm_pkt;
 
-// 0x02
+// 0x03
 typedef struct {
     char        str[320];
 } CP_ChatMessage_pkt;
 
-// 0x07
+// 0x08
 typedef struct {
     uint8_t  wid;
     int16_t  sid;
@@ -392,12 +392,12 @@ typedef struct {
     slot_t   slot;
 } CP_ClickWindow_pkt;
 
-// 0x08
+// 0x09
 typedef struct {
     uint8_t wid;
 } CP_CloseWindow_pkt;
 
-// 0x0a
+// 0x0b
 typedef struct {
     uint32_t    target;
     uint32_t    action;
@@ -405,7 +405,12 @@ typedef struct {
     uint32_t    hand;
 } CP_UseEntity_pkt;
 
-// 0x0c
+// 0x0d
+typedef struct {
+    uint8_t     onground;
+} CP_Player_pkt;
+
+// 0x0e
 typedef struct {
     double      x;
     double      y;
@@ -413,7 +418,7 @@ typedef struct {
     uint8_t     onground;
 } CP_PlayerPosition_pkt;
 
-// 0x0d
+// 0x0f
 typedef struct {
     double      x;
     double      y;
@@ -423,43 +428,38 @@ typedef struct {
     uint8_t     onground;
 } CP_PlayerPositionLook_pkt;
 
-// 0x0e
+// 0x10
 typedef struct {
     float       yaw;
     float       pitch;
     uint8_t     onground;
 } CP_PlayerLook_pkt;
 
-// 0x0f
-typedef struct {
-    uint8_t     onground;
-} CP_Player_pkt;
-
-// 0x13
+// 0x14
 typedef struct {
     uint32_t    status;
     pos_t       loc;
     uint8_t     face;
 } CP_PlayerDigging_pkt;
 
-// 0x14
+// 0x15
 typedef struct {
     uint32_t    eid;
     uint32_t    action;
     uint32_t    jumpboost;
 } CP_EntityAction_pkt;
 
-// 0x17
+// 0x19
 typedef struct {
     int16_t sid;
 } CP_HeldItemChange_pkt;
 
-// 0x1a
+// 0x1c
 typedef struct {
     uint32_t    hand;
 } CP_Animation_pkt;
 
-// 0x1c
+// 0x1e
 typedef struct {
     pos_t   bpos;
     int32_t face;
@@ -467,7 +467,7 @@ typedef struct {
     float   cx,cy,cz;
 } CP_PlayerBlockPlacement_pkt;
 
-// 0x1d
+// 0x20
 typedef struct {
     int32_t     hand;
 } CP_UseItem_pkt;
