@@ -53,6 +53,7 @@ typedef enum {
     EvocationIllager    = 34,
     Vex                 = 35,
     VindicationIllager  = 36,
+    IllusionIllager     = 37,
 
     Mob                 = 48,
     Monster             = 49,
@@ -97,6 +98,7 @@ typedef enum {
     PolarBear           = 102,
     Llama               = 103,
     LlamaSpit           = 104,
+    Parrot              = 105,
 
     Villager            = 120,
 

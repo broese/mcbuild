@@ -101,6 +101,8 @@ const char * METANAME[][32] = {
         [12] = "Score",
         [13] = "Skin flags",
         [14] = "Main hand",
+        [15] = "Left shoulder",
+        [16] = "Right shoulder",
     },
     [ArmorStand] = {
         [11] = "Armor stand flags",
@@ -157,6 +159,9 @@ const char * METANAME[][32] = {
         [15] = "Damage",
         [16] = "Begging",
         [17] = "Collar color",
+    },
+    [Parrot] = {
+        [15] = "Variant",
     },
     [Villager] = {
         [13] = "Profession",
@@ -482,6 +487,7 @@ const EntityType ENTITY_HIERARCHY[] = {
     [TameableAnimal]    = Animal,
     [Ocelot]            = TameableAnimal,
     [Wolf]              = TameableAnimal,
+    [Parrot]            = TameableAnimal,
     [Villager]          = Creature,
     [Golem]             = Creature,
     [IronGolem]         = Golem,
@@ -544,6 +550,14 @@ const char * ENTITY_NAMES[MaxEntityType] = {
     ENUMNAME(Guardian),
     ENUMNAME(Shulker),
     ENUMNAME(PolarBear),
+    ENUMNAME(Husk),
+    ENUMNAME(ZombieVillager),
+    ENUMNAME(SkeletonHorse),
+    ENUMNAME(ZombieHorse),
+    ENUMNAME(EvocationIllager),
+    ENUMNAME(Vex),
+    ENUMNAME(VindicationIllager),
+    ENUMNAME(IllusionIllager),
 
     // Passive mobs
     ENUMNAME(Pig),
@@ -558,7 +572,11 @@ const char * ENTITY_NAMES[MaxEntityType] = {
     ENUMNAME(IronGolem),
     ENUMNAME(Horse),
     ENUMNAME(Rabbit),
+    ENUMNAME(Llama),
+    ENUMNAME(Parrot),
     ENUMNAME(Villager),
+    ENUMNAME(Donkey),
+    ENUMNAME(Mule),
 
     // Objects
     ENUMNAME(Boat),
@@ -593,6 +611,8 @@ const char * ENTITY_NAMES[MaxEntityType] = {
     ENUMNAME(SpectralArrow),
     ENUMNAME(TippedArrow),
     ENUMNAME(DragonFireball),
+    ENUMNAME(LlamaSpit),
+    ENUMNAME(EvocationFangs),
 };
 
 const char * get_entity_name(char *buf, EntityType type) {
