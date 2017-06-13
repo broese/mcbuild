@@ -23,7 +23,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 // various constants and helpers
 
-#define MCP_MAXSTR 4096
+#define MCP_MAXSTR 32768
 #define MCP_MAXPLEN (4*1024*1024)
 
 uint8_t * read_string(uint8_t *p, char *s);

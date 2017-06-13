@@ -262,9 +262,9 @@ typedef struct {
 // 0x2d
 typedef struct {
     char        pname[64];
-    char        pval[4096];
+    char        pval[MCP_MAXSTR];
     uint8_t     is_signed;
-    char        signature[4096];
+    char        signature[MCP_MAXSTR];
 } pli_prop;
 
 typedef struct {
