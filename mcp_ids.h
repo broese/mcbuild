@@ -280,6 +280,9 @@
 // observer
 #define I_OBSERVER (1<<29)
 
+// glazed terracota
+#define I_TERRACOTA (1<<30)
+
 // macros to determine armor type
 #define I_HELMET(id)     ((id)==0x12a || (id)==0x12e || (id)==0x132 || (id)==0x136 || (id)==0x13a)
 #define I_CHESTPLATE(id) ((id)==0x12b || (id)==0x12f || (id)==0x133 || (id)==0x137 || (id)==0x13b)

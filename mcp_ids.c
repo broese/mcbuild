@@ -314,6 +314,27 @@ const item_id ITEMS[] = {
     [0xe8] = { "Green Shulker Box",     I_CHEST },
     [0xe9] = { "Red Shulker Box",       I_CHEST },
     [0xea] = { "Black Shulker Box",     I_CHEST },
+    [0xeb] = { "White Glazed Terracota",        I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xec] = { "Orange Glazed Terracota",       I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xed] = { "Magenta Glazed Terracota",      I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xee] = { "Light Blue Glazed Terracota",   I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xef] = { "Yellow Glazed Terracota",       I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+
+    [0xf0] = { "Lime Glazed Terracota",         I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xf1] = { "Pink Glazed Terracota",         I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xf2] = { "Gray Glazed Terracota",         I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xf3] = { "Light Gray Glazed Terracota",   I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xf4] = { "Cyan Glazed Terracota",         I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xf5] = { "Purple Glazed Terracota",       I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xf6] = { "Blue Glazed Terracota",         I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xf7] = { "Brown Glazed Terracota",        I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xf8] = { "Green Glazed Terracota",        I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xf9] = { "Red Glazed Terracota",          I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xfa] = { "Black Glazed Terracota",        I_MPOS|I_OPAQUE|I_TERRACOTA },  // P: dir
+    [0xfb] = { "Concrete",              I_MTYPE|I_OPAQUE,
+                MNAMES_COLOR },
+    [0xfc] = { "Concrete Powder",       I_MTYPE|I_OPAQUE,
+                MNAMES_COLOR },
 
     [0xff] = { "Structure Block",       I_OPAQUE },
 
@@ -537,6 +558,8 @@ const item_id ITEMS[] = {
     [0x1c0] = { "Dark Oak Boat",        I_ITEM },
     [0x1c1] = { "Totem of Undying",     I_ITEM },
     [0x1c2] = { "Shulker Shell",        I_ITEM },
+
+    [0x1c4] = { "Iron Nugget",          I_ITEM },
 
     [0x8d0] = { "Record 13",            I_ITEM|I_NSTACK },
     [0x8d1] = { "Record Cat",           I_ITEM|I_NSTACK },
@@ -989,7 +1012,9 @@ static inline int8_t *get_metagroup(bid_t b) {
     if (b.bid==155)     return GETMETAGROUP(MM_QUARTZ);
     if (flags&I_GATE)   return GETMETAGROUP(MM_BED);
     if (flags&I_OBSERVER)   return GETMETAGROUP(MM_OBSERVER);
+    if (flags&I_TERRACOTA)  return GETMETAGROUP(MM_BED);
 
+    // Redstone devices, hoppers and end rods can use ONWALL set
     if ((flags&I_RSDEV) || b.bid==154 || b.bid==198)
         return GETMETAGROUP(MM_ONWALL);
 
