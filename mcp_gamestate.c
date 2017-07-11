@@ -1244,19 +1244,7 @@ void gs_packet(MCPacket *pkt) {
                 e->mdata = clone_metadata(tpkt->meta);
             }
             else {
-                int i;
-                for(i=0; i<32; i++) {
-                    if (tpkt->meta[i].type != 0xff) {
-                        // replace stored metadata with the one from the packet
-                        if (e->mdata[i].type == META_SLOT)
-                            clear_slot(&e->mdata[i].slot);
-                        e->mdata[i] = tpkt->meta[i];
-
-                        // for slot-type metadata we need to propely clone the slot
-                        if (tpkt->meta[i].type == META_SLOT)
-                            clone_slot(&tpkt->meta[i].slot, &e->mdata[i].slot);
-                    }
-                }
+                update_metadata(e->mdata, tpkt->meta);
             }
         } _GSP;
 

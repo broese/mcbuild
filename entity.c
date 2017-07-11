@@ -667,6 +667,38 @@ metadata * clone_metadata(metadata *meta) {
     return newmeta;
 }
 
+metadata * update_metadata(metadata *meta, metadata *upd) {
+    if (!meta) return NULL;
+    if (!upd)  return meta;
+
+    int i;
+    for(i=0; i<32; i++) {
+        if (upd[i].type != 0xff) {
+            if (meta[i].type != upd[i].type) {
+                printf("update_metadata : incompatible metadata types at index %d : old=%d vs new=%d\n",
+                       i, meta[i].type, upd[i].type);
+                continue;
+            }
+
+            // replace stored metadata with the one from the packet
+            switch (meta[i].type) {
+                case META_SLOT:
+                    clear_slot(&meta[i].slot);
+                    clone_slot(&upd[i].slot, &meta[i].slot);
+                    break;
+                case META_NBT:
+                    nbt_free(meta[i].nbt);
+                    meta[i].nbt = nbt_clone(upd[i].nbt);
+                    break;
+                default:
+                    meta[i] = upd[i];
+            }
+        }
+    }
+    return meta;
+}
+
+
 void free_metadata(metadata *meta) {
     if (!meta) return;
     int i;
