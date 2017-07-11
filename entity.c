@@ -784,6 +784,7 @@ uint8_t * write_metadata(uint8_t *w, metadata *meta) {
                                 }
                                 break;
             case META_BID:      write_char(w, mm->block); break;
+            case META_NBT:      nbt_write(&w, mm->nbt); break;
         }
     }
     lh_write_char(w, 0xff);
@@ -821,8 +822,9 @@ void dump_metadata(metadata *meta, EntityType et) {
             case META_POS:
             case META_OPTPOS:   printf("%d,%d,%d", mm->pos.x, mm->pos.y, mm->pos.z); break;
             case META_DIR:      printf("%d",mm->dir);  break;
-            case META_OPTUUID:  hexprint(mm->uuid, sizeof(uuid_t));
-            case META_BID:      printf("%2x (%d)", mm->block, mm->block); //TODO: print material name
+            case META_OPTUUID:  hexprint(mm->uuid, sizeof(uuid_t)); break;
+            case META_BID:      printf("%2x (%d)", mm->block, mm->block); break; //TODO: print material name
+            case META_NBT:      printf("NBT data %p", mm->nbt); break;
             default:            printf("<unknown type>"); break;
         }
     }
