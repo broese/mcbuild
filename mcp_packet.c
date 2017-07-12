@@ -2813,6 +2813,19 @@ int set_protocol(int protocol, char * reply) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
+int restore_rawtype(MCPacket * pkt) {
+    if (pkt->modified || !pkt->raw) {
+        int i;
+        for(i=0; i<0x100 && ((SUPPORT[pkt->cl][i].pid&0xff) < 0xff); i++) {
+            if (SUPPORT[pkt->cl][i].pid == pkt->pid) {
+                pkt->rawtype = i;
+                break;
+            }
+        }
+    }
+    return pkt->rawtype;
+}
+
 MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
     if (len <= 0) return NULL;  // some servers send empty packets
 
@@ -2849,16 +2862,7 @@ MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
 ssize_t encode_packet(MCPacket *pkt, uint8_t *buf) {
     uint8_t * p = buf;
 
-    // look up packet's native ID
-    if (pkt->modified || !pkt->raw) {
-        int i;
-        for(i=0; i<0x100 && ((SUPPORT[pkt->cl][i].pid&0xff) < 0xff); i++) {
-            if (SUPPORT[pkt->cl][i].pid == pkt->pid) {
-                pkt->rawtype = i;
-                break;
-            }
-        }
-    }
+    restore_rawtype(pkt);
 
     // write packet type
     lh_write_varint(p, pkt->rawtype);
@@ -2879,15 +2883,17 @@ ssize_t encode_packet(MCPacket *pkt, uint8_t *buf) {
 void dump_packet(MCPacket *pkt) {
     char *states="ISLP";
 
+    restore_rawtype(pkt);
+
     if (is_packet_dumpable(pkt->pid)) {
-        if (SUPPORT[pkt->cl][pkt->type].dump_method) {
-            printf("%c %c %2x ",pkt->cl?'C':'S',states[pkt->mode],pkt->type);
+        if (SUPPORT[pkt->cl][pkt->rawtype].dump_method) {
+            printf("%c %c %2x %08x ",pkt->cl?'C':'S',states[pkt->mode],pkt->rawtype, pkt->pid);
             printf("%-24s    ",SUPPORT[pkt->cl][pkt->type].dump_name);
             SUPPORT[pkt->cl][pkt->type].dump_method(pkt);
             printf("\n");
         }
         else if (pkt->raw) {
-            printf("%c %c %2x ",pkt->cl?'C':'S',states[pkt->mode],pkt->type);
+            printf("%c %c %2x %08x ",pkt->cl?'C':'S',states[pkt->mode],pkt->rawtype,pkt->pid);
             printf("%-24s    len=%6zd, raw=%s","Raw",pkt->rawlen,limhex(pkt->raw,pkt->rawlen,64));
             printf("\n");
         }
@@ -2898,10 +2904,13 @@ void dump_packet(MCPacket *pkt) {
 }
 
 void free_packet(MCPacket *pkt) {
+    restore_rawtype(pkt);
+
     lh_free(pkt->raw);
 
-    if (SUPPORT[pkt->cl][pkt->type].free_method)
-        SUPPORT[pkt->cl][pkt->type].free_method(pkt);
+    if (SUPPORT[pkt->cl][pkt->rawtype].free_method) {
+        SUPPORT[pkt->cl][pkt->rawtype].free_method(pkt);
+    }
 
     free(pkt);
 }
