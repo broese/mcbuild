@@ -760,8 +760,13 @@ uint8_t * read_metadata(uint8_t *p, metadata **meta) {
             case META_VARINT:   mm->i = read_varint(p);  break;
             case META_FLOAT:    mm->f = read_float(p);   break;
             case META_STRING:
-            case META_CHAT:     p = read_string(p,sbuf); mm->str = strdup(sbuf); break;
-            case META_SLOT:     p = read_slot(p,&mm->slot); break;
+            case META_CHAT:     lh_free(mm->str);
+                                p = read_string(p,sbuf);
+                                mm->str = strdup(sbuf);
+                                break;
+            case META_SLOT:     clear_slot(&mm->slot);
+                                p = read_slot(p,&mm->slot);
+                                break;
             case META_BOOL:     mm->bool = read_char(p);  break; //VERIFY
             case META_VEC3:     mm->fx=read_float(p);
                                 mm->fy=read_float(p);
@@ -783,7 +788,9 @@ uint8_t * read_metadata(uint8_t *p, metadata **meta) {
                                 }
                                 break;
             case META_BID:      mm->block = read_char(p); break; // note- block ID only, no meta
-            case META_NBT:      mm->nbt = nbt_parse(&p); break;
+            case META_NBT:      nbt_free(mm->nbt);
+                                mm->nbt = nbt_parse(&p);
+                                break;
         }
     }
 
