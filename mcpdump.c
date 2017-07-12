@@ -649,32 +649,33 @@ void parse_mcp(uint8_t *data, ssize_t size, char * name) {
             mcpd_packet(pkt);
             free_packet(pkt);
         }
+        else {
+            // pkt will point at the start of packet (specifically at the type field)
+            // while p will move to the next field to be parsed.
 
-        // pkt will point at the start of packet (specifically at the type field)
-        // while p will move to the next field to be parsed.
+            int type = lh_read_varint(p);
+            uint32_t stype = ((state<<24)|(is_client<<28)|(type&0xffffff));
 
-        int type = lh_read_varint(p);
-        uint32_t stype = ((state<<24)|(is_client<<28)|(type&0xffffff));
-
-        switch (stype) {
-            case CI_Handshake: {
-                CI_Handshake_pkt tpkt;
-                decode_handshake(&tpkt, p);
-                state = tpkt.nextState;
-                if (!set_protocol(tpkt.protocolVer, NULL)) {
-                    printf("Unsupported protocol version %d\n", tpkt.protocolVer);
-                    max = 0;
+            switch (stype) {
+                case CI_Handshake: {
+                    CI_Handshake_pkt tpkt;
+                    decode_handshake(&tpkt, p);
+                    state = tpkt.nextState;
+                    if (!set_protocol(tpkt.protocolVer, NULL)) {
+                        printf("Unsupported protocol version %d\n", tpkt.protocolVer);
+                        max = 0;
+                    }
+                    break;
                 }
-                break;
-            }
-            case SL_LoginSuccess: {
-                state = STATE_PLAY;
-                break;
-            }
+                case SL_LoginSuccess: {
+                    state = STATE_PLAY;
+                    break;
+                }
 
-            case SL_SetCompression: {
-                compression = 1;
-                break;
+                case SL_SetCompression: {
+                    compression = 1;
+                    break;
+                }
             }
         }
 
