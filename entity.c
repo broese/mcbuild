@@ -662,6 +662,10 @@ metadata * clone_metadata(metadata *meta) {
             case META_NBT:
                 newmeta[i].nbt = nbt_clone(meta[i].nbt);
                 break;
+            case META_STRING:
+            case META_CHAT:
+                newmeta[i].str = strdup(meta[i].str);
+                break;
         }
     }
     return newmeta;
@@ -690,6 +694,11 @@ metadata * update_metadata(metadata *meta, metadata *upd) {
                     nbt_free(meta[i].nbt);
                     meta[i].nbt = nbt_clone(upd[i].nbt);
                     break;
+                case META_STRING:
+                case META_CHAT:
+                    lh_free(meta[i].str);
+                    meta[i].str = strdup(upd[i].str);
+                    break;
                 default:
                     meta[i] = upd[i];
             }
@@ -709,6 +718,10 @@ void free_metadata(metadata *meta) {
                 break;
             case META_NBT:
                 nbt_free(meta[i].nbt);
+                break;
+            case META_STRING:
+            case META_CHAT:
+                lh_free(meta[i].str);
                 break;
         }
     }
@@ -731,6 +744,8 @@ uint8_t * read_metadata(uint8_t *p, metadata **meta) {
     // that Mojang uses as terminator
     for(i=0; i<32; i++) m[i].type = META_NONE;
 
+    char sbuf[MCP_MAXSTR];
+
     while (1) {
         uint8_t key = read_char(p);
         if (key == 0xff) break; // terminator
@@ -744,8 +759,8 @@ uint8_t * read_metadata(uint8_t *p, metadata **meta) {
             case META_BYTE:     mm->b = read_char(p);    break;
             case META_VARINT:   mm->i = read_varint(p);  break;
             case META_FLOAT:    mm->f = read_float(p);   break;
-            case META_STRING:   p = read_string(p,mm->str); break;
-            case META_CHAT:     p = read_string(p,mm->chat); break; //VERIFY
+            case META_STRING:
+            case META_CHAT:     p = read_string(p,sbuf); mm->str = strdup(sbuf); break;
             case META_SLOT:     p = read_slot(p,&mm->slot); break;
             case META_BOOL:     mm->bool = read_char(p);  break; //VERIFY
             case META_VEC3:     mm->fx=read_float(p);
@@ -790,8 +805,8 @@ uint8_t * write_metadata(uint8_t *w, metadata *meta) {
             case META_BYTE:     write_char(w, mm->b);    break;
             case META_VARINT:   write_varint(w, mm->i);  break;
             case META_FLOAT:    write_float(w, mm->f);   break;
-            case META_STRING:   w = write_string(w, mm->str); break;
-            case META_CHAT:     w = write_string(w, mm->chat); break; //VERIFY
+            case META_STRING:
+            case META_CHAT:     w = write_string(w, mm->str); break;
             case META_SLOT:     w = write_slot(w, &mm->slot); break;
             case META_BOOL:     write_char(w, mm->bool);  break;
             case META_VEC3:     write_float(w, mm->fx);

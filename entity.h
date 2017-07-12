@@ -182,8 +182,7 @@ typedef struct {
         uint8_t     b;
         int32_t     i;
         float       f;
-        char        str[MCP_MAXSTR];
-        char        chat[MCP_MAXSTR];
+        char        *str;
         slot_t      slot;
         uint8_t     bool;
         struct {
@@ -202,6 +201,7 @@ typedef struct {
 extern const char * METATYPES[];
 
 metadata * clone_metadata(metadata *meta);
+metadata * update_metadata(metadata *meta, metadata *upd);
 void free_metadata(metadata *meta);
 uint8_t * read_metadata(uint8_t *p, metadata **meta);
 uint8_t * write_metadata(uint8_t *w, metadata *meta);
