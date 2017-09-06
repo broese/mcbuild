@@ -252,14 +252,14 @@ typedef struct {
     uint8_t     onground;
 } SP_EntityLookRelMove_pkt;
 
-// 0x2b
+// 0x2c
 typedef struct {
     uint8_t     flags;
     float       speed;
     float       fov;
 } SP_PlayerAbilities_pkt;
 
-// 0x2d
+// 0x2e
 typedef struct {
     char        pname[64];
     char        pval[MCP_MAXSTR];
@@ -282,7 +282,7 @@ typedef struct {
     lh_arr_declare(pli_t,list);
 } SP_PlayerListItem_pkt;
 
-// 0x2e
+// 0x2f
 typedef struct {
     double      x,y,z;
     float       yaw,pitch;
@@ -290,19 +290,19 @@ typedef struct {
     uint32_t    tpid;
 } SP_PlayerPositionLook_pkt;
 
-// 0x2f
+// 0x30
 typedef struct {
     uint32_t    eid;
     pos_t       pos;
 } SP_UseBed_pkt;
 
-// 0x31
+// 0x32
 typedef struct {
     uint32_t    count;
     uint32_t   *eids;
 } SP_DestroyEntities_pkt;
 
-// 0x34
+// 0x35
 typedef struct {
     int32_t dimension;
     uint8_t difficulty;
@@ -310,32 +310,32 @@ typedef struct {
     char    leveltype[32];
 } SP_Respawn_pkt;
 
-// 0x39
+// 0x3a
 typedef struct {
     int8_t sid;
 } SP_HeldItemChange_pkt;
 
-// 0x3b
+// 0x3c
 typedef struct {
     uint32_t    eid;
     metadata *  meta;
 } SP_EntityMetadata_pkt;
 
-// 0x3f
+// 0x40
 typedef struct {
     float    bar;
     int32_t  level;
     int32_t  exp;
 } SP_SetExperience_pkt;
 
-// 0x40
+// 0x41
 typedef struct {
     float    health;
     int32_t  food;
     float    saturation;
 } SP_UpdateHealth_pkt;
 
-// 0x48
+// 0x49
 typedef struct {
     int32_t     id;
     int32_t     category;
@@ -346,7 +346,7 @@ typedef struct {
     float       pitch;
 } SP_SoundEffect_pkt;
 
-// 0x4b
+// 0x4c
 typedef struct {
     uint32_t    eid;
     double      x;
