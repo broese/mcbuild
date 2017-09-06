@@ -2845,6 +2845,7 @@ MCPacket * decode_packet(int is_client, uint8_t *data, ssize_t len) {
         printf("Incorrect length in decode_packet : data=%p, len=%zd, rawtype=%02x, pid=%08x, ver=%08x, rawlen=%p+%zd-%p=%zd\n",
                data, len, rawtype, pkt->pid, pkt->ver, data, len, p, pkt->rawlen);
         hexdump(data, len);
+        return NULL;
     }
     pkt->raw = malloc(pkt->rawlen);
     memmove(pkt->raw, p, pkt->rawlen);
