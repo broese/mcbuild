@@ -1859,8 +1859,10 @@ DUMP_BEGIN(CP_UseItem) {
 ////////////////////////////////////////////////////////////////////////////////
 // Packet ID mapping to packet handlers
 
-// MC protocol v338 - clients 1.12.1
-// http://wiki.vg/index.php?title=Protocol
+// MC protocol v338/v340 - clients 1.12.1 / 1.12.2
+// http://wiki.vg/index.php?title=Protocol&oldid=13339
+// Note: difference between 338 and 340 is SP_KeepAlive and CP_KeepAlive packets
+// Which are not decoded by MCB - hence using same mapping table
 const static packet_methods SUPPORT_1_12_1[2][MAXPACKETTYPES] = {
     {
         SUPPORT_DD  (0x00,SP_SpawnObject,_1_9),
@@ -2901,9 +2903,10 @@ static protocol_support_t supported[] = {
     { 110, PROTO_1_9_4, "1.9.4",    SUPPORT_1_9_4 },
     { 210, PROTO_1_10,  "1.10.x",   SUPPORT_1_10 },
     { 315, PROTO_1_11,  "1.11",     SUPPORT_1_11 },
-    { 316, PROTO_1_11_2,"1.11.2",   SUPPORT_1_11 },
+    { 316, PROTO_1_11_2,"1.11.2",   SUPPORT_1_11 },     // Using the same table
     { 335, PROTO_1_12,  "1.12",     SUPPORT_1_12 },
     { 338, PROTO_1_12_1,"1.12.1",   SUPPORT_1_12_1 },
+    { 340, PROTO_1_12_2,"1.12.2",   SUPPORT_1_12_1 },   // Using the same table
     {  -1, PROTO_NONE,  NULL,       NULL },
 };
 
