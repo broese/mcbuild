@@ -830,7 +830,6 @@ int parse_profile(char *accessToken, char *userId, char *userName) {
 
     switch (format) {
         case 18:
-        case 21:
             JSON_PARSE(json, "selectedUser", su, json_type_string);
             sprintf(userId, "%s", json_object_get_string(su));
 
@@ -844,7 +843,8 @@ int parse_profile(char *accessToken, char *userId, char *userName) {
             sprintf(accessToken, "%s", json_object_get_string(at));
 
             break;
-
+		
+        case 21:
         case 20:
             JSON_PARSE(json, "selectedUser", su, json_type_object);
             JSON_PARSE(su, "account", account, json_type_string);
