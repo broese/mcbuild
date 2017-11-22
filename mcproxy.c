@@ -790,7 +790,7 @@ void print_hex(char *buf, const char *data, ssize_t len) {
              return 0;                                                         \
     }
 
-int parse_profile(char *accessToken, char *userId, char *userName) {
+int parse_profile(char *accessToken, char *userId) {
     char path[PATH_MAX];
 
     if (o_profile_path) {
@@ -821,55 +821,37 @@ int parse_profile(char *accessToken, char *userId, char *userName) {
     buf[sz] = 0;
 
     json_object *json = json_tokener_parse((char *)buf);
-    json_object *ver, *form, *su, *adb, *prof, *dn, *at, *acc,
-        *account, *profile, *profiles, *dprof;
+    json_object *selectedUser, *adb, *profile, *at;
 
-    JSON_PARSE(json, "launcherVersion", ver, json_type_object);
-    JSON_PARSE(ver, "format", form, json_type_int);
-    int format = json_object_get_int(form);
-
-    switch (format) {
-        case 18:
-        case 21:
-            JSON_PARSE(json, "selectedUser", su, json_type_string);
-            sprintf(userId, "%s", json_object_get_string(su));
-
-            JSON_PARSE(json, "authenticationDatabase", adb, json_type_object);
-            JSON_PARSE(adb, userId, prof, json_type_object);
-
-            JSON_PARSE(prof, "displayName", dn, json_type_string);
-            sprintf(userName, "%s", json_object_get_string(dn));
-
-            JSON_PARSE(prof, "accessToken", at, json_type_string);
-            sprintf(accessToken, "%s", json_object_get_string(at));
-
-            break;
-
-        case 20:
-            JSON_PARSE(json, "selectedUser", su, json_type_object);
-            JSON_PARSE(su, "account", account, json_type_string);
-            JSON_PARSE(su, "profile", profile, json_type_string);
-            sprintf(userId, "%s", json_object_get_string(profile));
-
-            JSON_PARSE(json, "authenticationDatabase", adb, json_type_object);
-            JSON_PARSE(adb, json_object_get_string(account), prof, json_type_object);
-
-            JSON_PARSE(prof, "profiles", profiles, json_type_object);
-            JSON_PARSE(profiles, userId, dprof, json_type_object);
-            JSON_PARSE(dprof, "displayName", dn, json_type_string);
-            sprintf(userName, "%s", json_object_get_string(dn));
-
-            JSON_PARSE(prof, "accessToken", at, json_type_string);
-            sprintf(accessToken, "%s", json_object_get_string(at));
-
-            break;
-
-        default:
-            printf("Unknown/unsupported profile format %d, please report as issue on Github\n", format);
-            json_object_put(json);
-            lh_free(buf);
-            return 0;
+    if (!json_object_object_get_ex(json, "selectedUser", &selectedUser)) {
+        printf("Failed to parse \"selectedUser\" key\n");
+        return 0;
     }
+
+    if (json_object_get_type(selectedUser) == json_type_string) {
+        // 1.6.x launchers
+        sprintf(userId, "%s", json_object_get_string(selectedUser));
+    }
+    else if (json_object_get_type(selectedUser) == json_type_object) {
+        // 2.0.x launchers
+        json_object *selectedUserProfile;
+        JSON_PARSE(selectedUser, "profile", selectedUserProfile, json_type_string);
+        sprintf(userId, "%s", json_object_get_string(selectedUserProfile));
+    }
+    else {
+        printf("Wrong type of value for \"selectedUser\"\n");
+        return 0;
+    }
+
+    //printf("Parsed userId=%s\n", userId);
+
+    JSON_PARSE(json, "authenticationDatabase", adb, json_type_object);
+    JSON_PARSE(adb, userId, profile, json_type_object);
+
+    JSON_PARSE(profile, "accessToken", at, json_type_string);
+    sprintf(accessToken, "%s", json_object_get_string(at));
+
+    //printf("Parsed accessToken : %s\n", accessToken);
 
     json_object_put(json);
     lh_free(buf);
@@ -896,14 +878,13 @@ int query_auth_server() {
     //printf("sessionId : %s\n", auth);
 
     char accessToken[256], userId[256], userName[256];
-    if (!parse_profile(accessToken, userId, userName)) {
+    if (!parse_profile(accessToken, userId)) {
         printf("Failed to parse user profile\n");
         return 0;
     }
 
 #if 0
     printf("selectedProfile: >%s<\n",userId);
-    printf("userName:        >%s<\n",userName);
     printf("accessToken:     >%s<\n",accessToken);
     printf("serverId:        >%s<\n",auth);
 #endif
