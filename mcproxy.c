@@ -835,7 +835,7 @@ int parse_profile(char *accessToken, char *userId) {
     else if (json_object_get_type(selectedUser) == json_type_object) {
         // 2.0.x launchers
         json_object *selectedUserProfile;
-        JSON_PARSE(selectedUser, "profile", selectedUserProfile, json_type_string);
+        JSON_PARSE(selectedUser, "account", selectedUserProfile, json_type_string);
         sprintf(userId, "%s", json_object_get_string(selectedUserProfile));
     }
     else {
