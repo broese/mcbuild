@@ -828,14 +828,20 @@ int parse_profile(char *accessToken, char *userId) {
         return 0;
     }
 
+    char accountId[256];
     if (json_object_get_type(selectedUser) == json_type_string) {
         // 1.6.x launchers
+        // player's UUID serves as the key to authentication database
         sprintf(userId, "%s", json_object_get_string(selectedUser));
+        sprintf(accountId, "%s", userId);
     }
     else if (json_object_get_type(selectedUser) == json_type_object) {
         // 2.0.x launchers
-        json_object *selectedUserProfile;
-        JSON_PARSE(selectedUser, "account", selectedUserProfile, json_type_string);
+        // account ID serves as the key to authentication database
+        json_object *selectedUserProfile, *selectedUserAccount;
+        JSON_PARSE(selectedUser, "account", selectedUserAccount, json_type_string);
+        sprintf(accountId, "%s", json_object_get_string(selectedUserAccount));
+        JSON_PARSE(selectedUser, "profile", selectedUserProfile, json_type_string);
         sprintf(userId, "%s", json_object_get_string(selectedUserProfile));
     }
     else {
@@ -846,7 +852,7 @@ int parse_profile(char *accessToken, char *userId) {
     //printf("Parsed userId=%s\n", userId);
 
     JSON_PARSE(json, "authenticationDatabase", adb, json_type_object);
-    JSON_PARSE(adb, userId, profile, json_type_object);
+    JSON_PARSE(adb, accountId, profile, json_type_object);
 
     JSON_PARSE(profile, "accessToken", at, json_type_string);
     sprintf(accessToken, "%s", json_object_get_string(at));
@@ -1241,6 +1247,13 @@ int main(int ac, char **av) {
         print_usage();
         return !o_help;
     }
+
+#if 0
+    char accessToken[256],userId[256];
+    parse_profile(accessToken, userId);
+    printf("accessToken: %s, userId: %s\n", accessToken, userId);
+
+#endif
 
     // resolve remote server's IP, first try SRV, then A queries
     remote_ip = lookup_srv(o_raddr);
