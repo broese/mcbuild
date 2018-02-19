@@ -790,6 +790,65 @@ void print_hex(char *buf, const char *data, ssize_t len) {
              return 0;                                                         \
     }
 
+int parse_profile_multimc(json_object *json, char *accessToken, char *userId) {
+    // determine the active account
+    json_object *activeAccount;
+    if (!json_object_object_get_ex(json, "activeAccount", &activeAccount) ||
+        json_object_get_type(activeAccount) != json_type_string ) {
+
+        printf("Failed to parse \"activeAccount\" key, unknown profile format.\n");
+        return 0;
+    }
+    char accountId[256];
+    sprintf(accountId, "%s", json_object_get_string(activeAccount));
+
+    // get the list of accounts
+    json_object *accounts;
+    if (!json_object_object_get_ex(json, "accounts", &accounts) ||
+        json_object_get_type(accounts) != json_type_array ) {
+
+        printf("Failed to parse the list of accounts, unknown profile format.\n");
+        return 0;
+    }
+    int num_accounts = json_object_array_length(accounts);
+
+    // locate the selected account
+    int i;
+    for (i=0; i<num_accounts; i++) {
+        json_object *account = json_object_array_get_idx(accounts, i);
+        if (!account || json_object_get_type(account) != json_type_object)
+            continue;
+
+        json_object *username;
+        if (!json_object_object_get_ex(account, "username", &username) ||
+            json_object_get_type(username) != json_type_string )
+            continue;
+
+        char username_str[256];
+        sprintf(username_str, "%s", json_object_get_string(username));
+        if (strcmp(username_str, accountId)) continue;
+
+        json_object *ap,*at;
+        if (!json_object_object_get_ex(account, "activeProfile", &ap) ||
+            json_object_get_type(ap) != json_type_string ) {
+            printf("Failed to parse activeProfile for user %s.\n", username_str);
+            return 0;
+        }
+        if (!json_object_object_get_ex(account, "accessToken", &at) ||
+            json_object_get_type(at) != json_type_string ) {
+            printf("Failed to parse accessToken for user %s.\n", username_str);
+            return 0;
+        }
+
+        sprintf(userId, "%s", json_object_get_string(ap));
+        sprintf(accessToken, "%s", json_object_get_string(at));
+        return 1;
+    }
+
+    printf("Failed to find any user profiles in MultiMC profile\n");
+    return 0;
+}
+
 int parse_profile(char *accessToken, char *userId) {
     char path[PATH_MAX];
 
@@ -824,8 +883,8 @@ int parse_profile(char *accessToken, char *userId) {
     json_object *selectedUser, *adb, *profile, *at;
 
     if (!json_object_object_get_ex(json, "selectedUser", &selectedUser)) {
-        printf("Failed to parse \"selectedUser\" key\n");
-        return 0;
+        printf("Failed to parse \"selectedUser\" key, trying MultiMC format\n");
+        return parse_profile_multimc(json, accessToken, userId);
     }
 
     char accountId[256];
