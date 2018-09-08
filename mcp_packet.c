@@ -1859,6 +1859,20 @@ DUMP_BEGIN(CP_UseItem) {
 ////////////////////////////////////////////////////////////////////////////////
 // Packet ID mapping to packet handlers
 
+// MC protocol v393 - clients 1.13
+// https://wiki.vg/index.php?title=Pre-release_protocol&oldid=14150
+const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
+    {
+        SUPPORT_    (0x00,SP___),
+    },
+    {
+        SUPPORT_    (0x0f,CP___),
+    },
+};
+
+#if 0
+// DISABLED: support for legacy pre-1.13 protocols
+
 // MC protocol v338/v340 - clients 1.12.1 / 1.12.2
 // http://wiki.vg/index.php?title=Protocol&oldid=13339
 // Note: difference between 338 and 340 is SP_KeepAlive and CP_KeepAlive packets
@@ -2696,6 +2710,8 @@ const static packet_methods SUPPORT_1_9[2][MAXPACKETTYPES] = {
     },
 };
 
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // Uncomment packet IDs that should be dumped
@@ -2897,6 +2913,8 @@ typedef struct {
 } protocol_support_t;
 
 static protocol_support_t supported[] = {
+#if 0
+// DISABLED: support for legacy pre-1.13 protocols
     {  47, PROTO_1_8_1, "1.8.x",    NULL },
     { 107, PROTO_1_9,   "1.9.0",    SUPPORT_1_9 },
     { 109, PROTO_1_9_2, "1.9.2",    SUPPORT_1_9_2 },
@@ -2907,6 +2925,8 @@ static protocol_support_t supported[] = {
     { 335, PROTO_1_12,  "1.12",     SUPPORT_1_12 },
     { 338, PROTO_1_12_1,"1.12.1",   SUPPORT_1_12_1 },
     { 340, PROTO_1_12_2,"1.12.2",   SUPPORT_1_12_1 },   // Using the same table
+#endif
+    { 393, PROTO_1_13,  "1.13",     SUPPORT_1_13 },     // Empty table
     {  -1, PROTO_NONE,  NULL,       NULL },
 };
 

@@ -38,7 +38,7 @@
 #include <json-c/json.h>
 
 #define LH_DECLARE_SHORT_NAMES 1
-#define DEBUG_AUTH 1
+#define DEBUG_AUTH 0
 
 #include "lh_debug.h"
 #include "lh_buffers.h"
@@ -1316,8 +1316,8 @@ uint32_t lookup_srv(const char *addr) {
 }
 
 int main(int ac, char **av) {
-    printf("MCBuild 2.0 for Minecraft 1.9.x-1.12.2\n"
-           "Multi-protocol support: 107,109,110,210,315,316,335,338,340\n");
+    printf("MCBuild 3.0 for Minecraft 1.13.x Development Branch\n"
+           "Multi-protocol support: N/A\n");
 
     // create directories if they don't exist yet
     MKDIR(saved);
