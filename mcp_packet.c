@@ -240,6 +240,8 @@ typedef struct {
 // Server -> Client
 
 ////////////////////////////////////////////////////////////////////////////////
+
+#if 0
 // 0x00 SP_SpawnObject
 
 DECODE_BEGIN(SP_SpawnObject,_1_9) {
@@ -413,27 +415,34 @@ DUMP_BEGIN(SP_BlockAction) {
            tpkt->b1, tpkt->b2, tpkt->type,
            get_bid_name(name, BLOCKTYPE(tpkt->type, 0)));
 } DUMP_END;
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x0b SP_BlockChange
+// 0x0B SP_BlockChange
 
-DECODE_BEGIN(SP_BlockChange,_1_8_1) {
+// Note: the legacy 1.8.1 decoder would still work with 1.13, but the block ID
+// value now should be interpreted only as raw 16-bit value, ignoring .bid and
+// .meta values still present in the struct
+// atm there are ~8000 IDs defined, so 16 bits should be sufficient
+//TODO: redefine bid_t as uint16_t
+DECODE_BEGIN(SP_BlockChange,_1_13) {
     Plong(pos.p);
     Rvarint(bid);
     tpkt->block.raw = (uint16_t)bid;
 } DECODE_END;
 
-ENCODE_BEGIN(SP_BlockChange,_1_8_1) {
+ENCODE_BEGIN(SP_BlockChange,_1_13) {
     Wlong(pos.p);
     Wvarint(block.raw);
 } ENCODE_END;
 
 DUMP_BEGIN(SP_BlockChange) {
-    printf("coord=%d,%d,%d bid=%3x meta=%d",
+    printf("coord=%d,%d,%d bid=%x(%d)",
            tpkt->pos.x, tpkt->pos.y, tpkt->pos.z,
-           tpkt->block.bid,tpkt->block.meta);
+           tpkt->block.raw, tpkt->block.raw);
 } DUMP_END;
 
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // 0x0F SP_ChatMessage
 
@@ -460,11 +469,12 @@ DUMP_BEGIN(SP_ChatMessage) {
 FREE_BEGIN(SP_ChatMessage) {
     lh_free(tpkt->json);
 } FREE_END;
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x10 SP_MultiBlockChange
+// 0x0F SP_MultiBlockChange
 
-DECODE_BEGIN(SP_MultiBlockChange,_1_8_1) {
+DECODE_BEGIN(SP_MultiBlockChange,_1_13) {
     Pint(X);
     Pint(Z);
     Pvarint(count);
@@ -478,7 +488,7 @@ DECODE_BEGIN(SP_MultiBlockChange,_1_8_1) {
     }
 } DECODE_END;
 
-ENCODE_BEGIN(SP_MultiBlockChange,_1_8_1) {
+ENCODE_BEGIN(SP_MultiBlockChange,_1_13) {
     Wint(X);
     Wint(Z);
     Wvarint(count);
@@ -496,8 +506,8 @@ DUMP_BEGIN(SP_MultiBlockChange) {
     int i;
     for(i=0; i<tpkt->count; i++) {
         blkrec *b = tpkt->blocks+i;
-        printf("\n    coord=%2d,%3d,%2d bid=%3x meta=%d",
-               b->x,b->z,b->y,b->bid.bid,b->bid.meta);
+        printf("\n    coord=%d,%d,%d bid=%x(%d)",
+               b->x,b->z,b->y,b->bid.raw,b->bid.raw);
     }
 } DUMP_END;
 
@@ -505,6 +515,7 @@ FREE_BEGIN(SP_MultiBlockChange) {
     lh_free(tpkt->blocks);
 } FREE_END;
 
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // 0x11 SP_ConfirmTransaction
 
@@ -1519,6 +1530,7 @@ DUMP_BEGIN(SP_UpdateSign) {
            tpkt->pos.x,tpkt->pos.y,tpkt->pos.z,
            tpkt->line1,tpkt->line2,tpkt->line3,tpkt->line4);
 } DUMP_END;
+#endif
 
 
 
@@ -1528,6 +1540,7 @@ DUMP_BEGIN(SP_UpdateSign) {
 ////////////////////////////////////////////////////////////////////////////////
 // Client -> Server
 
+#if 0
 ////////////////////////////////////////////////////////////////////////////////
 // 0x00 CP_TeleportConfirm
 
@@ -1850,7 +1863,7 @@ DUMP_BEGIN(CP_UseItem) {
     printf("hand=%d", tpkt->hand);
 } DUMP_END;
 
-
+#endif
 
 
 
@@ -1878,11 +1891,11 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x08,SP_BlockBreakAnimation),
         SUPPORT_    (0x09,SP_UpdateBlockEntity),
         SUPPORT_    (0x0a,SP_BlockAction),
-        SUPPORT_DED (0x0b,SP_BlockChange,_1_8_1),
+        SUPPORT_DED (0x0b,SP_BlockChange,_1_13),
         SUPPORT_    (0x0c,SP_BossBar),
         SUPPORT_    (0x0d,SP_ServerDifficulty),
         SUPPORT_    (0x0e,SP_ChatMessage),
-        SUPPORT_DED (0x0f,SP_MultiBlockChange,_1_8_1),
+        SUPPORT_DED (0x0f,SP_MultiBlockChange,_1_13),
 
         SUPPORT_    (0x10,SP_TabComplete),
         SUPPORT_    (0x11,SP_DeclareCommands),
@@ -2024,12 +2037,12 @@ uint32_t DUMP_ENABLED[] = {
     //SP_BlockBreakAnimation,
     //SP_UpdateBlockEntity,
     //SP_BlockAction,
-    //SP_BlockChange,
+    SP_BlockChange,
     //SP_BossBar,
     //SP_ServerDifficulty,
     //SP_TabComplete,
     //SP_ChatMessage,
-    //SP_MultiBlockChange,
+    SP_MultiBlockChange,
     //SP_ConfirmTransaction,
     //SP_CloseWindow,
     //SP_OpenWindow,
