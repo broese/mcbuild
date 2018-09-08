@@ -1076,16 +1076,8 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
 ////////////////////////////////////////////////////////////////////////////////
 
 void gm_packet(MCPacket *pkt, MCPacketQueue *tq, MCPacketQueue *bq) {
-    dump_packet(pkt);
-
     MCPacketQueue *sq = pkt->cl ? tq : bq;
     MCPacketQueue *cq = pkt->cl ? bq : tq;
-
-    // skip unimplemented packets
-    if (!pkt->ver) {
-        queue_packet(pkt, tq);
-        return;
-    }
 
     switch (pkt->pid) {
 
