@@ -38,6 +38,7 @@
 #include <json-c/json.h>
 
 #define LH_DECLARE_SHORT_NAMES 1
+#define DEBUG_AUTH 1
 
 #include "lh_debug.h"
 #include "lh_buffers.h"
@@ -196,8 +197,10 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
 
     // generate the server-side shared key pair
     RAND_pseudo_bytes(mitm.s_skey, 16);
-    //printf("Server-side shared key: ");
-    //hexprint(mitm.s_skey, 16);
+#if DEBUG_AUTH
+    printf("Server-side shared key: ");
+    hexprint(mitm.s_skey, 16);
+#endif
 
     // create a client-side RSA
     mitm.c_rsa = RSA_generate_key(1024, RSA_F4, NULL, NULL);
@@ -234,8 +237,11 @@ void process_encryption_request(uint8_t *p, lh_buf_t *forw) {
     memmove(w, mitm.c_token, 4);
     w+=4;
 
-    //printf("Sending to client %zd bytes:\n",w-output);
-    //hexdump(output, w-output);
+#if DEBUG_AUTH
+    printf("Sending to client %zd bytes:\n",w-output);
+    hexdump(output, w-output);
+#endif
+
     write_packet_raw(output, w-output, forw);
 }
 
@@ -249,8 +255,11 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
         printf("Failed to decrypt the shared key received from the client\n");
         exit(1);
     }
-    //printf("Decrypted client shared key, keylen=%d ",dklen);
-    //hexprint(buf, dklen);
+
+#if DEBUG_AUTH
+    printf("Decrypted client shared key, keylen=%d ",dklen);
+    hexprint(buf, dklen);
+#endif
     memcpy(mitm.c_skey, buf, 16);
 
     int dtlen = RSA_private_decrypt(pkt.tklen, pkt.token, buf, mitm.c_rsa, RSA_PKCS1_PADDING);
@@ -258,10 +267,14 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
         printf("Failed to decrypt the verification token received from the client\n");
         exit(1);
     }
-    //printf("Decrypted client token, len=%d ",dtlen);
-    //hexprint(buf, dtlen);
-    //printf("Original token: ");
-    //hexprint(mitm.c_token,4);
+
+#if DEBUG_AUTH
+    printf("Decrypted client token, len=%d ",dtlen);
+    hexprint(buf, dtlen);
+    printf("Original token: ");
+    hexprint(mitm.c_token,4);
+#endif
+
     if (memcmp(buf, mitm.c_token, 4)) {
         printf("Token does not match!\n");
         exit(1);
@@ -290,7 +303,9 @@ void process_encryption_response(uint8_t *p, lh_buf_t *forw) {
     w += etlen;
 
     query_auth_server();
-    //hexdump(output, w-output);
+#if DEBUG_AUTH
+    hexdump(output, w-output);
+#endif
     write_packet_raw(output, w-output, forw);
 
     mitm.enable_encryption = 1;
@@ -322,8 +337,10 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx, lh_b
     uint32_t stype = ((mitm.state<<24)|(is_client<<28)|(type&0xffffff));
 
     char *states = "ISLP";
-    //printf("%c %c type=%02x, len=%zd\n", is_client?'C':'S', states[mitm.state],type,len);
-    //hexdump(ptr, len);
+#if DEBUG_AUTH
+    printf("%c %c type=%02x, len=%zd\n", is_client?'C':'S', states[mitm.state],type,len);
+    hexdump(ptr, len);
+#endif
 
     uint8_t output[65536];
     uint8_t *w = output;
@@ -336,21 +353,29 @@ void process_packet(int is_client, uint8_t *ptr, ssize_t len, lh_buf_t *tx, lh_b
             CI_Handshake_pkt pkt;
             decode_handshake(&pkt, p);
 
+#if DEBUG_AUTH
+            printf("C %-30s protocol=%d server=%s:%d nextState=%d\n","Handshake",
+                   pkt.protocolVer,pkt.serverAddr,pkt.serverPort,pkt.nextState);
+
+#endif
+
             // configure protocol version in mcp_packet module
             // disconnect with error message if this protocol is not supported
             SL_Disconnect_pkt dpkt;
             if (pkt.nextState == STATE_LOGIN && !set_protocol(pkt.protocolVer, dpkt.reason)) {
                 write_varint(w, PID(SL_Disconnect));
                 w = encode_disconnect(&dpkt, w);
+#if DEBUG_AUTH
+                printf("S %-30s reason=%s\n","Disconnect", dpkt.reason);
+                hexdump(output, w-output);
+#endif
                 write_packet_raw(output, w-output, bx);
+
                 mitm.disconnect_required = 1;
                 break;
             }
 
             mitm.state = pkt.nextState;
-            //printf("C %-30s protocol=%d server=%s:%d nextState=%d\n","Handshake",
-            //       pkt.protocolVer,pkt.serverAddr,pkt.serverPort,pkt.nextState);
-
             // replace the server address in the message with our proper server
             // some servers refuse to accept connections for "127.0.0.1"
             sprintf(pkt.serverAddr, "%s", o_raddr);
@@ -425,7 +450,7 @@ void write_packet(MCPacket *pkt, lh_buf_t *tx) {
         clen += (w-cbuf);
         write_packet_raw(cbuf, clen, tx);
 
-#if 0
+#if DEBUG_AUTH
         printf("%c P clen=%6zd    ",pkt->cl?'C':'S',clen);
         hexprint(cbuf, LIM64(clen));
 #endif
@@ -434,7 +459,7 @@ void write_packet(MCPacket *pkt, lh_buf_t *tx) {
     else {
         // no compression - simply append the packet to the transmission buffer
         write_packet_raw(ubuf, ulen, tx);
-#if 0
+#if DEBUG_AUTH
         printf("%c P ulen=%6zd    ",pkt->cl?'C':'S',ulen);
         hexprint(ubuf, LIM64(ulen));
 #endif
@@ -494,12 +519,12 @@ void process_play_packet(int is_client, struct timeval ts,
         plen = plim-p;
     }
 
-#if 0
+#if DEBUG_AUTH
     printf("%c P  len=%6zd %c  ",is_client?'C':'S',raw_len,comp);
     hexprint(raw_ptr, LIM64(raw_len));
 #endif
 
-#if 0
+#if DEBUG_AUTH
     printf("%c P plen=%6zd    ",is_client?'C':'S',plen,comp);
     hexprint(p, LIM64(plen));
 #endif
@@ -596,7 +621,7 @@ ssize_t handle_proxy(lh_conn *conn) {
     ssize_t widx = rx->C(data);
     lh_arr_add(GAR4(rx->data),slen);
 
-#if 0
+#if DEBUG_AUTH
     printf("*** network data %s ***\n",is_client?"C->S":"C<-S");
     hexdump(sptr, slen);
     printf("************************\n");
@@ -621,7 +646,7 @@ ssize_t handle_proxy(lh_conn *conn) {
     // possibly also packets that could not be processed before
     // (because they were incomplete)
 
-#if 0
+#if DEBUG_AUTH
     printf("*** decrypted data %s ***\n",is_client?"C->S":"C<-S");
     hexdump(rx->P(data), rx->C(data));
     printf("************************\n");
@@ -725,7 +750,7 @@ ssize_t handle_proxy(lh_conn *conn) {
         memcpy(mitm.s_enc_iv, mitm.s_skey, 16);
         memcpy(mitm.s_dec_iv, mitm.s_skey, 16);
 
-#if 0
+#if DEBUG_AUTH
         printf("c_skey:   "); hexdump(mitm.c_skey,16);
         printf("c_enc_iv: "); hexdump(mitm.c_enc_iv,16);
         printf("c_dec_iv: "); hexdump(mitm.c_dec_iv,16);
@@ -948,7 +973,7 @@ int query_auth_server() {
         return 0;
     }
 
-#if 0
+#if DEBUG_AUTH
     printf("selectedProfile: >%s<\n",userId);
     printf("accessToken:     >%s<\n",accessToken);
     printf("serverId:        >%s<\n",auth);
@@ -1307,7 +1332,7 @@ int main(int ac, char **av) {
         return !o_help;
     }
 
-#if 0
+#if DEBUG_AUTH
     char accessToken[256],userId[256];
     parse_profile(accessToken, userId);
     printf("accessToken: %s, userId: %s\n", accessToken, userId);
