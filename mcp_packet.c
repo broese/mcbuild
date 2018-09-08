@@ -1798,24 +1798,6 @@ DUMP_BEGIN(CP_Animation) {
 ////////////////////////////////////////////////////////////////////////////////
 // 0x1f CP_PlayerBlockPlacement
 
-DECODE_BEGIN(CP_PlayerBlockPlacement,_1_9) {
-    Plong(bpos.p);
-    Pvarint(face);
-    Pvarint(hand);
-    tpkt->cx = (float)(lh_read_char_be(p))/16.0;
-    tpkt->cy = (float)(lh_read_char_be(p))/16.0;
-    tpkt->cz = (float)(lh_read_char_be(p))/16.0;
-} DECODE_END;
-
-ENCODE_BEGIN(CP_PlayerBlockPlacement,_1_9) {
-    Wlong(bpos.p);
-    Wvarint(face);
-    Wvarint(hand);
-    lh_write_char_be(w, (char)lrintf(tpkt->cx*16));
-    lh_write_char_be(w, (char)lrintf(tpkt->cy*16));
-    lh_write_char_be(w, (char)lrintf(tpkt->cz*16));
-} ENCODE_END;
-
 DECODE_BEGIN(CP_PlayerBlockPlacement,_1_11) {
     Plong(bpos.p);
     Pvarint(face);
@@ -1902,7 +1884,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x1c,SP_EntityStatus),
         SUPPORT_    (0x1d,SP_NbtQueryResponse),
         SUPPORT_DDF (0x1e,SP_Explosion,_1_8_1),
-        SUPPORT_    (0x1f,SP_UnloadChunk),
+        SUPPORT_DED (0x1f,SP_UnloadChunk,_1_9),
 
         SUPPORT_    (0x20,SP_ChangeGameState),
         SUPPORT_    (0x21,SP_KeepAlive),
@@ -2007,7 +1989,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x26,CP_UpdateSign),
         SUPPORT_    (0x27,CP_Animation),
         SUPPORT_    (0x28,CP_Spectate),
-        SUPPORT_    (0x29,CP_PlayerBlockPlacement),
+        SUPPORT_DED (0x29,CP_PlayerBlockPlacement,_1_11),
         SUPPORT_    (0x2a,CP_UseItem),
     },
 };
@@ -2044,7 +2026,7 @@ uint32_t DUMP_ENABLED[] = {
     //SP_NamedSoundEffect,
     //SP_Disconnect,
     //SP_EntityStatus,
-    SP_Explosion,
+    //SP_Explosion,
     //SP_UnloadChunk,
     //SP_ChangeGameState,
     //SP_KeepAlive,
