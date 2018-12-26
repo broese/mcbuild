@@ -1848,7 +1848,7 @@ DUMP_BEGIN(CP_UseItem) {
 // they are needed to properly look up names for raw packets in dump_packet()
 // and in case the ID has shifted or was removed between the versions
 
-// MC protocol v393 - clients 1.13
+// MC protocol v393/v403/v404 - clients 1.13/1.13.1/1.13.2
 // https://wiki.vg/index.php?title=Pre-release_protocol&oldid=14150
 const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
     {
@@ -1991,6 +1991,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x28,CP_Spectate),
         SUPPORT_DED (0x29,CP_PlayerBlockPlacement,_1_11),
         SUPPORT_    (0x2a,CP_UseItem),
+        SUPPORT_    (0x30,CP___),
     },
 };
 
@@ -2195,7 +2196,9 @@ typedef struct {
 } protocol_support_t;
 
 static protocol_support_t supported[] = {
-    { 393, PROTO_1_13,  "1.13",     SUPPORT_1_13 },     // Empty table
+    { 393, PROTO_1_13,      "1.13",     SUPPORT_1_13 },
+    { 401, PROTO_1_13_1,    "1.13.1",   SUPPORT_1_13 },
+    { 404, PROTO_1_13_2,    "1.13.2",   SUPPORT_1_13 },
     {  -1, PROTO_NONE,  NULL,       NULL },
 };
 

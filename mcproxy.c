@@ -1327,7 +1327,7 @@ uint32_t lookup_srv(const char *addr) {
 
 int main(int ac, char **av) {
     printf("MCBuild 3.0 for Minecraft 1.13.x Development Branch\n"
-           "Multi-protocol support: N/A\n");
+           "Multi-protocol support: 1.13 (393), 1.13.1 (401), 1.13.2 (404)\n");
 
     // create directories if they don't exist yet
     MKDIR(saved);
