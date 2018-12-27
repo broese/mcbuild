@@ -1961,7 +1961,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x0c,CP_QueryEntityNbt),
         SUPPORT_    (0x0d,CP_UseEntity),
         SUPPORT_    (0x0e,CP_KeepAlive),
-        SUPPORT_    (0x0f,CP_Player),
+        SUPPORT_DD  (0x0f,CP_Player,_1_8_1),
 
         SUPPORT_    (0x10,CP_PlayerPosition),
         SUPPORT_    (0x11,CP_PlayerPositionLook),
