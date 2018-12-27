@@ -1981,7 +1981,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x1f,CP_SelectTrade),
 
         SUPPORT_    (0x20,CP_SetBeaconEffect),
-        SUPPORT_    (0x21,CP_HeldItemChange),
+        SUPPORT_DED (0x21,CP_HeldItemChange,_1_8_1),
         SUPPORT_    (0x22,CP_UpdateCommandBlock),
         SUPPORT_    (0x23,CP_UpdateCmdMinecart),
         SUPPORT_    (0x24,CP_CreativeInventoryAct),
