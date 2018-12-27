@@ -1905,7 +1905,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
 
         SUPPORT_    (0x30,SP_PlayerListItem),
         SUPPORT_    (0x31,SP_FacePlayer),
-        SUPPORT_    (0x32,SP_PlayerPositionLook),
+        SUPPORT_DED (0x32,SP_PlayerPositionLook,_1_9),
         SUPPORT_    (0x33,SP_UseBed),
         SUPPORT_    (0x34,SP_UnlockRecipes),
         SUPPORT_    (0x35,SP_DestroyEntities),
