@@ -1871,7 +1871,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
 
         SUPPORT_    (0x10,SP_TabComplete),
         SUPPORT_    (0x11,SP_DeclareCommands),
-        SUPPORT_    (0x12,SP_ConfirmTransaction),
+        SUPPORT_DD  (0x12,SP_ConfirmTransaction,_1_8_1),
         SUPPORT_    (0x13,SP_CloseWindow),
         SUPPORT_    (0x14,SP_OpenWindow),
         SUPPORT_    (0x15,SP_WindowItems),
@@ -2013,7 +2013,7 @@ uint32_t DUMP_ENABLED[] = {
     // SP_BlockChange,
     // SP_BossBar,
     // SP_ServerDifficulty,
-     SP_ChatMessage,
+    // SP_ChatMessage,
     // SP_MultiBlockChange,
     // SP_TabComplete,
     // SP_DeclareCommands,
