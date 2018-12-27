@@ -1987,7 +1987,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x24,CP_CreativeInventoryAct),
         SUPPORT_    (0x25,CP_UpdateStructureBlock),
         SUPPORT_    (0x26,CP_UpdateSign),
-        SUPPORT_    (0x27,CP_Animation),
+        SUPPORT_DED (0x27,CP_Animation,_1_9),
         SUPPORT_    (0x28,CP_Spectate),
         SUPPORT_DED (0x29,CP_PlayerBlockPlacement,_1_11),
         SUPPORT_    (0x2a,CP_UseItem),
