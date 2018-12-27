@@ -1916,7 +1916,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x3a,SP_SelectAdvancementTab),
         SUPPORT_    (0x3b,SP_WorldBorder),
         SUPPORT_    (0x3c,SP_Camera),
-        SUPPORT_    (0x3d,SP_HeldItemChange),
+        SUPPORT_DED (0x3d,SP_HeldItemChange,_1_8_1),
         SUPPORT_    (0x3e,SP_DisplayScoreboard),
         SUPPORT_    (0x3f,SP_EntityMetadata),
 
