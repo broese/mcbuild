@@ -454,7 +454,7 @@ ENCODE_BEGIN(SP_ChatMessage,_1_8_1) {
 } ENCODE_END;
 
 DUMP_BEGIN(SP_ChatMessage) {
-    printf("json=%s",tpkt->json);
+    printf("pos=%x json=%s",tpkt->pos,tpkt->json);
 
     char name[256], message[256];
     if (decode_chat_json(tpkt->json, name, message)) {
@@ -1866,7 +1866,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_DED (0x0b,SP_BlockChange,_1_13),
         SUPPORT_    (0x0c,SP_BossBar),
         SUPPORT_    (0x0d,SP_ServerDifficulty),
-        SUPPORT_    (0x0e,SP_ChatMessage),
+        SUPPORT_DEDF(0x0e,SP_ChatMessage,_1_8_1),
         SUPPORT_DEDF(0x0f,SP_MultiBlockChange,_1_13),
 
         SUPPORT_    (0x10,SP_TabComplete),
@@ -2013,7 +2013,7 @@ uint32_t DUMP_ENABLED[] = {
     // SP_BlockChange,
     // SP_BossBar,
     // SP_ServerDifficulty,
-    // SP_ChatMessage,
+     SP_ChatMessage,
     // SP_MultiBlockChange,
     // SP_TabComplete,
     // SP_DeclareCommands,
