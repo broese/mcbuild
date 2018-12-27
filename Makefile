@@ -6,13 +6,15 @@ LIBS=$(LIBS_LIBHELPER) -lm -lpng -lz -lcurl -lcrypto -ljson-c -lresolv
 
 SRC_BASE=$(addsuffix .c, mcp_packet mcp_ids mcp_types nbt slot entity helpers)
 SRC_MCPROXY=$(addsuffix .c, mcproxy mcp_gamestate mcp_game mcp_build mcp_arg mcp_bplan hud) $(SRC_BASE)
-SRC_MCPDUMP=$(addsuffix .c, mcpdump mcp_gamestate anvil) $(SRC_BASE)
-SRC_QHOLDER=$(addsuffix .c, qholder) $(SRC_BASE)
-SRC_DUMPREG=$(addsuffix .c, dumpreg anvil) $(SRC_BASE)
-SRC_MAPPER=$(addsuffix .c, mapper) $(SRC_BASE)
-SRC_ALL=$(SRC_MCPROXY) mcpdump.c varint.c
+#SRC_MCPDUMP=$(addsuffix .c, mcpdump mcp_gamestate anvil) $(SRC_BASE)
+#SRC_QHOLDER=$(addsuffix .c, qholder) $(SRC_BASE)
+#SRC_DUMPREG=$(addsuffix .c, dumpreg anvil) $(SRC_BASE)
+#SRC_MAPPER=$(addsuffix .c, mapper) $(SRC_BASE)
+#SRC_ALL=$(SRC_MCPROXY) mcpdump.c varint.c
+SRC_ALL=$(SRC_MCPROXY) varint.c
 
-ALLBIN=mcproxy mcpdump varint qholder dumpreg mapper
+#ALLBIN=mcproxy mcpdump varint qholder dumpreg mapper
+ALLBIN=mcproxy varint
 
 HDR_ALL=$(addsuffix .h, mcp_packet mcp_ids mcp_types nbt mcp_game mcp_gamestate mcp_build mcp_arg mcp_bplan slot entity)
 
@@ -34,17 +36,17 @@ all: $(ALLBIN)
 mcproxy: $(SRC_MCPROXY:.c=.o)
 	$(CC) -o $@ $^ $(LIBS)
 
-mcpdump: $(SRC_MCPDUMP:.c=.o)
-	$(CC) -o $@ $^ $(LIBS)
+#mcpdump: $(SRC_MCPDUMP:.c=.o)
+#	$(CC) -o $@ $^ $(LIBS)
 
-qholder: $(SRC_QHOLDER:.c=.o)
-	$(CC) -o $@ $^ $(LIBS)
+#qholder: $(SRC_QHOLDER:.c=.o)
+#	$(CC) -o $@ $^ $(LIBS)
 
-dumpreg: $(SRC_DUMPREG:.c=.o)
-	$(CC) -o $@ $^ $(LIBS)
+#dumpreg: $(SRC_DUMPREG:.c=.o)
+#	$(CC) -o $@ $^ $(LIBS)
 
-mapper: $(SRC_MAPPER:.c=.o)
-	$(CC) -o $@ $^ $(LIBS)
+#mapper: $(SRC_MAPPER:.c=.o)
+#	$(CC) -o $@ $^ $(LIBS)
 
 varint: varint.c
 	$(CC) $(CFLAGS) $(INC) $(DEFS) -DTEST=1 -o $@ $^ $(LIBS)
