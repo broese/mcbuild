@@ -1955,7 +1955,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x06,CP_ConfirmTransaction),
         SUPPORT_    (0x07,CP_EnchantItem),
         SUPPORT_    (0x08,CP_ClickWindow),
-        SUPPORT_    (0x09,CP_CloseWindow),
+        SUPPORT_DED (0x09,CP_CloseWindow,_1_8_1),
         SUPPORT_    (0x0a,CP_PluginMessage),
         SUPPORT_    (0x0b,CP_EditBook),
         SUPPORT_    (0x0c,CP_QueryEntityNbt),
