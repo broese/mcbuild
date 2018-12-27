@@ -1965,7 +1965,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
 
         SUPPORT_DD  (0x10,CP_PlayerPosition,_1_8_1),
         SUPPORT_    (0x11,CP_PlayerPositionLook),
-        SUPPORT_    (0x12,CP_PlayerLook),
+        SUPPORT_DED (0x12,CP_PlayerLook,_1_8_1),
         SUPPORT_    (0x13,CP_VehicleMove),
         SUPPORT_    (0x14,CP_SteerBoat),
         SUPPORT_    (0x15,CP_PickItem),
