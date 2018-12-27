@@ -1886,7 +1886,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_DDF (0x1e,SP_Explosion,_1_8_1),
         SUPPORT_DED (0x1f,SP_UnloadChunk,_1_9),
 
-        SUPPORT_    (0x20,SP_ChangeGameState),
+        SUPPORT_DED (0x20,SP_ChangeGameState,_1_8_1),
         SUPPORT_    (0x21,SP_KeepAlive),
         SUPPORT_    (0x22,SP_ChunkData),
         SUPPORT_    (0x23,SP_Effect),
