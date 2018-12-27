@@ -261,7 +261,7 @@ DUMP_BEGIN(SP_SpawnObject) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x11 SP_SpawnExperienceOrb
+// 0x01 SP_SpawnExperienceOrb
 
 DECODE_BEGIN(SP_SpawnExperienceOrb,_1_9) {
     Pvarint(eid);
@@ -440,7 +440,7 @@ DUMP_BEGIN(SP_BlockChange) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x0F SP_ChatMessage
+// 0x0E SP_ChatMessage
 
 DECODE_BEGIN(SP_ChatMessage,_1_8_1) {
     Rstr(json);
@@ -454,7 +454,7 @@ ENCODE_BEGIN(SP_ChatMessage,_1_8_1) {
 } ENCODE_END;
 
 DUMP_BEGIN(SP_ChatMessage) {
-    printf("json=%s",tpkt->json);
+    printf("pos=%x json=%s",tpkt->pos,tpkt->json);
 
     char name[256], message[256];
     if (decode_chat_json(tpkt->json, name, message)) {
@@ -511,7 +511,7 @@ FREE_BEGIN(SP_MultiBlockChange) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x11 SP_ConfirmTransaction
+// 0x12 SP_ConfirmTransaction
 
 DECODE_BEGIN(SP_ConfirmTransaction,_1_8_1) {
     Pchar(wid);
@@ -524,7 +524,7 @@ DUMP_BEGIN(SP_ConfirmTransaction) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x12 SP_CloseWindow
+// 0x13 SP_CloseWindow
 
 DECODE_BEGIN(SP_CloseWindow,_1_8_1) {
     Pchar(wid);
@@ -539,7 +539,7 @@ DUMP_BEGIN(SP_CloseWindow) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x13 SP_OpenWindow
+// 0x14 SP_OpenWindow
 
 DECODE_BEGIN(SP_OpenWindow,_1_8_1) {
     Pchar(wid);
@@ -572,7 +572,7 @@ FREE_BEGIN(SP_OpenWindow) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x14 SP_WindowItems
+// 0x15 SP_WindowItems
 
 DECODE_BEGIN(SP_WindowItems,_1_8_1) {
     Pchar(wid);
@@ -611,7 +611,7 @@ FREE_BEGIN(SP_WindowItems) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x16 SP_SetSlot
+// 0x17 SP_SetSlot
 
 DECODE_BEGIN(SP_SetSlot,_1_8_1) {
     Pchar(wid);
@@ -635,7 +635,7 @@ FREE_BEGIN(SP_SetSlot) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x1c SP_Explosion
+// 0x1e SP_Explosion
 
 DECODE_BEGIN(SP_Explosion,_1_8_1) {
     Pfloat(x);
@@ -675,7 +675,7 @@ FREE_BEGIN(SP_Explosion) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x1d SP_UnloadChunk
+// 0x1f SP_UnloadChunk
 
 DECODE_BEGIN(SP_UnloadChunk,_1_9) {
     Pint(X);
@@ -692,7 +692,7 @@ DUMP_BEGIN(SP_UnloadChunk) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x1e SP_ChangeGameState
+// 0x20 SP_ChangeGameState
 
 DECODE_BEGIN(SP_ChangeGameState, _1_8_1) {
     Pchar(reason);
@@ -709,7 +709,7 @@ DUMP_BEGIN(SP_ChangeGameState) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x20 SP_ChunkData
+// 0x22 SP_ChunkData
 
 static int is_overworld = 1;
 
@@ -967,7 +967,7 @@ FREE_BEGIN(SP_ChunkData) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x21 SP_Effect
+// 0x23 SP_Effect
 
 DECODE_BEGIN(SP_Effect,_1_8_1) {
     Pint(id);
@@ -983,7 +983,7 @@ DUMP_BEGIN(SP_Effect) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x23 SP_JoinGame
+// 0x25 SP_JoinGame
 
 DECODE_BEGIN(SP_JoinGame,_1_8_1) {
     Pint(eid);
@@ -1025,7 +1025,7 @@ DUMP_BEGIN(SP_JoinGame) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x24 SP_Map
+// 0x26 SP_Map
 
 DECODE_BEGIN(SP_Map,_1_9) {
     Pvarint(mapid);
@@ -1084,7 +1084,7 @@ FREE_BEGIN(SP_Map) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x26 SP_EntityRelMove
+// 0x28 SP_EntityRelMove
 
 DECODE_BEGIN(SP_EntityRelMove,_1_9) {
     Pvarint(eid);
@@ -1100,7 +1100,7 @@ DUMP_BEGIN(SP_EntityRelMove) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x27 SP_EntityLookRelMove
+// 0x29 SP_EntityLookRelMove
 
 DECODE_BEGIN(SP_EntityLookRelMove,_1_9) {
     Pvarint(eid);
@@ -1119,7 +1119,7 @@ DUMP_BEGIN(SP_EntityLookRelMove) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x2b SP_PlayerAbilities
+// 0x2e SP_PlayerAbilities
 
 DECODE_BEGIN(SP_PlayerAbilities,_1_8_1) {
     Pchar(flags);
@@ -1139,7 +1139,7 @@ DUMP_BEGIN(SP_PlayerAbilities) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x2d SP_PlayerListItem
+// 0x30 SP_PlayerListItem
 
 DECODE_BEGIN(SP_PlayerListItem,_1_9) {
     Pvarint(action);
@@ -1274,7 +1274,7 @@ FREE_BEGIN(SP_PlayerListItem) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x2e SP_PlayerPositionLook
+// 0x32 SP_PlayerPositionLook
 
 DECODE_BEGIN(SP_PlayerPositionLook,_1_9) {
     Pdouble(x);
@@ -1302,7 +1302,7 @@ DUMP_BEGIN(SP_PlayerPositionLook) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x2f SP_UseBed
+// 0x33 SP_UseBed
 
 DECODE_BEGIN(SP_UseBed,_1_9) {
     Pvarint(eid);
@@ -1319,7 +1319,7 @@ DUMP_BEGIN(SP_UseBed) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x31 SP_DestroyEntities
+// 0x35 SP_DestroyEntities
 
 DECODE_BEGIN(SP_DestroyEntities,_1_8_1) {
     Pvarint(count);
@@ -1343,7 +1343,7 @@ FREE_BEGIN(SP_DestroyEntities) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x34 SP_Respawn
+// 0x38 SP_Respawn
 
 DECODE_BEGIN(SP_Respawn,_1_8_1) {
     Pint(dimension);
@@ -1374,7 +1374,7 @@ DUMP_BEGIN(SP_Respawn) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x39 SP_HeldItemChange
+// 0x3d SP_HeldItemChange
 
 DECODE_BEGIN(SP_HeldItemChange,_1_8_1) {
     Pchar(sid);
@@ -1389,7 +1389,7 @@ DUMP_BEGIN(SP_HeldItemChange) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x3b SP_EntityMetadata
+// 0x3f SP_EntityMetadata
 
 DECODE_BEGIN(SP_EntityMetadata,_1_8_1) {
     Pvarint(eid);
@@ -1412,7 +1412,7 @@ FREE_BEGIN(SP_EntityMetadata) {
 } FREE_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x3f SP_SetExperience
+// 0x43 SP_SetExperience
 
 DECODE_BEGIN(SP_SetExperience,_1_8_1) {
     Pfloat(bar);
@@ -1425,7 +1425,7 @@ DUMP_BEGIN(SP_SetExperience) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x40 SP_UpdateHealth
+// 0x44 SP_UpdateHealth
 
 DECODE_BEGIN(SP_UpdateHealth,_1_8_1) {
     Pfloat(health);
@@ -1439,7 +1439,7 @@ DUMP_BEGIN(SP_UpdateHealth) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x48 SP_SoundEffect
+// 0x4d SP_SoundEffect
 
 DECODE_BEGIN(SP_SoundEffect,_1_10) {
     Pvarint(id);
@@ -1490,7 +1490,7 @@ DUMP_BEGIN(SP_SoundEffect) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x4b SP_EntityTeleport
+// 0x50 SP_EntityTeleport
 
 DECODE_BEGIN(SP_EntityTeleport,_1_9) {
     Pvarint(eid);
@@ -1549,7 +1549,7 @@ DUMP_BEGIN(CP_TeleportConfirm) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x03 CP_ChatMessage
+// 0x02 CP_ChatMessage
 
 DECODE_BEGIN(CP_ChatMessage,_1_8_1) {
     Pstr(str);
@@ -1606,7 +1606,7 @@ DUMP_BEGIN(CP_CloseWindow) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x0b CP_UseEntity
+// 0x0d CP_UseEntity
 
 DECODE_BEGIN(CP_UseEntity,_1_9) {
     Pvarint(target);
@@ -1654,7 +1654,7 @@ DUMP_BEGIN(CP_UseEntity) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x0d CP_Player
+// 0x0f CP_Player
 
 DECODE_BEGIN(CP_Player,_1_8_1) {
     Pchar(onground);
@@ -1665,7 +1665,7 @@ DUMP_BEGIN(CP_Player) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x0e CP_PlayerPosition
+// 0x10 CP_PlayerPosition
 
 DECODE_BEGIN(CP_PlayerPosition,_1_8_1) {
     Pdouble(x);
@@ -1680,7 +1680,7 @@ DUMP_BEGIN(CP_PlayerPosition) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x0f CP_PlayerPositionLook
+// 0x11 CP_PlayerPositionLook
 
 DECODE_BEGIN(CP_PlayerPositionLook,_1_8_1) {
     Pdouble(x);
@@ -1706,7 +1706,7 @@ DUMP_BEGIN(CP_PlayerPositionLook) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x10 CP_PlayerLook
+// 0x12 CP_PlayerLook
 
 DECODE_BEGIN(CP_PlayerLook,_1_8_1) {
     Pfloat(yaw);
@@ -1726,7 +1726,7 @@ DUMP_BEGIN(CP_PlayerLook) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x14 CP_PlayerDigging
+// 0x18 CP_PlayerDigging
 
 DECODE_BEGIN(CP_PlayerDigging,_1_9) {
     Pvarint(status);
@@ -1746,7 +1746,7 @@ DUMP_BEGIN(CP_PlayerDigging) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x15 CP_EntityAction
+// 0x19 CP_EntityAction
 
 DECODE_BEGIN(CP_EntityAction,_1_8_1) {
     Pvarint(eid);
@@ -1766,7 +1766,7 @@ DUMP_BEGIN(CP_EntityAction) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x1a CP_HeldItemChange
+// 0x21 CP_HeldItemChange
 
 DECODE_BEGIN(CP_HeldItemChange,_1_8_1) {
     Pshort(sid);
@@ -1781,7 +1781,7 @@ DUMP_BEGIN(CP_HeldItemChange) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x1d CP_Animation
+// 0x27 CP_Animation
 
 DECODE_BEGIN(CP_Animation,_1_9) {
     Pvarint(hand);
@@ -1796,7 +1796,7 @@ DUMP_BEGIN(CP_Animation) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x1f CP_PlayerBlockPlacement
+// 0x29 CP_PlayerBlockPlacement
 
 DECODE_BEGIN(CP_PlayerBlockPlacement,_1_11) {
     Plong(bpos.p);
@@ -1823,7 +1823,7 @@ DUMP_BEGIN(CP_PlayerBlockPlacement) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
-// 0x20 CP_UseItem
+// 0x2a CP_UseItem
 
 DECODE_BEGIN(CP_UseItem,_1_9) {
     Pvarint(hand);
@@ -1866,14 +1866,14 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_DED (0x0b,SP_BlockChange,_1_13),
         SUPPORT_    (0x0c,SP_BossBar),
         SUPPORT_    (0x0d,SP_ServerDifficulty),
-        SUPPORT_    (0x0e,SP_ChatMessage),
+        SUPPORT_DEDF(0x0e,SP_ChatMessage,_1_8_1),
         SUPPORT_DEDF(0x0f,SP_MultiBlockChange,_1_13),
 
         SUPPORT_    (0x10,SP_TabComplete),
         SUPPORT_    (0x11,SP_DeclareCommands),
-        SUPPORT_    (0x12,SP_ConfirmTransaction),
-        SUPPORT_    (0x13,SP_CloseWindow),
-        SUPPORT_    (0x14,SP_OpenWindow),
+        SUPPORT_DD  (0x12,SP_ConfirmTransaction,_1_8_1),
+        SUPPORT_DED (0x13,SP_CloseWindow,_1_8_1),
+        SUPPORT_DEDF(0x14,SP_OpenWindow,_1_8_1),
         SUPPORT_    (0x15,SP_WindowItems),
         SUPPORT_    (0x16,SP_WindowProperty),
         SUPPORT_    (0x17,SP_SetSlot),
@@ -1886,12 +1886,12 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_DDF (0x1e,SP_Explosion,_1_8_1),
         SUPPORT_DED (0x1f,SP_UnloadChunk,_1_9),
 
-        SUPPORT_    (0x20,SP_ChangeGameState),
+        SUPPORT_DED (0x20,SP_ChangeGameState,_1_8_1),
         SUPPORT_    (0x21,SP_KeepAlive),
         SUPPORT_    (0x22,SP_ChunkData),
         SUPPORT_    (0x23,SP_Effect),
         SUPPORT_    (0x24,SP_Particle),
-        SUPPORT_    (0x25,SP_JoinGame),
+        SUPPORT_DD  (0x25,SP_JoinGame,_1_9_2),
         SUPPORT_    (0x26,SP_Map),
         SUPPORT_    (0x27,SP_Entity),
         SUPPORT_    (0x28,SP_EntityRelMove),
@@ -1905,18 +1905,18 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
 
         SUPPORT_    (0x30,SP_PlayerListItem),
         SUPPORT_    (0x31,SP_FacePlayer),
-        SUPPORT_    (0x32,SP_PlayerPositionLook),
+        SUPPORT_DED (0x32,SP_PlayerPositionLook,_1_9),
         SUPPORT_    (0x33,SP_UseBed),
         SUPPORT_    (0x34,SP_UnlockRecipes),
         SUPPORT_    (0x35,SP_DestroyEntities),
         SUPPORT_    (0x36,SP_RemoveEntityEffect),
         SUPPORT_    (0x37,SP_ResourcePackSent),
-        SUPPORT_    (0x38,SP_Respawn),
+        SUPPORT_DD  (0x38,SP_Respawn,_1_8_1),
         SUPPORT_    (0x39,SP_EntityHeadLook),
         SUPPORT_    (0x3a,SP_SelectAdvancementTab),
         SUPPORT_    (0x3b,SP_WorldBorder),
         SUPPORT_    (0x3c,SP_Camera),
-        SUPPORT_    (0x3d,SP_HeldItemChange),
+        SUPPORT_DED (0x3d,SP_HeldItemChange,_1_8_1),
         SUPPORT_    (0x3e,SP_DisplayScoreboard),
         SUPPORT_    (0x3f,SP_EntityMetadata),
 
@@ -1946,26 +1946,26 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x60,SP___),
     },
     {
-        SUPPORT_    (0x00,CP_TeleportConfirm),
+        SUPPORT_DED (0x00,CP_TeleportConfirm,_1_9),
         SUPPORT_    (0x01,CP_QueryBlockNbt),
-        SUPPORT_    (0x02,CP_ChatMessage),
+        SUPPORT_DD  (0x02,CP_ChatMessage,_1_8_1),
         SUPPORT_    (0x03,CP_ClientStatus),
         SUPPORT_    (0x04,CP_ClientSettings),
         SUPPORT_    (0x05,CP_TabComplete),
         SUPPORT_    (0x06,CP_ConfirmTransaction),
         SUPPORT_    (0x07,CP_EnchantItem),
         SUPPORT_    (0x08,CP_ClickWindow),
-        SUPPORT_    (0x09,CP_CloseWindow),
+        SUPPORT_DED (0x09,CP_CloseWindow,_1_8_1),
         SUPPORT_    (0x0a,CP_PluginMessage),
         SUPPORT_    (0x0b,CP_EditBook),
         SUPPORT_    (0x0c,CP_QueryEntityNbt),
-        SUPPORT_    (0x0d,CP_UseEntity),
+        SUPPORT_DED (0x0d,CP_UseEntity,_1_9),
         SUPPORT_    (0x0e,CP_KeepAlive),
-        SUPPORT_    (0x0f,CP_Player),
+        SUPPORT_DD  (0x0f,CP_Player,_1_8_1),
 
-        SUPPORT_    (0x10,CP_PlayerPosition),
-        SUPPORT_    (0x11,CP_PlayerPositionLook),
-        SUPPORT_    (0x12,CP_PlayerLook),
+        SUPPORT_DD  (0x10,CP_PlayerPosition,_1_8_1),
+        SUPPORT_DED  (0x11,CP_PlayerPositionLook,_1_8_1),
+        SUPPORT_DED (0x12,CP_PlayerLook,_1_8_1),
         SUPPORT_    (0x13,CP_VehicleMove),
         SUPPORT_    (0x14,CP_SteerBoat),
         SUPPORT_    (0x15,CP_PickItem),
@@ -1981,16 +1981,16 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x1f,CP_SelectTrade),
 
         SUPPORT_    (0x20,CP_SetBeaconEffect),
-        SUPPORT_    (0x21,CP_HeldItemChange),
+        SUPPORT_DED (0x21,CP_HeldItemChange,_1_8_1),
         SUPPORT_    (0x22,CP_UpdateCommandBlock),
         SUPPORT_    (0x23,CP_UpdateCmdMinecart),
         SUPPORT_    (0x24,CP_CreativeInventoryAct),
         SUPPORT_    (0x25,CP_UpdateStructureBlock),
         SUPPORT_    (0x26,CP_UpdateSign),
-        SUPPORT_    (0x27,CP_Animation),
+        SUPPORT_DED (0x27,CP_Animation,_1_9),
         SUPPORT_    (0x28,CP_Spectate),
         SUPPORT_DED (0x29,CP_PlayerBlockPlacement,_1_11),
-        SUPPORT_    (0x2a,CP_UseItem),
+        SUPPORT_DED (0x2a,CP_UseItem,_1_9),
         SUPPORT_    (0x30,CP___),
     },
 };
@@ -1999,120 +1999,136 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
 
 // Uncomment packet IDs that should be dumped
 uint32_t DUMP_ENABLED[] = {
-    //SP_SpawnObject,
-    //SP_SpawnExperienceOrb,
-    //SP_SpawnGlobalEntity,
-    //SP_SpawnMob,
-    //SP_SpawnPainting,
-    //SP_SpawnPlayer,
-    //SP_Animation,
-    //SP_Statistics,
-    //SP_BlockBreakAnimation,
-    //SP_UpdateBlockEntity,
-    //SP_BlockAction,
-    //SP_BlockChange,
-    //SP_BossBar,
-    //SP_ServerDifficulty,
-    //SP_TabComplete,
-    //SP_ChatMessage,
-    //SP_MultiBlockChange,
-    //SP_ConfirmTransaction,
-    //SP_CloseWindow,
-    //SP_OpenWindow,
-    //SP_WindowItems,
-    //SP_WindowProperty,
-    //SP_SetSlot,
-    //SP_SetCooldown,
-    //SP_PluginMessage,
-    //SP_NamedSoundEffect,
-    //SP_Disconnect,
-    //SP_EntityStatus,
-    //SP_Explosion,
-    //SP_UnloadChunk,
-    //SP_ChangeGameState,
-    //SP_KeepAlive,
-    //SP_ChunkData,
-    //SP_Effect,
-    //SP_Particle,
-    //SP_JoinGame,
-    //SP_Map,
-    //SP_Entity,
-    //SP_EntityRelMove,
-    //SP_EntityLookRelMove,
-    //SP_EntityLook,
-    //SP_VehicleMove,
-    //SP_OpenSignEditor,
-    //SP_PlayerAbilities,
-    //SP_CombatEffect,
-    //SP_PlayerListItem,
-    //SP_PlayerPositionLook,
-    //SP_UseBed,
-    //SP_UnlockRecipes,
-    //SP_DestroyEntities,
-    //SP_RemoveEntityEffect,
-    //SP_ResourcePackSent,
-    //SP_Respawn,
-    //SP_EntityHeadLook,
-    //SP_SelectAdvancementTab,
-    //SP_WorldBorder,
-    //SP_Camera,
-    //SP_HeldItemChange,
-    //SP_DisplayScoreboard,
-    //SP_EntityMetadata,
-    //SP_AttachEntity,
-    //SP_EntityVelocity,
-    //SP_EntityEquipment,
-    //SP_SetExperience,
-    //SP_UpdateHealth,
-    //SP_ScoreboardObjective,
-    //SP_SetPassengers,
-    //SP_Teams,
-    //SP_UpdateScore,
-    //SP_SpawnPosition,
-    //SP_TimeUpdate,
-    //SP_Title,
-    //SP_SoundEffect,
-    //SP_PlayerListHeader,
-    //SP_CollectItem,
-    //SP_EntityTeleport,
-    //SP_Advancements,
-    //SP_EntityProperties,
-    //SP_EntityEffect,
-    //SP_UpdateSign,
+    // SP_SpawnObject,
+    // SP_SpawnExperienceOrb,
+    // SP_SpawnGlobalEntity,
+    // SP_SpawnMob,
+    // SP_SpawnPainting,
+    // SP_SpawnPlayer,
+    // SP_Animation,
+    // SP_Statistics,
+    // SP_BlockBreakAnimation,
+    // SP_UpdateBlockEntity,
+    // SP_BlockAction,
+    // SP_BlockChange,
+    // SP_BossBar,
+    // SP_ServerDifficulty,
+    // SP_ChatMessage,
+    // SP_MultiBlockChange,
+    // SP_TabComplete,
+    // SP_DeclareCommands,
+    // SP_ConfirmTransaction,
+    // SP_CloseWindow,
+    // SP_OpenWindow,
+    // SP_WindowItems,
+    // SP_WindowProperty,
+    // SP_SetSlot,
+    // SP_SetCooldown,
+    // SP_PluginMessage,
+    // SP_NamedSoundEffect,
+    // SP_Disconnect,
+    // SP_EntityStatus,
+    // SP_NbtQueryResponse,
+    // SP_Explosion,
+    // SP_UnloadChunk,
+    // SP_ChangeGameState,
+    // SP_KeepAlive,
+    // SP_ChunkData,
+    // SP_Effect,
+    // SP_Particle,
+    // SP_JoinGame,
+    // SP_Map,
+    // SP_Entity,
+    // SP_EntityRelMove,
+    // SP_EntityLookRelMove,
+    // SP_EntityLook,
+    // SP_VehicleMove,
+    // SP_OpenSignEditor,
+    // SP_CraftRecipeResponse,
+    // SP_PlayerAbilities,
+    // SP_CombatEffect,
+    // SP_PlayerListItem,
+    // SP_FacePlayer,
+    // SP_PlayerPositionLook,
+    // SP_UseBed,
+    // SP_UnlockRecipes,
+    // SP_DestroyEntities,
+    // SP_RemoveEntityEffect,
+    // SP_ResourcePackSent,
+    // SP_Respawn,
+    // SP_EntityHeadLook,
+    // SP_SelectAdvancementTab,
+    // SP_WorldBorder,
+    // SP_Camera,
+    // SP_HeldItemChange,
+    // SP_DisplayScoreboard,
+    // SP_EntityMetadata,
+    // SP_AttachEntity,
+    // SP_EntityVelocity,
+    // SP_EntityEquipment,
+    // SP_SetExperience,
+    // SP_UpdateHealth,
+    // SP_ScoreboardObjective,
+    // SP_SetPassengers,
+    // SP_Teams,
+    // SP_UpdateScore,
+    // SP_SpawnPosition,
+    // SP_TimeUpdate,
+    // SP_Title,
+    // SP_StopSound,
+    // SP_SoundEffect,
+    // SP_PlayerListHeader,
+    // SP_CollectItem,
+    // SP_EntityTeleport,
+    // SP_Advancements,
+    // SP_EntityProperties,
+    // SP_EntityEffect,
+    // SP_DeclareRecipes,
+    // SP_Tags,
 
-    //CP_TeleportConfirm,
-    //CP_PrepareCraftingGrid,
-    //CP_TabComplete,
-    //CP_ChatMessage,
-    //CP_ClientStatus,
-    //CP_ClientSettings,
-    //CP_ConfirmTransaction,
-    //CP_EnchantItem,
-    //CP_ClickWindow,
-    //CP_CloseWindow,
-    //CP_PluginMessage,
-    //CP_UseEntity,
-    //CP_KeepAlive,
-    //CP_Player,
-    //CP_PlayerPosition,
-    //CP_PlayerPositionLook,
-    //CP_PlayerLook,
-    //CP_VehicleMode,
-    //CP_SteerBoat,
-    //CP_PlayerAbilities,
-    //CP_PlayerDigging,
-    //CP_EntityAction,
-    //CP_SteerVehicle,
-    //CP_CraftingBookData,
-    //CP_ResourcePackStatus,
-    //CP_AdvancementTab,
-    //CP_HeldItemChange,
-    //CP_CreativeInventoryAct,
-    //CP_UpdateSign,
-    //CP_Animation,
-    //CP_Spectate,
-    //CP_PlayerBlockPlacement,
-    //CP_UseItem,
+    // CP_TeleportConfirm,
+    // CP_QueryBlockNbt,
+    // CP_ChatMessage,
+    // CP_ClientStatus,
+    // CP_ClientSettings,
+    // CP_TabComplete,
+    // CP_ConfirmTransaction,
+    // CP_EnchantItem,
+    // CP_ClickWindow,
+    // CP_CloseWindow,
+    // CP_PluginMessage,
+    // CP_EditBook,
+    // CP_QueryEntityNbt,
+    // CP_UseEntity,
+    // CP_KeepAlive,
+    // CP_Player,
+    // CP_PlayerPosition,
+    // CP_PlayerPositionLook,
+    // CP_PlayerLook,
+    // CP_VehicleMove,
+    // CP_SteerBoat,
+    // CP_PickItem,
+    // CP_CraftRecipeRequest,
+    // CP_PlayerAbilities,
+    // CP_PlayerDigging,
+    // CP_EntityAction,
+    // CP_SteerVehicle,
+    // CP_RecipeBookData,
+    // CP_NameItem,
+    // CP_ResourcePackStatus,
+    // CP_AdvancementTab,
+    // CP_SelectTrade,
+    // CP_SetBeaconEffect,
+    // CP_HeldItemChange,
+    // CP_UpdateCommandBlock,
+    // CP_UpdateCmdMinecart,
+    // CP_CreativeInventoryAct,
+    // CP_UpdateStructureBlock,
+    // CP_UpdateSign,
+    // CP_Animation,
+    // CP_Spectate,
+    // CP_PlayerBlockPlacement,
+    // CP_UseItem,
     0xffffffff // Terminator
 };
 
