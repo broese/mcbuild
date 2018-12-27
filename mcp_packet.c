@@ -1891,7 +1891,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x22,SP_ChunkData),
         SUPPORT_    (0x23,SP_Effect),
         SUPPORT_    (0x24,SP_Particle),
-        SUPPORT_    (0x25,SP_JoinGame),
+        SUPPORT_DD  (0x25,SP_JoinGame,_1_9_2),
         SUPPORT_    (0x26,SP_Map),
         SUPPORT_    (0x27,SP_Entity),
         SUPPORT_    (0x28,SP_EntityRelMove),
