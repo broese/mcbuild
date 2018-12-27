@@ -1911,7 +1911,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x35,SP_DestroyEntities),
         SUPPORT_    (0x36,SP_RemoveEntityEffect),
         SUPPORT_    (0x37,SP_ResourcePackSent),
-        SUPPORT_    (0x38,SP_Respawn),
+        SUPPORT_DD  (0x38,SP_Respawn,_1_8_1),
         SUPPORT_    (0x39,SP_EntityHeadLook),
         SUPPORT_    (0x3a,SP_SelectAdvancementTab),
         SUPPORT_    (0x3b,SP_WorldBorder),
