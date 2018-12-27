@@ -1948,7 +1948,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
     {
         SUPPORT_DED (0x00,CP_TeleportConfirm,_1_9),
         SUPPORT_    (0x01,CP_QueryBlockNbt),
-        SUPPORT_    (0x02,CP_ChatMessage),
+        SUPPORT_DD  (0x02,CP_ChatMessage,_1_8_1),
         SUPPORT_    (0x03,CP_ClientStatus),
         SUPPORT_    (0x04,CP_ClientSettings),
         SUPPORT_    (0x05,CP_TabComplete),
