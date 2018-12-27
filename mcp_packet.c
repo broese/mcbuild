@@ -1873,7 +1873,7 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x11,SP_DeclareCommands),
         SUPPORT_DD  (0x12,SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DED (0x13,SP_CloseWindow,_1_8_1),
-        SUPPORT_    (0x14,SP_OpenWindow),
+        SUPPORT_DEDF(0x14,SP_OpenWindow,_1_8_1),
         SUPPORT_    (0x15,SP_WindowItems),
         SUPPORT_    (0x16,SP_WindowProperty),
         SUPPORT_    (0x17,SP_SetSlot),
