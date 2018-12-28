@@ -395,7 +395,7 @@ typedef struct {
     int16_t  sid;
     uint8_t  button;
     uint16_t aid;
-    uint8_t  mode;
+    uint32_t mode;
     slot_t   slot;
 } CP_ClickWindow_pkt;
 

@@ -1584,21 +1584,21 @@ DUMP_BEGIN(CP_ConfirmTransaction) {
 ////////////////////////////////////////////////////////////////////////////////
 // 0x08 CP_ClickWindow
 
-DECODE_BEGIN(CP_ClickWindow,_1_8_1) {
+DECODE_BEGIN(CP_ClickWindow,_1_13_2) {
     Pchar(wid);
     Pshort(sid);
     Pchar(button);
     Pshort(aid);
-    Pchar(mode);
+    Pvarint(mode);
     p = read_slot(p, &tpkt->slot);
 } DECODE_END;
 
-ENCODE_BEGIN(CP_ClickWindow,_1_8_1) {
+ENCODE_BEGIN(CP_ClickWindow,_1_13_2) {
     Wchar(wid);
     Wshort(sid);
     Wchar(button);
     Wshort(aid);
-    Wchar(mode);
+    Wvarint(mode);
     w = write_slot(w, &tpkt->slot);
 } ENCODE_END;
 
@@ -1976,7 +1976,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x05,CP_TabComplete),
         SUPPORT_DED (0x06,CP_ConfirmTransaction,_1_13_2),
         SUPPORT_    (0x07,CP_EnchantItem),
-        SUPPORT_    (0x08,CP_ClickWindow),
+        SUPPORT_DEDF(0x08,CP_ClickWindow,_1_13_2),
         SUPPORT_DED (0x09,CP_CloseWindow,_1_8_1),
         SUPPORT_    (0x0a,CP_PluginMessage),
         SUPPORT_    (0x0b,CP_EditBook),
