@@ -1971,7 +1971,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x4a,SP_TimeUpdate),
         SUPPORT_    (0x4b,SP_Title),
         SUPPORT_    (0x4c,SP_StopSound),
-        SUPPORT_    (0x4d,SP_SoundEffect),
+        SUPPORT_DED (0x4d,SP_SoundEffect,_1_10),
         SUPPORT_    (0x4e,SP_PlayerListHeader),
         SUPPORT_    (0x4f,SP_CollectItem),
 
