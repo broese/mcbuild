@@ -1933,7 +1933,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x26,SP_Map),
         SUPPORT_    (0x27,SP_Entity),
         SUPPORT_DD  (0x28,SP_EntityRelMove,_1_9),
-        SUPPORT_    (0x29,SP_EntityLookRelMove),
+        SUPPORT_DD  (0x29,SP_EntityLookRelMove,_1_9),
         SUPPORT_    (0x2a,SP_EntityLook),
         SUPPORT_    (0x2b,SP_VehicleMove),
         SUPPORT_    (0x2c,SP_OpenSignEditor),
