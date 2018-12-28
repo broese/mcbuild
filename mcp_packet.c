@@ -1562,6 +1562,26 @@ DUMP_BEGIN(CP_ChatMessage) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x06 CP_ConfirmTransaction
+
+DECODE_BEGIN(CP_ConfirmTransaction,_1_13_2) {
+    Pchar(wid);
+    Pshort(aid);
+    Pchar(accepted);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_ConfirmTransaction,_1_13_2) {
+    Wchar(wid);
+    Wshort(aid);
+    Wchar(accepted);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_ConfirmTransaction) {
+    printf("wid=%d, aid=%d, accepted=%d",
+           tpkt->wid, tpkt->aid, tpkt->accepted);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x08 CP_ClickWindow
 
 DECODE_BEGIN(CP_ClickWindow,_1_8_1) {
@@ -1954,7 +1974,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x03,CP_ClientStatus),
         SUPPORT_    (0x04,CP_ClientSettings),
         SUPPORT_    (0x05,CP_TabComplete),
-        SUPPORT_    (0x06,CP_ConfirmTransaction),
+        SUPPORT_DED (0x06,CP_ConfirmTransaction,_1_13_2),
         SUPPORT_    (0x07,CP_EnchantItem),
         SUPPORT_    (0x08,CP_ClickWindow),
         SUPPORT_DED (0x09,CP_CloseWindow,_1_8_1),
@@ -1966,7 +1986,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (0x0f,CP_Player,_1_8_1),
 
         SUPPORT_DD  (0x10,CP_PlayerPosition,_1_8_1),
-        SUPPORT_DED  (0x11,CP_PlayerPositionLook,_1_8_1),
+        SUPPORT_DED (0x11,CP_PlayerPositionLook,_1_8_1),
         SUPPORT_DED (0x12,CP_PlayerLook,_1_8_1),
         SUPPORT_    (0x13,CP_VehicleMove),
         SUPPORT_    (0x14,CP_SteerBoat),

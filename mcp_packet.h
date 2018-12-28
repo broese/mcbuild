@@ -382,6 +382,13 @@ typedef struct {
     char        str[320];
 } CP_ChatMessage_pkt;
 
+// 0x06
+typedef struct {
+    uint8_t     wid;
+    uint16_t    aid;
+    uint8_t     accepted;
+} CP_ConfirmTransaction_pkt;
+
 // 0x08
 typedef struct {
     uint8_t  wid;
@@ -595,6 +602,7 @@ typedef struct {
 
         PKT(CP_TeleportConfirm);    // 00
         PKT(CP_ChatMessage);        // 02
+        PKT(CP_ConfirmTransaction); // 06
         PKT(CP_ClickWindow);        // 08
         PKT(CP_CloseWindow);        // 09
         PKT(CP_UseEntity);          // 0d
