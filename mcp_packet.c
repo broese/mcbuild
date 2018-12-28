@@ -1962,7 +1962,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x41,SP_EntityVelocity),
         SUPPORT_    (0x42,SP_EntityEquipment),
         SUPPORT_DD  (0x43,SP_SetExperience,_1_8_1),
-        SUPPORT_    (0x44,SP_UpdateHealth),
+        SUPPORT_DD  (0x44,SP_UpdateHealth,_1_8_1),
         SUPPORT_    (0x45,SP_ScoreboardObjective),
         SUPPORT_    (0x46,SP_SetPassengers),
         SUPPORT_    (0x47,SP_Teams),
