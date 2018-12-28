@@ -759,12 +759,24 @@ const char * get_mat_name(char *buf, int id, int meta) {
 
 }
 
+/*DISABLED: item/block names unsupported during the dev_3.0 transition
 const char * get_bid_name(char *buf, bid_t b) {
     return get_mat_name(buf, b.bid, b.meta);
 }
 
 const char * get_item_name(char *buf, slot_t *s) {
     return get_mat_name(buf, s->item, s->damage);
+}
+*/
+
+const char * get_bid_name(char *buf, bid_t b) {
+    sprintf(buf, "unknown_block");
+    return buf;
+}
+
+const char * get_item_name(char *buf, slot_t *s) {
+    sprintf(buf, "unknown_item");
+    return buf;
 }
 
 int find_bid_name(const char *name) {

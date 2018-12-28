@@ -22,10 +22,12 @@
 // Slots and inventory
 
 typedef struct {
-    int16_t item;
-    int16_t count;  // actually int8_t, but we need to have a larger capacity to deal with crafting
-    int16_t damage;
-    nbt_t   *nbt;   // auxiliary data - enchantments etc.
+    int         present;    // if true, slot is non-empty
+    int32_t     item;       // item ID, set to -1 if present==0
+    int16_t     count;      // actually int8_t, but we need to have a larger capacity to deal with crafting
+    int16_t     damage;     // FIXME: legacy damage value, unused since 1.13
+                            // left here in order to avoid conflicts in other modules
+    nbt_t      *nbt;        // auxiliary data - enchantments etc.
 } slot_t;
 
 // print contents of a slot to stdout
@@ -44,7 +46,9 @@ slot_t * clone_slot(slot_t *src, slot_t *dst);
 void swap_slots(slot_t *f, slot_t *t);
 
 // read slot data from MC packet format
+uint8_t * read_slot_legacy(uint8_t *p, slot_t *s);
 uint8_t * read_slot(uint8_t *p, slot_t *s);
 
 // write slot data to MC packet format
+uint8_t * write_slot_legacy(uint8_t *w, slot_t *s);
 uint8_t * write_slot(uint8_t *w, slot_t *s);
