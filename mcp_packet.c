@@ -613,13 +613,15 @@ FREE_BEGIN(SP_WindowItems) {
 ////////////////////////////////////////////////////////////////////////////////
 // 0x17 SP_SetSlot
 
-DECODE_BEGIN(SP_SetSlot,_1_8_1) {
+// Note: bumping to _1_13_2 despite no change in code here, but since read_slot()
+// and write_slot() reimplemented for 1.13.2 protocol
+DECODE_BEGIN(SP_SetSlot,_1_13_2) {
     Pchar(wid);
     Pshort(sid);
     p = read_slot(p, &tpkt->slot);
 } DECODE_END;
 
-ENCODE_BEGIN(SP_SetSlot,_1_8_1) {
+ENCODE_BEGIN(SP_SetSlot,_1_13_2) {
     Wchar(wid);
     Wshort(sid);
     w = write_slot(w, &tpkt->slot);
@@ -1876,7 +1878,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_DEDF(0x14,SP_OpenWindow,_1_8_1),
         SUPPORT_    (0x15,SP_WindowItems),
         SUPPORT_    (0x16,SP_WindowProperty),
-        SUPPORT_    (0x17,SP_SetSlot),
+        SUPPORT_DEDF(0x17,SP_SetSlot,_1_13_2),
         SUPPORT_    (0x18,SP_SetCooldown),
         SUPPORT_    (0x19,SP_PluginMessage),
         SUPPORT_    (0x1a,SP_NamedSoundEffect),
