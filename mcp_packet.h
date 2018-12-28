@@ -442,6 +442,11 @@ typedef struct {
     uint8_t     onground;
 } CP_PlayerLook_pkt;
 
+// 0x15
+typedef struct {
+    uint32_t    sid;
+} CP_PickItem_pkt;
+
 // 0x18
 typedef struct {
     uint32_t    status;
@@ -610,6 +615,7 @@ typedef struct {
         PKT(CP_PlayerPosition);     // 10
         PKT(CP_PlayerPositionLook); // 11
         PKT(CP_PlayerLook);         // 12
+        PKT(CP_PickItem);           // 15
         PKT(CP_PlayerDigging);      // 18
         PKT(CP_EntityAction);       // 19
         PKT(CP_HeldItemChange);     // 21

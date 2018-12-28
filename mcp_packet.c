@@ -1748,6 +1748,22 @@ DUMP_BEGIN(CP_PlayerLook) {
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
+// 0x15 CP_PickItem
+
+DECODE_BEGIN(CP_PickItem,_1_13_2) {
+    Pvarint(sid);
+} DECODE_END;
+
+ENCODE_BEGIN(CP_PickItem,_1_13_2) {
+    Wvarint(sid);
+} ENCODE_END;
+
+DUMP_BEGIN(CP_PickItem) {
+    printf("sid=%d",
+           tpkt->sid);
+} DUMP_END;
+
+////////////////////////////////////////////////////////////////////////////////
 // 0x18 CP_PlayerDigging
 
 DECODE_BEGIN(CP_PlayerDigging,_1_9) {
@@ -1990,7 +2006,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_DED (0x12,CP_PlayerLook,_1_8_1),
         SUPPORT_    (0x13,CP_VehicleMove),
         SUPPORT_    (0x14,CP_SteerBoat),
-        SUPPORT_    (0x15,CP_PickItem),
+        SUPPORT_DED (0x15,CP_PickItem,_1_13_2),
         SUPPORT_    (0x16,CP_CraftRecipeRequest),
         SUPPORT_    (0x17,CP_PlayerAbilities),
         SUPPORT_    (0x18,CP_PlayerDigging),
