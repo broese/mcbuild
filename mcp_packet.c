@@ -1938,7 +1938,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x2b,SP_VehicleMove),
         SUPPORT_    (0x2c,SP_OpenSignEditor),
         SUPPORT_    (0x2d,SP_CraftRecipeResponse),
-        SUPPORT_    (0x2e,SP_PlayerAbilities),
+        SUPPORT_DED (0x2e,SP_PlayerAbilities,_1_8_1),
         SUPPORT_    (0x2f,SP_CombatEffect),
 
         SUPPORT_    (0x30,SP_PlayerListItem),
