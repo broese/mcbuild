@@ -1941,7 +1941,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_DED (0x2e,SP_PlayerAbilities,_1_8_1),
         SUPPORT_    (0x2f,SP_CombatEffect),
 
-        SUPPORT_    (0x30,SP_PlayerListItem),
+        SUPPORT_DEDF(0x30,SP_PlayerListItem,_1_9),
         SUPPORT_    (0x31,SP_FacePlayer),
         SUPPORT_DED (0x32,SP_PlayerPositionLook,_1_9),
         SUPPORT_    (0x33,SP_UseBed),
