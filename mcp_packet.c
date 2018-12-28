@@ -422,13 +422,13 @@ DUMP_BEGIN(SP_BlockAction) {
 // .meta values still present in the struct
 // atm there are ~8000 IDs defined, so 16 bits should be sufficient
 //TODO: redefine bid_t as uint16_t
-DECODE_BEGIN(SP_BlockChange,_1_13) {
+DECODE_BEGIN(SP_BlockChange,_1_13_2) {
     Plong(pos.p);
     Rvarint(bid);
     tpkt->block.raw = (uint16_t)bid;
 } DECODE_END;
 
-ENCODE_BEGIN(SP_BlockChange,_1_13) {
+ENCODE_BEGIN(SP_BlockChange,_1_13_2) {
     Wlong(pos.p);
     Wvarint(block.raw);
 } ENCODE_END;
@@ -469,7 +469,7 @@ FREE_BEGIN(SP_ChatMessage) {
 ////////////////////////////////////////////////////////////////////////////////
 // 0x0F SP_MultiBlockChange
 
-DECODE_BEGIN(SP_MultiBlockChange,_1_13) {
+DECODE_BEGIN(SP_MultiBlockChange,_1_13_2) {
     Pint(X);
     Pint(Z);
     Pvarint(count);
@@ -483,7 +483,7 @@ DECODE_BEGIN(SP_MultiBlockChange,_1_13) {
     }
 } DECODE_END;
 
-ENCODE_BEGIN(SP_MultiBlockChange,_1_13) {
+ENCODE_BEGIN(SP_MultiBlockChange,_1_13_2) {
     Wint(X);
     Wint(Z);
     Wvarint(count);
@@ -1848,9 +1848,9 @@ DUMP_BEGIN(CP_UseItem) {
 // they are needed to properly look up names for raw packets in dump_packet()
 // and in case the ID has shifted or was removed between the versions
 
-// MC protocol v393/v403/v404 - clients 1.13/1.13.1/1.13.2
-// https://wiki.vg/index.php?title=Pre-release_protocol&oldid=14150
-const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
+// MC protocol v404 - clients 1.13.2
+// https://wiki.vg/Protocol
+const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
     {
         SUPPORT_    (0x00,SP_SpawnObject),
         SUPPORT_    (0x01,SP_SpawnExperienceOrb),
@@ -1863,11 +1863,11 @@ const static packet_methods SUPPORT_1_13[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x08,SP_BlockBreakAnimation),
         SUPPORT_    (0x09,SP_UpdateBlockEntity),
         SUPPORT_    (0x0a,SP_BlockAction),
-        SUPPORT_DED (0x0b,SP_BlockChange,_1_13),
+        SUPPORT_DED (0x0b,SP_BlockChange,_1_13_2),
         SUPPORT_    (0x0c,SP_BossBar),
         SUPPORT_    (0x0d,SP_ServerDifficulty),
         SUPPORT_DEDF(0x0e,SP_ChatMessage,_1_8_1),
-        SUPPORT_DEDF(0x0f,SP_MultiBlockChange,_1_13),
+        SUPPORT_DEDF(0x0f,SP_MultiBlockChange,_1_13_2),
 
         SUPPORT_    (0x10,SP_TabComplete),
         SUPPORT_    (0x11,SP_DeclareCommands),
@@ -2212,9 +2212,7 @@ typedef struct {
 } protocol_support_t;
 
 static protocol_support_t supported[] = {
-    { 393, PROTO_1_13,      "1.13",     SUPPORT_1_13 },
-    { 401, PROTO_1_13_1,    "1.13.1",   SUPPORT_1_13 },
-    { 404, PROTO_1_13_2,    "1.13.2",   SUPPORT_1_13 },
+    { 404, PROTO_1_13_2,    "1.13.2",   SUPPORT_1_13_2 },
     {  -1, PROTO_NONE,  NULL,       NULL },
 };
 
