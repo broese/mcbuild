@@ -574,7 +574,7 @@ FREE_BEGIN(SP_OpenWindow) {
 ////////////////////////////////////////////////////////////////////////////////
 // 0x15 SP_WindowItems
 
-DECODE_BEGIN(SP_WindowItems,_1_8_1) {
+DECODE_BEGIN(SP_WindowItems,_1_13_2) {
     Pchar(wid);
     Pshort(count);
     lh_alloc_num(tpkt->slots, tpkt->count);
@@ -584,7 +584,7 @@ DECODE_BEGIN(SP_WindowItems,_1_8_1) {
     }
 } DECODE_END;
 
-ENCODE_BEGIN(SP_WindowItems,_1_8_1) {
+ENCODE_BEGIN(SP_WindowItems,_1_13_2) {
     Wchar(wid);
     Wshort(count);
     int i;
@@ -1876,7 +1876,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (0x12,SP_ConfirmTransaction,_1_8_1),
         SUPPORT_DED (0x13,SP_CloseWindow,_1_8_1),
         SUPPORT_DEDF(0x14,SP_OpenWindow,_1_8_1),
-        SUPPORT_    (0x15,SP_WindowItems),
+        SUPPORT_DEDF(0x15,SP_WindowItems,_1_13_2),
         SUPPORT_    (0x16,SP_WindowProperty),
         SUPPORT_DEDF(0x17,SP_SetSlot,_1_13_2),
         SUPPORT_    (0x18,SP_SetCooldown),
