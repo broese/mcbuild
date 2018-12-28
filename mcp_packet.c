@@ -1975,7 +1975,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x4e,SP_PlayerListHeader),
         SUPPORT_    (0x4f,SP_CollectItem),
 
-        SUPPORT_    (0x50,SP_EntityTeleport),
+        SUPPORT_DD  (0x50,SP_EntityTeleport,_1_9),
         SUPPORT_    (0x51,SP_Advancements),
         SUPPORT_    (0x52,SP_EntityProperties),
         SUPPORT_    (0x53,SP_EntityEffect),
