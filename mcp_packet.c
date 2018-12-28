@@ -1944,7 +1944,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_DEDF(0x30,SP_PlayerListItem,_1_9),
         SUPPORT_    (0x31,SP_FacePlayer),
         SUPPORT_DED (0x32,SP_PlayerPositionLook,_1_9),
-        SUPPORT_    (0x33,SP_UseBed),
+        SUPPORT_DED (0x33,SP_UseBed,_1_9),
         SUPPORT_    (0x34,SP_UnlockRecipes),
         SUPPORT_    (0x35,SP_DestroyEntities),
         SUPPORT_    (0x36,SP_RemoveEntityEffect),
