@@ -1946,7 +1946,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_DED (0x32,SP_PlayerPositionLook,_1_9),
         SUPPORT_DED (0x33,SP_UseBed,_1_9),
         SUPPORT_    (0x34,SP_UnlockRecipes),
-        SUPPORT_    (0x35,SP_DestroyEntities),
+        SUPPORT_DDF (0x35,SP_DestroyEntities,_1_8_1),
         SUPPORT_    (0x36,SP_RemoveEntityEffect),
         SUPPORT_    (0x37,SP_ResourcePackSent),
         SUPPORT_DD  (0x38,SP_Respawn,_1_8_1),
