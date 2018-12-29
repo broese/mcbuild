@@ -1377,12 +1377,12 @@ DUMP_BEGIN(SP_HeldItemChange) {
 ////////////////////////////////////////////////////////////////////////////////
 // 0x3f SP_EntityMetadata
 
-DECODE_BEGIN(SP_EntityMetadata,_1_8_1) {
+DECODE_BEGIN(SP_EntityMetadata,_1_13_2) {
     Pvarint(eid);
     Pmeta(meta);
 } DECODE_END;
 
-ENCODE_BEGIN(SP_EntityMetadata,_1_8_1) {
+ENCODE_BEGIN(SP_EntityMetadata,_1_13_2) {
     Wvarint(eid);
     Wmeta(meta);
 } ENCODE_END;
@@ -1940,7 +1940,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x3c,SP_Camera),
         SUPPORT_DED (0x3d,SP_HeldItemChange,_1_8_1),
         SUPPORT_    (0x3e,SP_DisplayScoreboard),
-        SUPPORT_    (0x3f,SP_EntityMetadata),
+        SUPPORT_DEDF(0x3f,SP_EntityMetadata,_1_13_2),
 
         SUPPORT_    (0x40,SP_AttachEntity),
         SUPPORT_    (0x41,SP_EntityVelocity),
