@@ -25,6 +25,7 @@ typedef struct {
 
 typedef struct {
   int protocol;
+  int initialized;
   int itemcount;
   int blockcount;
   item_t item[1000];

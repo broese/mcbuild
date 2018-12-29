@@ -21,10 +21,15 @@ const database_t load_database(int protocol_id) {
     //Deal with multiple protocols later
     assert(protocol_id == 404);
 
+    if (db.initialized) {
+        return db;
+    }
+
     //initialize the database
     db.protocol = protocol_id;
     db.itemcount = 0;
     db.blockcount = 0;
+    db.initialized = 1;
     
     //location of the server.jar generated items.json
     char *jsonpath = "./database/items.json";
@@ -91,13 +96,19 @@ int get_item_id(database_t *db, const char *name) {
 
 const char *get_item_name_from_db(database_t *db, int item_id) { 
     char *buf;
+    if (item_id == -1) {
+        return "Empty";
+    }
+    if (item_id < -1 || item_id > db->itemcount) {
+        return "ID out of bounds";
+    }
     for (int i=0; i < db->itemcount; i++) {
         if (item_id == db->item[i].id) {
             buf = malloc(strlen(db->item[i].name)+1);
             strcpy(buf,db->item[i].name);
-            break;
+            return buf;
         }
     }
-    return buf;
+    return "ID not found";
 };
 
