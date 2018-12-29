@@ -312,17 +312,17 @@ FREE_BEGIN(SP_SpawnMob) {
 ////////////////////////////////////////////////////////////////////////////////
 // 0x04 SP_SpawnPainting
 
-DECODE_BEGIN(SP_SpawnPainting,_1_9) {
+DECODE_BEGIN(SP_SpawnPainting,_1_13_2) {
     Pvarint(eid);
     Puuid(uuid);
-    Pstr(title);
+    Pvarint(motive);
     Plong(pos.p);
     Pchar(dir);
 } DECODE_END;
 
 DUMP_BEGIN(SP_SpawnPainting) {
-    printf("eid=%08x, title=%s, location=%d,%d,%d direction=%d",
-           tpkt->eid, tpkt->title,
+    printf("eid=%08x, motive=%d, location=%d,%d,%d direction=%d",
+           tpkt->eid, tpkt->motive,
            tpkt->pos.x,  tpkt->pos.y,  tpkt->pos.z,
            tpkt->dir);
 } DUMP_END;
@@ -1878,7 +1878,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (0x01,SP_SpawnExperienceOrb,_1_9),
         SUPPORT_    (0x02,SP_SpawnGlobalEntity),
         SUPPORT_DDF (0x03,SP_SpawnMob,_1_11),
-        SUPPORT_    (0x04,SP_SpawnPainting),
+        SUPPORT_DD  (0x04,SP_SpawnPainting,_1_13_2),
         SUPPORT_    (0x05,SP_SpawnPlayer),
         SUPPORT_    (0x06,SP_Animation),
         SUPPORT_    (0x07,SP_Statistics),

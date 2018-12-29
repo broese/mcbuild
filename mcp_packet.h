@@ -77,7 +77,8 @@ typedef struct {
 typedef struct {
     uint32_t    eid;
     uuid_t      uuid;
-    char        title[32];
+    char        title[32];  // obsolete since 1.13
+    uint32_t    motive;
     pos_t       pos;
     uint8_t     dir;
 } SP_SpawnPainting_pkt;
