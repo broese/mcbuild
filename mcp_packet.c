@@ -1884,7 +1884,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_    (0x07,SP_Statistics),
         SUPPORT_    (0x08,SP_BlockBreakAnimation),
         SUPPORT_DDF (0x09,SP_UpdateBlockEntity,_1_8_1),
-        SUPPORT_    (0x0a,SP_BlockAction),
+        SUPPORT_DD  (0x0a,SP_BlockAction,_1_8_1),
         SUPPORT_DED (0x0b,SP_BlockChange,_1_13_2),
         SUPPORT_    (0x0c,SP_BossBar),
         SUPPORT_    (0x0d,SP_ServerDifficulty),
