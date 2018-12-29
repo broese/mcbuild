@@ -279,22 +279,6 @@ DUMP_BEGIN(SP_SpawnExperienceOrb) {
 ////////////////////////////////////////////////////////////////////////////////
 // 0x03 SP_SpawnMob
 
-DECODE_BEGIN(SP_SpawnMob,_1_9) {
-    Pvarint(eid);
-    Puuid(uuid);
-    Pchar(mobtype);
-    Pdouble(x);
-    Pdouble(y);
-    Pdouble(z);
-    Pchar(yaw);
-    Pchar(pitch);
-    Pchar(headpitch);
-    Pshort(vx);
-    Pshort(vy);
-    Pshort(vz);
-    Pmeta(meta);
-} DECODE_END;
-
 DECODE_BEGIN(SP_SpawnMob,_1_11) {
     Pvarint(eid);
     Puuid(uuid);
@@ -1893,7 +1877,7 @@ const static packet_methods SUPPORT_1_13_2[2][MAXPACKETTYPES] = {
         SUPPORT_DD  (0x00,SP_SpawnObject,_1_9),
         SUPPORT_DD  (0x01,SP_SpawnExperienceOrb,_1_9),
         SUPPORT_    (0x02,SP_SpawnGlobalEntity),
-        SUPPORT_    (0x03,SP_SpawnMob),
+        SUPPORT_DDF (0x03,SP_SpawnMob,_1_11),
         SUPPORT_    (0x04,SP_SpawnPainting),
         SUPPORT_    (0x05,SP_SpawnPlayer),
         SUPPORT_    (0x06,SP_Animation),
