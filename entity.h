@@ -158,26 +158,28 @@ const char * get_entity_name(char *buf, EntityType type);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-#define META_BYTE    0
-#define META_VARINT  1
-#define META_FLOAT   2
-#define META_STRING  3
-#define META_CHAT    4
-#define META_SLOT    5
-#define META_BOOL    6
-#define META_VEC3    7
-#define META_POS     8
-#define META_OPTPOS  9
-#define META_DIR     10
-#define META_OPTUUID 11
-#define META_BID     12
-#define META_NBT     13
-#define META_NONE    255
+#define META_BYTE       0
+#define META_VARINT     1
+#define META_FLOAT      2
+#define META_STRING     3
+#define META_CHAT       4
+#define META_OPTCHAT    5
+#define META_SLOT       6
+#define META_BOOL       7
+#define META_VEC3       8
+#define META_POS        9
+#define META_OPTPOS     10
+#define META_DIR        11
+#define META_OPTUUID    12
+#define META_BID        13
+#define META_NBT        14
+#define META_PARTICLE   15
+#define META_NONE       255
 
 // single metadata key-value pair
 typedef struct {
     uint8_t         key;
-    uint8_t         type;
+    uint32_t        type;
     union {
         uint8_t     b;
         int32_t     i;
@@ -193,8 +195,9 @@ typedef struct {
         pos_t       pos;    // OPTPOS with missing position is encoded as (int64_t)-1
         int32_t     dir;
         uuid_t      uuid;   // missing UUID is encoded in all-zeros
-        uint8_t     block;  // block ID only
+        uint32_t    block;
         nbt_t*      nbt;
+        //FIXME: particle metadata is ignored and discarded at the moment
     };
 } metadata;
 

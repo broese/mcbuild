@@ -250,209 +250,6 @@ const char * METANAME[][32] = {
     },
 };
 
-const char * METANAME_1_9_4[][32] = {
-    [Entity] = {
-        [0]  = "Flags",
-        [1]  = "Air",
-        [2]  = "Custom name",
-        [3]  = "Name visible",
-        [4]  = "Is silent",
-    },
-    [Potion] = {
-        [5]  = "Slot",
-    },
-    [FallingBlock] = {
-        [5]  = "Position",
-    },
-    [AreaEffectCloud] = {
-        [5]  = "Radius",
-        [6]  = "Color",
-        [7]  = "Single point",
-        [8]  = "Particle ID",
-    },
-    [FishingFloat] = {
-        [5]  = "Hooked entity",
-    },
-    [Arrow] = {
-        [5]  = "Is critical",
-    },
-    [TippedArrow] = {
-        [6]  = "Color",
-    },
-    [Boat] = {
-        [5]  = "Time since hit",
-        [6]  = "Forward direction",
-        [7]  = "Damage taken",
-        [8]  = "Type",
-        [9]  = "Paddle A",
-        [10] = "Paddle B",
-    },
-    [EnderCrystal] = {
-        [5]  = "Beam target",
-        [6]  = "Show bottom",
-    },
-    [Fireball] = {
-    },
-    [WitherSkull] = {
-        [5]  = "Invulnerable",
-    },
-    [Fireworks] = {
-        [5] = "Firework info",
-    },
-    [Hanging] = {
-    },
-    [ItemFrame] = {
-        [5] = "Item",
-        [6] = "Rotation",
-    },
-    [Item] = {
-        [5] = "Item",
-    },
-    [Living] = {
-        [5]  = "Active hand",
-        [6]  = "Health",
-        [7]  = "Potion effect color",
-        [8]  = "Potion effect ambient",
-        [9]  = "Number of arrows",
-    },
-    [Player] = {
-        [10] = "Additional hearts",
-        [11] = "Score",
-        [12] = "Skin flags",
-        [13] = "Main hand",
-    },
-    [ArmorStand] = {
-        [10] = "Armor stand flags",
-        [11] = "Head position",
-        [12] = "Body position",
-        [13] = "L arm position",
-        [14] = "R arm position",
-        [15] = "L leg position",
-        [16] = "R leg position",
-    },
-    [Insentinent] = {
-        [10] = "Insentinent flags",
-    },
-    [Ambient] = {
-    },
-    [Bat] = {
-        [11] = "Is hanging",
-    },
-    [Creature] = {
-    },
-    [Ageable] = {
-        [11] = "Is baby",
-    },
-    [Animal] = {
-    },
-    [Horse] = {
-        [12] = "Horse flags",
-        [13] = "Horse type",
-        [14] = "Horse color",
-        [15] = "Owner UUID",
-        [16] = "Horse armor",
-    },
-    [Pig] = {
-        [12] = "Has saddle",
-    },
-    [Rabbit] = {
-        [12] = "Rabbit type",
-    },
-    [Sheep] = {
-        [12] = "Sheep color",
-    },
-    [TameableAnimal] = {
-        [12] = "Tameable flags",
-        [13] = "Owner UUID",
-    },
-    [Ocelot] = {
-        [14] = "Ocelot type",
-    },
-    [Wolf] = {
-        [14] = "Damage",
-        [15] = "Begging",
-        [16] = "Collar color",
-    },
-    [Villager] = {
-        [12] = "Profession",
-    },
-    [Golem] = {
-    },
-    [IronGolem] = {
-        [11] = "created by player",
-    },
-    [Snowman] = {
-        [10] = "Flags",
-    },
-    [Shulker] = {
-        [11] = "Direction",
-        [12] = "Attachment position",
-        [13] = "Shield height",
-    },
-    [Monster] = {
-    },
-    [Blaze] = {
-        [11] = "On fire",
-    },
-    [Creeper] = {
-        [11] = "Creeper state",
-        [12] = "Charged",
-        [13] = "Ignited",
-    },
-    [Guardian] = {
-        [11] = "Flags",
-        [12] = "Target EID",
-    },
-    [Skeleton] = {
-        [11] = "Skeleton type",
-        [12] = "Targeting",
-    },
-    [Spider] = {
-        [11] = "Climbing",
-    },
-    [Witch] = {
-        [11] = "Aggressive",
-    },
-    [Wither] = {
-        [11] = "Target 1",
-        [12] = "Target 2",
-        [13] = "Target 3",
-        [14] = "Invulnerable time",
-    },
-    [Zombie] = {
-        [11] = "Baby zombie",
-        [12] = "Villager zombie",
-        [13] = "Converting zombie",
-        [14] = "Hands up",
-    },
-    [Enderman] = {
-        [11] = "Carried block",
-        [12] = "Screaming",
-    },
-    [Enderdragon] = {
-        [11] = "Phase",
-    },
-    [Flying] = {
-    },
-    [Ghast] = {
-        [11] = "Attacking",
-    },
-    [Slime] = {
-        [11] = "Size",
-    },
-    [Minecart] = {
-        [5]  = "Shaking power",
-        [6]  = "Shaking direction",
-        [7]  = "Shaking multiplier",
-        [8]  = "Block id/data",
-        [9]  = "Block y",
-        [10] = "Show block",
-    },
-    [MinecartFurnace] = {
-        [11] = "Powered",
-    },
-};
-
 const EntityType ENTITY_HIERARCHY[] = {
     //// Superclasses
     [Entity]            = IllegalEntityType,
@@ -637,6 +434,7 @@ const char * METATYPES[] = {
     [META_FLOAT]    = "float",
     [META_STRING]   = "string",
     [META_CHAT]     = "chat",
+    [META_OPTCHAT]  = "optchat",
     [META_SLOT]     = "slot",
     [META_BOOL]     = "bool",
     [META_VEC3]     = "vector3f",
@@ -646,6 +444,7 @@ const char * METATYPES[] = {
     [META_OPTUUID]  = "optional_uuid",
     [META_BID]      = "block_id",
     [META_NBT]      = "nbt",
+    [META_PARTICLE] = "particle",
     [META_NONE]     = "-"
 };
 
@@ -696,6 +495,7 @@ metadata * update_metadata(metadata *meta, metadata *upd) {
                     break;
                 case META_STRING:
                 case META_CHAT:
+                case META_OPTCHAT:
                     lh_free(meta[i].str);
                     meta[i].str = strdup(upd[i].str);
                     break;
@@ -721,6 +521,7 @@ void free_metadata(metadata *meta) {
                 break;
             case META_STRING:
             case META_CHAT:
+            case META_OPTCHAT:
                 lh_free(meta[i].str);
                 break;
         }
@@ -739,6 +540,9 @@ uint8_t * read_metadata(uint8_t *p, metadata **meta) {
 
     int i;
     int bool;
+    uint32_t di;
+    float df;
+    slot_t ds;
 
     // mark all entries as not present - we use the same 0xff value
     // that Mojang uses as terminator
@@ -749,11 +553,11 @@ uint8_t * read_metadata(uint8_t *p, metadata **meta) {
     while (1) {
         uint8_t key = read_char(p);
         if (key == 0xff) break; // terminator
-        assert(key < 32);
+        assert(key < 32); //VERIFY: if this legacy limit still valid
 
         metadata *mm = &m[key];
         mm->key = key;
-        mm->type = read_char(p);
+        mm->type = read_varint(p);
 
         switch (mm->type) {
             case META_BYTE:     mm->b = read_char(p);    break;
@@ -764,15 +568,22 @@ uint8_t * read_metadata(uint8_t *p, metadata **meta) {
                                 p = read_string(p,sbuf);
                                 mm->str = strdup(sbuf);
                                 break;
+            case META_OPTCHAT:  lh_free(mm->str);
+                                bool = read_char(p);
+                                if (bool) {
+                                    p = read_string(p,sbuf);
+                                    mm->str = strdup(sbuf);
+                                }
+                                break;
             case META_SLOT:     clear_slot(&mm->slot);
                                 p = read_slot(p,&mm->slot);
                                 break;
-            case META_BOOL:     mm->bool = read_char(p);  break; //VERIFY
+            case META_BOOL:     mm->bool = read_char(p);  break;
             case META_VEC3:     mm->fx=read_float(p);
                                 mm->fy=read_float(p);
                                 mm->fz=read_float(p); break;
             case META_POS:      mm->pos.p = read_long(p); break;
-            case META_OPTPOS:   bool = read_char(p); //VERIFY
+            case META_OPTPOS:   bool = read_char(p);
                                 if (bool) {
                                     mm->pos.p = read_long(p);
                                 }
@@ -781,15 +592,35 @@ uint8_t * read_metadata(uint8_t *p, metadata **meta) {
                                 }
                                 break;
             case META_DIR:      mm->dir = read_varint(p);  break;
-            case META_OPTUUID:  bool = read_char(p); //VERIFY
+            case META_OPTUUID:  bool = read_char(p);
                                 if (bool) {
                                     memmove(mm->uuid,p,sizeof(uuid_t));
                                     p+=sizeof(uuid_t);
                                 }
                                 break;
-            case META_BID:      mm->block = read_char(p); break; // note- block ID only, no meta
+            case META_BID:      mm->block = read_varint(p); break;
             case META_NBT:      nbt_free(mm->nbt);
                                 mm->nbt = nbt_parse(&p);
+                                break;
+            case META_PARTICLE: // discard particle meta and any following data
+                                mm->type = META_NONE;
+                                di = read_varint(p);
+                                switch (di) {
+                                    case 3:
+                                    case 20:
+                                        di = read_varint(p);
+                                        break;
+                                    case 11:
+                                        df = read_float(p);
+                                        df = read_float(p);
+                                        df = read_float(p);
+                                        df = read_float(p);
+                                        break;
+                                    case 27:
+                                        p = read_slot(p,&ds);
+                                        clear_slot(&ds);
+                                        break;
+                                }
                                 break;
         }
     }
@@ -807,13 +638,17 @@ uint8_t * write_metadata(uint8_t *w, metadata *meta) {
         if (mm->type==META_NONE) continue;
 
         lh_write_char(w, mm->key);
-        lh_write_char(w, mm->type);
+        lh_write_varint(w, mm->type);
         switch (mm->type) {
             case META_BYTE:     write_char(w, mm->b);    break;
             case META_VARINT:   write_varint(w, mm->i);  break;
             case META_FLOAT:    write_float(w, mm->f);   break;
             case META_STRING:
             case META_CHAT:     w = write_string(w, mm->str); break;
+            case META_OPTCHAT:  bool = (mm->str != NULL);
+                                write_char(w, bool);
+                                if (bool) w = write_string(w, mm->str);
+                                break;
             case META_SLOT:     w = write_slot(w, &mm->slot); break;
             case META_BOOL:     write_char(w, mm->bool);  break;
             case META_VEC3:     write_float(w, mm->fx);
@@ -859,7 +694,7 @@ void dump_metadata(metadata *meta, EntityType et) {
         const char * name = NULL;
         EntityType ett = et;
         while ((!name) && (ett!=IllegalEntityType)) {
-            name = currentProtocol<PROTO_1_10 ? METANAME_1_9_4[ett][mm->key] : METANAME[ett][mm->key];
+            name = METANAME[ett][mm->key];
             ett = ENTITY_HIERARCHY[ett];
         }
 
@@ -869,7 +704,8 @@ void dump_metadata(metadata *meta, EntityType et) {
             case META_VARINT:   printf("%d",  mm->i);   break;
             case META_FLOAT:    printf("%.1f",mm->f);   break;
             case META_STRING:
-            case META_CHAT:     printf("\"%s\"", mm->str); break;
+            case META_CHAT:
+            case META_OPTCHAT:  printf("\"%s\"", mm->str ? mm->str : ""); break;
             case META_SLOT:     dump_slot(&mm->slot); break;
             case META_BOOL:     printf("%s", mm->bool?"true":"false"); break; //VERIFY
             case META_VEC3:     printf("%.1f,%.1f,%.1f", mm->fx, mm->fy, mm->fz); break;
