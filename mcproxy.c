@@ -543,16 +543,14 @@ void process_play_packet(int is_client, struct timeval ts,
 
     dump_packet(pkt);
 
-    // pass unimplemented packets
     if (!pkt->ver) {
+        // pass-through unimplemented packets
         queue_packet(pkt, &tq);
     }
     else {
         // pass the packet to both gamestate and game
-        //DISABLED: fixing new packet formats for 1.13
-        //gs_packet(pkt);
-        //gm_packet(pkt, &tq, &bq);
-        queue_packet(pkt, &tq); // since we are not calling gm_packet()
+        gs_packet(pkt);
+        gm_packet(pkt, &tq, &bq);  // will queue packet to output as needed
     }
 
     // transmit packets in the queues, if any

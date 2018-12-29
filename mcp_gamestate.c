@@ -1329,7 +1329,7 @@ void gs_packet(MCPacket *pkt) {
 
         ////////////////////////////////////////////////////////////////
         // Chunks
-
+#if 0
         GSP(SP_ChunkData) {
             insert_chunk(&tpkt->chunk, tpkt->cont);
 
@@ -1404,7 +1404,7 @@ void gs_packet(MCPacket *pkt) {
             );
             store_tile_entity(tpkt->pos.x>>4, tpkt->pos.z>>4, te);
         } _GSP;
-
+#endif
 
         ////////////////////////////////////////////////////////////////
         // Inventory
