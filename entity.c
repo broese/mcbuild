@@ -463,7 +463,8 @@ metadata * clone_metadata(metadata *meta) {
                 break;
             case META_STRING:
             case META_CHAT:
-                newmeta[i].str = strdup(meta[i].str);
+            case META_OPTCHAT:
+                newmeta[i].str = meta[i].str ? strdup(meta[i].str) : NULL;
                 break;
         }
     }
@@ -497,7 +498,7 @@ metadata * update_metadata(metadata *meta, metadata *upd) {
                 case META_CHAT:
                 case META_OPTCHAT:
                     lh_free(meta[i].str);
-                    meta[i].str = strdup(upd[i].str);
+                    meta[i].str = upd[i].str ? strdup(upd[i].str) : NULL;
                     break;
                 default:
                     meta[i] = upd[i];
