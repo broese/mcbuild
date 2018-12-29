@@ -571,8 +571,9 @@ static void slot_transfer(slot_t *f, slot_t *t, int count) {
     assert(f->count >= count);
     assert(f->item > 0);
 
-    if (t->item == -1) {
+    if (!t->present) {
         // destination slot is empty
+        t->present = 1;
         t->item = f->item;
         t->damage = f->damage;
         t->count = count;
