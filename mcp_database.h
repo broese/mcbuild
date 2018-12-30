@@ -29,7 +29,7 @@ typedef struct {
   int oldid;
   int defaultid;
   int propcount;
-  prop_t prop[6];
+  prop_t prop[7];
 }  block_t;
 
 typedef struct {
