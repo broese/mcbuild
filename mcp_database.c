@@ -11,6 +11,7 @@
 #include "mcp_database.h"
 #include <json-c/json.h>
 #include <string.h>
+#include <stdio.h>
 #include "lh_buffers.h"
 #include "lh_files.h"
 
@@ -284,11 +285,28 @@ int dump_db_blocks_to_csv_file(database_t *db) {
     return 0;
 }
 
-const char * get_block_propval(database_t *db, int id, const char *propname);
-// TODO
-// (db,14,"facing") => NULL // no such property
-// (db,1650,"facing") => "north"
-// (db,1686,"half") => "bottom"
+// get_block_propval(db,14,"facing") => NULL // no such property
+// get_block_propval(db,1650,"facing") => "north"
+// get_block_propval(db,1686,"half") => "bottom"
+const char * get_block_propval(database_t *db, int id, const char *propname) {
+    if (id < 0 || id > db->blockcount) {
+        return NULL;
+    }    
+    for (int i=0; i < db->blockcount; i++) {
+        if (id == db->block[i].id) {
+            for (int j=0; j<db->block[i].propcount; j++) {
+                if (!strcmp(db->block[i].prop[j].pname, propname)) {
+                    char *buf = malloc(strlen(db->block[i].prop[j].pvalue)+1);
+                    strcpy(buf,db->block[i].prop[j].pvalue);
+                    return buf;
+                }
+            }
+            break;
+        }
+    }
+    return NULL; 
+}
+
 //struct prop_t { const char *pname, const char *pvalue };
 // prop_t * defines a set of properties I'm interested in. It's a list no longer than 3 I guess
 // how should we define the length? it could be {NULL,NULL} terminated or length explicitly given.
