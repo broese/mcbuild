@@ -35,24 +35,22 @@ int get_default_blockid_from_block_state_json(json_object *blkstatearrjson) {
 const database_t *load_database(int protocol_id) {
 
     if (db.initialized) {
-        //printf("Database initialized already\n");
         return &db;
     }
 
     //Deal with multiple protocols later
     assert(protocol_id == 404);
 
-    // printf("Initializing Database...\n");
     db.protocol = protocol_id;
     db.itemcount = 0;
     db.blockcount = 0;
     db.initialized = 1;
 
     //////////////////////////////////
-    //  Load items.json into db     //
+    //  Load blocks.json into db    //
     //////////////////////////////////
 
-    char *blockjsonfilepath = "./database/blocks.json";
+    char *blockjsonfilepath = "./database/blocks.json";    //can become blocks_404.json 
     //load the blocks.json into memory
     uint8_t *bufblocks;
     ssize_t szblocks = lh_load_alloc(blockjsonfilepath, &bufblocks);
@@ -61,63 +59,66 @@ const database_t *load_database(int protocol_id) {
     json_object *jblkmain, *blockstatejson, *blockstatesarrayjson, *blockidjson, *blockpropjson;
     jblkmain = json_tokener_parse(bufblocks);
 
+    int namecount = 0;
     //loop through each block(name) which is the top level of the json
-         json_object_object_foreach(jblkmain, keymain, valmain) {
+    json_object_object_foreach(jblkmain, keymain, valmain) {
 
-            //valmain is more json with { Properties: ... , States: [ ... , ... ] } and we want the states.
-            json_object_object_get_ex(valmain,"states", &blockstatesarrayjson);
+        //valmain is more json with { Properties: ... , States: [ ... , ... ] } and we want the states.
+        json_object_object_get_ex(valmain,"states", &blockstatesarrayjson);
 
-            //get the default blockid for this blockname
-            int defaultid = get_default_blockid_from_block_state_json(blockstatesarrayjson);
+        //get the default blockid for this blockname -- only in its own sub for clarity during programming
+        int defaultid = get_default_blockid_from_block_state_json(blockstatesarrayjson);
 
-            //how many states are there
-            int numstates = json_object_array_length(blockstatesarrayjson);
+        //how many states are there
+        int numstates = json_object_array_length(blockstatesarrayjson);
 
-            //loop through each state (blockid) of this blockname
-            //each state's json contains { id: ...,  [default]:..., [properties]: {...,...} }
-            for (int i=0; i<numstates; i++) {
-                blockstatejson = json_object_array_get_idx(blockstatesarrayjson, i);
+        //loop through each state (blockid) of this blockname
+        //each state's json contains { id: ...,  [default]:..., [properties]: {...,...} }
+        for (int i=0; i<numstates; i++) {
+            blockstatejson = json_object_array_get_idx(blockstatesarrayjson, i);
 
-                //get the blockid
-                json_object_object_get_ex(blockstatejson,"id", &blockidjson);
-                int blkid = json_object_get_int(blockidjson);
+            //get the blockid
+            json_object_object_get_ex(blockstatejson,"id", &blockidjson);
+            int blkid = json_object_get_int(blockidjson);
 
-                //get the properties if they exist
-                json_object_object_get_ex(blockstatejson,"properties", &blockpropjson);
+            //get the properties if they exist
+            json_object_object_get_ex(blockstatejson,"properties", &blockpropjson);
 
-                int propcount = 0;
-                if (json_object_get_type(blockpropjson) == json_type_object) { 
-                    //we got some properties -- loop through each property tp get the key : value
-                    json_object_object_foreach(blockpropjson, keyprop, valprop) {
-                        // Would like to store each of the properties (name/value) into db.block[db.blockcount].prop[propcount].pname / .pval
-                        // Property Name: allocate memory , copy into memory, and store in database
-                        char* propertyname = malloc(strlen(keyprop)+1);
-                        strcpy(propertyname, keyprop);
-                        db.block[db.blockcount].prop[propcount].pname = propertyname;
-                        // Property Value: allocate memory , copy into memory, and store in database
-                        char* propertyval = malloc(strlen(json_object_get_string(valprop))+1);
-                        strcpy(propertyval, json_object_get_string(valprop));
-                        db.block[db.blockcount].prop[propcount].pvalue = propertyval;
+            int propcount = 0;
+            if (json_object_get_type(blockpropjson) == json_type_object) { 
+                //we got some properties -- loop through each property tp get the key : value
+                json_object_object_foreach(blockpropjson, keyprop, valprop) {                       
+                    // Property Name: allocate memory , copy into memory, and store in database
+                    char* propertyname = malloc(strlen(keyprop)+1);
+                    strcpy(propertyname, keyprop);
+                    db.block[db.blockcount].prop[propcount].pname = propertyname;
+                    // Property Value: allocate memory , copy into memory, and store in database
+                    char* propertyval = malloc(strlen(json_object_get_string(valprop))+1);
+                    strcpy(propertyval, json_object_get_string(valprop));
+                    db.block[db.blockcount].prop[propcount].pvalue = propertyval;
 
-                        propcount++;
-                    }
+                    propcount++;
                 }
-                // confirm that blockname begins with "minecraft:"
-                assert(!strncmp(keymain,"minecraft:",10));
-                // pointer arithmetic to get rid of the minecraft:
-                db.block[db.blockcount].name = keymain+10;
-                db.block[db.blockcount].id = blkid;
-                db.block[db.blockcount].defaultid = defaultid;
-                db.block[db.blockcount].propcount = propcount;
-                db.blockcount++;
             }
-         }
+            // confirm that blockname begins with "minecraft:"
+            assert(!strncmp(keymain,"minecraft:",10));
+            // pointer arithmetic to get rid of the minecraft:
+            db.block[db.blockcount].name = keymain+10;
+            db.block[db.blockcount].id = blkid;
+            db.block[db.blockcount].oldid = namecount;
+            db.block[db.blockcount].defaultid = defaultid;
+            db.block[db.blockcount].propcount = propcount;
+            db.blockcount++;
+        }
+    namecount++;
+    }
+
     //////////////////////////////////
     //  Load items.json into db     //
     //////////////////////////////////
 
     //location of the server.jar generated items.json
-    char *itemjsonfilepath = "./database/items.json";
+    char *itemjsonfilepath = "./database/items.json";  //can become items_404.json
 
     //load the items.json into memory
     uint8_t *buf;
@@ -182,7 +183,7 @@ int get_item_id(database_t *db, const char *name) {
     return id;
 };
 
-const char *get_item_name_from_db(database_t *db, int item_id) { 
+const char *get_item_name_from_db(database_t *db, int item_id) {  //there's already a get_item_name()
     char *buf;
     if (item_id == -1) {
         return "Empty";
@@ -218,6 +219,24 @@ const char * get_block_name(database_t *db, int id) {
     return "ID not found";
 };
 
+const char * get_block_name_from_old_id(database_t *db, int oldid) {
+    char *buf;
+    if (oldid == -1) {
+        return "Empty";
+    }
+    if (oldid < -1 || oldid > db->block[db->blockcount-1].oldid) {
+        return "ID out of bounds";
+    }
+    for (int i=0; i < db->blockcount; i++) {
+        if (oldid == db->block[i].oldid) {
+            buf = malloc(strlen(db->block[i].name)+1);
+            strcpy(buf,db->block[i].name);
+            return buf;
+        }
+    }
+    return "ID not found";
+};
+
 int get_block_default_id(database_t *db, int id) {
     int defid = -1;
     for (int i=0; i < db->blockcount; i++) {
@@ -229,10 +248,11 @@ int get_block_default_id(database_t *db, int id) {
 }
 void dump_db_blocks(database_t *db, int maxlines){
     printf("Dumping Blocks..\n");
-    printf("%25s %05s %05s %s\n","blockname","blkid","defid","#prop");
+    printf("%25s %05s %05s %05s %s\n","blockname","blkid","oldid","defid","#prop");
     for (int i=0; (i < db->blockcount) && (i < maxlines); i++) {
         printf("%25s ", db->block[i].name);
         printf("%05d ", db->block[i].id);
+        printf("%05d ", db->block[i].oldid);
         printf("%05d ", db->block[i].defaultid);
         printf("%05d ", db->block[i].propcount);
         for (int j=0; j < db->block[i].propcount; j++) {
@@ -242,10 +262,8 @@ void dump_db_blocks(database_t *db, int maxlines){
     }
 }
 
-// (db,14) => "cobblestone"
-// (db,1650) => "oak_stairs"
-// (db,1686) => "oak_stairs"
 const char * get_block_propval(database_t *db, int id, const char *propname);
+// TODO
 // (db,14,"facing") => NULL // no such property
 // (db,1650,"facing") => "north"
 // (db,1686,"half") => "bottom"

@@ -10,8 +10,6 @@
 
 #pragma once
 
-
-
 ///////////////////////////////////////////////////////////////
 // block and item database
 
@@ -28,10 +26,10 @@ typedef struct {
 typedef struct {
   const char *name;
   int id;
+  int oldid;
   int defaultid;
   int propcount;
-  //would like an array of prop_t instead of these
-  prop_t prop[3];
+  prop_t prop[6];
 }  block_t;
 
 typedef struct {
@@ -47,9 +45,6 @@ const database_t *load_database(int protocol_id);
 int get_item_id(database_t *db, const char *name);
 const char *get_item_name_from_db(database_t *db, int item_id);
 const char * get_block_name(database_t *db, int id);
-// (db,14) => "cobblestone"
-// (db,1650) => "oak_stairs"
-// (db,1686) => "oak_stairs"
 int get_block_default_id(database_t *db, int id);
 const char * get_block_propval(database_t *db, int id, const char *propname);
 void dump_db_blocks(database_t *db, int maxlines);
