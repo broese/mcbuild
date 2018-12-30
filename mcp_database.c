@@ -248,9 +248,9 @@ int get_block_default_id(database_t *db, int id) {
 }
 void dump_db_blocks(database_t *db, int maxlines){
     printf("Dumping Blocks..\n");
-    printf("%25s %05s %05s %05s %s\n","blockname","blkid","oldid","defid","#prop");
+    printf("%30s %05s %05s %05s %s\n","blockname","blkid","oldid","defid","#prop");
     for (int i=0; (i < db->blockcount) && (i < maxlines); i++) {
-        printf("%25s ", db->block[i].name);
+        printf("%30s ", db->block[i].name);
         printf("%05d ", db->block[i].id);
         printf("%05d ", db->block[i].oldid);
         printf("%05d ", db->block[i].defaultid);
@@ -260,6 +260,28 @@ void dump_db_blocks(database_t *db, int maxlines){
         }
         printf("\n");
     }
+}
+
+int dump_db_blocks_to_csv_file(database_t *db) {
+    FILE *fd = fopen("./database/mcb_db_404.csv","w");
+    if  ( fd == NULL ) {
+        printf("Can't open csv file\n");
+        return -1;
+    }     
+    fprintf(fd, "%30s, %05s, %05s, %05s, %s\n","blockname","blkid","oldid","defid","#prop");
+    for (int i=0; i < db->blockcount ; i++) {
+        fprintf(fd, "%30s, ", db->block[i].name);
+        fprintf(fd, "%05d, ", db->block[i].id);
+        fprintf(fd, "%05d, ", db->block[i].oldid);
+        fprintf(fd, "%05d, ", db->block[i].defaultid);
+        fprintf(fd, "%05d ", db->block[i].propcount);
+        for (int j=0; j < db->block[i].propcount; j++) {
+            fprintf(fd, ", prop:%s val:%s", db->block[i].prop[j].pname, db->block[i].prop[j].pvalue);
+        }
+        fprintf(fd, "\n");
+    }
+    fclose(fd);
+    return 0;
 }
 
 const char * get_block_propval(database_t *db, int id, const char *propname);
