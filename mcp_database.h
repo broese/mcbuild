@@ -10,6 +10,8 @@
 
 #pragma once
 
+
+
 ///////////////////////////////////////////////////////////////
 // block and item database
 
@@ -18,9 +20,18 @@ typedef struct {
   int id;
 }  item_t;
 
+typedef struct { 
+  const char *pname;
+  const char *pvalue; 
+}  prop_t;
+
 typedef struct {
   const char *name;
-  //TODO: Properties
+  int id;
+  int defaultid;
+  int propcount;
+  //would like an array of prop_t instead of these
+  prop_t prop[3];
 }  block_t;
 
 typedef struct {
@@ -29,9 +40,25 @@ typedef struct {
   int itemcount;
   int blockcount;
   item_t item[1000];
-  block_t block[10000];
+  block_t block[9000];
 } database_t;
 
-const database_t load_database(int protocol_id);
+const database_t *load_database(int protocol_id);
 int get_item_id(database_t *db, const char *name);
 const char *get_item_name_from_db(database_t *db, int item_id);
+const char * get_block_name(database_t *db, int id);
+// (db,14) => "cobblestone"
+// (db,1650) => "oak_stairs"
+// (db,1686) => "oak_stairs"
+int get_block_default_id(database_t *db, int id);
+const char * get_block_propval(database_t *db, int id, const char *propname);
+void dump_db_blocks(database_t *db, int maxlines);
+// (db,14,"facing") => NULL // no such property
+// (db,1650,"facing") => "north"
+// (db,1686,"half") => "bottom"
+//struct prop_t { const char *pname, const char *pvalue };
+// prop_t * defines a set of properties I'm interested in. It's a list no longer than 3 I guess
+// how should we define the length? it could be {NULL,NULL} terminated or length explicitly given.
+// many different IDs can match
+//int get_matching_block_ids(database_t *db, const char *name, prop_t *match, int *ids);
+// places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
