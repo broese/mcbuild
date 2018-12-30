@@ -48,7 +48,9 @@ const char * get_block_name(database_t *db, int id);
 int get_block_default_id(database_t *db, int id);
 const char * get_block_propval(database_t *db, int id, const char *propname);
 void dump_db_blocks(database_t *db, int maxlines);
+void dump_db_items(database_t *db, int maxlines);
 int dump_db_blocks_to_csv_file(database_t *db);
+int dump_db_items_to_csv_file(database_t *db);
 // (db,14,"facing") => NULL // no such property
 // (db,1650,"facing") => "north"
 // (db,1686,"half") => "bottom"

@@ -15,6 +15,7 @@
 #include "lh_buffers.h"
 #include "lh_files.h"
 
+
 database_t db;
 
 int get_default_blockid_from_block_state_json(json_object *blkstatearrjson) {
@@ -248,7 +249,7 @@ int get_block_default_id(database_t *db, int id) {
     return defid;
 }
 void dump_db_blocks(database_t *db, int maxlines){
-    printf("Dumping Blocks..\n");
+    printf("Dumping Blocks...\n");
     printf("%30s %05s %05s %05s %s\n","blockname","blkid","oldid","defid","#prop");
     for (int i=0; (i < db->blockcount) && (i < maxlines); i++) {
         printf("%30s ", db->block[i].name);
@@ -263,27 +264,52 @@ void dump_db_blocks(database_t *db, int maxlines){
     }
 }
 
+void dump_db_items(database_t *db, int maxlines){
+    printf("Dumping Items...\n");
+    for (int i=0; (i < db->itemcount) && (i < maxlines) ; i++) {
+        printf("%30s ", db->item[i].name);
+        printf("%05d ", db->item[i].id);
+        printf("\n");
+    }
+}
+
 int dump_db_blocks_to_csv_file(database_t *db) {
-    FILE *fd = fopen("./database/mcb_db_404.csv","w");
+    FILE *fd = fopen("./database/mcb_db_404_blocks.csv","w");
     if  ( fd == NULL ) {
         printf("Can't open csv file\n");
         return -1;
     }     
-    fprintf(fd, "%30s, %05s, %05s, %05s, %s\n","blockname","blkid","oldid","defid","#prop");
+    fprintf(fd, "%s, %s, %s, %s, %s\n","blockname","blkid","oldid","defid","#prop");
     for (int i=0; i < db->blockcount ; i++) {
-        fprintf(fd, "%30s, ", db->block[i].name);
-        fprintf(fd, "%05d, ", db->block[i].id);
-        fprintf(fd, "%05d, ", db->block[i].oldid);
-        fprintf(fd, "%05d, ", db->block[i].defaultid);
-        fprintf(fd, "%05d ", db->block[i].propcount);
+        fprintf(fd, "%s,", db->block[i].name);
+        fprintf(fd, "%d,", db->block[i].id);
+        fprintf(fd, "%d,", db->block[i].oldid);
+        fprintf(fd, "%d,", db->block[i].defaultid);
+        fprintf(fd, "%d", db->block[i].propcount);
         for (int j=0; j < db->block[i].propcount; j++) {
-            fprintf(fd, ", prop:%s val:%s", db->block[i].prop[j].pname, db->block[i].prop[j].pvalue);
+            fprintf(fd, ",prop:%s val:%s", db->block[i].prop[j].pname, db->block[i].prop[j].pvalue);
         }
         fprintf(fd, "\n");
     }
     fclose(fd);
     return 0;
 }
+
+int dump_db_items_to_csv_file(database_t *db) {
+    FILE *fd = fopen("./database/mcb_db_404_items.csv","w");
+    if  ( fd == NULL ) {
+        printf("Can't open csv file\n");
+        return -1;
+    }     
+    fprintf(fd, "%s,%s\n", "itemname","id");
+    for (int i=0; i < db->itemcount ; i++) {
+        fprintf(fd, "%s,", db->item[i].name);
+        fprintf(fd, "%d\n", db->item[i].id);
+    }
+    fclose(fd);
+    return 0;
+}
+
 
 // get_block_propval(db,14,"facing") => NULL // no such property
 // get_block_propval(db,1650,"facing") => "north"
