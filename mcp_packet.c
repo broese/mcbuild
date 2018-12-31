@@ -19,9 +19,6 @@
 #include <lh_arr.h>
 
 #include "mcp_packet.h"
-#include "mcp_database.h"
-
-database_t *db;
 
 ////////////////////////////////////////////////////////////////////////////////
 // String

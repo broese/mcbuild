@@ -10,6 +10,7 @@
 
 #include "mcp_database.h"
 #include <json-c/json.h>
+#include <curl/curl.h>
 #include <string.h>
 #include <stdio.h>
 #include "lh_buffers.h"
@@ -34,7 +35,7 @@ int get_default_blockid_from_block_state_json(json_object *blkstatearrjson) {
     return -1; //not found
 }
 
-const database_t *load_database(int protocol_id) {
+database_t *load_database(int protocol_id) {
 
     if (db.initialized) {
         return &db;
@@ -359,6 +360,94 @@ const char * get_block_propval(database_t *db, int id, const char *propname) {
     }
     return NULL; 
 }
+
+char *protocol_to_ver_string(int protid){
+    if (protid == 404) {
+        return "1.13.2";
+    }
+    return "";
+}
+
+int download_url_into_file(const char *url,const char *filespec) {
+    return 0;
+    CURL *curl = curl_easy_init();
+    // set header options
+    FILE *pagefile = fopen(filespec, "wb");
+    if (pagefile) {
+        curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);  //set to 1 to turn off progress 
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, pagefile);
+        curl_easy_perform(curl);
+        fclose(pagefile);
+    }
+    curl_easy_cleanup(curl);
+    curl_global_cleanup();
+    return 0;
+}
+
+
+char *findjava() {
+    char buf[200];
+    char *os = getenv("OS");
+    if(!strcmp(os,"Windows_NT")) {
+        char *pgmfiles = getenv("PROGRAMFILES(x86)");
+
+
+    }
+    return os;
+}
+
+//if blocks.json and items.json dont exist, use this to fetch the server jar and extract them
+void curl_server(int protocol_id){
+    char *verid = protocol_to_ver_string(protocol_id);
+    download_url_into_file("https://launchermeta.mojang.com/mc/game/version_manifest.json","./database/version_manifest.json");
+
+    json_object *jman,*jver,*j132,*jid,*jurl;
+    jman = json_object_from_file ("./database/version_manifest.json");
+    json_object_object_get_ex(jman, "versions", &jver);
+    int numstates = json_object_array_length(jver);
+    for (int i=0; i<numstates; i++) {
+        jid = json_object_array_get_idx(jver, i);
+        json_object_object_get_ex(jid,"id", &j132);
+
+        if (!strcmp(verid,json_object_get_string(j132))) {
+            json_object_object_get_ex(jid,"url", &jurl);
+            download_url_into_file(json_object_get_string(jurl),"./database/versioninfo.json");
+            break;
+        };  
+    };
+
+    json_object *jvinfo,*jdl,*jserv,*jservurl;
+    jvinfo = json_object_from_file ("./database/versioninfo.json");
+    json_object_object_get_ex(jvinfo, "downloads", &jdl);
+    json_object_object_get_ex(jdl, "server", &jserv);
+    json_object_object_get_ex(jserv, "url", &jservurl);
+    char serverfilespec[50];
+    snprintf(serverfilespec, sizeof serverfilespec, "./database/server_%s.jar", verid);
+    download_url_into_file(json_object_get_string(jservurl),serverfilespec);
+    
+    
+    //hope for java on the machine
+    //minecraft installs with java 
+    char *javapath = findjava();
+    printf("%s\n",javapath);
+
+
+
+    
+    //char javacommand[100];
+    //snprintf(serverfilespec, sizeof serverfilespec, "java -cp %s net.minecraft.data.Main --all", serverfilespec);
+    //system(javacommand);
+    return;
+}
+
+
+
+
+
+
+
+
 
 //struct prop_t { const char *pname, const char *pvalue };
 // prop_t * defines a set of properties I'm interested in. It's a list no longer than 3 I guess

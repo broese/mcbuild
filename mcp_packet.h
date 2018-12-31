@@ -635,6 +635,8 @@ typedef struct {
 ////////////////////////////////////////////////////////////////////////////////
 
 extern int  currentProtocol;
+extern database_t *db;
+
 int         set_protocol(int protocol, char * reply);
 
 MCPacket *  decode_packet(int is_client, uint8_t *p, ssize_t len);

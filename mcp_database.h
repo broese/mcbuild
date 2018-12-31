@@ -41,7 +41,7 @@ typedef struct {
   block_t block[9000];
 } database_t;
 
-const database_t *load_database(int protocol_id);
+database_t *load_database(int protocol_id);
 int get_item_id(database_t *db, const char *name);
 const char *get_item_name_from_db(database_t *db, int item_id);
 const char * get_block_name(database_t *db, int id);

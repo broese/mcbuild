@@ -777,9 +777,7 @@ const char * get_bid_name(char *buf, bid_t b) {
 }
 
 const char * get_item_name(char *buf, slot_t *s) {
-    database_t *db = load_database(404);
     sprintf(buf, get_item_name_from_db( db,s->item));
-
     return buf;
 }
 
