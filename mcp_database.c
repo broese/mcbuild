@@ -13,8 +13,10 @@
 #include <curl/curl.h>
 #include <string.h>
 #include <stdio.h>
+#include <dirent.h>
 #include "lh_buffers.h"
 #include "lh_files.h"
+#include "lh_dir.h"
 
 
 database_t db;
@@ -24,7 +26,7 @@ int get_default_blockid_from_block_state_json(json_object *blkstatearrjson) {
     int statesarrlen = json_object_array_length(blkstatearrjson);
     for (int i=0; i<statesarrlen; i++) {
         blockstatejson = json_object_array_get_idx(blkstatearrjson, i);
-        json_object_object_get_ex(blockstatejson,"default", &blockdefaultidjson);        
+        json_object_object_get_ex(blockstatejson,"default", &blockdefaultidjson);
         if(json_object_get_boolean(blockdefaultidjson)) {
             //found the default:true keypair so get the block id of this state
             json_object_object_get_ex(blockstatejson,"id", &blockdefaultidjson);
@@ -35,14 +37,37 @@ int get_default_blockid_from_block_state_json(json_object *blkstatearrjson) {
     return -1; //not found
 }
 
+//forward declaration
+int try_to_get_missing_json_files(int protocol_id);
+
 database_t *load_database(int protocol_id) {
 
     if (db.initialized) {
         return &db;
     }
 
-    //Deal with multiple protocols later
+    //TODO: Protocol Specific
     assert(protocol_id == 404);
+
+    char *blockjsonfilepath = "./database/blocks.json";    //TODO: become blocks_404.json
+    char *itemjsonfilepath = "./database/items.json";  //TODO: become items_404.json
+
+    //Check for the proper blocks.json and items.json in the database directory
+    FILE *f1 = fopen(blockjsonfilepath, "r");
+    FILE *f2 = fopen(itemjsonfilepath, "r");
+    if ( f1 && f2 ) {
+        fclose(f1);
+        fclose(f2);
+    }
+    else {
+        //Attempt to download server.jar and extract them from it
+        int rc = try_to_get_missing_json_files(protocol_id);
+        if (rc) {
+            printf("Error couldnt load database\n");
+            return NULL;
+        }
+        //Now the files are there
+    }
 
     db.protocol = protocol_id;
     db.itemcount = 0;
@@ -53,7 +78,6 @@ database_t *load_database(int protocol_id) {
     //  Load blocks.json into db    //
     //////////////////////////////////
 
-    char *blockjsonfilepath = "./database/blocks.json";    //can become blocks_404.json 
     //load the blocks.json into memory
     uint8_t *bufblocks;
     ssize_t szblocks = lh_load_alloc(blockjsonfilepath, &bufblocks);
@@ -88,9 +112,9 @@ database_t *load_database(int protocol_id) {
             json_object_object_get_ex(blockstatejson,"properties", &blockpropjson);
 
             int propcount = 0;
-            if (json_object_get_type(blockpropjson) == json_type_object) { 
+            if (json_object_get_type(blockpropjson) == json_type_object) {
                 //we got some properties -- loop through each property tp get the key : value
-                json_object_object_foreach(blockpropjson, keyprop, valprop) {                       
+                json_object_object_foreach(blockpropjson, keyprop, valprop) {
                     // Property Name: allocate memory , copy into memory, and store in database
                     char* propertyname = malloc(strlen(keyprop)+1);
                     strcpy(propertyname, keyprop);
@@ -120,9 +144,6 @@ database_t *load_database(int protocol_id) {
     //  Load items.json into db     //
     //////////////////////////////////
 
-    //location of the server.jar generated items.json
-    char *itemjsonfilepath = "./database/items.json";  //can become items_404.json
-
     //load the items.json into memory
     uint8_t *buf;
     ssize_t sz = lh_load_alloc(itemjsonfilepath, &buf);
@@ -130,7 +151,7 @@ database_t *load_database(int protocol_id) {
 
 
     json_object *jobj, *itemidstructurejson, *itemidjson;
-	
+
     //parse the items.json buffer into a json-c object
     jobj = json_tokener_parse(buf);
 
@@ -138,14 +159,14 @@ database_t *load_database(int protocol_id) {
     struct json_object_iterator it = json_object_iter_begin(jobj);
     struct json_object_iterator itEnd = json_object_iter_end(jobj);
 
-    //loop through each record of the json 
+    //loop through each record of the json
     //note structure is { item_name : { "protocol_id" : value } } so our value is nested within another json
     while (!json_object_iter_equal(&it, &itEnd)) {
 
         // the name of the json record is the item_name itself
         const char* itemname = json_object_iter_peek_name(&it);
 
-        // the value of this pair is another json so we need to go one level deeper for the item_id        
+        // the value of this pair is another json so we need to go one level deeper for the item_id
         itemidstructurejson = json_object_iter_peek_value(&it);
 
         // process the internal json, where we look for the key "protocol_id" and get its value (the item_id)
@@ -157,7 +178,7 @@ database_t *load_database(int protocol_id) {
         // confirm that our item name begins with "minecraft:"
         assert(!strncmp(itemname,"minecraft:",10));
 
-        //store the item name into our dbrecord using pointer arithmetic to get rid of the "minecraft:" 
+        //store the item name into our dbrecord using pointer arithmetic to get rid of the "minecraft:"
         db.item[db.itemcount].name = itemname+10;
 
         //store the item_id into our dbrecord
@@ -168,7 +189,7 @@ database_t *load_database(int protocol_id) {
 
         // iterate through the json iterator
         json_object_iter_next(&it);
-  
+
 
     }
 
@@ -279,7 +300,7 @@ int dump_db_blocks_to_csv_file(database_t *db) {
     if  ( fp == NULL ) {
         printf("Can't open csv file\n");
         return -1;
-    }     
+    }
     fprintf(fp, "%s, %s, %s, %s, %s\n","blockname","blkid","oldid","defid","#prop");
     for (int i=0; i < db->blockcount ; i++) {
         fprintf(fp, "%s,", db->block[i].name);
@@ -301,7 +322,7 @@ int dump_db_items_to_csv_file(database_t *db) {
     if  ( fp == NULL ) {
         printf("Can't open csv file\n");
         return -1;
-    }     
+    }
     fprintf(fp, "%s,%s\n", "itemname","id");
     for (int i=0; i < db->itemcount ; i++) {
         fprintf(fp, "%s,", db->item[i].name);
@@ -316,7 +337,7 @@ int save_db_to_file(database_t *db) {
     if  ( fp == NULL ) {
         printf("Can't open temp file\n");
         return -1;
-    }  
+    }
     fprintf(fp, "%d\n", db->protocol);
     fprintf(fp, "%d\n", db->itemcount);
     fprintf(fp, "%d\n", db->blockcount);
@@ -345,7 +366,7 @@ int save_db_to_file(database_t *db) {
 const char * get_block_propval(database_t *db, int id, const char *propname) {
     if (id < 0 || id > db->blockcount) {
         return NULL;
-    }    
+    }
     for (int i=0; i < db->blockcount; i++) {
         if (id == db->block[i].id) {
             for (int j=0; j<db->block[i].propcount; j++) {
@@ -358,93 +379,173 @@ const char * get_block_propval(database_t *db, int id, const char *propname) {
             break;
         }
     }
-    return NULL; 
+    return NULL;
 }
 
+// TODO: use what we already have
 char *protocol_to_ver_string(int protid){
     if (protid == 404) {
         return "1.13.2";
     }
-    return "";
+    return "unknown";
 }
 
-int download_url_into_file(const char *url,const char *filespec) {
-    return 0;
+int download_url_into_file(const char *url, const char *filespec) {
     CURL *curl = curl_easy_init();
     // set header options
     FILE *pagefile = fopen(filespec, "wb");
-    if (pagefile) {
-        curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);  //set to 1 to turn off progress 
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, pagefile);
-        curl_easy_perform(curl);
-        fclose(pagefile);
-    }
+    if (!pagefile) return -1;
+    curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 0L);  //set to 1 to turn off progress
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, pagefile);
+    int rc = curl_easy_perform(curl);
+    fclose(pagefile);
     curl_easy_cleanup(curl);
     curl_global_cleanup();
-    return 0;
+    return rc;
 }
 
-
-char *findjava() {
-    char buf[200];
+char *findjavapath() {
+    char *javapath;
     char *os = getenv("OS");
     if(!strcmp(os,"Windows_NT")) {
-        char *pgmfiles = getenv("PROGRAMFILES(x86)");
-
-
+        //all windows minecraft installs come with java.exe
+        //hope their program files is default directory for now
+        //but need a way to programmatically get the path of Minecraft install & the jre version it ships with
+        DIR *dp;
+        //Default location for 64-bit Windows OS with Minecraft 13.2
+        javapath = "/cygdrive/c/Progra~2/Minecraft/runtime/jre-x64/1.8.0_51/bin";
+        dp = opendir(javapath);
+        if (!dp) {
+            printf("findjavapath(): Directory not found\n");
+            return NULL;
+        }
+        closedir(dp);
+        return javapath;
     }
-    return os;
+    //linux often has JAVA_HOME ready to go
+    char *javahome = getenv("JAVA_HOME");
+    if (!javahome) {
+        return NULL;
+    }
+    javapath = malloc(strlen(javahome)+5);
+    sprintf(javapath,"%s/bin",javahome);
+    return javapath;
 }
 
 //if blocks.json and items.json dont exist, use this to fetch the server jar and extract them
-void curl_server(int protocol_id){
-    char *verid = protocol_to_ver_string(protocol_id);
-    download_url_into_file("https://launchermeta.mojang.com/mc/game/version_manifest.json","./database/version_manifest.json");
+int try_to_get_missing_json_files(int protocol_id) {
+    int rc;
 
+    // Download version manifest from Mojang
+    char *MANIFESTURL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
+    char *MANIFESTFILESPEC = "./database/version_manifest.json";
+    rc = download_url_into_file(MANIFESTURL,MANIFESTFILESPEC);
+    if (rc) {
+        printf ("Error downloading version manifest. %d\n",rc);
+        return -1;
+    }
+
+    char *verid = protocol_to_ver_string(protocol_id);
     json_object *jman,*jver,*j132,*jid,*jurl;
-    jman = json_object_from_file ("./database/version_manifest.json");
+    const char *urlversioninfo;
+
+    // Parse version manifest to get the versioninfo download url for this version
+    jman = json_object_from_file (MANIFESTFILESPEC);
     json_object_object_get_ex(jman, "versions", &jver);
-    int numstates = json_object_array_length(jver);
-    for (int i=0; i<numstates; i++) {
+    int numversions = json_object_array_length(jver);
+    for (int i=0; i<numversions; i++) {
         jid = json_object_array_get_idx(jver, i);
         json_object_object_get_ex(jid,"id", &j132);
-
         if (!strcmp(verid,json_object_get_string(j132))) {
             json_object_object_get_ex(jid,"url", &jurl);
-            download_url_into_file(json_object_get_string(jurl),"./database/versioninfo.json");
+            urlversioninfo = json_object_get_string(jurl);
             break;
-        };  
+        };
     };
+    if (urlversioninfo == NULL) {
+        printf ("Error parsing version manifest.\n");
+        return -1;
+    }
+
+    // Download versioninfo json from Mojang
+    char *VERINFOFILESPEC = "./database/versioninfo.json";
+    rc = download_url_into_file(urlversioninfo,VERINFOFILESPEC);
+    if (rc) {
+        printf ("Error downloading versioninfo. %d\n",rc);
+        return -1;
+    }
 
     json_object *jvinfo,*jdl,*jserv,*jservurl;
-    jvinfo = json_object_from_file ("./database/versioninfo.json");
+    const char *urlserverjar;
+
+    // Parse versioninfo json to get the server.jar download url for this version
+    jvinfo = json_object_from_file(VERINFOFILESPEC);
     json_object_object_get_ex(jvinfo, "downloads", &jdl);
     json_object_object_get_ex(jdl, "server", &jserv);
     json_object_object_get_ex(jserv, "url", &jservurl);
+    urlserverjar = json_object_get_string(jservurl);
+    if (urlserverjar == NULL) {
+        printf ("Error parsing versioninfo.\n");
+        return -1;
+    }
+
     char serverfilespec[50];
-    snprintf(serverfilespec, sizeof serverfilespec, "./database/server_%s.jar", verid);
-    download_url_into_file(json_object_get_string(jservurl),serverfilespec);
-    
-    
-    //hope for java on the machine
-    //minecraft installs with java 
-    char *javapath = findjava();
-    printf("%s\n",javapath);
+    snprintf(serverfilespec, sizeof(serverfilespec), "./database/server_%s.jar", verid);
 
+    // Download server.jar from Mojang
+    rc = download_url_into_file(urlserverjar,serverfilespec);
+    if (rc) {
+        printf ("Error downloading server.jar. %d\n",rc);
+        return -1;
+    }
 
+    // Find path to java
+    char *javafilepath = findjavapath();
+    if (!javafilepath) {
+        printf ("Error finding Java path.\n");
+        return -1;
+    }
 
-    
-    //char javacommand[100];
-    //snprintf(serverfilespec, sizeof serverfilespec, "java -cp %s net.minecraft.data.Main --all", serverfilespec);
-    //system(javacommand);
-    return;
+    // run the server.jar to extract items.json and blocks.json
+    char *cmd;
+    cmd = malloc(strlen(javafilepath)+100);
+    sprintf(cmd,"cd database; %s/java.exe -cp server_%s.jar net.minecraft.data.Main --all",javafilepath,verid);
+    FILE *fp = popen(cmd,"r");
+    if (fp == NULL) {
+        printf("Error launching java\n");
+        return -1;
+    }
+    char buf[200];
+    while (fgets(buf, 200, fp) != NULL) {
+        printf("%s", buf);   //watch output of the java command
+    }
+    rc = pclose(fp);
+    if (rc) {
+        printf("Error processing java command %d\n",rc);
+        return -1;
+    }
+
+    //Move the generated items.json and blocks.json into ./database
+    rc = rename("./database/generated/reports/items.json", "./database/items.json");
+    rc |= rename("./database/generated/reports/blocks.json","./database/blocks.json");
+    if (rc) {
+        printf("Error couldnt move the items blocks json to the database directory. %d\n",rc);
+        return -1;
+    }
+
+    //Cleanup
+    rc = system("rm -rf ./database/generated");
+    rc |= system("rm -rf ./database/logs");
+    rc |= remove(VERINFOFILESPEC);
+    rc |= remove(MANIFESTFILESPEC);
+    // rc |= remove(serverfilespec);     //if we want to remove the server.jar too
+    if (rc) {
+        printf("Warning: Couldnt cleanup. %d",rc);
+    }
+
+    return 0;
 }
-
-
-
-
-
 
 
 

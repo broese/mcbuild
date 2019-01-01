@@ -18,9 +18,9 @@ typedef struct {
   int id;
 }  item_t;
 
-typedef struct { 
+typedef struct {
   const char *pname;
-  const char *pvalue; 
+  const char *pvalue;
 }  prop_t;
 
 typedef struct {
