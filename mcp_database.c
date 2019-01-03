@@ -39,6 +39,8 @@ int get_default_blockid_from_block_state_json(json_object *blkstatearrjson) {
 
 //forward declaration
 int try_to_get_missing_json_files(int protocol_id);
+int save_db_to_file(database_t *db);
+int load_db_from_file(FILE* fp);
 
 database_t *load_database(int protocol_id) {
 
@@ -51,8 +53,24 @@ database_t *load_database(int protocol_id) {
 
     char *blockjsonfilepath = "./database/blocks.json";    //TODO: become blocks_404.json
     char *itemjsonfilepath = "./database/items.json";  //TODO: become items_404.json
+    char *dbfilespec = "./database/mcb_db_404.txt";  //TODO: Protocol Specific
 
-    //Check for the proper blocks.json and items.json in the database directory
+    //First Method: if the db file already exists, load it.
+    FILE *dbfile = fopen(dbfilespec, "r");
+    if (dbfile) {
+        int rc = load_db_from_file(dbfile);
+        fclose(dbfile);
+        if (!rc) {
+            printf("Database successfully loaded from file\n");
+            return &db;
+        }
+        else {
+            //unload failed attempt move to method 2 or 3
+            //unload_all_databases();
+        }
+    }
+
+    //Second Method: Check for the proper blocks.json and items.json in the database directory
     FILE *f1 = fopen(blockjsonfilepath, "r");
     FILE *f2 = fopen(itemjsonfilepath, "r");
     if ( f1 && f2 ) {
@@ -60,7 +78,7 @@ database_t *load_database(int protocol_id) {
         fclose(f2);
     }
     else {
-        //Attempt to download server.jar and extract them from it
+        //Third Method: Attempt to download server.jar and extract them from it
         int rc = try_to_get_missing_json_files(protocol_id);
         if (rc) {
             printf("Error couldnt load database\n");
@@ -192,7 +210,7 @@ database_t *load_database(int protocol_id) {
 
 
     }
-
+    save_db_to_file(&db);
     return &db;
 }
 
@@ -270,6 +288,7 @@ int get_block_default_id(database_t *db, int id) {
     }
     return defid;
 }
+
 void dump_db_blocks(database_t *db, int maxlines){
     printf("Dumping Blocks...\n");
     printf("%30s %05s %05s %05s %s\n","blockname","blkid","oldid","defid","#prop");
@@ -333,9 +352,9 @@ int dump_db_items_to_csv_file(database_t *db) {
 }
 
 int save_db_to_file(database_t *db) {
-    FILE *fp = fopen("./database/mcb_db_404.tmp","w");
+    FILE *fp = fopen("./database/mcb_db_404.txt","w");
     if  ( fp == NULL ) {
-        printf("Can't open temp file\n");
+        printf("Can't open txt file\n");
         return -1;
     }
     fprintf(fp, "%d\n", db->protocol);
@@ -359,6 +378,61 @@ int save_db_to_file(database_t *db) {
     fclose(fp);
     return 0;
 }
+
+int load_db_from_file(FILE* fp) {
+
+    char buf[100];
+
+    db.initialized = 1;
+    fgets(buf,100,fp);
+    db.protocol = atoi(buf);
+    fgets(buf,100,fp);
+    db.itemcount = atoi(buf);
+    fgets(buf,100,fp);
+    db.blockcount = atoi(buf);
+    for (int i=0; i < db.itemcount; i++) {
+        fgets(buf,100,fp);
+        db.item[i].id = atoi(buf);
+        fgets(buf,100,fp);
+        buf[strcspn(buf, "\n")] = 0;
+        char *itemname = malloc(strlen(buf)+1);
+        strcpy(itemname,buf);
+        db.item[i].name = itemname;
+    }
+    for (int i=0; i < db.blockcount; i++) {
+        fgets(buf,100,fp);
+        buf[strcspn(buf, "\n")] = 0;
+        char *blockname = malloc(strlen(buf)+1);
+        strcpy(blockname,buf);
+        db.block[i].name = blockname;
+        fgets(buf,100,fp);
+        db.block[i].id = atoi(buf);
+        fgets(buf,100,fp);
+        db.block[i].oldid = atoi(buf);
+        fgets(buf,100,fp);
+        db.block[i].defaultid = atoi(buf);
+        fgets(buf,100,fp);
+        db.block[i].propcount = atoi(buf);
+        for (int j=0; j < db.block[i].propcount; j++) {
+            fgets(buf,100,fp);
+            buf[strcspn(buf, "\n")] = 0;
+            char *propname = malloc(strlen(buf)+1);
+            strcpy(propname,buf);
+            db.block[i].prop[j].pname = propname;
+            fgets(buf,100,fp);
+            buf[strcspn(buf, "\n")] = 0;
+            char *propvalue = malloc(strlen(buf)+1);
+            strcpy(propvalue,buf);
+            db.block[i].prop[j].pvalue = propvalue;
+        }
+    }
+    if (fgets(buf,100,fp)) {
+        printf("Error loading db from file..too many lines\n");
+        return -1;
+    }
+    return 0;
+}
+
 
 // get_block_propval(db,14,"facing") => NULL // no such property
 // get_block_propval(db,1650,"facing") => "north"
