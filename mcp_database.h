@@ -35,7 +35,6 @@ typedef struct {
 
 typedef struct {
   int protocol;
-  int initialized;
   lh_arr_declare(item_t, item);
   lh_arr_declare(block_t, block);
 } database_t;

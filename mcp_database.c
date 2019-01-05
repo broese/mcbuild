@@ -20,6 +20,8 @@
 
 #define TESTEXAMPLES //show test examples after loading db
 
+char *databasefilepath = "./database";
+
 lh_arr_declare(database_t,dbs);
 
 //forward declaration
@@ -34,6 +36,9 @@ database_t *load_database(int protocol_id) {
     for (int i=0; i<C(dbs); i++) {
         if ( P(dbs)[i].protocol == protocol_id ) {
             printf("Database %d already loaded, returning the pointer.\n",i);
+            #ifdef TESTEXAMPLES
+                test_examples(&P(dbs)[i]);
+            #endif
             return &P(dbs)[i];
         }
     }
@@ -44,9 +49,14 @@ database_t *load_database(int protocol_id) {
     //TODO: Protocol Specific
     assert(protocol_id == 404);
 
-    char *blockjsonfilepath = "./database/blocks.json";    //TODO: become blocks_404.json
-    char *itemjsonfilepath = "./database/items.json";  //TODO: become items_404.json
-    char *dbfilespec = "./database/mcb_db_404.txt";  //TODO: Protocol Specific
+    char *blockjsonfilespec = malloc(strlen(databasefilepath)+20);
+    sprintf(blockjsonfilespec, "%s/blocks_%d.json",databasefilepath,protocol_id);  //example "./database/blocks_404.json"
+
+    char *itemjsonfilespec = malloc(strlen(databasefilepath)+20);
+    sprintf(itemjsonfilespec, "%s/items_%d.json",databasefilepath,protocol_id);  //example: "./database/items_404.json"
+
+    char *dbfilespec = malloc(strlen(databasefilepath)+20);
+    sprintf(dbfilespec, "%s/mcb_db_%d.txt",databasefilepath,protocol_id);  //example: "./database/mcb_db_404.txt"
 
     //First Method: if the db file already exists, load it.
     FILE *dbfile = fopen(dbfilespec, "r");
@@ -54,7 +64,7 @@ database_t *load_database(int protocol_id) {
         int rc = load_db_from_file(db, dbfile);
         fclose(dbfile);
         if (!rc) {
-            printf("Database successfully loaded from file\n");
+            printf("Database successfully loaded from %s\n",dbfilespec);
             #ifdef TESTEXAMPLES
                 test_examples(db);
             #endif
@@ -67,13 +77,15 @@ database_t *load_database(int protocol_id) {
     }
 
     //Second Method: Check for the proper blocks.json and items.json in the database directory
-    FILE *f1 = fopen(blockjsonfilepath, "r");
-    FILE *f2 = fopen(itemjsonfilepath, "r");
+    FILE *f1 = fopen(blockjsonfilespec, "r");
+    FILE *f2 = fopen(itemjsonfilespec, "r");
     if ( f1 && f2 ) {
         fclose(f1);
         fclose(f2);
+        printf("Loading %s and %s\n",blockjsonfilespec,itemjsonfilespec);
     }
     else {
+        printf("%s and/or %s not found or available.\n",blockjsonfilespec,itemjsonfilespec);
         //Third Method: Attempt to download server.jar and extract them from it
         int rc = try_to_get_missing_json_files(protocol_id);
         if (rc) {
@@ -84,7 +96,6 @@ database_t *load_database(int protocol_id) {
     }
 
     db->protocol = protocol_id;
-    db->initialized = 1;
 
     //////////////////////////////////
     //  Load blocks.json into db    //
@@ -92,7 +103,7 @@ database_t *load_database(int protocol_id) {
 
     //load the blocks.json file into a parsed json object in memory
     json_object *jblkmain, *blockstatejson, *blockstatesarrayjson, *blockidjson, *blockpropjson, *blockdefaultidjson;
-    jblkmain = json_object_from_file (blockjsonfilepath);
+    jblkmain = json_object_from_file (blockjsonfilespec);
 
     int namecount = 0;
     //loop through each block(name) which is the top level of the json
@@ -168,7 +179,7 @@ database_t *load_database(int protocol_id) {
     json_object *jobj, *itemidstructurejson, *itemidjson;
 
     //load the items.json file into a parsed json object in memory
-    jobj = json_object_from_file (itemjsonfilepath);
+    jobj = json_object_from_file (itemjsonfilespec);
 
      //initialize an iterator. "it" is the iterator and "itEnd" is the end of the json where the iterations stop
     struct json_object_iterator it = json_object_iter_begin(jobj);
@@ -230,7 +241,7 @@ const char *get_item_name_from_db(database_t *db, int item_id) {  //there's alre
     if (item_id == -1) {
         return "Empty";
     }
-    if (item_id < -1 || item_id > C(db->item)) {
+    if (item_id < -1 || item_id >= C(db->item)) {
         return "ID out of bounds";
     }
     for (int i=0; i < C(db->item); i++) {
@@ -248,7 +259,7 @@ const char * get_block_name(database_t *db, int id) {
     if (id == -1) {
         return "Empty";
     }
-    if (id < -1 || id > C(db->block)) {
+    if (id < -1 || id >= C(db->block)) {
         return "ID out of bounds";
     }
     for (int i=0; i < C(db->block); i++) {
@@ -266,7 +277,7 @@ const char * get_block_name_from_old_id(database_t *db, int oldid) {
     if (oldid == -1) {
         return "Empty";
     }
-    if (oldid < -1 || oldid > P(db->block)[C(db->block)-1].oldid) {
+    if (oldid < -1 || oldid >= P(db->block)[C(db->block)-1].oldid) {
         return "ID out of bounds";
     }
     for (int i=0; i < C(db->block); i++) {
@@ -383,7 +394,6 @@ int load_db_from_file(database_t *db, FILE* fp) {
     char buf[100];
     int itemcount, blockcount,propcount;
 
-    db->initialized = 1;
     fgets(buf,100,fp);
     db->protocol = atoi(buf);
     fgets(buf,100,fp);
@@ -441,7 +451,7 @@ int load_db_from_file(database_t *db, FILE* fp) {
 // get_block_propval(db,1650,"facing") => "north"
 // get_block_propval(db,1686,"half") => "bottom"
 const char * get_block_propval(database_t *db, int id, const char *propname) {
-    if (id < 0 || id > C(db->block)) {
+    if (id < 0 || id >= C(db->block)) {
         return NULL;
     }
     for (int i=0; i < C(db->block); i++) {
