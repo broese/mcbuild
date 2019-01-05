@@ -20,19 +20,26 @@
 
 #define TESTEXAMPLES //show test examples after loading db
 
-database_t db;
+lh_arr_declare(database_t,dbs);
 
 //forward declaration
 int try_to_get_missing_json_files(int protocol_id);
 int save_db_to_file(database_t *db);
-int load_db_from_file(FILE* fp);
+int load_db_from_file(database_t *db, FILE* fp);
 int test_examples(database_t *db);
 
 database_t *load_database(int protocol_id) {
 
-    if (db.initialized) {
-        return &db;
+    //check if the db for this protocol is already loaded
+    for (int i=0; i<C(dbs); i++) {
+        if ( P(dbs)[i].protocol == protocol_id ) {
+            printf("Database %d already loaded, returning the pointer.\n",i);
+            return &P(dbs)[i];
+        }
     }
+
+    //need a new database in the array of databases
+    database_t *db = lh_arr_new_c(GAR(dbs));
 
     //TODO: Protocol Specific
     assert(protocol_id == 404);
@@ -44,14 +51,14 @@ database_t *load_database(int protocol_id) {
     //First Method: if the db file already exists, load it.
     FILE *dbfile = fopen(dbfilespec, "r");
     if (dbfile) {
-        int rc = load_db_from_file(dbfile);
+        int rc = load_db_from_file(db, dbfile);
         fclose(dbfile);
         if (!rc) {
             printf("Database successfully loaded from file\n");
             #ifdef TESTEXAMPLES
-                test_examples(&db);
+                test_examples(db);
             #endif
-            return &db;
+            return db;
         }
         else {
             //unload failed attempt move to method 2 or 3
@@ -76,8 +83,8 @@ database_t *load_database(int protocol_id) {
         //Now the files are there
     }
 
-    db.protocol = protocol_id;
-    db.initialized = 1;
+    db->protocol = protocol_id;
+    db->initialized = 1;
 
     //////////////////////////////////
     //  Load blocks.json into db    //
@@ -114,7 +121,7 @@ database_t *load_database(int protocol_id) {
         //each state's json contains { id: ...,  [default]:..., [properties]: {...,...} }
         for (int i=0; i<statesarrlen; i++) {
             //allocate a new block in the db array
-            block_t *blk = lh_arr_new_c(GAR(db.block));
+            block_t *blk = lh_arr_new_c(GAR(db->block));
 
             //get this block state's json
             blockstatejson = json_object_array_get_idx(blockstatesarrayjson, i);
@@ -187,7 +194,7 @@ database_t *load_database(int protocol_id) {
         assert(!strncmp(itemname,"minecraft:",10));
 
         //create another element in the item array
-        item_t *itm = lh_arr_new_c(GAR(db.item));
+        item_t *itm = lh_arr_new_c(GAR(db->item));
 
         //store the item name into dbrecord using pointer arithmetic to get rid of the "minecraft:"
         itm->name = itemname + 10;
@@ -198,13 +205,13 @@ database_t *load_database(int protocol_id) {
         // iterate through the json iterator
         json_object_iter_next(&it);
     }
-    save_db_to_file(&db);
+    save_db_to_file(db);
 
     #ifdef TESTEXAMPLES
-        test_examples(&db);
+        test_examples(db);
     #endif
 
-    return &db;
+    return db;
 }
 
 int get_item_id(database_t *db, const char *name) {
@@ -371,20 +378,20 @@ int save_db_to_file(database_t *db) {
     return 0;
 }
 
-int load_db_from_file(FILE* fp) {
+int load_db_from_file(database_t *db, FILE* fp) {
 
     char buf[100];
     int itemcount, blockcount,propcount;
 
-    db.initialized = 1;
+    db->initialized = 1;
     fgets(buf,100,fp);
-    db.protocol = atoi(buf);
+    db->protocol = atoi(buf);
     fgets(buf,100,fp);
     itemcount = atoi(buf);
     fgets(buf,100,fp);
     blockcount = atoi(buf);
     for (int i=0; i < itemcount; i++) {
-        item_t *itm = lh_arr_new_c(GAR(db.item));
+        item_t *itm = lh_arr_new_c(GAR(db->item));
         fgets(buf,100,fp);
         itm->id = atoi(buf);
         fgets(buf,100,fp);
@@ -394,7 +401,7 @@ int load_db_from_file(FILE* fp) {
         itm->name = itemname;
     }
     for (int i=0; i < blockcount; i++) {
-        block_t *blk = lh_arr_new_c(GAR(db.block));
+        block_t *blk = lh_arr_new_c(GAR(db->block));
         fgets(buf,100,fp);
         buf[strcspn(buf, "\n")] = 0;
         char *blockname = malloc(strlen(buf)+1);
@@ -623,6 +630,13 @@ int test_examples(database_t *db) {
     printf("get_item_name_from_db(db, 788)        = %s (nautilus_shell)\n", get_item_name_from_db(db, 788));
     printf("get_block_name(db, 8596)              = %s (structure_block)\n", get_block_name(db, 8596));
     printf("get_block_default_id(db, 8596)        = %d (8595)\n",get_block_default_id(db, 8596));
+
+    printf("\nNumber of blocks: %d\n",C(db->block));
+    printf("Number of items: %d\n", C(db->item));
+
+    printf("\nNow testing errors \n");
+    printf("get_block_name(db, 8599)              = %s (out of bounds)\n", get_block_name(db, 8599));
+    printf("get_block_name(db, 8600)              = %s (out of bounds)\n", get_block_name(db, 8600));
     return 0;
 }
 //struct prop_t { const char *pname, const char *pvalue };

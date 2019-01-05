@@ -2223,6 +2223,7 @@ void decode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *p) {
 ////////////////////////////////////////////////////////////////////////////////
 
 int currentProtocol = PROTO_NONE;
+database_t *db = NULL;
 
 const static packet_methods (* SUPPORT)[MAXPACKETTYPES] = NULL;
 
