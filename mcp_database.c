@@ -18,22 +18,15 @@
 #include "lh_files.h"
 #include "lh_dir.h"
 
+#define TESTEXAMPLES //show test examples after loading db
 
 database_t db;
-
-int test_examples(database_t *db) {
-    printf("get_block_propval(db,1686,\"half\")   = %s (bottom)\n",get_block_propval(db,1686,"half"));
-    printf("get_item_id(db, \"heart_of_the_sea\") = %d (789)\n", get_item_id(db, "heart_of_the_sea"));
-    printf("get_item_name_from_db(db, 788)        = %s (nautilus_shell)\n", get_item_name_from_db(db, 788));
-    printf("get_block_name(db, 8596)              = %s (structure_block)\n", get_block_name(db, 8596));
-    printf("get_block_default_id(db, 8596)        = %d (8595)\n",get_block_default_id(db, 8596));
-    return 0;
-}
 
 //forward declaration
 int try_to_get_missing_json_files(int protocol_id);
 int save_db_to_file(database_t *db);
 int load_db_from_file(FILE* fp);
+int test_examples(database_t *db);
 
 database_t *load_database(int protocol_id) {
 
@@ -55,6 +48,9 @@ database_t *load_database(int protocol_id) {
         fclose(dbfile);
         if (!rc) {
             printf("Database successfully loaded from file\n");
+            #ifdef TESTEXAMPLES
+                test_examples(&db);
+            #endif
             return &db;
         }
         else {
@@ -166,51 +162,59 @@ database_t *load_database(int protocol_id) {
     //load the items.json file into a parsed json object in memory
     jobj = json_object_from_file (itemjsonfilepath);
 
-     //initialize an iterator. "it" is our iterator and "itEnd" is the end of the json where the iterations stop
+     //initialize an iterator. "it" is the iterator and "itEnd" is the end of the json where the iterations stop
     struct json_object_iterator it = json_object_iter_begin(jobj);
     struct json_object_iterator itEnd = json_object_iter_end(jobj);
 
     //loop through each record of the json
-    //note structure is { item_name : { "protocol_id" : value } } so our value is nested within another json
+    //note structure is { item_name : { "protocol_id" : value } } so the value is nested within another json
     while (!json_object_iter_equal(&it, &itEnd)) {
 
         // the name of the json record is the item_name itself
         const char* itemname = json_object_iter_peek_name(&it);
 
-        // the value of this pair is another json so we need to go one level deeper for the item_id
+        // the value of this pair is another json so go one level deeper for the item_id
         itemidstructurejson = json_object_iter_peek_value(&it);
 
-        // process the internal json, where we look for the key "protocol_id" and get its value (the item_id)
+        // process the internal json, look for the key "protocol_id" and get its value (the item_id)
         json_object_object_get_ex(itemidstructurejson,"protocol_id", &itemidjson);
 
         // convert the value of protocol_id from an abstract object into an integer
         int itemid = json_object_get_int(itemidjson);
 
-        // confirm that our item name begins with "minecraft:"
+        // confirm that item name begins with "minecraft:"
         assert(!strncmp(itemname,"minecraft:",10));
 
-        //store the item name into our dbrecord using pointer arithmetic to get rid of the "minecraft:"
-        db.item[db.itemcount].name = itemname+10;
+        //create another element in the item array
+        item_t *itm = lh_arr_new_c(GAR(db.item));
 
-        //store the item_id into our dbrecord
-        db.item[db.itemcount].id = itemid;
+        //store the item name into dbrecord using pointer arithmetic to get rid of the "minecraft:"
+        itm->name = itemname + 10;
 
-        // keep track of the element of the array we are on, and the final count will be useful when searching through the db
+        //store the item_id into dbrecord
+        itm->id = itemid;
+        //db.item[db.itemcount].id = itemid;
+
+        // update the count of the number of items in the db
         db.itemcount++;
 
         // iterate through the json iterator
         json_object_iter_next(&it);
     }
     save_db_to_file(&db);
-    //test_examples(&db);
+
+    #ifdef TESTEXAMPLES
+        test_examples(&db);
+    #endif
+
     return &db;
 }
 
 int get_item_id(database_t *db, const char *name) {
     int id = -1;
     for (int i =0; i < db->itemcount; i++) {
-        if (!strcmp(db->item[i].name, name)) {
-            id = db->item[i].id;
+        if (!strcmp(db->P(item)[i].name, name)) {
+            id = db->P(item)[i].id;
             break;
         }
     }
@@ -226,9 +230,9 @@ const char *get_item_name_from_db(database_t *db, int item_id) {  //there's alre
         return "ID out of bounds";
     }
     for (int i=0; i < db->itemcount; i++) {
-        if (item_id == db->item[i].id) {
-            buf = malloc(strlen(db->item[i].name)+1);
-            strcpy(buf,db->item[i].name);
+        if (item_id == db->P(item)[i].id) {
+            buf = malloc(strlen(db->P(item)[i].name)+1);
+            strcpy(buf,db->P(item)[i].name);
             return buf;
         }
     }
@@ -300,8 +304,8 @@ void dump_db_blocks(database_t *db, int maxlines){
 void dump_db_items(database_t *db, int maxlines){
     printf("Dumping Items...\n");
     for (int i=0; (i < db->itemcount) && (i < maxlines) ; i++) {
-        printf("%30s ", db->item[i].name);
-        printf("%05d ", db->item[i].id);
+        printf("%30s ", db->P(item)[i].name);
+        printf("%05d ", db->P(item)[i].id);
         printf("\n");
     }
 }
@@ -336,8 +340,8 @@ int dump_db_items_to_csv_file(database_t *db) {
     }
     fprintf(fp, "%s,%s\n", "itemname","id");
     for (int i=0; i < db->itemcount ; i++) {
-        fprintf(fp, "%s,", db->item[i].name);
-        fprintf(fp, "%d\n", db->item[i].id);
+        fprintf(fp, "%s,", db->P(item)[i].name);
+        fprintf(fp, "%d\n", db->P(item)[i].id);
     }
     fclose(fp);
     return 0;
@@ -353,8 +357,8 @@ int save_db_to_file(database_t *db) {
     fprintf(fp, "%d\n", db->itemcount);
     fprintf(fp, "%d\n", db->blockcount);
     for (int i=0; i < db->itemcount; i++) {
-        fprintf(fp, "%d\n",db->item[i].id);
-        fprintf(fp, "%s\n",db->item[i].name);
+        fprintf(fp, "%d\n",db->P(item)[i].id);
+        fprintf(fp, "%s\n",db->P(item)[i].name);
     }
     for (int i=0; i < db->blockcount; i++) {
         fprintf(fp, "%s\n",db->block[i].name);
@@ -383,13 +387,14 @@ int load_db_from_file(FILE* fp) {
     fgets(buf,100,fp);
     db.blockcount = atoi(buf);
     for (int i=0; i < db.itemcount; i++) {
+        item_t *itm = lh_arr_new_c(GAR(db.item));
         fgets(buf,100,fp);
-        db.item[i].id = atoi(buf);
+        itm->id = atoi(buf);
         fgets(buf,100,fp);
         buf[strcspn(buf, "\n")] = 0;
         char *itemname = malloc(strlen(buf)+1);
         strcpy(itemname,buf);
-        db.item[i].name = itemname;
+        itm->name = itemname;
     }
     for (int i=0; i < db.blockcount; i++) {
         fgets(buf,100,fp);
@@ -613,9 +618,14 @@ int try_to_get_missing_json_files(int protocol_id) {
     return 0;
 }
 
-
-
-
+int test_examples(database_t *db) {
+    printf("get_block_propval(db,1686,\"half\")     = %s (bottom)\n",get_block_propval(db,1686,"half"));
+    printf("get_item_id(db, \"heart_of_the_sea\")   = %d (789)\n", get_item_id(db, "heart_of_the_sea"));
+    printf("get_item_name_from_db(db, 788)        = %s (nautilus_shell)\n", get_item_name_from_db(db, 788));
+    printf("get_block_name(db, 8596)              = %s (structure_block)\n", get_block_name(db, 8596));
+    printf("get_block_default_id(db, 8596)        = %d (8595)\n",get_block_default_id(db, 8596));
+    return 0;
+}
 //struct prop_t { const char *pname, const char *pvalue };
 // prop_t * defines a set of properties I'm interested in. It's a list no longer than 3 I guess
 // how should we define the length? it could be {NULL,NULL} terminated or length explicitly given.

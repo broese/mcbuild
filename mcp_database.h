@@ -10,6 +10,8 @@
 
 #pragma once
 
+#include "lh_arr.h"
+
 ///////////////////////////////////////////////////////////////
 // block and item database
 
@@ -37,7 +39,7 @@ typedef struct {
   int initialized;
   int itemcount;
   int blockcount;
-  item_t item[1000];
+  lh_arr_declare(item_t, item);
   block_t block[9000];
 } database_t;
 
