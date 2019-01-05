@@ -325,7 +325,9 @@ void dump_db_items(database_t *db, int maxlines){
 }
 
 int dump_db_blocks_to_csv_file(database_t *db) {
-    FILE *fp = fopen("./database/mcb_db_404_blocks.csv","w");
+    char *blockcsvfilespec = malloc(strlen(databasefilepath)+30);
+    sprintf(blockcsvfilespec, "%s/mcb_db_%d_blocks.csv",databasefilepath,db->protocol);
+    FILE *fp = fopen(blockcsvfilespec,"w");
     if  ( fp == NULL ) {
         printf("Can't open csv file\n");
         return -1;
@@ -347,7 +349,9 @@ int dump_db_blocks_to_csv_file(database_t *db) {
 }
 
 int dump_db_items_to_csv_file(database_t *db) {
-    FILE *fp = fopen("./database/mcb_db_404_items.csv","w");
+    char *itemcsvfilespec = malloc(strlen(databasefilepath)+30);
+    sprintf(itemcsvfilespec, "%s/mcb_db_%d_items.csv",databasefilepath,db->protocol);
+    FILE *fp = fopen(itemcsvfilespec,"w");
     if  ( fp == NULL ) {
         printf("Can't open csv file\n");
         return -1;
@@ -362,7 +366,9 @@ int dump_db_items_to_csv_file(database_t *db) {
 }
 
 int save_db_to_file(database_t *db) {
-    FILE *fp = fopen("./database/mcb_db_404.txt","w");
+    char *dbfilespec = malloc(strlen(databasefilepath)+20);
+    sprintf(dbfilespec, "%s/mcb_db_%d.txt",databasefilepath,db->protocol);  //example: "./database/mcb_db_404.txt"
+    FILE *fp = fopen(dbfilespec,"w");
     if  ( fp == NULL ) {
         printf("Can't open txt file\n");
         return -1;
@@ -526,8 +532,9 @@ int try_to_get_missing_json_files(int protocol_id) {
 
     // Download version manifest from Mojang
     char *MANIFESTURL = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
-    char *MANIFESTFILESPEC = "./database/version_manifest.json";
-    rc = download_url_into_file(MANIFESTURL,MANIFESTFILESPEC);
+    char *manifestfilespec = malloc(strlen(databasefilepath)+30);
+    sprintf(manifestfilespec, "%s/version_manifest.json",databasefilepath);
+    rc = download_url_into_file(MANIFESTURL,manifestfilespec);
     if (rc) {
         printf ("Error downloading version manifest. %d\n",rc);
         return -1;
@@ -538,7 +545,7 @@ int try_to_get_missing_json_files(int protocol_id) {
     const char *urlversioninfo;
 
     // Parse version manifest to get the versioninfo download url for this version
-    jman = json_object_from_file (MANIFESTFILESPEC);
+    jman = json_object_from_file (manifestfilespec);
     json_object_object_get_ex(jman, "versions", &jver);
     int numversions = json_object_array_length(jver);
     for (int i=0; i<numversions; i++) {
@@ -556,8 +563,9 @@ int try_to_get_missing_json_files(int protocol_id) {
     }
 
     // Download versioninfo json from Mojang
-    char *VERINFOFILESPEC = "./database/versioninfo.json";
-    rc = download_url_into_file(urlversioninfo,VERINFOFILESPEC);
+    char *verinfofilespec = malloc(strlen(databasefilepath)+30);
+    sprintf(verinfofilespec, "%s/versioninfo.json",databasefilepath);
+    rc = download_url_into_file(urlversioninfo,verinfofilespec);
     if (rc) {
         printf ("Error downloading versioninfo. %d\n",rc);
         return -1;
@@ -567,7 +575,7 @@ int try_to_get_missing_json_files(int protocol_id) {
     const char *urlserverjar;
 
     // Parse versioninfo json to get the server.jar download url for this version
-    jvinfo = json_object_from_file(VERINFOFILESPEC);
+    jvinfo = json_object_from_file(verinfofilespec);
     json_object_object_get_ex(jvinfo, "downloads", &jdl);
     json_object_object_get_ex(jdl, "server", &jserv);
     json_object_object_get_ex(jserv, "url", &jservurl);
@@ -578,12 +586,12 @@ int try_to_get_missing_json_files(int protocol_id) {
     }
 
     char serverfilespec[50];
-    snprintf(serverfilespec, sizeof(serverfilespec), "./database/server_%s.jar", verid);
+    snprintf(serverfilespec, sizeof(serverfilespec), "%s/server_%s.jar", databasefilepath, verid);
 
     // Download server.jar from Mojang
     rc = download_url_into_file(urlserverjar,serverfilespec);
     if (rc) {
-        printf ("Error downloading server.jar. %d\n",rc);
+        printf ("Error downloading server.jar. rc=%d\n",rc);
         return -1;
     }
 
@@ -614,8 +622,14 @@ int try_to_get_missing_json_files(int protocol_id) {
     }
 
     //Move the generated items.json and blocks.json into ./database
-    rc = rename("./database/generated/reports/items.json", "./database/items.json");
-    rc |= rename("./database/generated/reports/blocks.json","./database/blocks.json");
+    char *blockjsonfilespec = malloc(strlen(databasefilepath)+20);
+    sprintf(blockjsonfilespec, "%s/blocks_%d.json",databasefilepath,protocol_id);  //example "./database/blocks_404.json"
+
+    char *itemjsonfilespec = malloc(strlen(databasefilepath)+20);
+    sprintf(itemjsonfilespec, "%s/items_%d.json",databasefilepath,protocol_id);  //example: "./database/items_404.json"
+
+    rc = rename("./database/generated/reports/items.json", itemjsonfilespec);
+    rc |= rename("./database/generated/reports/blocks.json", blockjsonfilespec);
     if (rc) {
         printf("Error couldnt move the items blocks json to the database directory. %d\n",rc);
         return -1;
@@ -624,8 +638,8 @@ int try_to_get_missing_json_files(int protocol_id) {
     //Cleanup
     rc = system("rm -rf ./database/generated");
     rc |= system("rm -rf ./database/logs");
-    rc |= remove(VERINFOFILESPEC);
-    rc |= remove(MANIFESTFILESPEC);
+    rc |= remove(verinfofilespec);
+    rc |= remove(manifestfilespec);
     // rc |= remove(serverfilespec);     //if we want to remove the server.jar too
     if (rc) {
         printf("Warning: Couldnt cleanup. %d",rc);
