@@ -21,20 +21,13 @@
 
 database_t db;
 
-int get_default_blockid_from_block_state_json(json_object *blkstatearrjson) {
-    json_object *blockstatejson, *blockdefaultidjson;
-    int statesarrlen = json_object_array_length(blkstatearrjson);
-    for (int i=0; i<statesarrlen; i++) {
-        blockstatejson = json_object_array_get_idx(blkstatearrjson, i);
-        json_object_object_get_ex(blockstatejson,"default", &blockdefaultidjson);
-        if(json_object_get_boolean(blockdefaultidjson)) {
-            //found the default:true keypair so get the block id of this state
-            json_object_object_get_ex(blockstatejson,"id", &blockdefaultidjson);
-            int defaultid = json_object_get_int(blockdefaultidjson);
-            return defaultid;
-        }
-    }
-    return -1; //not found
+int test_examples(database_t *db) {
+    printf("get_block_propval(db,1686,\"half\")   = %s (bottom)\n",get_block_propval(db,1686,"half"));
+    printf("get_item_id(db, \"heart_of_the_sea\") = %d (789)\n", get_item_id(db, "heart_of_the_sea"));
+    printf("get_item_name_from_db(db, 788)        = %s (nautilus_shell)\n", get_item_name_from_db(db, 788));
+    printf("get_block_name(db, 8596)              = %s (structure_block)\n", get_block_name(db, 8596));
+    printf("get_block_default_id(db, 8596)        = %d (8595)\n",get_block_default_id(db, 8596));
+    return 0;
 }
 
 //forward declaration
@@ -96,33 +89,39 @@ database_t *load_database(int protocol_id) {
     //  Load blocks.json into db    //
     //////////////////////////////////
 
-    //load the blocks.json into memory
-    uint8_t *bufblocks;
-    ssize_t szblocks = lh_load_alloc(blockjsonfilepath, &bufblocks);
-    lh_resize(bufblocks, szblocks+1);
-
-    json_object *jblkmain, *blockstatejson, *blockstatesarrayjson, *blockidjson, *blockpropjson;
-    jblkmain = json_tokener_parse(bufblocks);
+    //load the blocks.json file into a parsed json object in memory
+    json_object *jblkmain, *blockstatejson, *blockstatesarrayjson, *blockidjson, *blockpropjson, *blockdefaultidjson;
+    jblkmain = json_object_from_file (blockjsonfilepath);
 
     int namecount = 0;
     //loop through each block(name) which is the top level of the json
     json_object_object_foreach(jblkmain, keymain, valmain) {
 
-        //valmain is more json with { Properties: ... , States: [ ... , ... ] } and we want the states.
+        //valmain is more json with { properties: ... , states: [ ... , ... ] } and we want the states.
         json_object_object_get_ex(valmain,"states", &blockstatesarrayjson);
 
-        //get the default blockid for this blockname -- only in its own sub for clarity during programming
-        int defaultid = get_default_blockid_from_block_state_json(blockstatesarrayjson);
-
-        //how many states are there
-        int numstates = json_object_array_length(blockstatesarrayjson);
-
-        //loop through each state (blockid) of this blockname
+        //first get the default blockid for this blockname -- needed when populating the database in the second loop below
+        int defaultid = -1;
+        //get the number of states (blockids) for this blockname
+        int statesarrlen = json_object_array_length(blockstatesarrayjson);
+        //loop through each blockid looking for which one is the default
+        for (int i=0; i<statesarrlen; i++) {
+            blockstatejson = json_object_array_get_idx(blockstatesarrayjson, i);
+            //look for the default:true keypair
+            json_object_object_get_ex(blockstatejson,"default", &blockdefaultidjson);
+            if(json_object_get_boolean(blockdefaultidjson)) {
+                //found the default:true keypair so get the block id of this state and save it as the default id
+                json_object_object_get_ex(blockstatejson,"id", &blockdefaultidjson);
+                defaultid = json_object_get_int(blockdefaultidjson);
+                break;
+            }
+        }
+        //now that we have the default id for this blockname, loop through every state again to populate the database
         //each state's json contains { id: ...,  [default]:..., [properties]: {...,...} }
-        for (int i=0; i<numstates; i++) {
+        for (int i=0; i<statesarrlen; i++) {
             blockstatejson = json_object_array_get_idx(blockstatesarrayjson, i);
 
-            //get the blockid
+            //get the blockid of this state
             json_object_object_get_ex(blockstatejson,"id", &blockidjson);
             int blkid = json_object_get_int(blockidjson);
 
@@ -131,7 +130,7 @@ database_t *load_database(int protocol_id) {
 
             int propcount = 0;
             if (json_object_get_type(blockpropjson) == json_type_object) {
-                //we got some properties -- loop through each property tp get the key : value
+                //this block has properties -- loop through each property tp get the key : value
                 json_object_object_foreach(blockpropjson, keyprop, valprop) {
                     // Property Name: allocate memory , copy into memory, and store in database
                     char* propertyname = malloc(strlen(keyprop)+1);
@@ -162,18 +161,12 @@ database_t *load_database(int protocol_id) {
     //  Load items.json into db     //
     //////////////////////////////////
 
-    //load the items.json into memory
-    uint8_t *buf;
-    ssize_t sz = lh_load_alloc(itemjsonfilepath, &buf);
-    lh_resize(buf, sz+1);
-
-
     json_object *jobj, *itemidstructurejson, *itemidjson;
 
-    //parse the items.json buffer into a json-c object
-    jobj = json_tokener_parse(buf);
+    //load the items.json file into a parsed json object in memory
+    jobj = json_object_from_file (itemjsonfilepath);
 
-    //initialize an iterator. "it" is our iterator and "itEnd" is the end of the json where the iterations stop
+     //initialize an iterator. "it" is our iterator and "itEnd" is the end of the json where the iterations stop
     struct json_object_iterator it = json_object_iter_begin(jobj);
     struct json_object_iterator itEnd = json_object_iter_end(jobj);
 
@@ -207,10 +200,9 @@ database_t *load_database(int protocol_id) {
 
         // iterate through the json iterator
         json_object_iter_next(&it);
-
-
     }
     save_db_to_file(&db);
+    //test_examples(&db);
     return &db;
 }
 
