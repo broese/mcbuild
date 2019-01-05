@@ -126,21 +126,21 @@ database_t *load_database(int protocol_id) {
             //get the properties if they exist
             json_object_object_get_ex(blockstatejson,"properties", &blockpropjson);
 
-            int propcount = 0;
             if (json_object_get_type(blockpropjson) == json_type_object) {
                 //this block has properties -- loop through each property tp get the key : value
                 json_object_object_foreach(blockpropjson, keyprop, valprop) {
+                    //allocate a new property array element within this block record
+                    prop_t *prp = lh_arr_new_c(GAR(blk->prop));
+
                     // Property Name: allocate memory , copy into memory, and store in database
                     char* propertyname = malloc(strlen(keyprop)+1);
                     strcpy(propertyname, keyprop);
+                    prp->pname = propertyname;
 
-                    blk->prop[propcount].pname = propertyname;
                     // Property Value: allocate memory , copy into memory, and store in database
                     char* propertyval = malloc(strlen(json_object_get_string(valprop))+1);
                     strcpy(propertyval, json_object_get_string(valprop));
-                    blk->prop[propcount].pvalue = propertyval;
-
-                    propcount++;
+                    prp->pvalue = propertyval;
                 }
             }
             // confirm that blockname begins with "minecraft:"
@@ -150,7 +150,6 @@ database_t *load_database(int protocol_id) {
             blk->id = blkid;
             blk->oldid = namecount;
             blk->defaultid = defaultid;
-            blk->propcount = propcount;
         }
     namecount++;
     }
@@ -290,9 +289,9 @@ void dump_db_blocks(database_t *db, int maxlines){
         printf("%05d ", P(db->block)[i].id);
         printf("%05d ", P(db->block)[i].oldid);
         printf("%05d ", P(db->block)[i].defaultid);
-        printf("%05d ", P(db->block)[i].propcount);
-        for (int j=0; j < P(db->block)[i].propcount; j++) {
-            printf("prop:%s val:%s, ", P(db->block)[i].prop[j].pname, P(db->block)[i].prop[j].pvalue);
+        printf("%05d ", P(db->block)[i].C(prop));
+        for (int j=0; j < P(db->block)[i].C(prop); j++) {
+            printf("prop:%s val:%s, ", P(db->block)[i].P(prop)[j].pname, P(db->block)[i].P(prop)[j].pvalue);
         }
         printf("\n");
     }
@@ -319,9 +318,9 @@ int dump_db_blocks_to_csv_file(database_t *db) {
         fprintf(fp, "%d,", P(db->block)[i].id);
         fprintf(fp, "%d,", P(db->block)[i].oldid);
         fprintf(fp, "%d,", P(db->block)[i].defaultid);
-        fprintf(fp, "%d", P(db->block)[i].propcount);
-        for (int j=0; j < P(db->block)[i].propcount; j++) {
-            fprintf(fp, ",prop:%s val:%s", P(db->block)[i].prop[j].pname, P(db->block)[i].prop[j].pvalue);
+        fprintf(fp, "%d", P(db->block)[i].C(prop));
+        for (int j=0; j < P(db->block)[i].C(prop); j++) {
+            fprintf(fp, ",prop:%s val:%s", P(db->block)[i].P(prop)[j].pname, P(db->block)[i].P(prop)[j].pvalue);
         }
         fprintf(fp, "\n");
     }
@@ -362,10 +361,10 @@ int save_db_to_file(database_t *db) {
         fprintf(fp, "%d\n",P(db->block)[i].id);
         fprintf(fp, "%d\n",P(db->block)[i].oldid);
         fprintf(fp, "%d\n",P(db->block)[i].defaultid);
-        fprintf(fp, "%d\n",P(db->block)[i].propcount);
-        for (int j=0; j < P(db->block)[i].propcount; j++) {
-            fprintf(fp, "%s\n",P(db->block)[i].prop[j].pname);
-            fprintf(fp, "%s\n",P(db->block)[i].prop[j].pvalue);
+        fprintf(fp, "%d\n",P(db->block)[i].C(prop));
+        for (int j=0; j < P(db->block)[i].C(prop); j++) {
+            fprintf(fp, "%s\n",P(db->block)[i].P(prop)[j].pname);
+            fprintf(fp, "%s\n",P(db->block)[i].P(prop)[j].pvalue);
         }
     }
     fclose(fp);
@@ -375,7 +374,7 @@ int save_db_to_file(database_t *db) {
 int load_db_from_file(FILE* fp) {
 
     char buf[100];
-    int itemcount, blockcount;
+    int itemcount, blockcount,propcount;
 
     db.initialized = 1;
     fgets(buf,100,fp);
@@ -408,18 +407,19 @@ int load_db_from_file(FILE* fp) {
         fgets(buf,100,fp);
         blk->defaultid = atoi(buf);
         fgets(buf,100,fp);
-        blk->propcount = atoi(buf);
-        for (int j=0; j < blk->propcount; j++) {
+        propcount = atoi(buf);
+        for (int j=0; j < propcount; j++) {
+            prop_t *prp = lh_arr_new_c(GAR(blk->prop));
             fgets(buf,100,fp);
             buf[strcspn(buf, "\n")] = 0;
             char *propname = malloc(strlen(buf)+1);
             strcpy(propname,buf);
-            blk->prop[j].pname = propname;
+            prp->pname = propname;
             fgets(buf,100,fp);
             buf[strcspn(buf, "\n")] = 0;
             char *propvalue = malloc(strlen(buf)+1);
             strcpy(propvalue,buf);
-            blk->prop[j].pvalue = propvalue;
+            prp->pvalue = propvalue;
         }
     }
     if (fgets(buf,100,fp)) {
@@ -439,10 +439,10 @@ const char * get_block_propval(database_t *db, int id, const char *propname) {
     }
     for (int i=0; i < C(db->block); i++) {
         if (id ==  P(db->block)[i].id) {
-            for (int j=0; j < P(db->block)[i].propcount; j++) {
-                if (!strcmp(P(db->block)[i].prop[j].pname, propname)) {
-                    char *buf = malloc(strlen(P(db->block)[i].prop[j].pvalue)+1);
-                    strcpy(buf,P(db->block)[i].prop[j].pvalue);
+            for (int j=0; j < P(db->block)[i].C(prop); j++) {
+                if (!strcmp(P(db->block)[i].P(prop)[j].pname, propname)) {
+                    char *buf = malloc(strlen(P(db->block)[i].P(prop)[j].pvalue)+1);
+                    strcpy(buf,P(db->block)[i].P(prop)[j].pvalue);
                     return buf;
                 }
             }

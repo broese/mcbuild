@@ -30,8 +30,7 @@ typedef struct {
   int id;
   int oldid;
   int defaultid;
-  int propcount;
-  prop_t prop[7];
+  lh_arr_declare(prop_t, prop);
 }  block_t;
 
 typedef struct {
