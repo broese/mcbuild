@@ -77,7 +77,6 @@ database_t *load_database(int protocol_id) {
     }
 
     db.protocol = protocol_id;
-    db.itemcount = 0;
     db.blockcount = 0;
     db.initialized = 1;
 
@@ -193,10 +192,6 @@ database_t *load_database(int protocol_id) {
 
         //store the item_id into dbrecord
         itm->id = itemid;
-        //db.item[db.itemcount].id = itemid;
-
-        // update the count of the number of items in the db
-        db.itemcount++;
 
         // iterate through the json iterator
         json_object_iter_next(&it);
@@ -212,7 +207,7 @@ database_t *load_database(int protocol_id) {
 
 int get_item_id(database_t *db, const char *name) {
     int id = -1;
-    for (int i =0; i < db->itemcount; i++) {
+    for (int i =0; i < C(db->item); i++) {
         if (!strcmp(db->P(item)[i].name, name)) {
             id = db->P(item)[i].id;
             break;
@@ -226,10 +221,10 @@ const char *get_item_name_from_db(database_t *db, int item_id) {  //there's alre
     if (item_id == -1) {
         return "Empty";
     }
-    if (item_id < -1 || item_id > db->itemcount) {
+    if (item_id < -1 || item_id > C(db->item)) {
         return "ID out of bounds";
     }
-    for (int i=0; i < db->itemcount; i++) {
+    for (int i=0; i < C(db->item); i++) {
         if (item_id == db->P(item)[i].id) {
             buf = malloc(strlen(db->P(item)[i].name)+1);
             strcpy(buf,db->P(item)[i].name);
@@ -303,7 +298,7 @@ void dump_db_blocks(database_t *db, int maxlines){
 
 void dump_db_items(database_t *db, int maxlines){
     printf("Dumping Items...\n");
-    for (int i=0; (i < db->itemcount) && (i < maxlines) ; i++) {
+    for (int i=0; (i < C(db->item)) && (i < maxlines) ; i++) {
         printf("%30s ", db->P(item)[i].name);
         printf("%05d ", db->P(item)[i].id);
         printf("\n");
@@ -339,7 +334,7 @@ int dump_db_items_to_csv_file(database_t *db) {
         return -1;
     }
     fprintf(fp, "%s,%s\n", "itemname","id");
-    for (int i=0; i < db->itemcount ; i++) {
+    for (int i=0; i < C(db->item) ; i++) {
         fprintf(fp, "%s,", db->P(item)[i].name);
         fprintf(fp, "%d\n", db->P(item)[i].id);
     }
@@ -354,9 +349,9 @@ int save_db_to_file(database_t *db) {
         return -1;
     }
     fprintf(fp, "%d\n", db->protocol);
-    fprintf(fp, "%d\n", db->itemcount);
+    fprintf(fp, "%d\n", C(db->item));
     fprintf(fp, "%d\n", db->blockcount);
-    for (int i=0; i < db->itemcount; i++) {
+    for (int i=0; i < C(db->item); i++) {
         fprintf(fp, "%d\n",db->P(item)[i].id);
         fprintf(fp, "%s\n",db->P(item)[i].name);
     }
@@ -378,15 +373,16 @@ int save_db_to_file(database_t *db) {
 int load_db_from_file(FILE* fp) {
 
     char buf[100];
+    int itemcount = 0;
 
     db.initialized = 1;
     fgets(buf,100,fp);
     db.protocol = atoi(buf);
     fgets(buf,100,fp);
-    db.itemcount = atoi(buf);
+    itemcount = atoi(buf);
     fgets(buf,100,fp);
     db.blockcount = atoi(buf);
-    for (int i=0; i < db.itemcount; i++) {
+    for (int i=0; i < itemcount; i++) {
         item_t *itm = lh_arr_new_c(GAR(db.item));
         fgets(buf,100,fp);
         itm->id = atoi(buf);
