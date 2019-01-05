@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <dirent.h>
+#include <unistd.h>
 #include "lh_buffers.h"
 #include "lh_files.h"
 #include "lh_dir.h"
@@ -452,6 +453,41 @@ int load_db_from_file(database_t *db, FILE* fp) {
     return 0;
 }
 
+void unload_all_databases() {
+    int dbcount = C(dbs);
+    printf("Database array contains %d array(s).\n",dbcount);
+    //process each database
+    for (int i=0; i < dbcount; i++) {
+        //give this database a convenient name
+        database_t db = P(dbs)[i];
+        int itemcount = db.C(item);
+        int blockcount = db.C(block);
+        //loop through each item freeing its name
+        for (int j=0; j< itemcount; j++) {
+            free((char*)db.P(item)[j].name);
+        }
+        //loop through each block
+        for (int k=0; k < blockcount; k++) {
+            assert (k < blockcount);
+            //give this block a convenient name
+            block_t blk = db.P(block)[k];
+            //loop its properties to free propname/val
+            for (int l=0; l<blk.C(prop); l++) {
+                free((char*)blk.P(prop)[l].pname);
+                free((char*)blk.P(prop)[l].pvalue);
+            }
+            //free this blocks prop array
+            lh_arr_free(GAR(blk.prop));
+            //free this blocks name string
+            free((char*)blk.name);
+        }
+        //now all blocks and items are cleared, so free the arrays
+        lh_arr_free(GAR(db.item));
+        lh_arr_free(GAR(db.block));
+    }
+    lh_arr_free(GAR(dbs));
+    return;
+}
 
 // get_block_propval(db,14,"facing") => NULL // no such property
 // get_block_propval(db,1650,"facing") => "north"

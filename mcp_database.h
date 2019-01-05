@@ -40,6 +40,7 @@ typedef struct {
 } database_t;
 
 database_t *load_database(int protocol_id);
+void unload_all_databases();
 int get_item_id(database_t *db, const char *name);
 const char *get_item_name_from_db(database_t *db, int item_id);
 const char * get_block_name(database_t *db, int id);

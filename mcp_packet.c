@@ -2249,7 +2249,6 @@ int set_protocol(int protocol, char * reply) {
             currentProtocol = supported[i].protocolId;
             printf("Selecting protocol %d (%s) ID=%08x\n", protocol, supported[i].minecraftVersion, currentProtocol);
             db = load_database(protocol);
-            return 1;
         }
     }
 
