@@ -1336,16 +1336,6 @@ int main(int ac, char **av) {
     MKDIR(csv);
     MKDIR(database);
 
-    database_t *db = load_database(404);
-    printf("get_block_propval(db,1686,\"half\") = %s (bottom)\n",get_block_propval(db,1686,"half"));
-    printf("get_item_id(db, \"heart_of_the_sea\") = %d (789)\n", get_item_id(db, "heart_of_the_sea"));
-    printf("get_item_name_from_db(db, 788) = %s (nautilus_shell)\n", get_item_name_from_db(db, 788));
-    printf("get_block_name(db, 8596) = %s (structure_block)\n", get_block_name(db, 8596));
-    printf("get_block_default_id(db, 8596) = %d (8595)\n",get_block_default_id(db, 8596));
-    return 0;
-
-
-
     if (!parse_args(ac,av) || o_help) {
         print_usage();
         return !o_help;
