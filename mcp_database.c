@@ -77,7 +77,6 @@ database_t *load_database(int protocol_id) {
     }
 
     db.protocol = protocol_id;
-    db.blockcount = 0;
     db.initialized = 1;
 
     //////////////////////////////////
@@ -114,9 +113,13 @@ database_t *load_database(int protocol_id) {
         //now that we have the default id for this blockname, loop through every state again to populate the database
         //each state's json contains { id: ...,  [default]:..., [properties]: {...,...} }
         for (int i=0; i<statesarrlen; i++) {
+            //allocate a new block in the db array
+            block_t *blk = lh_arr_new_c(GAR(db.block));
+
+            //get this block state's json
             blockstatejson = json_object_array_get_idx(blockstatesarrayjson, i);
 
-            //get the blockid of this state
+            //get the block id within this state
             json_object_object_get_ex(blockstatejson,"id", &blockidjson);
             int blkid = json_object_get_int(blockidjson);
 
@@ -130,11 +133,12 @@ database_t *load_database(int protocol_id) {
                     // Property Name: allocate memory , copy into memory, and store in database
                     char* propertyname = malloc(strlen(keyprop)+1);
                     strcpy(propertyname, keyprop);
-                    db.block[db.blockcount].prop[propcount].pname = propertyname;
+
+                    blk->prop[propcount].pname = propertyname;
                     // Property Value: allocate memory , copy into memory, and store in database
                     char* propertyval = malloc(strlen(json_object_get_string(valprop))+1);
                     strcpy(propertyval, json_object_get_string(valprop));
-                    db.block[db.blockcount].prop[propcount].pvalue = propertyval;
+                    blk->prop[propcount].pvalue = propertyval;
 
                     propcount++;
                 }
@@ -142,12 +146,11 @@ database_t *load_database(int protocol_id) {
             // confirm that blockname begins with "minecraft:"
             assert(!strncmp(keymain,"minecraft:",10));
             // pointer arithmetic to get rid of the minecraft:
-            db.block[db.blockcount].name = keymain+10;
-            db.block[db.blockcount].id = blkid;
-            db.block[db.blockcount].oldid = namecount;
-            db.block[db.blockcount].defaultid = defaultid;
-            db.block[db.blockcount].propcount = propcount;
-            db.blockcount++;
+            blk->name = keymain+10;
+            blk->id = blkid;
+            blk->oldid = namecount;
+            blk->defaultid = defaultid;
+            blk->propcount = propcount;
         }
     namecount++;
     }
@@ -239,13 +242,13 @@ const char * get_block_name(database_t *db, int id) {
     if (id == -1) {
         return "Empty";
     }
-    if (id < -1 || id > db->blockcount) {
+    if (id < -1 || id > C(db->block)) {
         return "ID out of bounds";
     }
-    for (int i=0; i < db->blockcount; i++) {
-        if (id == db->block[i].id) {
-            buf = malloc(strlen(db->block[i].name)+1);
-            strcpy(buf,db->block[i].name);
+    for (int i=0; i < C(db->block); i++) {
+        if (id == P(db->block)[i].id) {
+            buf = malloc(strlen( P(db->block)[i].name)+1);
+            strcpy(buf, P(db->block)[i].name);
             return buf;
         }
     }
@@ -257,13 +260,13 @@ const char * get_block_name_from_old_id(database_t *db, int oldid) {
     if (oldid == -1) {
         return "Empty";
     }
-    if (oldid < -1 || oldid > db->block[db->blockcount-1].oldid) {
+    if (oldid < -1 || oldid > P(db->block)[C(db->block)-1].oldid) {
         return "ID out of bounds";
     }
-    for (int i=0; i < db->blockcount; i++) {
-        if (oldid == db->block[i].oldid) {
-            buf = malloc(strlen(db->block[i].name)+1);
-            strcpy(buf,db->block[i].name);
+    for (int i=0; i < C(db->block); i++) {
+        if (oldid == P(db->block)[i].oldid) {
+            buf = malloc(strlen(P(db->block)[i].name)+1);
+            strcpy(buf,P(db->block)[i].name);
             return buf;
         }
     }
@@ -271,26 +274,25 @@ const char * get_block_name_from_old_id(database_t *db, int oldid) {
 };
 
 int get_block_default_id(database_t *db, int id) {
-    int defid = -1;
-    for (int i=0; i < db->blockcount; i++) {
-        if (id == db->block[i].id) {
-            return db->block[i].defaultid;
+    for (int i=0; i < C(db->block); i++) {
+        if (id == P(db->block)[i].id) {
+            return P(db->block)[i].defaultid;
         }
     }
-    return defid;
+    return -1;
 }
 
 void dump_db_blocks(database_t *db, int maxlines){
     printf("Dumping Blocks...\n");
     printf("%30s %05s %05s %05s %s\n","blockname","blkid","oldid","defid","#prop");
-    for (int i=0; (i < db->blockcount) && (i < maxlines); i++) {
-        printf("%30s ", db->block[i].name);
-        printf("%05d ", db->block[i].id);
-        printf("%05d ", db->block[i].oldid);
-        printf("%05d ", db->block[i].defaultid);
-        printf("%05d ", db->block[i].propcount);
-        for (int j=0; j < db->block[i].propcount; j++) {
-            printf("prop:%s val:%s, ", db->block[i].prop[j].pname, db->block[i].prop[j].pvalue);
+    for (int i=0; (i < C(db->block)) && (i < maxlines); i++) {
+        printf("%30s ", P(db->block)[i].name);
+        printf("%05d ", P(db->block)[i].id);
+        printf("%05d ", P(db->block)[i].oldid);
+        printf("%05d ", P(db->block)[i].defaultid);
+        printf("%05d ", P(db->block)[i].propcount);
+        for (int j=0; j < P(db->block)[i].propcount; j++) {
+            printf("prop:%s val:%s, ", P(db->block)[i].prop[j].pname, P(db->block)[i].prop[j].pvalue);
         }
         printf("\n");
     }
@@ -312,14 +314,14 @@ int dump_db_blocks_to_csv_file(database_t *db) {
         return -1;
     }
     fprintf(fp, "%s, %s, %s, %s, %s\n","blockname","blkid","oldid","defid","#prop");
-    for (int i=0; i < db->blockcount ; i++) {
-        fprintf(fp, "%s,", db->block[i].name);
-        fprintf(fp, "%d,", db->block[i].id);
-        fprintf(fp, "%d,", db->block[i].oldid);
-        fprintf(fp, "%d,", db->block[i].defaultid);
-        fprintf(fp, "%d", db->block[i].propcount);
-        for (int j=0; j < db->block[i].propcount; j++) {
-            fprintf(fp, ",prop:%s val:%s", db->block[i].prop[j].pname, db->block[i].prop[j].pvalue);
+    for (int i=0; i < C(db->block) ; i++) {
+        fprintf(fp, "%s,", P(db->block)[i].name);
+        fprintf(fp, "%d,", P(db->block)[i].id);
+        fprintf(fp, "%d,", P(db->block)[i].oldid);
+        fprintf(fp, "%d,", P(db->block)[i].defaultid);
+        fprintf(fp, "%d", P(db->block)[i].propcount);
+        for (int j=0; j < P(db->block)[i].propcount; j++) {
+            fprintf(fp, ",prop:%s val:%s", P(db->block)[i].prop[j].pname, P(db->block)[i].prop[j].pvalue);
         }
         fprintf(fp, "\n");
     }
@@ -350,20 +352,20 @@ int save_db_to_file(database_t *db) {
     }
     fprintf(fp, "%d\n", db->protocol);
     fprintf(fp, "%d\n", C(db->item));
-    fprintf(fp, "%d\n", db->blockcount);
+    fprintf(fp, "%d\n", C(db->block));
     for (int i=0; i < C(db->item); i++) {
         fprintf(fp, "%d\n",db->P(item)[i].id);
         fprintf(fp, "%s\n",db->P(item)[i].name);
     }
-    for (int i=0; i < db->blockcount; i++) {
-        fprintf(fp, "%s\n",db->block[i].name);
-        fprintf(fp, "%d\n",db->block[i].id);
-        fprintf(fp, "%d\n",db->block[i].oldid);
-        fprintf(fp, "%d\n",db->block[i].defaultid);
-        fprintf(fp, "%d\n",db->block[i].propcount);
-        for (int j=0; j < db->block[i].propcount; j++) {
-            fprintf(fp, "%s\n",db->block[i].prop[j].pname);
-            fprintf(fp, "%s\n",db->block[i].prop[j].pvalue);
+    for (int i=0; i < C(db->block); i++) {
+        fprintf(fp, "%s\n",P(db->block)[i].name);
+        fprintf(fp, "%d\n",P(db->block)[i].id);
+        fprintf(fp, "%d\n",P(db->block)[i].oldid);
+        fprintf(fp, "%d\n",P(db->block)[i].defaultid);
+        fprintf(fp, "%d\n",P(db->block)[i].propcount);
+        for (int j=0; j < P(db->block)[i].propcount; j++) {
+            fprintf(fp, "%s\n",P(db->block)[i].prop[j].pname);
+            fprintf(fp, "%s\n",P(db->block)[i].prop[j].pvalue);
         }
     }
     fclose(fp);
@@ -373,7 +375,7 @@ int save_db_to_file(database_t *db) {
 int load_db_from_file(FILE* fp) {
 
     char buf[100];
-    int itemcount = 0;
+    int itemcount, blockcount;
 
     db.initialized = 1;
     fgets(buf,100,fp);
@@ -381,7 +383,7 @@ int load_db_from_file(FILE* fp) {
     fgets(buf,100,fp);
     itemcount = atoi(buf);
     fgets(buf,100,fp);
-    db.blockcount = atoi(buf);
+    blockcount = atoi(buf);
     for (int i=0; i < itemcount; i++) {
         item_t *itm = lh_arr_new_c(GAR(db.item));
         fgets(buf,100,fp);
@@ -392,31 +394,32 @@ int load_db_from_file(FILE* fp) {
         strcpy(itemname,buf);
         itm->name = itemname;
     }
-    for (int i=0; i < db.blockcount; i++) {
+    for (int i=0; i < blockcount; i++) {
+        block_t *blk = lh_arr_new_c(GAR(db.block));
         fgets(buf,100,fp);
         buf[strcspn(buf, "\n")] = 0;
         char *blockname = malloc(strlen(buf)+1);
         strcpy(blockname,buf);
-        db.block[i].name = blockname;
+        blk->name = blockname;
         fgets(buf,100,fp);
-        db.block[i].id = atoi(buf);
+        blk->id = atoi(buf);
         fgets(buf,100,fp);
-        db.block[i].oldid = atoi(buf);
+        blk->oldid = atoi(buf);
         fgets(buf,100,fp);
-        db.block[i].defaultid = atoi(buf);
+        blk->defaultid = atoi(buf);
         fgets(buf,100,fp);
-        db.block[i].propcount = atoi(buf);
-        for (int j=0; j < db.block[i].propcount; j++) {
+        blk->propcount = atoi(buf);
+        for (int j=0; j < blk->propcount; j++) {
             fgets(buf,100,fp);
             buf[strcspn(buf, "\n")] = 0;
             char *propname = malloc(strlen(buf)+1);
             strcpy(propname,buf);
-            db.block[i].prop[j].pname = propname;
+            blk->prop[j].pname = propname;
             fgets(buf,100,fp);
             buf[strcspn(buf, "\n")] = 0;
             char *propvalue = malloc(strlen(buf)+1);
             strcpy(propvalue,buf);
-            db.block[i].prop[j].pvalue = propvalue;
+            blk->prop[j].pvalue = propvalue;
         }
     }
     if (fgets(buf,100,fp)) {
@@ -431,15 +434,15 @@ int load_db_from_file(FILE* fp) {
 // get_block_propval(db,1650,"facing") => "north"
 // get_block_propval(db,1686,"half") => "bottom"
 const char * get_block_propval(database_t *db, int id, const char *propname) {
-    if (id < 0 || id > db->blockcount) {
+    if (id < 0 || id > C(db->block)) {
         return NULL;
     }
-    for (int i=0; i < db->blockcount; i++) {
-        if (id == db->block[i].id) {
-            for (int j=0; j<db->block[i].propcount; j++) {
-                if (!strcmp(db->block[i].prop[j].pname, propname)) {
-                    char *buf = malloc(strlen(db->block[i].prop[j].pvalue)+1);
-                    strcpy(buf,db->block[i].prop[j].pvalue);
+    for (int i=0; i < C(db->block); i++) {
+        if (id ==  P(db->block)[i].id) {
+            for (int j=0; j < P(db->block)[i].propcount; j++) {
+                if (!strcmp(P(db->block)[i].prop[j].pname, propname)) {
+                    char *buf = malloc(strlen(P(db->block)[i].prop[j].pvalue)+1);
+                    strcpy(buf,P(db->block)[i].prop[j].pvalue);
                     return buf;
                 }
             }
