@@ -2223,6 +2223,7 @@ void decode_encryption_response(CL_EncryptionResponse_pkt *tpkt, uint8_t *p) {
 ////////////////////////////////////////////////////////////////////////////////
 
 int currentProtocol = PROTO_NONE;
+database_t *db = NULL;
 
 const static packet_methods (* SUPPORT)[MAXPACKETTYPES] = NULL;
 
@@ -2247,6 +2248,7 @@ int set_protocol(int protocol, char * reply) {
             SUPPORT = supported[i].supportTable;
             currentProtocol = supported[i].protocolId;
             printf("Selecting protocol %d (%s) ID=%08x\n", protocol, supported[i].minecraftVersion, currentProtocol);
+            db = load_database(protocol);
             return 1;
         }
     }

@@ -1334,6 +1334,7 @@ int main(int ac, char **av) {
     MKDIR(schematic);
     MKDIR(png);
     MKDIR(csv);
+    MKDIR(database);
 
     if (!parse_args(ac,av) || o_help) {
         print_usage();

@@ -25,6 +25,7 @@
 #include "slot.h"
 #include "entity.h"
 #include "helpers.h"
+#include "mcp_database.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Misc
@@ -634,6 +635,8 @@ typedef struct {
 ////////////////////////////////////////////////////////////////////////////////
 
 extern int  currentProtocol;
+extern database_t *db;  // pointer to the currently loaded db for other modules to access
+
 int         set_protocol(int protocol, char * reply);
 
 MCPacket *  decode_packet(int is_client, uint8_t *p, ssize_t len);
@@ -650,4 +653,3 @@ void        packet_queue_transmit(MCPacketQueue *q, MCPacketQueue *pq, tokenbuck
     type##_pkt *t##name = &name->_##type;
 
 ////////////////////////////////////////////////////////////////////////////////
-

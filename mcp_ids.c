@@ -15,6 +15,8 @@
 #include <assert.h>
 #include <strings.h>
 
+#include "mcp_packet.h"
+
 #define MNAMES_WOOD     { "Oak", "Spruce", "Birch", "Jungle", "Acacia", "Dark Oak" }
 #define MNAMES_OLDWOOD  { "Oak", "Spruce", "Birch", "Jungle" }
 #define MNAMES_NEWWOOD  { "Acacia", "Dark Oak", NULL, NULL }
@@ -775,7 +777,7 @@ const char * get_bid_name(char *buf, bid_t b) {
 }
 
 const char * get_item_name(char *buf, slot_t *s) {
-    sprintf(buf, "unknown_item");
+    sprintf(buf, get_item_name_from_db(db, s->item));  //db is extern in mcp_packet.h
     return buf;
 }
 
