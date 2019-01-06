@@ -1386,24 +1386,6 @@ void gs_packet(MCPacket *pkt) {
             }
         } _GSP;
 
-        GSP(SP_UpdateSign) {
-            update_empty_lines(tpkt->line1);
-            update_empty_lines(tpkt->line2);
-            update_empty_lines(tpkt->line3);
-            update_empty_lines(tpkt->line4);
-
-            nbt_t *te = nbt_new(NBT_COMPOUND, NULL, 8,
-                nbt_new(NBT_STRING, "id", "Sign"),
-                nbt_new(NBT_INT, "x", tpkt->pos.x),
-                nbt_new(NBT_INT, "y", tpkt->pos.y),
-                nbt_new(NBT_INT, "z", tpkt->pos.z),
-                nbt_new(NBT_STRING, "Text1", tpkt->line1),
-                nbt_new(NBT_STRING, "Text2", tpkt->line2),
-                nbt_new(NBT_STRING, "Text3", tpkt->line3),
-                nbt_new(NBT_STRING, "Text4", tpkt->line4)
-            );
-            store_tile_entity(tpkt->pos.x>>4, tpkt->pos.z>>4, te);
-        } _GSP;
 #endif
 
         ////////////////////////////////////////////////////////////////

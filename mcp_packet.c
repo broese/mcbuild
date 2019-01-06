@@ -1494,25 +1494,6 @@ DUMP_BEGIN(SP_EntityTeleport) {
            (float)tpkt->yaw/256,(float)tpkt->pitch/256,tpkt->onground);
 } DUMP_END;
 
-////////////////////////////////////////////////////////////////////////////////
-// SP_UpdateSign - removed in 1.9.4
-
-DECODE_BEGIN(SP_UpdateSign,_1_8_1) {
-    Plong(pos.p);
-    Pstr(line1);
-    Pstr(line2);
-    Pstr(line3);
-    Pstr(line4);
-} DECODE_END;
-
-DUMP_BEGIN(SP_UpdateSign) {
-    printf("pos=%d,%d,%d, line1=\"%s\", line2=\"%s\", line3=\"%s\", line4=\"%s\"",
-           tpkt->pos.x,tpkt->pos.y,tpkt->pos.z,
-           tpkt->line1,tpkt->line2,tpkt->line3,tpkt->line4);
-} DUMP_END;
-
-
-
 
 
 
