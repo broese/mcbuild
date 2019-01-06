@@ -2106,12 +2106,12 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     CMD2(rectangle,rect) {
         ARGREQ(size, NULL, sz);
-        ARGMAT(NULL, mat, ad.mat);
+        ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
-        build.bp = bplan_floor(sz.x, sz.z, mat);
-        bplan_hollow(build.bp, 1, 0);
-        sprintf(reply, "Rectangle size=%dx%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
-        goto Place;
+        //build.bp = bplan_floor(sz.x, sz.z, mat);
+        //bplan_hollow(build.bp, 1, 0);
+        sprintf(reply, "Rectangle size=%d,%d material=%s",sz.x,sz.z,matname);
+        goto Error;
     }
 
     CMD2(scaffolding,scaf) {
