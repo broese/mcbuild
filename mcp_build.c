@@ -2042,11 +2042,11 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     // Parametric builds
     CMD2(floor,fl) {
         ARGREQ(size, NULL, sz);
-        ARGMAT(NULL, mat, ad.mat);
+        ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
-        build.bp = bplan_floor(sz.x, sz.z, mat);
-        sprintf(reply, "Floor size=%d,%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
-        goto Place;
+        //build.bp = bplan_floor(sz.x, sz.z, mat);
+        sprintf(reply, "Floor size=%d,%d material=%s",sz.x,sz.z,matname);
+        goto Error;
     }
 
     CMD2(wall,wa) {
