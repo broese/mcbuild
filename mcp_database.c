@@ -535,23 +535,24 @@ int download_url_into_file(const char *url, const char *filespec) {
 }
 
 char *findjavapath() {
-    char *javapath;
-    char *os = getenv("OS");
-    if(!strcmp(os,"Windows_NT")) {
-        //all windows minecraft installs come with java.exe
-        //hope their program files is default directory for now
-        //but need a way to programmatically get the path of Minecraft install & the jre version it ships with
-        DIR *dp;
-        //Default location for 64-bit Windows OS with Minecraft 13.2
-        javapath = "/cygdrive/c/Progra~2/Minecraft/runtime/jre-x64/1.8.0_51/bin";
-        dp = opendir(javapath);
-        if (!dp) {
-            printf("findjavapath(): Directory not found\n");
-            return NULL;
-        }
-        closedir(dp);
-        return javapath;
+    char *javapath = NULL;
+
+#ifdef __CYGWIN__
+    //all windows minecraft installs come with java.exe
+    //hope their program files is default directory for now
+    //but need a way to programmatically get the path of Minecraft install & the jre version it ships with
+    DIR *dp;
+    //Default location for 64-bit Windows OS with Minecraft 13.2
+    javapath = "/cygdrive/c/Progra~2/Minecraft/runtime/jre-x64/1.8.0_51/bin";
+    dp = opendir(javapath);
+    if (!dp) {
+        printf("findjavapath(): Directory not found\n");
+        return NULL;
     }
+    closedir(dp);
+#endif
+
+#ifdef __linux__
     //linux often has JAVA_HOME ready to go
     char *javahome = getenv("JAVA_HOME");
     if (!javahome) {
@@ -559,6 +560,8 @@ char *findjavapath() {
     }
     javapath = malloc(strlen(javahome)+5);
     sprintf(javapath,"%s/bin",javahome);
+#endif
+
     return javapath;
 }
 
@@ -641,7 +644,12 @@ int try_to_get_missing_json_files(int protocol_id) {
     // run the server.jar to extract items.json and blocks.json
     char *cmd;
     cmd = malloc(strlen(javafilepath)+100);
+#ifdef __CYGWIN__
     sprintf(cmd,"cd database; %s/java.exe -cp server_%s.jar net.minecraft.data.Main --all",javafilepath,verid);
+#endif
+#ifdef __linux__
+    sprintf(cmd,"cd database; %s/java -cp server_%s.jar net.minecraft.data.Main --all",javafilepath,verid);
+#endif
     FILE *fp = popen(cmd,"r");
     if (fp == NULL) {
         printf("Error launching java\n");
