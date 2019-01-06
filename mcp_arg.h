@@ -53,9 +53,9 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
   The ARG_ macros requre a correctly set scope and certain variables:
   - arg_defaults argdefaults : must be initialized with values
   - char ** words : contains the tokenized commandline
-  - var : must be defeined and of correct type required by the argf_XXX functions
+  - var : must be defined and of correct type required by the argf_XXX functions
   - int ARG_NOTFOUND : must be defined in scope before calling ARG()
-  - char *reply must be defined
+  - char *reply must be defined and have sufficient space for an error message
 */
 
 // parse next option
@@ -97,6 +97,14 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
         goto Error;                                                     \
     }
 
+// material parsing with symbolic name (v1.13+)
+#define ARGMATNAME(names,var,val)                                       \
+    ARGDEF(matname,names,var,val);                                      \
+    if (var == NULL) {                                 \
+        sprintf(reply, "Specify material - either explicitky or by holding a buildable block"); \
+        goto Error;                                                     \
+    }
+
 // a struct containing all relevant values from gamestate that may be needed
 // as default values in the argument parsing. We are passing these values through
 // this struct in order to isolate mcparg module from the gamestate module
@@ -105,6 +113,8 @@ typedef struct {
     int     pd;         // player's look direction
     bid_t   mat;        // material currently held by the player
     bid_t   mat2;       // material in the next slot than what player currently holds
+    const char *matname1;   // material currently held by the player (database item name)
+    const char *matname2;   // material in the next slot (database item name)
     //TODO: current mask
     int32_t bpsx, bpsz, bpsy;   // buildplan size
 } arg_defaults;
@@ -130,6 +140,9 @@ extern const char *argfmt_pos;
 
 int argf_mat(arg_defaults *ad, char **words, char **names, bid_t *mat);
 extern const char *argfmt_mat;
+
+int argf_matname(arg_defaults *ad, char **words, char **names, const char **matname);
+extern const char *argfmt_matname;
 
 int argf_dir(arg_defaults *ad, char **words, char **names, int *dir);
 extern const char *argfmt_dir;

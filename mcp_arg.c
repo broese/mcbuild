@@ -456,6 +456,41 @@ int argf_mat(arg_defaults *ad, char **words, char **names, bid_t *mat) {
 
 const char *argfmt_mat = "mat=material[:meta][upper]";
 
+int argf_matname(arg_defaults *ad, char **words, char **names, const char **matname) {
+    // default name list
+    if (!names) names = WORDLIST("material","mat","m");
+
+    // possible option formats
+    char ** fmt_mat = WORDLIST("%1$s");     // 0: bname         oak_planks
+
+    // try to locate and parse one of the formats for material spec
+    char sitem[4096];
+    sitem[0]=0;
+
+    int fi = argparse(words, names, fmt_mat, sitem);
+    switch (fi) {
+        case 0: {
+            int item_id = get_item_id(db, sitem);
+            //TODO: also check against flags - material must be a buildable block
+            if (item_id < 0) {
+                printf("Could not find material name %s\n", sitem);
+                return MCPARG_LOOKUP_FAILED;
+            }
+            printf("Found material %s corresponding to item ID %d\n", sitem, item_id);
+            *matname = get_item_name_from_db(db, item_id);
+            break;
+        }
+        case MCPARG_NOT_FOUND:
+        case MCPARG_NOT_PARSED:
+            return fi;
+        default:
+            assert(0);
+    }
+    return 0;
+}
+
+const char *argfmt_matname = "mat=material";
+
 ////////////////////
 
 int argf_dir(arg_defaults *ad, char **words, char **names, int *dir) {

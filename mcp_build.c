@@ -26,6 +26,7 @@
 #include "mcp_gamestate.h"
 #include "mcp_game.h"
 #include "mcp_arg.h"
+#include "mcp_packet.h"
 
 
 #define EYEHEIGHT (52.0/32.0)
@@ -1927,6 +1928,8 @@ static void get_argdefaults(arg_defaults *ad) {
 
     ad->mat = BLOCKTYPE(0,0);
     ad->mat2 = BLOCKTYPE(0,0);
+    ad->matname1 = NULL;
+    ad->matname2 = NULL;
 
     slot_t *s1 = &gs.inv.slots[gs.inv.held+36];
     slot_t *s2 = &gs.inv.slots[(gs.inv.held+1)%9+36];
@@ -1934,6 +1937,11 @@ static void get_argdefaults(arg_defaults *ad) {
         ad->mat = BLOCKTYPE(s1->item, s1->damage);
     if (s2->item > 0 && !(ITEMS[s2->item].flags&I_ITEM))
         ad->mat2 = BLOCKTYPE(s2->item, s2->damage);
+
+    if (s1->present)
+        ad->matname1 = get_item_name_from_db(db, s1->item);
+    if (s2->present)
+        ad->matname2 = get_item_name_from_db(db, s2->item);
 
     if (build.bp) {
         ad->bpsx = build.bp->sx;
@@ -2020,6 +2028,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     pivot_t     pv;
     size3_t     sz;
     bid_t       mat,mat1,mat2;
+    const char *matname;
     int         count;
     float       diam;
 
