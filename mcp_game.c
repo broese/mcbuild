@@ -1068,6 +1068,31 @@ void handle_command(char *str, MCPacketQueue *tq, MCPacketQueue *bq) {
             gmi_swap_slots(tq, bq, atoi(words[1]), atoi(words[2]));
         }
     }
+    else if (!strcmp(words[0],"blocks")) {
+        if (!words[1]) {
+            sprintf(reply,"Usage: blocks <y>");
+        }
+        else {
+            int xmin = ((int)gs.own.x) & ~0xf, xmax = xmin + 15;
+            int zmin = ((int)gs.own.z) & ~0xf, zmax = zmin + 15;
+            int y = atoi(words[1]);
+
+            extent_t ex = { { xmin, y, zmin }, { xmax, y, zmax } };
+            printf("Dumping extent %d,%d - %d,%d at level %d\n", xmin,zmin, xmax,zmax, y);
+            cuboid_t c = export_cuboid_extent(ex);
+            int i,j;
+
+            bid_t *slice = c.data[0]+c.boff;
+            for(i=0; i<16; i++) {
+                bid_t *row = slice+i*c.sa.x;
+                for(j=0; j<16; j++) {
+                    printf("%4d ", row[j].raw);
+                }
+                printf("\n");
+            }
+            free_cuboid(c);
+        }
+    }
 
     // send an immediate reply if any was given
     if (reply[0]) chat_message(reply, bq, "gold", rpos);

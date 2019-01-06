@@ -1329,7 +1329,7 @@ void gs_packet(MCPacket *pkt) {
 
         ////////////////////////////////////////////////////////////////
         // Chunks
-#if 0
+
         GSP(SP_ChunkData) {
             insert_chunk(&tpkt->chunk, tpkt->cont);
 
@@ -1385,8 +1385,6 @@ void gs_packet(MCPacket *pkt) {
                 modify_blocks(x>>4,z>>4,&block,1);
             }
         } _GSP;
-
-#endif
 
         ////////////////////////////////////////////////////////////////
         // Inventory
