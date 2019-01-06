@@ -302,13 +302,13 @@ int get_block_default_id(database_t *db, int id) {
 
 void dump_db_blocks(database_t *db, int maxlines){
     printf("Dumping Blocks...\n");
-    printf("%30s %05s %05s %05s %s\n","blockname","blkid","oldid","defid","#prop");
+    printf("%-30s %-5s %-5s %-5s %s\n","blockname","blkid","oldid","defid","#prop");
     for (int i=0; (i < C(db->block)) && (i < maxlines); i++) {
         printf("%30s ", P(db->block)[i].name);
         printf("%05d ", P(db->block)[i].id);
         printf("%05d ", P(db->block)[i].oldid);
         printf("%05d ", P(db->block)[i].defaultid);
-        printf("%05d ", P(db->block)[i].C(prop));
+        printf("%05zd ", P(db->block)[i].C(prop));
         for (int j=0; j < P(db->block)[i].C(prop); j++) {
             printf("prop:%s val:%s, ", P(db->block)[i].P(prop)[j].pname, P(db->block)[i].P(prop)[j].pvalue);
         }
@@ -339,7 +339,7 @@ int dump_db_blocks_to_csv_file(database_t *db) {
         fprintf(fp, "%d,", P(db->block)[i].id);
         fprintf(fp, "%d,", P(db->block)[i].oldid);
         fprintf(fp, "%d,", P(db->block)[i].defaultid);
-        fprintf(fp, "%d", P(db->block)[i].C(prop));
+        fprintf(fp, "%zd", P(db->block)[i].C(prop));
         for (int j=0; j < P(db->block)[i].C(prop); j++) {
             fprintf(fp, ",prop:%s val:%s", P(db->block)[i].P(prop)[j].pname, P(db->block)[i].P(prop)[j].pvalue);
         }
@@ -375,8 +375,8 @@ int save_db_to_file(database_t *db) {
         return -1;
     }
     fprintf(fp, "%d\n", db->protocol);
-    fprintf(fp, "%d\n", C(db->item));
-    fprintf(fp, "%d\n", C(db->block));
+    fprintf(fp, "%zd\n", C(db->item));
+    fprintf(fp, "%zd\n", C(db->block));
     for (int i=0; i < C(db->item); i++) {
         fprintf(fp, "%d\n",db->P(item)[i].id);
         fprintf(fp, "%s\n",db->P(item)[i].name);
@@ -386,7 +386,7 @@ int save_db_to_file(database_t *db) {
         fprintf(fp, "%d\n",P(db->block)[i].id);
         fprintf(fp, "%d\n",P(db->block)[i].oldid);
         fprintf(fp, "%d\n",P(db->block)[i].defaultid);
-        fprintf(fp, "%d\n",P(db->block)[i].C(prop));
+        fprintf(fp, "%zd\n",P(db->block)[i].C(prop));
         for (int j=0; j < P(db->block)[i].C(prop); j++) {
             fprintf(fp, "%s\n",P(db->block)[i].P(prop)[j].pname);
             fprintf(fp, "%s\n",P(db->block)[i].P(prop)[j].pvalue);
@@ -691,8 +691,8 @@ int test_examples(database_t *db) {
     printf("get_block_name(db, 8596)              = %s (structure_block)\n", get_block_name(db, 8596));
     printf("get_block_default_id(db, 8596)        = %d (8595)\n",get_block_default_id(db, 8596));
 
-    printf("\nNumber of blocks: %d\n",C(db->block));
-    printf("Number of items: %d\n", C(db->item));
+    printf("\nNumber of blocks: %zd\n",C(db->block));
+    printf("Number of items: %zd\n", C(db->item));
 
     printf("\nNow testing errors \n");
     printf("get_block_name(db, 8599)              = %s (out of bounds)\n", get_block_name(db, 8599));
