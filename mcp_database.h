@@ -43,9 +43,21 @@ database_t *load_database(int protocol_id);
 void unload_all_databases();
 int get_item_id(database_t *db, const char *name);
 const char *get_item_name_from_db(database_t *db, int item_id);
-const char * get_block_name(database_t *db, int id);
+const char *get_block_name(database_t *db, int id);
+
+//get_block_id(db, "cobblestone") => 14
+//get_block_id(db, "nether_brick_stairs") => 4540 // north,bottom,straight,false marked as default
+int get_block_id(database_t *db, const char *name); //input is a block name, returning that blockname's default id
+
+//input is another block id, returning that block id's default id
 int get_block_default_id(database_t *db, int id);
+
 const char * get_block_propval(database_t *db, int id, const char *propname);
+
+//get_number_of_states(db,5) => 1 // polished_diorite
+//get_number_of_states(db,8) => 2 // grass_block
+int get_number_of_states(database_t *db, int block_id);
+
 void dump_db_blocks(database_t *db, int maxlines);
 void dump_db_items(database_t *db, int maxlines);
 int dump_db_blocks_to_csv_file(database_t *db);
