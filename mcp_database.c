@@ -255,7 +255,7 @@ const char *get_item_name_from_db(database_t *db, int item_id) {  //there's alre
     return "ID not found";
 };
 
-const char * get_block_name(database_t *db, int id) {
+const char *get_block_name(database_t *db, int id) {
     char *buf;
     if (id == -1) {
         return "Empty";
@@ -273,7 +273,7 @@ const char * get_block_name(database_t *db, int id) {
     return "ID not found";
 };
 
-const char * get_block_name_from_old_id(database_t *db, int oldid) {
+const char *get_block_name_from_old_id(database_t *db, int oldid) {
     char *buf;
     if (oldid == -1) {
         return "Empty";
@@ -291,6 +291,15 @@ const char * get_block_name_from_old_id(database_t *db, int oldid) {
     return "ID not found";
 };
 
+int get_block_id(database_t *db, const char *name) {
+    for (int i =0; i < C(db->block); i++) {
+        if (!strcmp(db->P(block)[i].name, name)) {
+            return db->P(block)[i].defaultid;
+        }
+    }
+    return -1;
+}
+
 int get_block_default_id(database_t *db, int id) {
     for (int i=0; i < C(db->block); i++) {
         if (id == P(db->block)[i].id) {
@@ -299,6 +308,19 @@ int get_block_default_id(database_t *db, int id) {
     }
     return -1;
 }
+
+int get_number_of_states(database_t *db, int block_id) {
+    int count = 0;
+    //we could use defaultid or blockname since they are 1-1 correspondence
+    int defid = get_block_default_id(db, block_id);
+    for (int i=0; i < C(db->block); i++) {
+        if (P(db->block)[i].defaultid == defid) {
+            count++;
+        }
+    }
+    return count;
+}
+
 
 void dump_db_blocks(database_t *db, int maxlines){
     printf("Dumping Blocks...\n");
@@ -693,18 +715,25 @@ int try_to_get_missing_json_files(int protocol_id) {
 }
 
 int test_examples(database_t *db) {
-    printf("get_block_propval(db,1686,\"half\")     = %s (bottom)\n",get_block_propval(db,1686,"half"));
-    printf("get_item_id(db, \"heart_of_the_sea\")   = %d (789)\n", get_item_id(db, "heart_of_the_sea"));
-    printf("get_item_name_from_db(db, 788)        = %s (nautilus_shell)\n", get_item_name_from_db(db, 788));
-    printf("get_block_name(db, 8596)              = %s (structure_block)\n", get_block_name(db, 8596));
-    printf("get_block_default_id(db, 8596)        = %d (8595)\n",get_block_default_id(db, 8596));
+    printf("get_block_propval(db,1686,\"half\")      = %s (bottom)\n",get_block_propval(db,1686,"half"));
+    printf("get_item_id(db, \"heart_of_the_sea\")    = %d (789)\n", get_item_id(db, "heart_of_the_sea"));
+    printf("get_item_name_from_db(db, 788)         = %s (nautilus_shell)\n", get_item_name_from_db(db, 788));
+    printf("get_block_name(db, 8596)               = %s (structure_block)\n", get_block_name(db, 8596));
+    printf("get_block_default_id(db, 8596)         = %d (8595)\n",get_block_default_id(db, 8596));
+    printf("get_block_id(db,\"nether_brick_stairs\") = %d (4540)\n",get_block_id(db,"nether_brick_stairs"));
+    printf("get_number_of_states(db, 5)            = %d (1)\n",get_number_of_states(db, 5));
+    printf("get_number_of_states(db, 8)            = %d (2)\n",get_number_of_states(db, 8));
+    printf("get_number_of_states(db, 2913)         = %d (1296)\n",get_number_of_states(db, 2913));
+
 
     printf("\nNumber of blocks: %zd\n",C(db->block));
     printf("Number of items: %zd\n", C(db->item));
 
     printf("\nNow testing errors \n");
-    printf("get_block_name(db, 8599)              = %s (out of bounds)\n", get_block_name(db, 8599));
-    printf("get_block_name(db, 8600)              = %s (out of bounds)\n", get_block_name(db, 8600));
+    printf("get_block_name(db, 8599)               = %s (out of bounds)\n", get_block_name(db, 8599));
+    printf("get_block_name(db, 8600)               = %s (out of bounds)\n", get_block_name(db, 8600));
+    printf("get_block_id(db,\"gold_nugget\")         = %d (-1 meaning not found)\n",get_block_id(db,"gold_nugget"));
+    printf("get_number_of_states(db, 8599)         = %d (0 meaning problem)\n",get_number_of_states(db, 8599));
     return 0;
 }
 //struct prop_t { const char *pname, const char *pvalue };
