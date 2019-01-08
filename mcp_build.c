@@ -1748,8 +1748,8 @@ void build_dump_task() {
     char buf[256];
     for(i=0; i<C(build.task); i++) {
         blk *b = &P(build.task)[i];
-        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%.2f %c%c%c %c%c%c%c%c%c (%3d) material=%s\n",
-               i, b->x, b->z, b->y, b->b.bid, b->b.meta,
+        printf("%3d %+5d,%+5d,%3d   %.2f   %c%c%c %c%c%c%c%c%c %-3d   %4d (%s)\n",
+               i, b->x, b->z, b->y,
                b->dist,
                b->inreach?'R':'.',
                b->empty  ?'E':'.',
@@ -1763,7 +1763,7 @@ void build_dump_task() {
                b->n_xn ? '*':'.',
                b->ndots,
 
-               get_bid_name(buf, get_base_material(b->b)));
+               b->b.raw, get_block_name(db, b->b.raw));
     }
 }
 
@@ -1773,8 +1773,8 @@ void build_dump_queue() {
     char buf[256];
     for(i=0; i<build.nbq; i++) {
         blk *b = P(build.task)+build.bq[i];
-        printf("%3d %+5d,%+5d,%3d %3x/%02x dist=%.2f %c%c%c %c%c%c%c%c%c (%3d) material=%s\n",
-               build.bq[i], b->x, b->z, b->y, b->b.bid, b->b.meta,
+        printf("%3d %+5d,%+5d,%3d   %.2f   %c%c%c %c%c%c%c%c%c %-3d   %4d (%s)\n",
+               build.bq[i], b->x, b->z, b->y,
                b->dist,
                b->inreach?'R':'.',
                b->empty  ?'E':'.',
@@ -1788,7 +1788,7 @@ void build_dump_queue() {
                b->n_xn ? '*':'.',
                b->ndots,
 
-               get_bid_name(buf, get_base_material(b->b)));
+               b->b.raw, get_block_name(db, b->b.raw));
     }
 }
 

@@ -72,9 +72,10 @@ void bplan_dump(bplan *bp) {
     for(i=0; i<BPC; i++) {
         blkr *b = BPP+i;
         char buf[256];
-        printf("%3d %+4d,%+4d,%3d %3x/%02x (%s)\n",
-               i, b->x, b->z, b->y, b->b.bid, b->b.meta,
-               get_bid_name(buf, get_base_material(b->b)));
+        printf("%3d %+4d,%+4d,%3d   %4d (%s)\n",
+               i, b->x, b->z, b->y,
+
+               b->b.raw, get_block_name(db, b->b.raw));
     }
 }
 
