@@ -2044,9 +2044,14 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGREQ(size, NULL, sz);
         ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
-        //build.bp = bplan_floor(sz.x, sz.z, mat);
+        mat.raw = get_block_id(db, matname);
+        if (get_number_of_states(db, mat.raw) != 1) {
+            sprintf(reply, "Floor: material %s has more than one state - currently unsupported", matname);
+            goto Error;
+        }
+        build.bp = bplan_floor(sz.x, sz.z, mat);
         sprintf(reply, "Floor size=%d,%d material=%s",sz.x,sz.z,matname);
-        goto Error;
+        goto Place;
     }
 
     CMD2(wall,wa) {
@@ -2108,10 +2113,15 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGREQ(size, NULL, sz);
         ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
-        //build.bp = bplan_floor(sz.x, sz.z, mat);
-        //bplan_hollow(build.bp, 1, 0);
+        mat.raw = get_block_id(db, matname);
+        if (get_number_of_states(db, mat.raw) != 1) {
+            sprintf(reply, "Floor: material %s has more than one state - currently unsupported", matname);
+            goto Error;
+        }
+        build.bp = bplan_floor(sz.x, sz.z, mat);
+        bplan_hollow(build.bp, 1, 0);
         sprintf(reply, "Rectangle size=%d,%d material=%s",sz.x,sz.z,matname);
-        goto Error;
+        goto Place;
     }
 
     CMD2(scaffolding,scaf) {
