@@ -247,7 +247,7 @@ static void hole_radar(MCPacketQueue *cq) {
             }
         }
 
-        if (ISEMPTY(bl[7].bid)) {
+        if (db_blk_is_empty(db, bl[7].raw)) {
             char reply[32768];
             sprintf(reply, "*** HOLE *** : %d,%d y=%d d=%d", x+lx*i,z+lz*i,y,i);
             chat_message(reply, cq, "gold", 2);

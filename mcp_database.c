@@ -533,6 +533,43 @@ const char * get_block_propval(database_t *db, int id, const char *propname) {
     return NULL;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+// block types we should exclude from scanning
+int db_blk_is_noscan(database_t *db, int blk_id) {
+    const char *blk_name = get_block_name(db, blk_id);
+    if (!strcmp(blk_name, "air")) return 1;
+    if (!strcmp(blk_name, "water")) return 1;
+    if (!strcmp(blk_name, "lava")) return 1;
+    if (!strcmp(blk_name, "grass")) return 1;
+    if (!strcmp(blk_name, "seagrass")) return 1;
+    if (!strcmp(blk_name, "tall_seagrass")) return 1;
+    if (!strcmp(blk_name, "fire")) return 1;
+    if (!strcmp(blk_name, "snow")) return 1;
+    if (!strcmp(blk_name, "nether_portal")) return 1;
+    if (!strcmp(blk_name, "end_portal")) return 1;
+    if (!strcmp(blk_name, "carrots")) return 1;
+    if (!strcmp(blk_name, "potatoes")) return 1;
+    if (!strcmp(blk_name, "beetroots")) return 1;
+    return 0;
+}
+
+// block types that are considered 'empty' for the block placement
+int db_blk_is_empty(database_t *db, int blk_id) {
+    const char *blk_name = get_block_name(db, blk_id);
+    if (!strcmp(blk_name, "air")) return 1;
+    if (!strcmp(blk_name, "water")) return 1;
+    if (!strcmp(blk_name, "lava")) return 1;
+    if (!strcmp(blk_name, "grass")) return 1;
+    if (!strcmp(blk_name, "seagrass")) return 1;
+    if (!strcmp(blk_name, "tall_seagrass")) return 1;
+    if (!strcmp(blk_name, "fire")) return 1;
+    if (!strcmp(blk_name, "snow")) return 1;
+    return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
 // TODO: use what we already have
 char *protocol_to_ver_string(int protid){
     if (protid == 404) {

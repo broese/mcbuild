@@ -551,7 +551,7 @@ static void build_update_placed() {
         bid_t bl = row[b->x-build.xmin];
         int smask = (ITEMS[b->b.bid].flags&I_STATE_MASK)^15;
         b->placed = (bl.bid == b->b.bid && (bl.meta&smask)==(b->b.meta&smask) );
-        b->empty  = ISEMPTY(bl.bid) && !b->placed;
+        b->empty  = db_blk_is_empty(db, bl.raw) && !b->placed;
         b->current = bl;
     }
     free_cuboid(c);
@@ -992,7 +992,7 @@ int update_placed() {
         // check if the block is empty, but ignore those that are already
         // placed - this way we can support "empty" blocks like water in our buildplan
         if (!b->empty)
-            b->empty = ISEMPTY(bl.bid) && !b->placed;
+            b->empty = db_blk_is_empty(db, bl.raw) && !b->placed;
         // from now on, b->empty indicates that this block can be technically placed here
 
         //TODO: when placing a double slab, prevent obstruction - place the slab further away first
@@ -1001,17 +1001,17 @@ int update_placed() {
         // determine which neighbors do we have
         bid_t nbl;
         nbl = b->nblocks[DIR_UP] = get_block_at(b->x,b->z,b->y+1);
-        b->n_yp = !ISEMPTY(nbl.bid);
+        b->n_yp = !db_blk_is_empty(db, nbl.raw);
         nbl = b->nblocks[DIR_DOWN] = get_block_at(b->x,b->z,b->y-1);
-        b->n_yn = !ISEMPTY(nbl.bid);
+        b->n_yn = !db_blk_is_empty(db, nbl.raw);
         nbl = b->nblocks[DIR_SOUTH] = get_block_at(b->x,b->z+1,b->y);
-        b->n_zp = !ISEMPTY(nbl.bid);
+        b->n_zp = !db_blk_is_empty(db, nbl.raw);
         nbl = b->nblocks[DIR_NORTH] = get_block_at(b->x,b->z-1,b->y);
-        b->n_zn = !ISEMPTY(nbl.bid);
+        b->n_zn = !db_blk_is_empty(db, nbl.raw);
         nbl = b->nblocks[DIR_EAST]  = get_block_at(b->x+1,b->z,b->y);
-        b->n_xp = !ISEMPTY(nbl.bid);
+        b->n_xp = !db_blk_is_empty(db, nbl.raw);
         nbl = b->nblocks[DIR_WEST]  = get_block_at(b->x-1,b->z,b->y);
-        b->n_xn = !ISEMPTY(nbl.bid);
+        b->n_xn = !db_blk_is_empty(db, nbl.raw);
 
         if (b->empty) num_avail++;
     }
@@ -2488,7 +2488,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
             for(z=0; z<c.sr.z; z++) {
                 bid_t *row = slice+z*c.sa.x;
                 for(x=0; x<c.sr.x; x++) {
-                    if (NOSCAN(row[x].bid)) continue;
+                    if (db_blk_is_noscan(db, row[x].raw)) continue;
                     blkr b = { x+ex.min.x, y+ex.min.y, z+ex.min.z, row[x] };
                     bplan_add(build.bp, abs2rel(pv, b));
                 }

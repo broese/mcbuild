@@ -52,6 +52,12 @@ int get_block_id(database_t *db, const char *name); //input is a block name, ret
 //input is another block id, returning that block id's default id
 int get_block_default_id(database_t *db, int id);
 
+// true if this block should be excluded from scanning
+int db_blk_is_noscan(database_t *db, int blk_id);
+
+// true if this block cannot be used for placement upon its faces
+int db_blk_is_empty(database_t *db, int blk_id);
+
 const char * get_block_propval(database_t *db, int id, const char *propname);
 
 //get_number_of_states(db,5) => 1 // polished_diorite
