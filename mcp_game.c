@@ -581,7 +581,7 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else {
         // Empty spot - place a torch
-        int tslot = prefetch_material(sq, cq, BLOCKTYPE(0x32,0) );
+        int tslot = prefetch_material(sq, cq, get_block_id(db, "torch") );
         if (tslot<0) {
             sprintf(reply,"Anti-AFK: you need to have torches in your inventory");
         }

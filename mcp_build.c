@@ -264,23 +264,27 @@ int find_evictable_slot() {
     return best_s; // return slot that has not been used longest
 }
 
-// locate in which inventory slot do we have some specific material type
-// quickbar is preferred, -1 if nothing found
-static int find_material_slot(bid_t mat) {
-    int i;
-    for(i=44; i>8; i--)
-        if (gs.inv.slots[i].item == mat.bid && gs.inv.slots[i].damage == mat.meta)
-            return i;
-    return -1;
-}
-
 // fetch necessary material to the quickbar
-int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, bid_t mat) {
-    int mslot = find_material_slot(mat);
+int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, int blk_id) {
+    int i;
 
+    // determine item ID suitable for placing this block type
+    const char *blk_name = get_block_name(db, blk_id);
+    assert(blk_name);
+    int item_id = get_item_id(db, blk_name);
+    printf("prefetch_material: blk_id=%d, blk_name=%s, item_id=%d\n", blk_id, blk_name, item_id);
+
+    // try to find the suitable material in any inventory slot, starting from quickbar
+    int mslot = -1;
+    for(i=44; i>8; i--)
+        if (gs.inv.slots[i].item == item_id) {
+            mslot = i;
+            break;
+        }
     if (mslot<0) return -1; // material not available in the inventory
+    printf("Found in slot %d\n", mslot);
 
-    if (mslot>=36 && mslot<=44) return mslot-36; // found in thequickbar
+    if (mslot>=36 && mslot<=44) return mslot-36; // found in the quickbar
 
     // fetch the material from main inventory to a suitable quickbar slot
     int eslot = find_evictable_slot();
@@ -1215,7 +1219,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
         if (ts-b->last < buildopts.blkint) continue;
 
         // fetch block's material into quickbar slot
-        int islot = prefetch_material(sq, cq, get_base_material(b->b));
+        int islot = prefetch_material(sq, cq, b->b.raw);
         if (islot==-1) continue; // we don't have this material
         if (islot==-2) return; // inventory action is in progress, postpone building
         //TODO: notify user about missing materials
