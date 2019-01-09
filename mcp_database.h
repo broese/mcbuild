@@ -77,3 +77,9 @@ int db_dump_items_to_csv_file(database_t *db);
 // many different IDs can match
 //int get_matching_block_ids(database_t *db, const char *name, prop_t *match, int *ids);
 // places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
+
+//returns the stacksize
+int db_stacksize (int item_id);
+
+// True if item exists as item only
+int db_item_is_itemonly (int item_id);
