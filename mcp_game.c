@@ -247,7 +247,7 @@ static void hole_radar(MCPacketQueue *cq) {
             }
         }
 
-        if (db_blk_is_empty(db, bl[7].raw)) {
+        if (db_blk_is_empty(bl[7].raw)) {
             char reply[32768];
             sprintf(reply, "*** HOLE *** : %d,%d y=%d d=%d", x+lx*i,z+lz*i,y,i);
             chat_message(reply, cq, "gold", 2);
@@ -581,7 +581,7 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
     }
     else {
         // Empty spot - place a torch
-        int tslot = prefetch_material(sq, cq, db_get_blk_id(db, "torch") );
+        int tslot = prefetch_material(sq, cq, db_get_blk_id("torch") );
         if (tslot<0) {
             sprintf(reply,"Anti-AFK: you need to have torches in your inventory");
         }

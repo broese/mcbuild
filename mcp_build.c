@@ -269,9 +269,9 @@ int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, int blk_id) {
     int i;
 
     // determine item ID suitable for placing this block type
-    const char *blk_name = db_get_blk_name(db, blk_id);
+    const char *blk_name = db_get_blk_name(blk_id);
     assert(blk_name);
-    int item_id = db_get_item_id(db, blk_name);
+    int item_id = db_get_item_id(blk_name);
     printf("prefetch_material: blk_id=%d, blk_name=%s, item_id=%d\n", blk_id, blk_name, item_id);
 
     // try to find the suitable material in any inventory slot, starting from quickbar
@@ -555,7 +555,7 @@ static void build_update_placed() {
         bid_t bl = row[b->x-build.xmin];
         int smask = (ITEMS[b->b.bid].flags&I_STATE_MASK)^15;
         b->placed = (bl.bid == b->b.bid && (bl.meta&smask)==(b->b.meta&smask) );
-        b->empty  = db_blk_is_empty(db, bl.raw) && !b->placed;
+        b->empty  = db_blk_is_empty(bl.raw) && !b->placed;
         b->current = bl;
     }
     free_cuboid(c);
@@ -996,7 +996,7 @@ int update_placed() {
         // check if the block is empty, but ignore those that are already
         // placed - this way we can support "empty" blocks like water in our buildplan
         if (!b->empty)
-            b->empty = db_blk_is_empty(db, bl.raw) && !b->placed;
+            b->empty = db_blk_is_empty(bl.raw) && !b->placed;
         // from now on, b->empty indicates that this block can be technically placed here
 
         //TODO: when placing a double slab, prevent obstruction - place the slab further away first
@@ -1005,17 +1005,17 @@ int update_placed() {
         // determine which neighbors do we have
         bid_t nbl;
         nbl = b->nblocks[DIR_UP] = get_block_at(b->x,b->z,b->y+1);
-        b->n_yp = !db_blk_is_empty(db, nbl.raw);
+        b->n_yp = !db_blk_is_empty(nbl.raw);
         nbl = b->nblocks[DIR_DOWN] = get_block_at(b->x,b->z,b->y-1);
-        b->n_yn = !db_blk_is_empty(db, nbl.raw);
+        b->n_yn = !db_blk_is_empty(nbl.raw);
         nbl = b->nblocks[DIR_SOUTH] = get_block_at(b->x,b->z+1,b->y);
-        b->n_zp = !db_blk_is_empty(db, nbl.raw);
+        b->n_zp = !db_blk_is_empty(nbl.raw);
         nbl = b->nblocks[DIR_NORTH] = get_block_at(b->x,b->z-1,b->y);
-        b->n_zn = !db_blk_is_empty(db, nbl.raw);
+        b->n_zn = !db_blk_is_empty(nbl.raw);
         nbl = b->nblocks[DIR_EAST]  = get_block_at(b->x+1,b->z,b->y);
-        b->n_xp = !db_blk_is_empty(db, nbl.raw);
+        b->n_xp = !db_blk_is_empty(nbl.raw);
         nbl = b->nblocks[DIR_WEST]  = get_block_at(b->x-1,b->z,b->y);
-        b->n_xn = !db_blk_is_empty(db, nbl.raw);
+        b->n_xn = !db_blk_is_empty(nbl.raw);
 
         if (b->empty) num_avail++;
     }
@@ -1767,7 +1767,7 @@ void build_dump_task() {
                b->n_xn ? '*':'.',
                b->ndots,
 
-               b->b.raw, db_get_blk_name(db, b->b.raw));
+               b->b.raw, db_get_blk_name(b->b.raw));
     }
 }
 
@@ -1792,7 +1792,7 @@ void build_dump_queue() {
                b->n_xn ? '*':'.',
                b->ndots,
 
-               b->b.raw, db_get_blk_name(db, b->b.raw));
+               b->b.raw, db_get_blk_name(b->b.raw));
     }
 }
 
@@ -1943,9 +1943,9 @@ static void get_argdefaults(arg_defaults *ad) {
         ad->mat2 = BLOCKTYPE(s2->item, s2->damage);
 
     if (s1->present)
-        ad->matname1 = db_get_item_name(db, s1->item);
+        ad->matname1 = db_get_item_name(s1->item);
     if (s2->present)
-        ad->matname2 = db_get_item_name(db, s2->item);
+        ad->matname2 = db_get_item_name(s2->item);
 
     if (build.bp) {
         ad->bpsx = build.bp->sx;
@@ -2048,8 +2048,8 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGREQ(size, NULL, sz);
         ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
-        mat.raw = db_get_blk_id(db, matname);
-        if (db_get_num_states(db, mat.raw) != 1) {
+        mat.raw = db_get_blk_id(matname);
+        if (db_get_num_states(mat.raw) != 1) {
             sprintf(reply, "Floor: material %s has more than one state - currently unsupported", matname);
             goto Error;
         }
@@ -2117,8 +2117,8 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGREQ(size, NULL, sz);
         ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
-        mat.raw = db_get_blk_id(db, matname);
-        if (db_get_num_states(db, mat.raw) != 1) {
+        mat.raw = db_get_blk_id(matname);
+        if (db_get_num_states(mat.raw) != 1) {
             sprintf(reply, "Floor: material %s has more than one state - currently unsupported", matname);
             goto Error;
         }
@@ -2502,7 +2502,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
             for(z=0; z<c.sr.z; z++) {
                 bid_t *row = slice+z*c.sa.x;
                 for(x=0; x<c.sr.x; x++) {
-                    if (db_blk_is_noscan(db, row[x].raw)) continue;
+                    if (db_blk_is_noscan(row[x].raw)) continue;
                     blkr b = { x+ex.min.x, y+ex.min.y, z+ex.min.z, row[x] };
                     bplan_add(build.bp, abs2rel(pv, b));
                 }

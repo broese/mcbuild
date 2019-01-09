@@ -25,27 +25,31 @@ char *databasefilepath = "./database";
 
 lh_arr_declare(database_t,dbs);
 
+database_t *activedb;  //pointer to the db for the current connection's protocol
+
 //forward declaration
 int try_to_get_missing_json_files(int protocol_id);
 int save_db_to_file(database_t *db);
 int load_db_from_file(database_t *db, FILE* fp);
-int test_examples(database_t *db);
+int test_examples();
 
-database_t *db_load(int protocol_id) {
+int db_load(int protocol_id) {
+    activedb = NULL;
 
     //check if the db for this protocol is already loaded
     for (int i=0; i<C(dbs); i++) {
         if ( P(dbs)[i].protocol == protocol_id ) {
-            printf("Database %d already loaded, returning the pointer.\n",i);
+            printf("Database %d already loaded, setting the activedb pointer.\n",i);
+            activedb = &P(dbs)[i];
             #ifdef TESTEXAMPLES
-                test_examples(&P(dbs)[i]);
+                test_examples();
             #endif
-            return &P(dbs)[i];
+            return 0; //success
         }
     }
 
     //need a new database in the array of databases
-    database_t *db = lh_arr_new_c(GAR(dbs));
+    database_t *newdb = lh_arr_new_c(GAR(dbs));
 
     //TODO: Protocol Specific
     assert(protocol_id == 404);
@@ -62,14 +66,15 @@ database_t *db_load(int protocol_id) {
     //First Method: if the db file already exists, load it.
     FILE *dbfile = fopen(dbfilespec, "r");
     if (dbfile) {
-        int rc = load_db_from_file(db, dbfile);
+        int rc = load_db_from_file(newdb, dbfile);
         fclose(dbfile);
         if (!rc) {
             printf("Database successfully loaded from %s\n",dbfilespec);
+            activedb = newdb;
             #ifdef TESTEXAMPLES
-                test_examples(db);
+                test_examples();
             #endif
-            return db;
+            return 0; //success
         }
         else {
             //unload failed attempt move to method 2 or 3
@@ -80,6 +85,7 @@ database_t *db_load(int protocol_id) {
     //Second Method: Check for the proper blocks.json and items.json in the database directory
     FILE *f1 = fopen(blockjsonfilespec, "r");
     FILE *f2 = fopen(itemjsonfilespec, "r");
+    //TODO: Logic error leaves a file open if only 1 of the files exists
     if ( f1 && f2 ) {
         fclose(f1);
         fclose(f2);
@@ -91,12 +97,12 @@ database_t *db_load(int protocol_id) {
         int rc = try_to_get_missing_json_files(protocol_id);
         if (rc) {
             printf("Error couldnt load database\n");
-            return NULL;
+            return -1; //return code - failure
         }
         //Now the files are there
     }
 
-    db->protocol = protocol_id;
+    newdb->protocol = protocol_id;
 
     //////////////////////////////////
     //  Load blocks.json into db    //
@@ -133,7 +139,7 @@ database_t *db_load(int protocol_id) {
         //each state's json contains { id: ...,  [default]:..., [properties]: {...,...} }
         for (int i=0; i<statesarrlen; i++) {
             //allocate a new block in the db array
-            block_t *blk = lh_arr_new_c(GAR(db->block));
+            block_t *blk = lh_arr_new_c(GAR(newdb->block));
 
             //get this block state's json
             blockstatejson = json_object_array_get_idx(blockstatesarrayjson, i);
@@ -206,7 +212,7 @@ database_t *db_load(int protocol_id) {
         assert(!strncmp(itemname,"minecraft:",10));
 
         //create another element in the item array
-        item_t *itm = lh_arr_new_c(GAR(db->item));
+        item_t *itm = lh_arr_new_c(GAR(newdb->item));
 
         //store the item name into dbrecord using pointer arithmetic to get rid of the "minecraft:"
         itm->name = itemname + 10;
@@ -217,104 +223,111 @@ database_t *db_load(int protocol_id) {
         // iterate through the json iterator
         json_object_iter_next(&it);
     }
-    save_db_to_file(db);
-
+    save_db_to_file(newdb);
+    activedb = newdb;
     #ifdef TESTEXAMPLES
-        test_examples(db);
+        test_examples();
     #endif
 
-    return db;
+    return 0; //success
 }
 
-int db_get_item_id(database_t *db, const char *name) {
+int db_get_item_id(const char *name) {
+    assert(activedb);
     int id = -1;
-    for (int i =0; i < C(db->item); i++) {
-        if (!strcmp(db->P(item)[i].name, name)) {
-            id = db->P(item)[i].id;
+    for (int i =0; i < C(activedb->item); i++) {
+        if (!strcmp(activedb->P(item)[i].name, name)) {
+            id = activedb->P(item)[i].id;
             break;
         }
     }
     return id;
 };
 
-const char *db_get_item_name(database_t *db, int item_id) {  //there's already a get_item_name()
+const char *db_get_item_name(int item_id) {
+    assert (activedb);
     char *buf;
     if (item_id == -1) {
         return "Empty";
     }
-    if (item_id < -1 || item_id >= C(db->item)) {
+    if (item_id < -1 || item_id >= C(activedb->item)) {
         return "ID out of bounds";
     }
-    for (int i=0; i < C(db->item); i++) {
-        if (item_id == db->P(item)[i].id) {
-            buf = malloc(strlen(db->P(item)[i].name)+1);
-            strcpy(buf,db->P(item)[i].name);
+    for (int i=0; i < C(activedb->item); i++) {
+        if (item_id == activedb->P(item)[i].id) {
+            buf = malloc(strlen(activedb->P(item)[i].name)+1);
+            strcpy(buf,activedb->P(item)[i].name);
             return buf;
         }
     }
     return "ID not found";
 };
 
-const char *db_get_blk_name(database_t *db, int id) {
+const char *db_get_blk_name(int id) {
+    assert(activedb);
     char *buf;
     if (id == -1) {
         return "Empty";
     }
-    if (id < -1 || id >= C(db->block)) {
+    if (id < -1 || id >= C(activedb->block)) {
         return "ID out of bounds";
     }
-    for (int i=0; i < C(db->block); i++) {
-        if (id == P(db->block)[i].id) {
-            buf = malloc(strlen( P(db->block)[i].name)+1);
-            strcpy(buf, P(db->block)[i].name);
+    for (int i=0; i < C(activedb->block); i++) {
+        if (id == P(activedb->block)[i].id) {
+            buf = malloc(strlen( P(activedb->block)[i].name)+1);
+            strcpy(buf, P(activedb->block)[i].name);
             return buf;
         }
     }
     return "ID not found";
 };
 
-const char *db_get_blk_name_from_old_id(database_t *db, int oldid) {
+const char *db_get_blk_name_from_old_id(int oldid) {
+    assert(activedb);
     char *buf;
     if (oldid == -1) {
         return "Empty";
     }
-    if (oldid < -1 || oldid >= P(db->block)[C(db->block)-1].oldid) {
+    if (oldid < -1 || oldid >= P(activedb->block)[C(activedb->block)-1].oldid) {
         return "ID out of bounds";
     }
-    for (int i=0; i < C(db->block); i++) {
-        if (oldid == P(db->block)[i].oldid) {
-            buf = malloc(strlen(P(db->block)[i].name)+1);
-            strcpy(buf,P(db->block)[i].name);
+    for (int i=0; i < C(activedb->block); i++) {
+        if (oldid == P(activedb->block)[i].oldid) {
+            buf = malloc(strlen(P(activedb->block)[i].name)+1);
+            strcpy(buf,P(activedb->block)[i].name);
             return buf;
         }
     }
     return "ID not found";
 };
 
-int db_get_blk_id(database_t *db, const char *name) {
-    for (int i =0; i < C(db->block); i++) {
-        if (!strcmp(db->P(block)[i].name, name)) {
-            return db->P(block)[i].defaultid;
+int db_get_blk_id(const char *name) {
+    assert (activedb);
+    for (int i =0; i < C(activedb->block); i++) {
+        if (!strcmp(activedb->P(block)[i].name, name)) {
+            return activedb->P(block)[i].defaultid;
         }
     }
     return -1;
 }
 
-int db_get_blk_default_id(database_t *db, int id) {
-    for (int i=0; i < C(db->block); i++) {
-        if (id == P(db->block)[i].id) {
-            return P(db->block)[i].defaultid;
+int db_get_blk_default_id(int id) {
+    assert (activedb);
+    for (int i=0; i < C(activedb->block); i++) {
+        if (id == P(activedb->block)[i].id) {
+            return P(activedb->block)[i].defaultid;
         }
     }
     return -1;
 }
 
-int db_get_num_states(database_t *db, int block_id) {
+int db_get_num_states(int block_id) {
+    assert (activedb);
     int count = 0;
     //we could use defaultid or blockname since they are 1-1 correspondence
-    int defid = db_get_blk_default_id(db, block_id);
-    for (int i=0; i < C(db->block); i++) {
-        if (P(db->block)[i].defaultid == defid) {
+    int defid = db_get_blk_default_id(block_id);
+    for (int i=0; i < C(activedb->block); i++) {
+        if (P(activedb->block)[i].defaultid == defid) {
             count++;
         }
     }
@@ -322,48 +335,51 @@ int db_get_num_states(database_t *db, int block_id) {
 }
 
 
-void db_dump_blocks(database_t *db, int maxlines){
+void db_dump_blocks(int maxlines){
+    assert (activedb);
     printf("Dumping Blocks...\n");
     printf("%-30s %-5s %-5s %-5s %s\n","blockname","blkid","oldid","defid","#prop");
-    for (int i=0; (i < C(db->block)) && (i < maxlines); i++) {
-        printf("%30s ", P(db->block)[i].name);
-        printf("%05d ", P(db->block)[i].id);
-        printf("%05d ", P(db->block)[i].oldid);
-        printf("%05d ", P(db->block)[i].defaultid);
-        printf("%05zd ", P(db->block)[i].C(prop));
-        for (int j=0; j < P(db->block)[i].C(prop); j++) {
-            printf("prop:%s val:%s, ", P(db->block)[i].P(prop)[j].pname, P(db->block)[i].P(prop)[j].pvalue);
+    for (int i=0; (i < C(activedb->block)) && (i < maxlines); i++) {
+        printf("%30s ", P(activedb->block)[i].name);
+        printf("%05d ", P(activedb->block)[i].id);
+        printf("%05d ", P(activedb->block)[i].oldid);
+        printf("%05d ", P(activedb->block)[i].defaultid);
+        printf("%05zd ", P(activedb->block)[i].C(prop));
+        for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
+            printf("prop:%s val:%s, ", P(activedb->block)[i].P(prop)[j].pname, P(activedb->block)[i].P(prop)[j].pvalue);
         }
         printf("\n");
     }
 }
 
-void db_dump_items(database_t *db, int maxlines){
+void db_dump_items(int maxlines){
+    assert (activedb);
     printf("Dumping Items...\n");
-    for (int i=0; (i < C(db->item)) && (i < maxlines) ; i++) {
-        printf("%30s ", db->P(item)[i].name);
-        printf("%05d ", db->P(item)[i].id);
+    for (int i=0; (i < C(activedb->item)) && (i < maxlines) ; i++) {
+        printf("%30s ", activedb->P(item)[i].name);
+        printf("%05d ", activedb->P(item)[i].id);
         printf("\n");
     }
 }
 
-int db_dump_blocks_to_csv_file(database_t *db) {
+int db_dump_blocks_to_csv_file() {
+    assert (activedb);
     char *blockcsvfilespec = malloc(strlen(databasefilepath)+30);
-    sprintf(blockcsvfilespec, "%s/mcb_db_%d_blocks.csv",databasefilepath,db->protocol);
+    sprintf(blockcsvfilespec, "%s/mcb_db_%d_blocks.csv",databasefilepath,activedb->protocol);
     FILE *fp = fopen(blockcsvfilespec,"w");
     if  ( fp == NULL ) {
         printf("Can't open csv file\n");
         return -1;
     }
     fprintf(fp, "%s, %s, %s, %s, %s\n","blockname","blkid","oldid","defid","#prop");
-    for (int i=0; i < C(db->block) ; i++) {
-        fprintf(fp, "%s,", P(db->block)[i].name);
-        fprintf(fp, "%d,", P(db->block)[i].id);
-        fprintf(fp, "%d,", P(db->block)[i].oldid);
-        fprintf(fp, "%d,", P(db->block)[i].defaultid);
-        fprintf(fp, "%zd", P(db->block)[i].C(prop));
-        for (int j=0; j < P(db->block)[i].C(prop); j++) {
-            fprintf(fp, ",prop:%s val:%s", P(db->block)[i].P(prop)[j].pname, P(db->block)[i].P(prop)[j].pvalue);
+    for (int i=0; i < C(activedb->block) ; i++) {
+        fprintf(fp, "%s,", P(activedb->block)[i].name);
+        fprintf(fp, "%d,", P(activedb->block)[i].id);
+        fprintf(fp, "%d,", P(activedb->block)[i].oldid);
+        fprintf(fp, "%d,", P(activedb->block)[i].defaultid);
+        fprintf(fp, "%zd", P(activedb->block)[i].C(prop));
+        for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
+            fprintf(fp, ",prop:%s val:%s", P(activedb->block)[i].P(prop)[j].pname, P(activedb->block)[i].P(prop)[j].pvalue);
         }
         fprintf(fp, "\n");
     }
@@ -371,18 +387,19 @@ int db_dump_blocks_to_csv_file(database_t *db) {
     return 0;
 }
 
-int db_dump_items_to_csv_file(database_t *db) {
+int db_dump_items_to_csv_file() {
+    assert (activedb);
     char *itemcsvfilespec = malloc(strlen(databasefilepath)+30);
-    sprintf(itemcsvfilespec, "%s/mcb_db_%d_items.csv",databasefilepath,db->protocol);
+    sprintf(itemcsvfilespec, "%s/mcb_db_%d_items.csv",databasefilepath,activedb->protocol);
     FILE *fp = fopen(itemcsvfilespec,"w");
     if  ( fp == NULL ) {
         printf("Can't open csv file\n");
         return -1;
     }
     fprintf(fp, "%s,%s\n", "itemname","id");
-    for (int i=0; i < C(db->item) ; i++) {
-        fprintf(fp, "%s,", db->P(item)[i].name);
-        fprintf(fp, "%d\n", db->P(item)[i].id);
+    for (int i=0; i < C(activedb->item) ; i++) {
+        fprintf(fp, "%s,", activedb->P(item)[i].name);
+        fprintf(fp, "%d\n", activedb->P(item)[i].id);
     }
     fclose(fp);
     return 0;
@@ -476,6 +493,7 @@ int load_db_from_file(database_t *db, FILE* fp) {
 }
 
 void db_unload() {
+    activedb = NULL;
     int dbcount = C(dbs);
     printf("Database array contains %d array(s).\n",dbcount);
     //process each database
@@ -514,16 +532,17 @@ void db_unload() {
 // db_get_blk_propval(db,14,"facing") => NULL // no such property
 // db_get_blk_propval(db,1650,"facing") => "north"
 // db_get_blk_propval(db,1686,"half") => "bottom"
-const char * db_get_blk_propval(database_t *db, int id, const char *propname) {
-    if (id < 0 || id >= C(db->block)) {
+const char * db_get_blk_propval(int id, const char *propname) {
+    assert (activedb);
+    if (id < 0 || id >= C(activedb->block)) {
         return NULL;
     }
-    for (int i=0; i < C(db->block); i++) {
-        if (id ==  P(db->block)[i].id) {
-            for (int j=0; j < P(db->block)[i].C(prop); j++) {
-                if (!strcmp(P(db->block)[i].P(prop)[j].pname, propname)) {
-                    char *buf = malloc(strlen(P(db->block)[i].P(prop)[j].pvalue)+1);
-                    strcpy(buf,P(db->block)[i].P(prop)[j].pvalue);
+    for (int i=0; i < C(activedb->block); i++) {
+        if (id ==  P(activedb->block)[i].id) {
+            for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
+                if (!strcmp(P(activedb->block)[i].P(prop)[j].pname, propname)) {
+                    char *buf = malloc(strlen(P(activedb->block)[i].P(prop)[j].pvalue)+1);
+                    strcpy(buf,P(activedb->block)[i].P(prop)[j].pvalue);
                     return buf;
                 }
             }
@@ -536,8 +555,8 @@ const char * db_get_blk_propval(database_t *db, int id, const char *propname) {
 ////////////////////////////////////////////////////////////////////////////////
 
 // block types we should exclude from scanning
-int db_blk_is_noscan(database_t *db, int blk_id) {
-    const char *blk_name = db_get_blk_name(db, blk_id);
+int db_blk_is_noscan(int blk_id) {
+    const char *blk_name = db_get_blk_name(blk_id);
     if (!strcmp(blk_name, "air")) return 1;
     if (!strcmp(blk_name, "water")) return 1;
     if (!strcmp(blk_name, "lava")) return 1;
@@ -555,8 +574,8 @@ int db_blk_is_noscan(database_t *db, int blk_id) {
 }
 
 // block types that are considered 'empty' for the block placement
-int db_blk_is_empty(database_t *db, int blk_id) {
-    const char *blk_name = db_get_blk_name(db, blk_id);
+int db_blk_is_empty(int blk_id) {
+    const char *blk_name = db_get_blk_name(blk_id);
     if (!strcmp(blk_name, "air")) return 1;
     if (!strcmp(blk_name, "water")) return 1;
     if (!strcmp(blk_name, "lava")) return 1;
@@ -751,27 +770,28 @@ int try_to_get_missing_json_files(int protocol_id) {
     return 0;
 }
 
-int test_examples(database_t *db) {
-    printf("db_get_blk_propval(db,1686,\"half\")      = %s (bottom)\n",db_get_blk_propval(db,1686,"half"));
-    printf("db_get_item_id(db, \"heart_of_the_sea\")    = %d (789)\n", db_get_item_id(db, "heart_of_the_sea"));
-    printf("db_get_item_name(db, 788)         = %s (nautilus_shell)\n", db_get_item_name(db, 788));
-    printf("db_get_blk_name(db, 8596)               = %s (structure_block)\n", db_get_blk_name(db, 8596));
-    printf("db_get_blk_default_id(db, 8596)         = %d (8595)\n",db_get_blk_default_id(db, 8596));
-    printf("db_get_blk_id(db,\"nether_brick_stairs\") = %d (4540)\n",db_get_blk_id(db,"nether_brick_stairs"));
-    printf("db_get_num_states(db, 5)            = %d (1)\n",db_get_num_states(db, 5));
-    printf("db_get_num_states(db, 8)            = %d (2)\n",db_get_num_states(db, 8));
-    printf("db_get_num_states(db, 2913)         = %d (1296)\n",db_get_num_states(db, 2913));
-    printf("db_stacksize(db_get_item_id(db,\"ender_pearl\")) = %d (16)\n",db_stacksize(db_get_item_id(db,"ender_pearl")));
+int test_examples() {
+    printf("db_get_blk_propval(1686,\"half\")      = %s (bottom)\n",db_get_blk_propval(1686,"half"));
+    printf("db_get_item_id(\"heart_of_the_sea\")    = %d (789)\n", db_get_item_id("heart_of_the_sea"));
+    printf("db_get_item_name(788)         = %s (nautilus_shell)\n", db_get_item_name(788));
+    printf("db_get_blk_name(8596)               = %s (structure_block)\n", db_get_blk_name(8596));
+    printf("db_get_blk_default_id(8596)         = %d (8595)\n",db_get_blk_default_id(8596));
+    printf("db_get_blk_name_from_old_id(597)    = %s (structure_block)\n", db_get_blk_name_from_old_id(597));
+    printf("db_get_blk_id(\"nether_brick_stairs\") = %d (4540)\n",db_get_blk_id("nether_brick_stairs"));
+    printf("db_get_num_states(5)            = %d (1)\n",db_get_num_states(5));
+    printf("db_get_num_states(8)            = %d (2)\n",db_get_num_states(8));
+    printf("db_get_num_states(2913)         = %d (1296)\n",db_get_num_states(2913));
+    printf("db_stacksize(db_get_item_id(\"ender_pearl\")) = %d (16)\n",db_stacksize(db_get_item_id("ender_pearl")));
     printf("db_item_is_itemonly(703) = %d (False) //skeleton_skull\n",db_item_is_itemonly(703));
 
-    printf("\nNumber of blocks: %zd\n",C(db->block));
-    printf("Number of items: %zd\n", C(db->item));
+    printf("\nNumber of blocks: %zd\n",C(activedb->block));
+    printf("Number of items: %zd\n", C(activedb->item));
 
     printf("\nNow testing errors \n");
-    printf("db_get_blk_name(db, 8599)               = %s (out of bounds)\n", db_get_blk_name(db, 8599));
-    printf("db_get_blk_name(db, 8600)               = %s (out of bounds)\n", db_get_blk_name(db, 8600));
-    printf("db_get_blk_id(db,\"gold_nugget\")         = %d (-1 meaning not found)\n",db_get_blk_id(db,"gold_nugget"));
-    printf("db_get_num_states(db, 8599)         = %d (0 meaning problem)\n",db_get_num_states(db, 8599));
+    printf("db_get_blk_name(8599)               = %s (out of bounds)\n", db_get_blk_name(8599));
+    printf("db_get_blk_name(8600)               = %s (out of bounds)\n", db_get_blk_name(8600));
+    printf("db_get_blk_id(\"gold_nugget\")         = %d (-1 meaning not found)\n",db_get_blk_id("gold_nugget"));
+    printf("db_get_num_states(8599)         = %d (0 meaning problem)\n",db_get_num_states(8599));
 
     return 0;
 }

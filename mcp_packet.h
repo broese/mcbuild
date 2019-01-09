@@ -635,7 +635,6 @@ typedef struct {
 ////////////////////////////////////////////////////////////////////////////////
 
 extern int  currentProtocol;
-extern database_t *db;  // pointer to the currently loaded db for other modules to access
 
 int         set_protocol(int protocol, char * reply);
 

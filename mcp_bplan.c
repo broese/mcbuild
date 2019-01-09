@@ -75,7 +75,7 @@ void bplan_dump(bplan *bp) {
         printf("%3d %+4d,%+4d,%3d   %4d (%s)\n",
                i, b->x, b->z, b->y,
 
-               b->b.raw, db_get_blk_name(db, b->b.raw));
+               b->b.raw, db_get_blk_name(b->b.raw));
     }
 }
 
@@ -864,7 +864,7 @@ bplan * bplan_sload(const char *name) {
     for(y=0; y<hg; y++) {
         for (z=0; z<ln; z++) {
             for (x=0; x<wd; x++) {
-                if (!db_blk_is_noscan(db, blocks[i])) { //FIXME: check if this is the correct block type
+                if (!db_blk_is_noscan(blocks[i])) { //FIXME: check if this is the correct block type
                     blkr *b = lh_arr_new(BP);
                     b->b.bid = blocks[i];
                     b->b.meta = metas[i]&0xf;
