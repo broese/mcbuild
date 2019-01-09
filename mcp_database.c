@@ -31,7 +31,7 @@ int save_db_to_file(database_t *db);
 int load_db_from_file(database_t *db, FILE* fp);
 int test_examples(database_t *db);
 
-database_t *load_database(int protocol_id) {
+database_t *db_load(int protocol_id) {
 
     //check if the db for this protocol is already loaded
     for (int i=0; i<C(dbs); i++) {
@@ -73,7 +73,7 @@ database_t *load_database(int protocol_id) {
         }
         else {
             //unload failed attempt move to method 2 or 3
-            //unload_all_databases();
+            //db_unload();
         }
     }
 
@@ -226,7 +226,7 @@ database_t *load_database(int protocol_id) {
     return db;
 }
 
-int get_item_id(database_t *db, const char *name) {
+int db_get_item_id(database_t *db, const char *name) {
     int id = -1;
     for (int i =0; i < C(db->item); i++) {
         if (!strcmp(db->P(item)[i].name, name)) {
@@ -237,7 +237,7 @@ int get_item_id(database_t *db, const char *name) {
     return id;
 };
 
-const char *get_item_name_from_db(database_t *db, int item_id) {  //there's already a get_item_name()
+const char *db_get_item_name(database_t *db, int item_id) {  //there's already a get_item_name()
     char *buf;
     if (item_id == -1) {
         return "Empty";
@@ -255,7 +255,7 @@ const char *get_item_name_from_db(database_t *db, int item_id) {  //there's alre
     return "ID not found";
 };
 
-const char *get_block_name(database_t *db, int id) {
+const char *db_get_blk_name(database_t *db, int id) {
     char *buf;
     if (id == -1) {
         return "Empty";
@@ -273,7 +273,7 @@ const char *get_block_name(database_t *db, int id) {
     return "ID not found";
 };
 
-const char *get_block_name_from_old_id(database_t *db, int oldid) {
+const char *db_get_blk_name_from_old_id(database_t *db, int oldid) {
     char *buf;
     if (oldid == -1) {
         return "Empty";
@@ -291,7 +291,7 @@ const char *get_block_name_from_old_id(database_t *db, int oldid) {
     return "ID not found";
 };
 
-int get_block_id(database_t *db, const char *name) {
+int db_get_blk_id(database_t *db, const char *name) {
     for (int i =0; i < C(db->block); i++) {
         if (!strcmp(db->P(block)[i].name, name)) {
             return db->P(block)[i].defaultid;
@@ -300,7 +300,7 @@ int get_block_id(database_t *db, const char *name) {
     return -1;
 }
 
-int get_block_default_id(database_t *db, int id) {
+int db_get_blk_default_id(database_t *db, int id) {
     for (int i=0; i < C(db->block); i++) {
         if (id == P(db->block)[i].id) {
             return P(db->block)[i].defaultid;
@@ -309,10 +309,10 @@ int get_block_default_id(database_t *db, int id) {
     return -1;
 }
 
-int get_number_of_states(database_t *db, int block_id) {
+int db_get_num_states(database_t *db, int block_id) {
     int count = 0;
     //we could use defaultid or blockname since they are 1-1 correspondence
-    int defid = get_block_default_id(db, block_id);
+    int defid = db_get_blk_default_id(db, block_id);
     for (int i=0; i < C(db->block); i++) {
         if (P(db->block)[i].defaultid == defid) {
             count++;
@@ -322,7 +322,7 @@ int get_number_of_states(database_t *db, int block_id) {
 }
 
 
-void dump_db_blocks(database_t *db, int maxlines){
+void db_dump_blocks(database_t *db, int maxlines){
     printf("Dumping Blocks...\n");
     printf("%-30s %-5s %-5s %-5s %s\n","blockname","blkid","oldid","defid","#prop");
     for (int i=0; (i < C(db->block)) && (i < maxlines); i++) {
@@ -338,7 +338,7 @@ void dump_db_blocks(database_t *db, int maxlines){
     }
 }
 
-void dump_db_items(database_t *db, int maxlines){
+void db_dump_items(database_t *db, int maxlines){
     printf("Dumping Items...\n");
     for (int i=0; (i < C(db->item)) && (i < maxlines) ; i++) {
         printf("%30s ", db->P(item)[i].name);
@@ -347,7 +347,7 @@ void dump_db_items(database_t *db, int maxlines){
     }
 }
 
-int dump_db_blocks_to_csv_file(database_t *db) {
+int db_dump_blocks_to_csv_file(database_t *db) {
     char *blockcsvfilespec = malloc(strlen(databasefilepath)+30);
     sprintf(blockcsvfilespec, "%s/mcb_db_%d_blocks.csv",databasefilepath,db->protocol);
     FILE *fp = fopen(blockcsvfilespec,"w");
@@ -371,7 +371,7 @@ int dump_db_blocks_to_csv_file(database_t *db) {
     return 0;
 }
 
-int dump_db_items_to_csv_file(database_t *db) {
+int db_dump_items_to_csv_file(database_t *db) {
     char *itemcsvfilespec = malloc(strlen(databasefilepath)+30);
     sprintf(itemcsvfilespec, "%s/mcb_db_%d_items.csv",databasefilepath,db->protocol);
     FILE *fp = fopen(itemcsvfilespec,"w");
@@ -475,7 +475,7 @@ int load_db_from_file(database_t *db, FILE* fp) {
     return 0;
 }
 
-void unload_all_databases() {
+void db_unload() {
     int dbcount = C(dbs);
     printf("Database array contains %d array(s).\n",dbcount);
     //process each database
@@ -511,10 +511,10 @@ void unload_all_databases() {
     return;
 }
 
-// get_block_propval(db,14,"facing") => NULL // no such property
-// get_block_propval(db,1650,"facing") => "north"
-// get_block_propval(db,1686,"half") => "bottom"
-const char * get_block_propval(database_t *db, int id, const char *propname) {
+// db_get_blk_propval(db,14,"facing") => NULL // no such property
+// db_get_blk_propval(db,1650,"facing") => "north"
+// db_get_blk_propval(db,1686,"half") => "bottom"
+const char * db_get_blk_propval(database_t *db, int id, const char *propname) {
     if (id < 0 || id >= C(db->block)) {
         return NULL;
     }
@@ -537,7 +537,7 @@ const char * get_block_propval(database_t *db, int id, const char *propname) {
 
 // block types we should exclude from scanning
 int db_blk_is_noscan(database_t *db, int blk_id) {
-    const char *blk_name = get_block_name(db, blk_id);
+    const char *blk_name = db_get_blk_name(db, blk_id);
     if (!strcmp(blk_name, "air")) return 1;
     if (!strcmp(blk_name, "water")) return 1;
     if (!strcmp(blk_name, "lava")) return 1;
@@ -556,7 +556,7 @@ int db_blk_is_noscan(database_t *db, int blk_id) {
 
 // block types that are considered 'empty' for the block placement
 int db_blk_is_empty(database_t *db, int blk_id) {
-    const char *blk_name = get_block_name(db, blk_id);
+    const char *blk_name = db_get_blk_name(db, blk_id);
     if (!strcmp(blk_name, "air")) return 1;
     if (!strcmp(blk_name, "water")) return 1;
     if (!strcmp(blk_name, "lava")) return 1;
@@ -752,25 +752,25 @@ int try_to_get_missing_json_files(int protocol_id) {
 }
 
 int test_examples(database_t *db) {
-    printf("get_block_propval(db,1686,\"half\")      = %s (bottom)\n",get_block_propval(db,1686,"half"));
-    printf("get_item_id(db, \"heart_of_the_sea\")    = %d (789)\n", get_item_id(db, "heart_of_the_sea"));
-    printf("get_item_name_from_db(db, 788)         = %s (nautilus_shell)\n", get_item_name_from_db(db, 788));
-    printf("get_block_name(db, 8596)               = %s (structure_block)\n", get_block_name(db, 8596));
-    printf("get_block_default_id(db, 8596)         = %d (8595)\n",get_block_default_id(db, 8596));
-    printf("get_block_id(db,\"nether_brick_stairs\") = %d (4540)\n",get_block_id(db,"nether_brick_stairs"));
-    printf("get_number_of_states(db, 5)            = %d (1)\n",get_number_of_states(db, 5));
-    printf("get_number_of_states(db, 8)            = %d (2)\n",get_number_of_states(db, 8));
-    printf("get_number_of_states(db, 2913)         = %d (1296)\n",get_number_of_states(db, 2913));
+    printf("db_get_blk_propval(db,1686,\"half\")      = %s (bottom)\n",db_get_blk_propval(db,1686,"half"));
+    printf("db_get_item_id(db, \"heart_of_the_sea\")    = %d (789)\n", db_get_item_id(db, "heart_of_the_sea"));
+    printf("db_get_item_name(db, 788)         = %s (nautilus_shell)\n", db_get_item_name(db, 788));
+    printf("db_get_blk_name(db, 8596)               = %s (structure_block)\n", db_get_blk_name(db, 8596));
+    printf("db_get_blk_default_id(db, 8596)         = %d (8595)\n",db_get_blk_default_id(db, 8596));
+    printf("db_get_blk_id(db,\"nether_brick_stairs\") = %d (4540)\n",db_get_blk_id(db,"nether_brick_stairs"));
+    printf("db_get_num_states(db, 5)            = %d (1)\n",db_get_num_states(db, 5));
+    printf("db_get_num_states(db, 8)            = %d (2)\n",db_get_num_states(db, 8));
+    printf("db_get_num_states(db, 2913)         = %d (1296)\n",db_get_num_states(db, 2913));
 
 
     printf("\nNumber of blocks: %zd\n",C(db->block));
     printf("Number of items: %zd\n", C(db->item));
 
     printf("\nNow testing errors \n");
-    printf("get_block_name(db, 8599)               = %s (out of bounds)\n", get_block_name(db, 8599));
-    printf("get_block_name(db, 8600)               = %s (out of bounds)\n", get_block_name(db, 8600));
-    printf("get_block_id(db,\"gold_nugget\")         = %d (-1 meaning not found)\n",get_block_id(db,"gold_nugget"));
-    printf("get_number_of_states(db, 8599)         = %d (0 meaning problem)\n",get_number_of_states(db, 8599));
+    printf("db_get_blk_name(db, 8599)               = %s (out of bounds)\n", db_get_blk_name(db, 8599));
+    printf("db_get_blk_name(db, 8600)               = %s (out of bounds)\n", db_get_blk_name(db, 8600));
+    printf("db_get_blk_id(db,\"gold_nugget\")         = %d (-1 meaning not found)\n",db_get_blk_id(db,"gold_nugget"));
+    printf("db_get_num_states(db, 8599)         = %d (0 meaning problem)\n",db_get_num_states(db, 8599));
     return 0;
 }
 //struct prop_t { const char *pname, const char *pvalue };

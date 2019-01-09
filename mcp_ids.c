@@ -777,7 +777,7 @@ const char * get_bid_name(char *buf, bid_t b) {
 }
 
 const char * get_item_name(char *buf, slot_t *s) {
-    sprintf(buf, "%s", get_item_name_from_db(db, s->item));  //db is extern in mcp_packet.h
+    sprintf(buf, "%s", db_get_item_name(db, s->item));  //db is extern in mcp_packet.h
     return buf;
 }
 

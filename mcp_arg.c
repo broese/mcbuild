@@ -470,14 +470,14 @@ int argf_matname(arg_defaults *ad, char **words, char **names, const char **matn
     int fi = argparse(words, names, fmt_mat, sitem);
     switch (fi) {
         case 0: {
-            int item_id = get_item_id(db, sitem);
+            int item_id = db_get_item_id(db, sitem);
             //TODO: also check against flags - material must be a buildable block
             if (item_id < 0) {
                 printf("Could not find material name %s\n", sitem);
                 return MCPARG_LOOKUP_FAILED;
             }
             printf("Found material %s corresponding to item ID %d\n", sitem, item_id);
-            *matname = get_item_name_from_db(db, item_id);
+            *matname = db_get_item_name(db, item_id);
             break;
         }
         case MCPARG_NOT_FOUND:

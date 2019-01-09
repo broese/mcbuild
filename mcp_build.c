@@ -269,9 +269,9 @@ int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, int blk_id) {
     int i;
 
     // determine item ID suitable for placing this block type
-    const char *blk_name = get_block_name(db, blk_id);
+    const char *blk_name = db_get_blk_name(db, blk_id);
     assert(blk_name);
-    int item_id = get_item_id(db, blk_name);
+    int item_id = db_get_item_id(db, blk_name);
     printf("prefetch_material: blk_id=%d, blk_name=%s, item_id=%d\n", blk_id, blk_name, item_id);
 
     // try to find the suitable material in any inventory slot, starting from quickbar
@@ -1767,7 +1767,7 @@ void build_dump_task() {
                b->n_xn ? '*':'.',
                b->ndots,
 
-               b->b.raw, get_block_name(db, b->b.raw));
+               b->b.raw, db_get_blk_name(db, b->b.raw));
     }
 }
 
@@ -1792,7 +1792,7 @@ void build_dump_queue() {
                b->n_xn ? '*':'.',
                b->ndots,
 
-               b->b.raw, get_block_name(db, b->b.raw));
+               b->b.raw, db_get_blk_name(db, b->b.raw));
     }
 }
 
@@ -1943,9 +1943,9 @@ static void get_argdefaults(arg_defaults *ad) {
         ad->mat2 = BLOCKTYPE(s2->item, s2->damage);
 
     if (s1->present)
-        ad->matname1 = get_item_name_from_db(db, s1->item);
+        ad->matname1 = db_get_item_name(db, s1->item);
     if (s2->present)
-        ad->matname2 = get_item_name_from_db(db, s2->item);
+        ad->matname2 = db_get_item_name(db, s2->item);
 
     if (build.bp) {
         ad->bpsx = build.bp->sx;
@@ -2048,8 +2048,8 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGREQ(size, NULL, sz);
         ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
-        mat.raw = get_block_id(db, matname);
-        if (get_number_of_states(db, mat.raw) != 1) {
+        mat.raw = db_get_blk_id(db, matname);
+        if (db_get_num_states(db, mat.raw) != 1) {
             sprintf(reply, "Floor: material %s has more than one state - currently unsupported", matname);
             goto Error;
         }
@@ -2117,8 +2117,8 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGREQ(size, NULL, sz);
         ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
-        mat.raw = get_block_id(db, matname);
-        if (get_number_of_states(db, mat.raw) != 1) {
+        mat.raw = db_get_blk_id(db, matname);
+        if (db_get_num_states(db, mat.raw) != 1) {
             sprintf(reply, "Floor: material %s has more than one state - currently unsupported", matname);
             goto Error;
         }

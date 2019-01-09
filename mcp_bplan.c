@@ -75,7 +75,7 @@ void bplan_dump(bplan *bp) {
         printf("%3d %+4d,%+4d,%3d   %4d (%s)\n",
                i, b->x, b->z, b->y,
 
-               b->b.raw, get_block_name(db, b->b.raw));
+               b->b.raw, db_get_blk_name(db, b->b.raw));
     }
 }
 
