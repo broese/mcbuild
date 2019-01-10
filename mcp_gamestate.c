@@ -218,6 +218,9 @@ int get_stored_area(gsworld *w, int32_t *Xmin, int32_t *Xmax, int32_t *Zmin, int
     return set;
 }
 
+#if 0
+//DISABLED: transition to dev_3.0, dropping support for the legacy ITEMS table
+
 // Add a tile entity to the chunk data
 int store_tile_entity(int32_t X, int32_t Z, nbt_t *ent) {
     // remove name from the tile entity - in the ChunkData they are sent with
@@ -442,6 +445,7 @@ void update_chunk_containers(gschunk *gc, int X, int Z) {
         }
     }
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -1340,14 +1344,18 @@ void gs_packet(MCPacket *pkt) {
             for(i=0; i<tpkt->te->count; i++) {
                 nbt_t *te = nbt_aget(tpkt->te, i);
                 assert(te->type == NBT_COMPOUND);
-                store_tile_entity(tpkt->chunk.X, tpkt->chunk.Z, nbt_clone(te));
+                //DISABLED: transition to dev_3.0
+                //store_tile_entity(tpkt->chunk.X, tpkt->chunk.Z, nbt_clone(te));
             }
         } _GSP;
 
+#if 0
+        //DISABLED: transition to dev_3.0
         GSP(SP_UpdateBlockEntity) {
             nbt_t *te = tpkt->nbt;
             store_tile_entity(tpkt->loc.x>>4, tpkt->loc.z>>4, nbt_clone(te));
         } _GSP;
+#endif
 
         GSP(SP_UnloadChunk) {
             if (gs.opt.prune_chunks)
@@ -1640,8 +1648,9 @@ void gs_packet(MCPacket *pkt) {
                 printf("*** WindowItems, woffset=%d, ioffset=%d, nslots=%d tpkt->count=%d\n",
                        woffset, ioffset, nslots, tpkt->count);
 
-            if (tpkt->wid!=0 && tpkt->wid!=255)
-                update_container_items(tpkt);
+            //DISABLED: transition to dev_3.0
+            //if (tpkt->wid!=0 && tpkt->wid!=255)
+            //    update_container_items(tpkt);
 
             int i;
             for(i=0; i<nslots; i++) {
