@@ -627,7 +627,7 @@ static void inv_click(int button, int16_t sid) {
 
         if (d->item<0 || sameitem(s,d)) {
             // we can pick up items from the product slot
-            if ( d->count + s->count > STACKSIZE(s->item)) {
+            if ( d->count + s->count > db_stacksize(s->item)) {
                 if (DEBUG_INVENTORY)
                     printf("*** No-op: can't pick up another %dx %s into dragslot from product slot\n",
                            s->count, get_item_name(name,s));
@@ -767,7 +767,7 @@ static void inv_click(int button, int16_t sid) {
     // clicking with a full hand on a non-empty slot - items are same and stackable
 
     // how many more items can we put into slot?
-    int count = ( (ITEMS[s->item].flags&I_S16) ? 16 : 64 ) - s->count;
+    int count = db_stacksize(s->item) - s->count;
     if (count > gs.inv.drag.count) count=gs.inv.drag.count;
     if (button==1 && count>0) count=1;
 
@@ -790,13 +790,13 @@ static void inv_click(int button, int16_t sid) {
 
 int64_t find_stackable_slots(int64_t mask, slot_t *s) {
     // return empty mask if the item itself is non-stackable
-    if (ITEMS[s->item].flags&I_NSTACK) return 0LL;
+    if (db_stacksize(s->item)==1) return 0LL;
 
     int i;
     for(i=9; i<45; i++) {
         if (!(mask & (1LL<<i))) continue; // skip slots not in the mask
         slot_t *t = &gs.inv.slots[i];
-        int capacity = STACKSIZE(s->item) - t->count;
+        int capacity = db_stacksize(s->item) - t->count;
         if (!sameitem(t,s) || capacity <=0 )
             // mask slots that have different type or no capacity
             mask &= ~(1LL<<i);
@@ -859,7 +859,7 @@ static void inv_shiftclick(int button, int16_t sid) {
     // bitmask of the stackable slots with available capacity
     int64_t smask = find_stackable_slots(mask, f);
 
-    int stacksize = STACKSIZE(gs.inv.slots[sid].item);
+    int stacksize = db_stacksize(gs.inv.slots[sid].item);
 
     //FIXME: the same should be valid for slots 1-4?
     // if we distribute from the product slot, search in the
@@ -1013,7 +1013,7 @@ static void inv_paint(int button, int16_t sid) {
                 if (button==2)
                     amount = gs.inv.drag.count / gs.inv.pcount;
 
-                int stacksize = STACKSIZE(gs.inv.drag.item);
+                int stacksize = db_stacksize(gs.inv.drag.item);
 
                 for(i=0; i<gs.inv.pcount; i++) {
                     int idx = gs.inv.pslots[i];

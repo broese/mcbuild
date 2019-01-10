@@ -969,7 +969,7 @@ int huddraw_build() {
         name[22] = 0;
 
         int toplace = m->total-m->placed;
-        int stacksize = STACKSIZE(m->material.bid);
+        int stacksize = db_stacksize(m->material.raw);
         if (hud_build_plan) {
             int stacks = toplace/stacksize + ((toplace%stacksize)>0);
             sprintf(buf, "%4d $%-3d %s", toplace, stacks, name);
