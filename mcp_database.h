@@ -39,35 +39,35 @@ typedef struct {
   lh_arr_declare(block_t, block);
 } database_t;
 
-database_t *load_database(int protocol_id);
-void unload_all_databases();
-int get_item_id(database_t *db, const char *name);
-const char *get_item_name_from_db(database_t *db, int item_id);
-const char *get_block_name(database_t *db, int id);
+int db_load(int protocol_id);
+void db_unload();
+int db_get_item_id(const char *name);
+const char *db_get_item_name(int item_id);
+const char *db_get_blk_name(int id);
 
-//get_block_id(db, "cobblestone") => 14
-//get_block_id(db, "nether_brick_stairs") => 4540 // north,bottom,straight,false marked as default
-int get_block_id(database_t *db, const char *name); //input is a block name, returning that blockname's default id
+//db_get_blk_id(db, "cobblestone") => 14
+//db_get_blk_id(db, "nether_brick_stairs") => 4540 // north,bottom,straight,false marked as default
+int db_get_blk_id(const char *name); //input is a block name, returning that blockname's default id
 
 //input is another block id, returning that block id's default id
-int get_block_default_id(database_t *db, int id);
+int db_get_blk_default_id(int id);
 
 // true if this block should be excluded from scanning
-int db_blk_is_noscan(database_t *db, int blk_id);
+int db_blk_is_noscan(int blk_id);
 
 // true if this block cannot be used for placement upon its faces
-int db_blk_is_empty(database_t *db, int blk_id);
+int db_blk_is_empty(int blk_id);
 
-const char * get_block_propval(database_t *db, int id, const char *propname);
+const char * db_get_blk_propval(int id, const char *propname);
 
-//get_number_of_states(db,5) => 1 // polished_diorite
-//get_number_of_states(db,8) => 2 // grass_block
-int get_number_of_states(database_t *db, int block_id);
+//db_get_num_states(db,5) => 1 // polished_diorite
+//db_get_num_states(db,8) => 2 // grass_block
+int db_get_num_states(int block_id);
 
-void dump_db_blocks(database_t *db, int maxlines);
-void dump_db_items(database_t *db, int maxlines);
-int dump_db_blocks_to_csv_file(database_t *db);
-int dump_db_items_to_csv_file(database_t *db);
+void db_dump_blocks(int maxlines);
+void db_dump_items(int maxlines);
+int db_dump_blocks_to_csv_file();
+int db_dump_items_to_csv_file();
 // (db,14,"facing") => NULL // no such property
 // (db,1650,"facing") => "north"
 // (db,1686,"half") => "bottom"
@@ -77,3 +77,13 @@ int dump_db_items_to_csv_file(database_t *db);
 // many different IDs can match
 //int get_matching_block_ids(database_t *db, const char *name, prop_t *match, int *ids);
 // places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
+
+//returns the stacksize
+int db_stacksize (int item_id);
+
+// True if item exists as item only
+int db_item_is_itemonly (int item_id);
+
+// Gets the blockname from the old-style block ID
+// only relevant for the SP_BlockAction packet which uses old ids
+const char *db_get_blk_name_from_old_id(int oldid);
