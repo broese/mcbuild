@@ -28,6 +28,210 @@
 #include "mcp_database.h"
 
 ////////////////////////////////////////////////////////////////////////////////
+//// Protocol IDs
+
+#define PROTO_NONE   0x00000000
+#define PROTO_1_8_1  0x00010801
+#define PROTO_1_9    0x00010900
+#define PROTO_1_9_2  0x00010902
+#define PROTO_1_9_4  0x00010904
+#define PROTO_1_10   0x00011000
+#define PROTO_1_11   0x00011100
+#define PROTO_1_11_2 0x00011102
+#define PROTO_1_12   0x00011200
+#define PROTO_1_12_1 0x00011201
+#define PROTO_1_12_2 0x00011202
+#define PROTO_1_13   0x00011300
+#define PROTO_1_13_1 0x00011301
+#define PROTO_1_13_2 0x00011302
+
+////////////////////////////////////////////////////////////////////////////////
+//// Protocol Messages
+
+#define STATE_IDLE     0
+#define STATE_STATUS   1
+#define STATE_LOGIN    2
+#define STATE_PLAY     3
+
+#define SI(x) ((0x00<<24)|(0x##x))
+#define CI(x) ((0x10<<24)|(0x##x))
+#define SS(x) ((0x01<<24)|(0x##x))
+#define CS(x) ((0x11<<24)|(0x##x))
+#define SL(x) ((0x02<<24)|(0x##x))
+#define CL(x) ((0x12<<24)|(0x##x))
+#define SP(x) ((0x03<<24)|(0x##x))
+#define CP(x) ((0x13<<24)|(0x##x))
+
+#define PID(x)     ((x)&0xffffff)
+#define PCLIENT(x) (((x)&0x10000000)!=0)
+#define PSTATE(x)  (((x)>>24)&0x0f)
+
+// Handshakes
+
+#define CI_Handshake            CI(00)
+
+// Status Query
+
+#define SS_Response             SS(00)
+#define SS_PingResponse         SS(01)
+
+#define CS_Request              CS(00)
+#define CS_PingRequest          CS(01)
+
+// Login Process
+
+#define SL_Disconnect           SL(00)
+#define SL_EncryptionRequest    SL(01)
+#define SL_LoginSuccess         SL(02)
+#define SL_SetCompression       SL(03)
+
+#define CL_LoginStart           CL(00)
+#define CL_EncryptionResponse   CL(01)
+
+// Play
+// Note: the IDs are arbitrary, but we keep them matching the latest protocol
+// version. IDs removed by an MC update are kept and moved to the bottom (0x80+)
+
+#define SP_SpawnObject          SP(00)
+#define SP_SpawnExperienceOrb   SP(01)
+#define SP_SpawnGlobalEntity    SP(02)
+#define SP_SpawnMob             SP(03)
+#define SP_SpawnPainting        SP(04)
+#define SP_SpawnPlayer          SP(05)
+#define SP_Animation            SP(06)
+#define SP_Statistics           SP(07)
+#define SP_BlockBreakAnimation  SP(08)
+#define SP_UpdateBlockEntity    SP(09)
+#define SP_BlockAction          SP(0a)
+#define SP_BlockChange          SP(0b)
+#define SP_BossBar              SP(0c)
+#define SP_ServerDifficulty     SP(0d)
+#define SP_ChatMessage          SP(0e)
+#define SP_MultiBlockChange     SP(0f)
+#define SP_TabComplete          SP(10)
+#define SP_DeclareCommands      SP(11)
+#define SP_ConfirmTransaction   SP(12)
+#define SP_CloseWindow          SP(13)
+#define SP_OpenWindow           SP(14)
+#define SP_WindowItems          SP(15)
+#define SP_WindowProperty       SP(16)
+#define SP_SetSlot              SP(17)
+#define SP_SetCooldown          SP(18)
+#define SP_PluginMessage        SP(19)
+#define SP_NamedSoundEffect     SP(1a)
+#define SP_Disconnect           SP(1b)
+#define SP_EntityStatus         SP(1c)
+#define SP_NbtQueryResponse     SP(1d)
+#define SP_Explosion            SP(1e)
+#define SP_UnloadChunk          SP(1f)
+#define SP_ChangeGameState      SP(20)
+#define SP_KeepAlive            SP(21)
+#define SP_ChunkData            SP(22)
+#define SP_Effect               SP(23)
+#define SP_Particle             SP(24)
+#define SP_JoinGame             SP(25)
+#define SP_Map                  SP(26)
+#define SP_Entity               SP(27)
+#define SP_EntityRelMove        SP(28)
+#define SP_EntityLookRelMove    SP(29)
+#define SP_EntityLook           SP(2a)
+#define SP_VehicleMove          SP(2b)
+#define SP_OpenSignEditor       SP(2c)
+#define SP_CraftRecipeResponse  SP(2d)
+#define SP_PlayerAbilities      SP(2e)
+#define SP_CombatEffect         SP(2f)
+#define SP_PlayerListItem       SP(30)
+#define SP_FacePlayer           SP(31)
+#define SP_PlayerPositionLook   SP(32)
+#define SP_UseBed               SP(33)
+#define SP_UnlockRecipes        SP(34)
+#define SP_DestroyEntities      SP(35)
+#define SP_RemoveEntityEffect   SP(36)
+#define SP_ResourcePackSent     SP(37)
+#define SP_Respawn              SP(38)
+#define SP_EntityHeadLook       SP(39)
+#define SP_SelectAdvancementTab SP(3a)
+#define SP_WorldBorder          SP(3b)
+#define SP_Camera               SP(3c)
+#define SP_HeldItemChange       SP(3d)
+#define SP_DisplayScoreboard    SP(3e)
+#define SP_EntityMetadata       SP(3f)
+#define SP_AttachEntity         SP(40)
+#define SP_EntityVelocity       SP(41)
+#define SP_EntityEquipment      SP(42)
+#define SP_SetExperience        SP(43)
+#define SP_UpdateHealth         SP(44)
+#define SP_ScoreboardObjective  SP(45)
+#define SP_SetPassengers        SP(46)
+#define SP_Teams                SP(47)
+#define SP_UpdateScore          SP(48)
+#define SP_SpawnPosition        SP(49)
+#define SP_TimeUpdate           SP(4a)
+#define SP_Title                SP(4b)
+#define SP_StopSound            SP(4c)
+#define SP_SoundEffect          SP(4d)
+#define SP_PlayerListHeader     SP(4e)
+#define SP_CollectItem          SP(4f)
+#define SP_EntityTeleport       SP(50)
+#define SP_Advancements         SP(51)
+#define SP_EntityProperties     SP(52)
+#define SP_EntityEffect         SP(53)
+#define SP_DeclareRecipes       SP(54)
+#define SP_Tags                 SP(55)
+#define SP_UpdateSign           SP(80) // removed since 1.9.4
+#define SP___                   SP(ff)
+
+#define CP_TeleportConfirm      CP(00)
+#define CP_QueryBlockNbt        CP(01)
+#define CP_ChatMessage          CP(02)
+#define CP_ClientStatus         CP(03)
+#define CP_ClientSettings       CP(04)
+#define CP_TabComplete          CP(05)
+#define CP_ConfirmTransaction   CP(06)
+#define CP_EnchantItem          CP(07)
+#define CP_ClickWindow          CP(08)
+#define CP_CloseWindow          CP(09)
+#define CP_PluginMessage        CP(0a)
+#define CP_EditBook             CP(0b)
+#define CP_QueryEntityNbt       CP(0c)
+#define CP_UseEntity            CP(0d)
+#define CP_KeepAlive            CP(0e)
+#define CP_Player               CP(0f)
+#define CP_PlayerPosition       CP(10)
+#define CP_PlayerPositionLook   CP(11)
+#define CP_PlayerLook           CP(12)
+#define CP_VehicleMove          CP(13)
+#define CP_SteerBoat            CP(14)
+#define CP_PickItem             CP(15)
+#define CP_CraftRecipeRequest   CP(16)
+#define CP_PlayerAbilities      CP(17)
+#define CP_PlayerDigging        CP(18)
+#define CP_EntityAction         CP(19)
+#define CP_SteerVehicle         CP(1a)
+#define CP_RecipeBookData       CP(1b)
+#define CP_NameItem             CP(1c)
+#define CP_ResourcePackStatus   CP(1d)
+#define CP_AdvancementTab       CP(1e)
+#define CP_SelectTrade          CP(1f)
+#define CP_SetBeaconEffect      CP(20)
+#define CP_HeldItemChange       CP(21)
+#define CP_UpdateCommandBlock   CP(22)
+#define CP_UpdateCmdMinecart    CP(23)
+#define CP_CreativeInventoryAct CP(24)
+#define CP_UpdateStructureBlock CP(25)
+#define CP_UpdateSign           CP(26)
+#define CP_Animation            CP(27)
+#define CP_Spectate             CP(28)
+#define CP_PlayerBlockPlacement CP(29)
+#define CP_UseItem              CP(2a)
+#define CP_PrepareCraftingGrid  CP(80) // removed since 1.12.1
+#define CP___                   CP(ff)
+
+
+
+#define MAXPACKETTYPES          0x100
+
+////////////////////////////////////////////////////////////////////////////////
 // Misc
 
 int decode_chat_json(const char *json, char *name, char *message);
