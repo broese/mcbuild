@@ -510,17 +510,14 @@ bid_t get_block_at(int32_t x, int32_t z, int32_t y) {
 #define DEBUG_INVENTORY 0
 
 int sameitem(slot_t *a, slot_t *b) {
+    assert(a->item < db_num_items);
+    assert(b->item < db_num_items);
+
     // items with different item IDs are not same
-    // Note: we don't consider sameness of items like
-    // 0x4b/0x4c (Redstone Torch on/off), since one type
-    // may only appear as a block in the map, never as item
     if (a->item != b->item) return 0;
 
     // non-stackable items are never "same"
-    if (ITEMS[a->item].flags&I_NSTACK) return 0;
-
-    // items with meta/damage-coded type are not same if their meta values differ
-    if ((ITEMS[a->item].flags&I_MTYPE) && a->damage != b->damage) return 0;
+    if (db_stacksize(a->item) == 1) return 0;
 
     // if both items have no NBT data - they are identical at this point
     if (!a->nbt && !b->nbt) return 1;
