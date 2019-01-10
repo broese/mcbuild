@@ -290,7 +290,7 @@ void update_container(pos_t p, slot_t *slots, int nslots, const char *cid) {
 
     for(i=0; i<nslots; i++) {
         if (slots[i].item <= 0) continue; // skip empty slots
-        assert(slots[i].item <= MAXITEMID);
+        assert(slots[i].item < db_num_items);
 
         const item_id * iid = ITEMS+slots[i].item;
         assert(iid->name);

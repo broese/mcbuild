@@ -1616,9 +1616,11 @@ const uint64_t item_flags[] = {
     [789] = I_ITEM                         //heart_of_the_sea
 };
 
+const int db_num_items = sizeof(item_flags)/sizeof(uint64_t);
+
 // Returns stacksize of an item
 int db_stacksize (int item_id) {
-    assert ( item_id >= 0 && item_id < sizeof(item_flags)/sizeof(uint64_t) );
+    assert ( item_id >= 0 && item_id < db_num_items );
     if (item_flags[item_id] & I_NSTACK) {
         return 1; //doesnt stack
     }
@@ -1630,7 +1632,7 @@ int db_stacksize (int item_id) {
 
 // True if item exists as item only
 int db_item_is_itemonly (int item_id) {
-    assert ( item_id >= 0 && item_id < sizeof(item_flags)/sizeof(uint64_t) );
+    assert ( item_id >= 0 && item_id < db_num_items );
     if (item_flags[item_id] & I_ITEM) {
         return 1;
     }

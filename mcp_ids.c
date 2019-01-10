@@ -735,7 +735,7 @@ bid_t get_base_block_material(bid_t mat) {
 }
 
 const char * get_mat_name(char *buf, int id, int meta) {
-    if (id<0 || id>MAXITEMID) {
+    if (id<0 || id>=db_num_items) {
         sprintf(buf, "-");
         return buf;
     }
