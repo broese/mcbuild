@@ -89,6 +89,9 @@ int db_stacksize (int item_id);
 // True if item exists as item only
 int db_item_is_itemonly (int item_id);
 
+// True if item is a container (opens a dialog window)
+int db_item_is_container (int item_id);
+
 // Gets the blockname from the old-style block ID
 // only relevant for the SP_BlockAction packet which uses old ids
 const char *db_get_blk_name_from_old_id(int oldid);
