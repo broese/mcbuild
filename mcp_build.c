@@ -371,14 +371,13 @@ void calculate_material(int plan) {
     build_info * bi = get_build_info(plan);
     printf("=== Material demand for the %s ===\n", plan ? "Buildplan" : "Buildtask");
 
-    printf("BL/MT Name                          To place   Have   Need\n");
+    printf("BID Name                          To place   Have   Need\n");
     int i;
     for(i=0; i<C(bi->mat); i++) {
         build_info_material *m = P(bi->mat)+i;
         char buf[256];
-        printf("%02x/%02x %-32s %5d  %5d  ",
-            m->material.bid, m->material.meta,
-            get_bid_name(buf, m->material),
+        printf("%3d %-32s %5d  %5d  ",
+            m->material.raw, db_get_blk_name(m->material.raw),
             m->total-m->placed, m->available);
 
         int need = m->total-m->placed-m->available;
