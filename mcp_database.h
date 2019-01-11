@@ -95,3 +95,6 @@ int db_item_is_container (int item_id);
 // Gets the blockname from the old-style block ID
 // only relevant for the SP_BlockAction packet which uses old ids
 const char *db_get_blk_name_from_old_id(int oldid);
+
+// True if item is placed on an axis (logs, wood, stripped, quartz & purper pillars, hay & bone)
+int db_item_is_axis (int item_id);

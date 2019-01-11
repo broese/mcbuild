@@ -824,6 +824,9 @@ int test_examples() {
 // stair-type block - I_MPOS straight/upside-down in the meta bit 2, direction in bits 0-1
 #define I_STAIR (1ULL<<17)
 
+// blocks with an axis property - wood log type blocks
+#define I_AXIS (1<<18)
+
 // example - placeholder should each armor type get its own designation
 #define I_ARMOR 0ULL
 
@@ -860,30 +863,30 @@ const uint64_t item_flags[] = {
     [29] = 0,                              //gold_ore
     [30] = 0,                              //iron_ore
     [31] = 0,                              //coal_ore
-    [32] = 0,                              //oak_log
-    [33] = 0,                              //spruce_log
-    [34] = 0,                              //birch_log
-    [35] = 0,                              //jungle_log
-    [36] = 0,                              //acacia_log
-    [37] = 0,                              //dark_oak_log
-    [38] = 0,                              //stripped_oak_log
-    [39] = 0,                              //stripped_spruce_log
-    [40] = 0,                              //stripped_birch_log
-    [41] = 0,                              //stripped_jungle_log
-    [42] = 0,                              //stripped_acacia_log
-    [43] = 0,                              //stripped_dark_oak_log
-    [44] = 0,                              //stripped_oak_wood
-    [45] = 0,                              //stripped_spruce_wood
-    [46] = 0,                              //stripped_birch_wood
-    [47] = 0,                              //stripped_jungle_wood
-    [48] = 0,                              //stripped_acacia_wood
-    [49] = 0,                              //stripped_dark_oak_wood
-    [50] = 0,                              //oak_wood
-    [51] = 0,                              //spruce_wood
-    [52] = 0,                              //birch_wood
-    [53] = 0,                              //jungle_wood
-    [54] = 0,                              //acacia_wood
-    [55] = 0,                              //dark_oak_wood
+    [32] = I_AXIS,                         //oak_log
+    [33] = I_AXIS,                         //spruce_log
+    [34] = I_AXIS,                         //birch_log
+    [35] = I_AXIS,                         //jungle_log
+    [36] = I_AXIS,                         //acacia_log
+    [37] = I_AXIS,                         //dark_oak_log
+    [38] = I_AXIS,                         //stripped_oak_log
+    [39] = I_AXIS,                         //stripped_spruce_log
+    [40] = I_AXIS,                         //stripped_birch_log
+    [41] = I_AXIS,                         //stripped_jungle_log
+    [42] = I_AXIS,                         //stripped_acacia_log
+    [43] = I_AXIS,                         //stripped_dark_oak_log
+    [44] = I_AXIS,                         //stripped_oak_wood
+    [45] = I_AXIS,                         //stripped_spruce_wood
+    [46] = I_AXIS,                         //stripped_birch_wood
+    [47] = I_AXIS,                         //stripped_jungle_wood
+    [48] = I_AXIS,                         //stripped_acacia_wood
+    [49] = I_AXIS,                         //stripped_dark_oak_wood
+    [50] = I_AXIS,                         //oak_wood
+    [51] = I_AXIS,                         //spruce_wood
+    [52] = I_AXIS,                         //birch_wood
+    [53] = I_AXIS,                         //jungle_wood
+    [54] = I_AXIS,                         //acacia_wood
+    [55] = I_AXIS,                         //dark_oak_wood
     [56] = 0,                              //oak_leaves
     [57] = 0,                              //spruce_leaves
     [58] = 0,                              //birch_leaves
@@ -973,7 +976,7 @@ const uint64_t item_flags[] = {
     [142] = 0,                             //chorus_plant
     [143] = 0,                             //chorus_flower
     [144] = 0,                             //purpur_block
-    [145] = 0,                             //purpur_pillar
+    [145] = I_AXIS,                        //purpur_pillar
     [146] = I_STAIR,                       //purpur_stairs
     [147] = 0,                             //spawner
     [148] = I_STAIR,                       //oak_stairs
@@ -1087,7 +1090,7 @@ const uint64_t item_flags[] = {
     [256] = I_CONT,                        //hopper
     [257] = 0,                             //chiseled_quartz_block
     [258] = 0,                             //quartz_block
-    [259] = 0,                             //quartz_pillar
+    [259] = I_AXIS,                        //quartz_pillar
     [260] = I_STAIR,                       //quartz_stairs
     [261] = 0,                             //activator_rail
     [262] = I_CONT,                        //dropper
@@ -1109,7 +1112,7 @@ const uint64_t item_flags[] = {
     [278] = 0,                             //black_terracotta
     [279] = 0,                             //barrier
     [280] = 0,                             //iron_trapdoor
-    [281] = 0,                             //hay_block
+    [281] = I_AXIS,                        //hay_block
     [282] = 0,                             //white_carpet
     [283] = 0,                             //orange_carpet
     [284] = 0,                             //magenta_carpet
@@ -1187,7 +1190,7 @@ const uint64_t item_flags[] = {
     [356] = 0,                             //magma_block
     [357] = 0,                             //nether_wart_block
     [358] = 0,                             //red_nether_bricks
-    [359] = 0,                             //bone_block
+    [359] = I_AXIS,                        //bone_block
     [360] = 0,                             //structure_void
     [361] = 0,                             //observer
     [362] = I_NSTACK | I_CONT,             //shulker_box
@@ -1647,6 +1650,15 @@ int db_item_is_itemonly (int item_id) {
 int db_item_is_container (int item_id) {
     assert ( item_id >= 0 && item_id < db_num_items );
     if (item_flags[item_id] & I_CONT) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is placed on an axis (logs, wood, stripped, quartz & purper pillars, hay & bone)
+int db_item_is_axis (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_AXIS) {
         return 1;
     }
     return 0;
