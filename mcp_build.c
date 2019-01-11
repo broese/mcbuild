@@ -1534,11 +1534,10 @@ static void dump_brec_pending() {
     //printf("BREC pending queue: %zd entries\n",build.nbrp);
 
     int i;
-    char buf[256];
     for(i=0; i<build.nbrp; i++) {
         blkr *bl = &build.brp[i];
         printf("%2d : %d,%d,%d (%s)\n", i,
-               bl->x, bl->y, bl->z, get_bid_name(buf, bl->b));
+               bl->x, bl->y, bl->z, db_get_blk_name(bl->b.raw));
     }
 }
 
@@ -2034,8 +2033,6 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     int         count;
     float       diam;
 
-    char buf[256];
-
     if (!cmd) {
         sprintf(reply, "Usage: build <type> [ parameters ... ] or build cancel");
         goto Error;
@@ -2061,7 +2058,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGMAT(NULL, mat, ad.mat);
         build_clear(sq, cq);
         build.bp = bplan_wall(sz.x, sz.z, mat);
-        sprintf(reply, "Wall size=%d,%d material=%s",sz.x,sz.z,get_bid_name(buf, mat));
+        sprintf(reply, "Wall size=%d,%d material=%s",sz.x,sz.z,db_get_blk_name(mat.raw));
         goto Place;
     }
 
@@ -2072,7 +2069,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         build_clear(sq, cq);
         build.bp = bplan_disk(diam, mat, edge);
         sprintf(reply, "Disk diam=%f%s material=%s",
-                diam,edge?"(edge) ":"",get_bid_name(buf, mat));
+                diam,edge?"(edge) ":"",db_get_blk_name(mat.raw));
         goto Place;
     }
 
@@ -2083,7 +2080,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         build_clear(sq, cq);
         build.bp = bplan_ball(diam, mat, edge);
         sprintf(reply, "Ball diam=%f%s material=%s",
-                diam,edge?"(edge) ":"",get_bid_name(buf, mat));
+                diam,edge?"(edge) ":"",db_get_blk_name(mat.raw));
         goto Place;
     }
 
@@ -2095,7 +2092,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         build.bp = bplan_disk(diam, mat, edge);
         bplan_hollow(build.bp, 1, 0);
         sprintf(reply, "Ring diam=%f%s material=%s",
-                diam,edge?"(edge) ":"",get_bid_name(buf, mat));
+                diam,edge?"(edge) ":"",db_get_blk_name(mat.raw));
         goto Place;
     }
 
@@ -2107,7 +2104,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         build.bp = bplan_ball(diam, mat, edge);
         bplan_hollow(build.bp, 0, 0);
         sprintf(reply, "Sphere diam=%f%s material=%s",
-                diam,edge?"(edge) ":"",get_bid_name(buf, mat));
+                diam,edge?"(edge) ":"",db_get_blk_name(mat.raw));
         goto Place;
     }
 
@@ -2134,14 +2131,14 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         if (argflag(words, WORDLIST("ladder","l","2"))) {
             build.bp = bplan_scaffolding(sz.x, sz.z, mat,1);
             sprintf(reply, "Scaffolding (ladder) width=%d floors=%d material=%s",
-                    sz.x,sz.z,get_bid_name(buf, mat));
+                    sz.x,sz.z,db_get_blk_name(mat.raw));
         }
         else {
             if (sz.z==1 && sz.x<4) sz.x = 4;
             if (sz.z>1  && sz.x<7) sz.x = 7;
             build.bp = bplan_scaffolding(sz.x, sz.z, mat,0);
             sprintf(reply, "Scaffolding width=%d floors=%d material=%s",
-                    sz.x,sz.z,get_bid_name(buf, mat));
+                    sz.x,sz.z,db_get_blk_name(mat.raw));
         }
         goto Place;
     }
@@ -2158,7 +2155,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         build.bp = bplan_stairs(sz.x, sz.z, mat, base*ex);
         char **BASE = WORDLIST("none","minimal","full");
         sprintf(reply, "Stairs width=%d floors=%d material=%s base=%s%s",
-                sz.x,sz.z,get_bid_name(buf, mat),BASE[base],(ex<0)?" (exact)":"");
+                sz.x,sz.z,db_get_blk_name(mat.raw),BASE[base],(ex<0)?" (exact)":"");
         goto Place;
     }
 
@@ -2198,16 +2195,15 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGREQ(mat, mw2, mat2);
         int anymeta = argflag(words, WORDLIST("anymeta","a"));
         int count = bplan_replace(build.bp, mat1, mat2, anymeta);
-        char buf2[256];
         if (mat2.bid == 0) {
             // blocks were removed
             sprintf(reply, "Removed %d blocks of %s\n", count,
-                    get_bid_name(buf, mat1));
+                    db_get_blk_name(mat1.raw));
         }
         else {
             // blocks were replaced
             sprintf(reply, "Replaced %d blocks of %s with %s\n", count,
-                    get_bid_name(buf, mat1), get_bid_name(buf2, mat2));
+                    db_get_blk_name(mat1.raw), db_get_blk_name(mat2.raw));
         }
 
         goto Place;
