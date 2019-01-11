@@ -543,6 +543,9 @@ void dump_inventory() {
     printf("Dumping inventory:\n");
     for(i=-1; i<46; i++) {
         slot_t *s;
+
+        if (i%9 == 0) printf("\n");
+
         if (i<0) {
             s=&gs.inv.drag;
             printf(" DS : ");
@@ -552,13 +555,13 @@ void dump_inventory() {
             printf(" %2d : ", i);
         }
 
-        char buf[4096];
-        if (get_item_name(buf, s))
-            printf("%-20s x%-2d\n", buf, s->count);
+        if (s->present) {
+            printf("%3d %2dx %-25s%s\n", s->item, s->count,
+                   db_get_item_name(s->item),s->nbt ? "   +NBT" : "");
+            //if (s->nbt) nbt_dump(s->nbt);
+        }
         else
-            printf("%4x x%-2d dmg=%d\n",s->item,s->count,s->damage);
-
-        //if (s->nbt) nbt_dump(s->nbt);
+            printf("\n");
     }
 }
 
