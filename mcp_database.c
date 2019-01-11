@@ -783,6 +783,7 @@ int test_examples() {
     printf("db_get_num_states(2913)         = %d (1296)\n",db_get_num_states(2913));
     printf("db_stacksize(db_get_item_id(\"ender_pearl\")) = %d (16)\n",db_stacksize(db_get_item_id("ender_pearl")));
     printf("db_item_is_itemonly(703) = %d (False) //skeleton_skull\n",db_item_is_itemonly(703));
+    printf("db_item_is_container (262) = %d (True) //dropper\n",db_item_is_container(262));
 
     printf("\nNumber of blocks: %zd\n",C(activedb->block));
     printf("Number of items: %zd\n", C(activedb->item));
@@ -814,11 +815,17 @@ int test_examples() {
 // item stacks only by 16 (e.g. enderpearls)
 #define I_S16    (1ULL<<6)
 
+// Container blocks (chests, furnaces, hoppers, etc. - dialog opens if right-clicked)
+#define I_CONT   (1ULL<<12)
+
 // slab-type block - I_MPOS lower/upper placement in the meta bit 3
 #define I_SLAB   (1ULL<<16)
 
 // stair-type block - I_MPOS straight/upside-down in the meta bit 2, direction in bits 0-1
 #define I_STAIR (1ULL<<17)
+
+// blocks with an axis property - wood log type blocks
+#define I_AXIS (1<<18)
 
 // example - placeholder should each armor type get its own designation
 #define I_ARMOR 0ULL
@@ -856,30 +863,30 @@ const uint64_t item_flags[] = {
     [29] = 0,                              //gold_ore
     [30] = 0,                              //iron_ore
     [31] = 0,                              //coal_ore
-    [32] = 0,                              //oak_log
-    [33] = 0,                              //spruce_log
-    [34] = 0,                              //birch_log
-    [35] = 0,                              //jungle_log
-    [36] = 0,                              //acacia_log
-    [37] = 0,                              //dark_oak_log
-    [38] = 0,                              //stripped_oak_log
-    [39] = 0,                              //stripped_spruce_log
-    [40] = 0,                              //stripped_birch_log
-    [41] = 0,                              //stripped_jungle_log
-    [42] = 0,                              //stripped_acacia_log
-    [43] = 0,                              //stripped_dark_oak_log
-    [44] = 0,                              //stripped_oak_wood
-    [45] = 0,                              //stripped_spruce_wood
-    [46] = 0,                              //stripped_birch_wood
-    [47] = 0,                              //stripped_jungle_wood
-    [48] = 0,                              //stripped_acacia_wood
-    [49] = 0,                              //stripped_dark_oak_wood
-    [50] = 0,                              //oak_wood
-    [51] = 0,                              //spruce_wood
-    [52] = 0,                              //birch_wood
-    [53] = 0,                              //jungle_wood
-    [54] = 0,                              //acacia_wood
-    [55] = 0,                              //dark_oak_wood
+    [32] = I_AXIS,                         //oak_log
+    [33] = I_AXIS,                         //spruce_log
+    [34] = I_AXIS,                         //birch_log
+    [35] = I_AXIS,                         //jungle_log
+    [36] = I_AXIS,                         //acacia_log
+    [37] = I_AXIS,                         //dark_oak_log
+    [38] = I_AXIS,                         //stripped_oak_log
+    [39] = I_AXIS,                         //stripped_spruce_log
+    [40] = I_AXIS,                         //stripped_birch_log
+    [41] = I_AXIS,                         //stripped_jungle_log
+    [42] = I_AXIS,                         //stripped_acacia_log
+    [43] = I_AXIS,                         //stripped_dark_oak_log
+    [44] = I_AXIS,                         //stripped_oak_wood
+    [45] = I_AXIS,                         //stripped_spruce_wood
+    [46] = I_AXIS,                         //stripped_birch_wood
+    [47] = I_AXIS,                         //stripped_jungle_wood
+    [48] = I_AXIS,                         //stripped_acacia_wood
+    [49] = I_AXIS,                         //stripped_dark_oak_wood
+    [50] = I_AXIS,                         //oak_wood
+    [51] = I_AXIS,                         //spruce_wood
+    [52] = I_AXIS,                         //birch_wood
+    [53] = I_AXIS,                         //jungle_wood
+    [54] = I_AXIS,                         //acacia_wood
+    [55] = I_AXIS,                         //dark_oak_wood
     [56] = 0,                              //oak_leaves
     [57] = 0,                              //spruce_leaves
     [58] = 0,                              //birch_leaves
@@ -891,7 +898,7 @@ const uint64_t item_flags[] = {
     [64] = 0,                              //glass
     [65] = 0,                              //lapis_ore
     [66] = 0,                              //lapis_block
-    [67] = 0,                              //dispenser
+    [67] = I_CONT,                         //dispenser
     [68] = 0,                              //sandstone
     [69] = 0,                              //chiseled_sandstone
     [70] = 0,                              //cut_sandstone
@@ -969,16 +976,16 @@ const uint64_t item_flags[] = {
     [142] = 0,                             //chorus_plant
     [143] = 0,                             //chorus_flower
     [144] = 0,                             //purpur_block
-    [145] = 0,                             //purpur_pillar
+    [145] = I_AXIS,                        //purpur_pillar
     [146] = I_STAIR,                       //purpur_stairs
     [147] = 0,                             //spawner
     [148] = I_STAIR,                       //oak_stairs
-    [149] = 0,                             //chest
+    [149] = I_CONT,                        //chest
     [150] = 0,                             //diamond_ore
     [151] = 0,                             //diamond_block
-    [152] = 0,                             //crafting_table
+    [152] = I_CONT,                        //crafting_table
     [153] = 0,                             //farmland
-    [154] = 0,                             //furnace
+    [154] = I_CONT,                        //furnace
     [155] = 0,                             //ladder
     [156] = 0,                             //rail
     [157] = I_STAIR,                       //cobblestone_stairs
@@ -1047,7 +1054,7 @@ const uint64_t item_flags[] = {
     [220] = 0,                             //nether_bricks
     [221] = 0,                             //nether_brick_fence
     [222] = I_STAIR,                       //nether_brick_stairs
-    [223] = 0,                             //enchanting_table
+    [223] = I_CONT,                        //enchanting_table
     [224] = 0,                             //end_portal_frame
     [225] = 0,                             //end_stone
     [226] = 0,                             //end_stone_bricks
@@ -1055,14 +1062,14 @@ const uint64_t item_flags[] = {
     [228] = 0,                             //redstone_lamp
     [229] = I_STAIR,                       //sandstone_stairs
     [230] = 0,                             //emerald_ore
-    [231] = 0,                             //ender_chest
+    [231] = I_CONT,                        //ender_chest
     [232] = 0,                             //tripwire_hook
     [233] = 0,                             //emerald_block
     [234] = I_STAIR,                       //spruce_stairs
     [235] = I_STAIR,                       //birch_stairs
     [236] = I_STAIR,                       //jungle_stairs
-    [237] = 0,                             //command_block
-    [238] = 0,                             //beacon
+    [237] = I_CONT,                        //command_block
+    [238] = I_CONT,                        //beacon
     [239] = 0,                             //cobblestone_wall
     [240] = 0,                             //mossy_cobblestone_wall
     [241] = 0,                             //oak_button
@@ -1071,22 +1078,22 @@ const uint64_t item_flags[] = {
     [244] = 0,                             //jungle_button
     [245] = 0,                             //acacia_button
     [246] = 0,                             //dark_oak_button
-    [247] = 0,                             //anvil
-    [248] = 0,                             //chipped_anvil
-    [249] = 0,                             //damaged_anvil
-    [250] = 0,                             //trapped_chest
+    [247] = I_CONT,                        //anvil
+    [248] = I_CONT,                        //chipped_anvil
+    [249] = I_CONT,                        //damaged_anvil
+    [250] = I_CONT,                        //trapped_chest
     [251] = 0,                             //light_weighted_pressure_plate
     [252] = 0,                             //heavy_weighted_pressure_plate
     [253] = 0,                             //daylight_detector
     [254] = 0,                             //redstone_block
     [255] = 0,                             //nether_quartz_ore
-    [256] = 0,                             //hopper
+    [256] = I_CONT,                        //hopper
     [257] = 0,                             //chiseled_quartz_block
     [258] = 0,                             //quartz_block
-    [259] = 0,                             //quartz_pillar
+    [259] = I_AXIS,                        //quartz_pillar
     [260] = I_STAIR,                       //quartz_stairs
     [261] = 0,                             //activator_rail
-    [262] = 0,                             //dropper
+    [262] = I_CONT,                        //dropper
     [263] = 0,                             //white_terracotta
     [264] = 0,                             //orange_terracotta
     [265] = 0,                             //magenta_terracotta
@@ -1105,7 +1112,7 @@ const uint64_t item_flags[] = {
     [278] = 0,                             //black_terracotta
     [279] = 0,                             //barrier
     [280] = 0,                             //iron_trapdoor
-    [281] = 0,                             //hay_block
+    [281] = I_AXIS,                        //hay_block
     [282] = 0,                             //white_carpet
     [283] = 0,                             //orange_carpet
     [284] = 0,                             //magenta_carpet
@@ -1178,31 +1185,31 @@ const uint64_t item_flags[] = {
     [351] = 0,                             //chiseled_red_sandstone
     [352] = 0,                             //cut_red_sandstone
     [353] = I_STAIR,                       //red_sandstone_stairs
-    [354] = 0,                             //repeating_command_block
-    [355] = 0,                             //chain_command_block
+    [354] = I_CONT,                        //repeating_command_block
+    [355] = I_CONT,                        //chain_command_block
     [356] = 0,                             //magma_block
     [357] = 0,                             //nether_wart_block
     [358] = 0,                             //red_nether_bricks
-    [359] = 0,                             //bone_block
+    [359] = I_AXIS,                        //bone_block
     [360] = 0,                             //structure_void
     [361] = 0,                             //observer
-    [362] = I_NSTACK,                      //shulker_box
-    [363] = I_NSTACK,                      //white_shulker_box
-    [364] = I_NSTACK,                      //orange_shulker_box
-    [365] = I_NSTACK,                      //magenta_shulker_box
-    [366] = I_NSTACK,                      //light_blue_shulker_box
-    [367] = I_NSTACK,                      //yellow_shulker_box
-    [368] = I_NSTACK,                      //lime_shulker_box
-    [369] = I_NSTACK,                      //pink_shulker_box
-    [370] = I_NSTACK,                      //gray_shulker_box
-    [371] = I_NSTACK,                      //light_gray_shulker_box
-    [372] = I_NSTACK,                      //cyan_shulker_box
-    [373] = I_NSTACK,                      //purple_shulker_box
-    [374] = I_NSTACK,                      //blue_shulker_box
-    [375] = I_NSTACK,                      //brown_shulker_box
-    [376] = I_NSTACK,                      //green_shulker_box
-    [377] = I_NSTACK,                      //red_shulker_box
-    [378] = I_NSTACK,                      //black_shulker_box
+    [362] = I_NSTACK | I_CONT,             //shulker_box
+    [363] = I_NSTACK | I_CONT,             //white_shulker_box
+    [364] = I_NSTACK | I_CONT,             //orange_shulker_box
+    [365] = I_NSTACK | I_CONT,             //magenta_shulker_box
+    [366] = I_NSTACK | I_CONT,             //light_blue_shulker_box
+    [367] = I_NSTACK | I_CONT,             //yellow_shulker_box
+    [368] = I_NSTACK | I_CONT,             //lime_shulker_box
+    [369] = I_NSTACK | I_CONT,             //pink_shulker_box
+    [370] = I_NSTACK | I_CONT,             //gray_shulker_box
+    [371] = I_NSTACK | I_CONT,             //light_gray_shulker_box
+    [372] = I_NSTACK | I_CONT,             //cyan_shulker_box
+    [373] = I_NSTACK | I_CONT,             //purple_shulker_box
+    [374] = I_NSTACK | I_CONT,             //blue_shulker_box
+    [375] = I_NSTACK | I_CONT,             //brown_shulker_box
+    [376] = I_NSTACK | I_CONT,             //green_shulker_box
+    [377] = I_NSTACK | I_CONT,             //red_shulker_box
+    [378] = I_NSTACK | I_CONT,             //black_shulker_box
     [379] = 0,                             //white_glazed_terracotta
     [380] = 0,                             //orange_glazed_terracotta
     [381] = 0,                             //magenta_glazed_terracotta
@@ -1459,7 +1466,7 @@ const uint64_t item_flags[] = {
     [632] = I_ITEM,                        //fermented_spider_eye
     [633] = I_ITEM,                        //blaze_powder
     [634] = I_ITEM,                        //magma_cream
-    [635] = 0,                             //brewing_stand
+    [635] = I_CONT,                        //brewing_stand
     [636] = 0,                             //cauldron
     [637] = I_ITEM,                        //ender_eye
     [638] = I_ITEM,                        //glistering_melon_slice
@@ -1634,6 +1641,24 @@ int db_stacksize (int item_id) {
 int db_item_is_itemonly (int item_id) {
     assert ( item_id >= 0 && item_id < db_num_items );
     if (item_flags[item_id] & I_ITEM) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a container (opens a dialog window)
+int db_item_is_container (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_CONT) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is placed on an axis (logs, wood, stripped, quartz & purper pillars, hay & bone)
+int db_item_is_axis (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_AXIS) {
         return 1;
     }
     return 0;
