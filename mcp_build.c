@@ -1241,7 +1241,7 @@ void build_progress(MCPacketQueue *sq, MCPacketQueue *cq) {
 
         if (b->needadj) {
             printf("Adjusting Block: %d,%d,%d (%s)\n",
-                   b->x,b->y,b->z, get_item_name(buf, hslot));
+                   b->x,b->y,b->z, db_get_item_name(hslot->item));
         }
         else {
             const item_id *nit = &ITEMS[b->nblocks[face].bid];
