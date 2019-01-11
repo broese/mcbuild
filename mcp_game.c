@@ -546,7 +546,7 @@ void gmi_swap_slots(MCPacketQueue *sq, MCPacketQueue *cq, int sa, int sb) {
 TBDEF(tb_afk, AFK_TIMEOUT, 1);
 
 static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
-    char reply[256], bname[256];
+    char reply[256];
     reply[0] = 0;
 
     if (!tb_event(&tb_afk, 1)) return;
@@ -559,8 +559,9 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
     int z=floor(gs.own.z);
 
     bid_t b = get_block_at(x,z,y);
+    const char *bname = db_get_blk_name(b.raw);
 
-    if (b.bid == 0x32) {
+    if (!strcmp(bname, "torch")) {
         // We have the torch at our feet - break it
         NEWPACKET(CP_PlayerDigging, pd);
         tpd->status = 0;
@@ -577,7 +578,7 @@ static void antiafk(MCPacketQueue *sq, MCPacketQueue *cq) {
     else if (b.raw != 0) {
         // Something else at our feet - cannot continue
         sprintf(reply,"Anti-AFK: please remove any blocks at your feet (%d,%d/%d), found %s",
-                x,z,y,get_bid_name(bname,b));
+                x,z,y,bname);
     }
     else {
         // Empty spot - place a torch
