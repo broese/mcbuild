@@ -1188,9 +1188,8 @@ static int choose_dot(blk *b, int8_t *face, int8_t *cx, int8_t *cy, int8_t *cz) 
 
     char name[256];
     double dist = sqrt(SQ((double)b->x-gs.own.x)+SQ((double)b->y-gs.own.y)+SQ((double)b->z-gs.own.z));
-    printf("Warning: choose_dot failed : coord=%d,%d,%d, dist=%.1f (%.1f), mat=%d:%d (%s), state=%02x, neigh=%02x, ndots=%d\n",
-        b->x,b->y,b->z,b->dist,dist,b->b.bid,b->b.meta,get_bid_name(name, b->b),
-        b->state, b->neigh, b->ndots);
+    printf("Warning: choose_dot failed : coord=%d,%d,%d, dist=%.1f (%.1f), mat=%d (%s), state=%02x, neigh=%02x, ndots=%d\n",
+           b->x,b->y,b->z,b->dist,dist,b->b.raw, db_get_blk_name(b->b.raw), b->state, b->neigh, b->ndots);
 
     return 0;
 }
