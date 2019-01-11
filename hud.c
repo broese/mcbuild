@@ -965,7 +965,7 @@ int huddraw_build() {
         build_info_material * m = P(bi->mat)+mi;
 
         char name[256];
-        get_bid_name(name, m->material);
+        sprintf(name, "%s", db_get_blk_name(m->material.raw));
         name[22] = 0;
 
         int toplace = m->total-m->placed;
