@@ -126,3 +126,6 @@ int db_item_is_face (int item_id);
 
 // True if item is a bed
 int db_item_is_bed (int item_id);
+
+// True if item is a redstone device
+int db_item_is_rsdev (int item_id);

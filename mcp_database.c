@@ -792,6 +792,7 @@ int test_examples() {
     printf(" db_item_is_tdoor(280)                 = %d (True) //iron_trapdoor\n",db_item_is_tdoor(280));
     printf(" db_item_is_face(158)                  = %d (True) //lever\n",db_item_is_face(158));
     printf(" db_item_is_bed(596)                   = %d (True) //white_bed\n",db_item_is_bed(596));
+    printf(" db_item_is_rsdev(67)                  = %d (True) //dispenser\n",db_item_is_rsdev(67));
     printf("Now testing errors \n");
     printf(" db_get_blk_name(8599)                 = %s (out of bounds)\n", db_get_blk_name(8599));
     printf(" db_get_blk_name(8600)                 = %s (out of bounds)\n", db_get_blk_name(8600));
@@ -830,6 +831,9 @@ int test_examples() {
 
 // blocks with an axis property - wood log type blocks
 #define I_AXIS (1ULL<<18)
+
+// redstone devices (hoppers, dispensers, droppers, pistons, observers)
+#define I_RSDEV (1ULL<<23)
 
 // doors
 #define I_DOOR (1ULL<<24)
@@ -914,21 +918,21 @@ const uint64_t item_flags[] = {
     [64] = 0,                              //glass
     [65] = 0,                              //lapis_ore
     [66] = 0,                              //lapis_block
-    [67] = I_CONT,                         //dispenser
+    [67] = I_CONT | I_RSDEV,               //dispenser
     [68] = 0,                              //sandstone
     [69] = 0,                              //chiseled_sandstone
     [70] = 0,                              //cut_sandstone
     [71] = 0,                              //note_block
     [72] = 0,                              //powered_rail
     [73] = 0,                              //detector_rail
-    [74] = 0,                              //sticky_piston
+    [74] = I_RSDEV,                        //sticky_piston
     [75] = 0,                              //cobweb
     [76] = 0,                              //grass
     [77] = 0,                              //fern
     [78] = 0,                              //dead_bush
     [79] = 0,                              //seagrass
     [80] = 0,                              //sea_pickle
-    [81] = 0,                              //piston
+    [81] = I_RSDEV,                        //piston
     [82] = 0,                              //white_wool
     [83] = 0,                              //orange_wool
     [84] = 0,                              //magenta_wool
@@ -1103,13 +1107,13 @@ const uint64_t item_flags[] = {
     [253] = 0,                             //daylight_detector
     [254] = 0,                             //redstone_block
     [255] = 0,                             //nether_quartz_ore
-    [256] = I_CONT,                        //hopper
+    [256] = I_CONT | I_RSDEV,              //hopper
     [257] = 0,                             //chiseled_quartz_block
     [258] = 0,                             //quartz_block
     [259] = I_AXIS,                        //quartz_pillar
     [260] = I_STAIR,                       //quartz_stairs
     [261] = 0,                             //activator_rail
-    [262] = I_CONT,                        //dropper
+    [262] = I_CONT | I_RSDEV,              //dropper
     [263] = 0,                             //white_terracotta
     [264] = 0,                             //orange_terracotta
     [265] = 0,                             //magenta_terracotta
@@ -1208,7 +1212,7 @@ const uint64_t item_flags[] = {
     [358] = 0,                             //red_nether_bricks
     [359] = I_AXIS,                        //bone_block
     [360] = 0,                             //structure_void
-    [361] = 0,                             //observer
+    [361] = I_RSDEV,                       //observer
     [362] = I_NSTACK | I_CONT,             //shulker_box
     [363] = I_NSTACK | I_CONT,             //white_shulker_box
     [364] = I_NSTACK | I_CONT,             //orange_shulker_box
@@ -1728,6 +1732,15 @@ int db_item_is_face (int item_id) {
 int db_item_is_bed (int item_id) {
     assert ( item_id >= 0 && item_id < db_num_items );
     if (item_flags[item_id] & I_BED) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a redstone device
+int db_item_is_rsdev (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_RSDEV) {
         return 1;
     }
     return 0;
