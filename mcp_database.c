@@ -771,28 +771,27 @@ int try_to_get_missing_json_files(int protocol_id) {
 }
 
 int test_examples() {
-    printf("db_get_blk_propval(1686,\"half\")      = %s (bottom)\n",db_get_blk_propval(1686,"half"));
-    printf("db_get_item_id(\"heart_of_the_sea\")    = %d (789)\n", db_get_item_id("heart_of_the_sea"));
-    printf("db_get_item_name(788)         = %s (nautilus_shell)\n", db_get_item_name(788));
-    printf("db_get_blk_name(8596)               = %s (structure_block)\n", db_get_blk_name(8596));
-    printf("db_get_blk_default_id(8596)         = %d (8595)\n",db_get_blk_default_id(8596));
-    printf("db_get_blk_name_from_old_id(597)    = %s (structure_block)\n", db_get_blk_name_from_old_id(597));
-    printf("db_get_blk_id(\"nether_brick_stairs\") = %d (4540)\n",db_get_blk_id("nether_brick_stairs"));
-    printf("db_get_num_states(5)            = %d (1)\n",db_get_num_states(5));
-    printf("db_get_num_states(8)            = %d (2)\n",db_get_num_states(8));
-    printf("db_get_num_states(2913)         = %d (1296)\n",db_get_num_states(2913));
-    printf("db_stacksize(db_get_item_id(\"ender_pearl\")) = %d (16)\n",db_stacksize(db_get_item_id("ender_pearl")));
-    printf("db_item_is_itemonly(703) = %d (False) //skeleton_skull\n",db_item_is_itemonly(703));
-    printf("db_item_is_container (262) = %d (True) //dropper\n",db_item_is_container(262));
-
-    printf("\nNumber of blocks: %zd\n",C(activedb->block));
+    printf("Number of blocks: %zd\n",C(activedb->block));
     printf("Number of items: %zd\n", C(activedb->item));
-
-    printf("\nNow testing errors \n");
-    printf("db_get_blk_name(8599)               = %s (out of bounds)\n", db_get_blk_name(8599));
-    printf("db_get_blk_name(8600)               = %s (out of bounds)\n", db_get_blk_name(8600));
-    printf("db_get_blk_id(\"gold_nugget\")         = %d (-1 meaning not found)\n",db_get_blk_id("gold_nugget"));
-    printf("db_get_num_states(8599)         = %d (0 meaning problem)\n",db_get_num_states(8599));
+    printf(" db_get_blk_propval(1686,\"half\")       = %s (bottom)\n",db_get_blk_propval(1686,"half"));
+    printf(" db_get_item_id(\"heart_of_the_sea\")    = %d (789)\n", db_get_item_id("heart_of_the_sea"));
+    printf(" db_get_item_name(788)                 = %s (nautilus_shell)\n", db_get_item_name(788));
+    printf(" db_get_blk_name(8596)                 = %s (structure_block)\n", db_get_blk_name(8596));
+    printf(" db_get_blk_default_id(8596)           = %d (8595)\n",db_get_blk_default_id(8596));
+    printf(" db_get_blk_name_from_old_id(597)      = %s (structure_block)\n", db_get_blk_name_from_old_id(597));
+    printf(" db_get_blk_id(\"nether_brick_stairs\")  = %d (4540)\n",db_get_blk_id("nether_brick_stairs"));
+    printf(" db_get_num_states(5)                  = %d (1)\n",db_get_num_states(5));
+    printf(" db_get_num_states(8)                  = %d (2)\n",db_get_num_states(8));
+    printf(" db_get_num_states(2913)               = %d (1296)\n",db_get_num_states(2913));
+    printf(" db_stacksize(db_get_item_id(\"ender_pearl\")) = %d (16)\n",db_stacksize(db_get_item_id("ender_pearl")));
+    printf(" db_item_is_itemonly(703)              = %d (False) //skeleton_skull\n",db_item_is_itemonly(703));
+    printf(" db_item_is_container(262)             = %d (True) //dropper\n",db_item_is_container(262));
+    printf(" db_item_is_axis(32)                   = %d (True) //oak_log\n",db_item_is_axis(32));
+    printf("Now testing errors \n");
+    printf(" db_get_blk_name(8599)                 = %s (out of bounds)\n", db_get_blk_name(8599));
+    printf(" db_get_blk_name(8600)                 = %s (out of bounds)\n", db_get_blk_name(8600));
+    printf(" db_get_blk_id(\"gold_nugget\")          = %d (-1 meaning not found)\n",db_get_blk_id("gold_nugget"));
+    printf(" db_get_num_states(8599)               = %d (0 meaning problem)\n",db_get_num_states(8599));
 
     return 0;
 }
