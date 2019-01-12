@@ -241,6 +241,7 @@ int db_get_item_id(const char *name) {
             break;
         }
     }
+    //TODO: if this is a blockname with a different itemname for the base material
     return id;
 };
 
