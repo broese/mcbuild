@@ -825,7 +825,7 @@ int test_examples() {
 #define I_STAIR (1ULL<<17)
 
 // blocks with an axis property - wood log type blocks
-#define I_AXIS (1<<18)
+#define I_AXIS (1ULL<<18)
 
 // example - placeholder should each armor type get its own designation
 #define I_ARMOR 0ULL
