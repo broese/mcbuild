@@ -123,3 +123,6 @@ int db_item_is_tdoor (int item_id);
 
 // True if item has the face property (buttons, lever, upcoming grindstone)
 int db_item_is_face (int item_id);
+
+// True if item is a bed
+int db_item_is_bed (int item_id);

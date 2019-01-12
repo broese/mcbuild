@@ -790,6 +790,7 @@ int test_examples() {
     printf(" db_item_is_door(460)                  = %d (True) //iron_door\n",db_item_is_door(460));
     printf(" db_item_is_tdoor(280)                 = %d (True) //iron_trapdoor\n",db_item_is_tdoor(280));
     printf(" db_item_is_face(158)                  = %d (True) //lever\n",db_item_is_face(158));
+    printf(" db_item_is_bed(596)                   = %d (True) //white_bed\n",db_item_is_bed(596));
     printf("Now testing errors \n");
     printf(" db_get_blk_name(8599)                 = %s (out of bounds)\n", db_get_blk_name(8599));
     printf(" db_get_blk_name(8600)                 = %s (out of bounds)\n", db_get_blk_name(8600));
@@ -837,6 +838,9 @@ int test_examples() {
 
 // buttons and lever
 #define I_FACE (1ULL<<33)
+
+// beds
+#define I_BED (1ULL<<34)
 
 // example - placeholder should each armor type get its own designation
 #define I_ARMOR 0ULL
@@ -1438,22 +1442,22 @@ const uint64_t item_flags[] = {
     [593] = I_ITEM,                        //bone
     [594] = I_ITEM,                        //sugar
     [595] = I_NSTACK,                      //cake
-    [596] = I_NSTACK,                      //white_bed
-    [597] = I_NSTACK,                      //orange_bed
-    [598] = I_NSTACK,                      //magenta_bed
-    [599] = I_NSTACK,                      //light_blue_bed
-    [600] = I_NSTACK,                      //yellow_bed
-    [601] = I_NSTACK,                      //lime_bed
-    [602] = I_NSTACK,                      //pink_bed
-    [603] = I_NSTACK,                      //gray_bed
-    [604] = I_NSTACK,                      //light_gray_bed
-    [605] = I_NSTACK,                      //cyan_bed
-    [606] = I_NSTACK,                      //purple_bed
-    [607] = I_NSTACK,                      //blue_bed
-    [608] = I_NSTACK,                      //brown_bed
-    [609] = I_NSTACK,                      //green_bed
-    [610] = I_NSTACK,                      //red_bed
-    [611] = I_NSTACK,                      //black_bed
+    [596] = I_NSTACK | I_BED,              //white_bed
+    [597] = I_NSTACK | I_BED,              //orange_bed
+    [598] = I_NSTACK | I_BED,              //magenta_bed
+    [599] = I_NSTACK | I_BED,              //light_blue_bed
+    [600] = I_NSTACK | I_BED,              //yellow_bed
+    [601] = I_NSTACK | I_BED,              //lime_bed
+    [602] = I_NSTACK | I_BED,              //pink_bed
+    [603] = I_NSTACK | I_BED,              //gray_bed
+    [604] = I_NSTACK | I_BED,              //light_gray_bed
+    [605] = I_NSTACK | I_BED,              //cyan_bed
+    [606] = I_NSTACK | I_BED,              //purple_bed
+    [607] = I_NSTACK | I_BED,              //blue_bed
+    [608] = I_NSTACK | I_BED,              //brown_bed
+    [609] = I_NSTACK | I_BED,              //green_bed
+    [610] = I_NSTACK | I_BED,              //red_bed
+    [611] = I_NSTACK | I_BED,              //black_bed
     [612] = I_ITEM,                        //cookie
     [613] = I_ITEM,                        //filled_map
     [614] = I_NSTACK | I_ITEM,             //shears
@@ -1714,6 +1718,15 @@ int db_item_is_tdoor (int item_id) {
 int db_item_is_face (int item_id) {
     assert ( item_id >= 0 && item_id < db_num_items );
     if (item_flags[item_id] & I_FACE) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a bed
+int db_item_is_bed (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_BED) {
         return 1;
     }
     return 0;
