@@ -789,6 +789,7 @@ int test_examples() {
     printf(" db_item_is_axis(32)                   = %d (True) //oak_log\n",db_item_is_axis(32));
     printf(" db_item_is_door(460)                  = %d (True) //iron_door\n",db_item_is_door(460));
     printf(" db_item_is_tdoor(280)                 = %d (True) //iron_trapdoor\n",db_item_is_tdoor(280));
+    printf(" db_item_is_face(158)                  = %d (True) //lever\n",db_item_is_face(158));
     printf("Now testing errors \n");
     printf(" db_get_blk_name(8599)                 = %s (out of bounds)\n", db_get_blk_name(8599));
     printf(" db_get_blk_name(8600)                 = %s (out of bounds)\n", db_get_blk_name(8600));
@@ -833,6 +834,9 @@ int test_examples() {
 
 // trapdoors
 #define I_TDOOR (1ULL<<25)
+
+// buttons and lever
+#define I_FACE (1ULL<<33)
 
 // example - placeholder should each armor type get its own designation
 #define I_ARMOR 0ULL
@@ -996,7 +1000,7 @@ const uint64_t item_flags[] = {
     [155] = 0,                             //ladder
     [156] = 0,                             //rail
     [157] = I_STAIR,                       //cobblestone_stairs
-    [158] = 0,                             //lever
+    [158] = I_FACE,                        //lever
     [159] = 0,                             //stone_pressure_plate
     [160] = 0,                             //oak_pressure_plate
     [161] = 0,                             //spruce_pressure_plate
@@ -1006,7 +1010,7 @@ const uint64_t item_flags[] = {
     [165] = 0,                             //dark_oak_pressure_plate
     [166] = 0,                             //redstone_ore
     [167] = 0,                             //redstone_torch
-    [168] = 0,                             //stone_button
+    [168] = I_FACE,                        //stone_button
     [169] = 0,                             //snow
     [170] = 0,                             //ice
     [171] = 0,                             //snow_block
@@ -1079,12 +1083,12 @@ const uint64_t item_flags[] = {
     [238] = I_CONT,                        //beacon
     [239] = 0,                             //cobblestone_wall
     [240] = 0,                             //mossy_cobblestone_wall
-    [241] = 0,                             //oak_button
-    [242] = 0,                             //spruce_button
-    [243] = 0,                             //birch_button
-    [244] = 0,                             //jungle_button
-    [245] = 0,                             //acacia_button
-    [246] = 0,                             //dark_oak_button
+    [241] = I_FACE,                        //oak_button
+    [242] = I_FACE,                        //spruce_button
+    [243] = I_FACE,                        //birch_button
+    [244] = I_FACE,                        //jungle_button
+    [245] = I_FACE,                        //acacia_button
+    [246] = I_FACE,                        //dark_oak_button
     [247] = I_CONT,                        //anvil
     [248] = I_CONT,                        //chipped_anvil
     [249] = I_CONT,                        //damaged_anvil
@@ -1701,6 +1705,15 @@ int db_item_is_door (int item_id) {
 int db_item_is_tdoor (int item_id) {
     assert ( item_id >= 0 && item_id < db_num_items );
     if (item_flags[item_id] & I_TDOOR) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item has the face property (buttons, lever, upcoming grindstone)
+int db_item_is_face (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_FACE) {
         return 1;
     }
     return 0;
