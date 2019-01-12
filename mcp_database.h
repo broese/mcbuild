@@ -104,3 +104,9 @@ int db_item_is_slab (int item_id);
 
 // True if item is a stair
 int db_item_is_stair (int item_id);
+
+// True if item is a door
+int db_item_is_door (int item_id);
+
+// True if item is a trapdoor
+int db_item_is_tdoor (int item_id);

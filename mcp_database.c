@@ -787,6 +787,8 @@ int test_examples() {
     printf(" db_item_is_itemonly(703)              = %d (False) //skeleton_skull\n",db_item_is_itemonly(703));
     printf(" db_item_is_container(262)             = %d (True) //dropper\n",db_item_is_container(262));
     printf(" db_item_is_axis(32)                   = %d (True) //oak_log\n",db_item_is_axis(32));
+    printf(" db_item_is_door(460)                  = %d (True) //iron_door\n",db_item_is_door(460));
+    printf(" db_item_is_tdoor(280)                 = %d (True) //iron_trapdoor\n",db_item_is_tdoor(280));
     printf("Now testing errors \n");
     printf(" db_get_blk_name(8599)                 = %s (out of bounds)\n", db_get_blk_name(8599));
     printf(" db_get_blk_name(8600)                 = %s (out of bounds)\n", db_get_blk_name(8600));
@@ -825,6 +827,12 @@ int test_examples() {
 
 // blocks with an axis property - wood log type blocks
 #define I_AXIS (1ULL<<18)
+
+// doors
+#define I_DOOR (1ULL<<24)
+
+// trapdoors
+#define I_TDOOR (1ULL<<25)
 
 // example - placeholder should each armor type get its own designation
 #define I_ARMOR 0ULL
@@ -1017,12 +1025,12 @@ const uint64_t item_flags[] = {
     [184] = 0,                             //soul_sand
     [185] = 0,                             //glowstone
     [186] = 0,                             //jack_o_lantern
-    [187] = 0,                             //oak_trapdoor
-    [188] = 0,                             //spruce_trapdoor
-    [189] = 0,                             //birch_trapdoor
-    [190] = 0,                             //jungle_trapdoor
-    [191] = 0,                             //acacia_trapdoor
-    [192] = 0,                             //dark_oak_trapdoor
+    [187] = I_TDOOR,                       //oak_trapdoor
+    [188] = I_TDOOR,                       //spruce_trapdoor
+    [189] = I_TDOOR,                       //birch_trapdoor
+    [190] = I_TDOOR,                       //jungle_trapdoor
+    [191] = I_TDOOR,                       //acacia_trapdoor
+    [192] = I_TDOOR,                       //dark_oak_trapdoor
     [193] = 0,                             //infested_stone
     [194] = 0,                             //infested_cobblestone
     [195] = 0,                             //infested_stone_bricks
@@ -1110,7 +1118,7 @@ const uint64_t item_flags[] = {
     [277] = 0,                             //red_terracotta
     [278] = 0,                             //black_terracotta
     [279] = 0,                             //barrier
-    [280] = 0,                             //iron_trapdoor
+    [280] = I_TDOOR,                       //iron_trapdoor
     [281] = I_AXIS,                        //hay_block
     [282] = 0,                             //white_carpet
     [283] = 0,                             //orange_carpet
@@ -1290,13 +1298,13 @@ const uint64_t item_flags[] = {
     [457] = 0,                             //dead_horn_coral_fan
     [458] = 0,                             //blue_ice
     [459] = 0,                             //conduit
-    [460] = 0,                             //iron_door
-    [461] = 0,                             //oak_door
-    [462] = 0,                             //spruce_door
-    [463] = 0,                             //birch_door
-    [464] = 0,                             //jungle_door
-    [465] = 0,                             //acacia_door
-    [466] = 0,                             //dark_oak_door
+    [460] = I_DOOR,                        //iron_door
+    [461] = I_DOOR,                        //oak_door
+    [462] = I_DOOR,                        //spruce_door
+    [463] = I_DOOR,                        //birch_door
+    [464] = I_DOOR,                        //jungle_door
+    [465] = I_DOOR,                        //acacia_door
+    [466] = I_DOOR,                        //dark_oak_door
     [467] = 0,                             //repeater
     [468] = 0,                             //comparator
     [469] = 0,                             //structure_block
@@ -1676,6 +1684,23 @@ int db_item_is_slab (int item_id) {
 int db_item_is_stair (int item_id) {
     assert ( item_id >= 0 && item_id < db_num_items );
     if (item_flags[item_id] & I_STAIR) {
+        return 1;
+    }
+    return 0;
+}
+// True if item is a door
+int db_item_is_door (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_DOOR) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a trapdoor
+int db_item_is_tdoor (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_TDOOR) {
         return 1;
     }
     return 0;
