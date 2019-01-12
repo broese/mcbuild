@@ -1663,3 +1663,21 @@ int db_item_is_axis (int item_id) {
     }
     return 0;
 }
+
+// True if item is a slab
+int db_item_is_slab (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_SLAB) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a stair
+int db_item_is_stair (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_STAIR) {
+        return 1;
+    }
+    return 0;
+}

@@ -98,3 +98,9 @@ const char *db_get_blk_name_from_old_id(int oldid);
 
 // True if item is placed on an axis (logs, wood, stripped, quartz & purper pillars, hay & bone)
 int db_item_is_axis (int item_id);
+
+// True if item is a slab
+int db_item_is_slab (int item_id);
+
+// True if item is a stair
+int db_item_is_stair (int item_id);
