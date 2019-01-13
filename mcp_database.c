@@ -834,7 +834,7 @@ int test_examples() {
     printf(" db_item_is_face(158)                  = %d (True) //lever\n",db_item_is_face(158));
     printf(" db_item_is_bed(596)                   = %d (True) //white_bed\n",db_item_is_bed(596));
     printf(" db_item_is_rsdev(67)                  = %d (True) //dispenser\n",db_item_is_rsdev(67));
-    printf(" db_blk_is_onwall(3270)                = %d (True) //dispenser\n",db_blk_is_onwall(3270));
+    printf(" db_blk_is_onwall(3270)                = %d (True) //wall_sign\n",db_blk_is_onwall(3270));
     printf(" db_item_is_chest(250)                 = %d (True) //trapped_chest\n",db_item_is_chest(250));
     printf(" db_item_is_furnace(231)               = %d (True) //ender_chest\n",db_item_is_furnace(231));
     printf("Now testing errors \n");
