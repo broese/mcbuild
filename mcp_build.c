@@ -265,7 +265,7 @@ int find_evictable_slot() {
 }
 
 // fetch necessary material to the quickbar
-int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, int blk_id) {
+int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, blid_t blk_id) {
     int i;
 
     // determine item ID suitable for placing this block type

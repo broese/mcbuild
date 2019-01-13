@@ -264,7 +264,7 @@ const char *db_get_item_name(int item_id) {
     return "ID not found";
 };
 
-const char *db_get_blk_name(int id) {
+const char *db_get_blk_name(blid_t id) {
     assert(activedb);
     char *buf;
     if (id == -1) {
@@ -283,7 +283,7 @@ const char *db_get_blk_name(int id) {
     return "ID not found";
 };
 
-const char *db_get_blk_name_from_old_id(int oldid) {
+const char *db_get_blk_name_from_old_id(blid_t oldid) {
     assert(activedb);
     char *buf;
     if (oldid == -1) {
@@ -302,7 +302,7 @@ const char *db_get_blk_name_from_old_id(int oldid) {
     return "ID not found";
 };
 
-int db_get_blk_id(const char *name) {
+blid_t db_get_blk_id(const char *name) {
     assert (activedb);
     for (int i =0; i < C(activedb->block); i++) {
         if (!strcmp(activedb->P(block)[i].name, name)) {
@@ -312,7 +312,7 @@ int db_get_blk_id(const char *name) {
     return -1;
 }
 
-int db_get_blk_default_id(int id) {
+blid_t db_get_blk_default_id(blid_t id) {
     assert (activedb);
     for (int i=0; i < C(activedb->block); i++) {
         if (id == P(activedb->block)[i].id) {
@@ -322,7 +322,7 @@ int db_get_blk_default_id(int id) {
     return -1;
 }
 
-int db_get_num_states(int block_id) {
+int db_get_num_states(blid_t block_id) {
     assert (activedb);
     int count = 0;
     //we could use defaultid or blockname since they are 1-1 correspondence
@@ -533,7 +533,7 @@ void db_unload() {
 // db_get_blk_propval(db,14,"facing") => NULL // no such property
 // db_get_blk_propval(db,1650,"facing") => "north"
 // db_get_blk_propval(db,1686,"half") => "bottom"
-const char * db_get_blk_propval(int id, const char *propname) {
+const char * db_get_blk_propval(blid_t id, const char *propname) {
     assert (activedb);
     if (id < 0 || id >= C(activedb->block)) {
         return NULL;
@@ -556,7 +556,7 @@ const char * db_get_blk_propval(int id, const char *propname) {
 ////////////////////////////////////////////////////////////////////////////////
 
 // block types we should exclude from scanning
-int db_blk_is_noscan(int blk_id) {
+int db_blk_is_noscan(blid_t blk_id) {
     const char *blk_name = db_get_blk_name(blk_id);
     if (!strcmp(blk_name, "air")) return 1;
     if (!strcmp(blk_name, "water")) return 1;
@@ -575,7 +575,7 @@ int db_blk_is_noscan(int blk_id) {
 }
 
 // block types that are considered 'empty' for the block placement
-int db_blk_is_empty(int blk_id) {
+int db_blk_is_empty(blid_t blk_id) {
     const char *blk_name = db_get_blk_name(blk_id);
     if (!strcmp(blk_name, "air")) return 1;
     if (!strcmp(blk_name, "water")) return 1;
