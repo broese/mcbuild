@@ -834,6 +834,9 @@ int test_examples() {
     printf(" db_item_is_face(158)                  = %d (True) //lever\n",db_item_is_face(158));
     printf(" db_item_is_bed(596)                   = %d (True) //white_bed\n",db_item_is_bed(596));
     printf(" db_item_is_rsdev(67)                  = %d (True) //dispenser\n",db_item_is_rsdev(67));
+    printf(" db_blk_is_onwall(3270)                = %d (True) //dispenser\n",db_blk_is_onwall(3270));
+    printf(" db_item_is_chest(250)                 = %d (True) //trapped_chest\n",db_item_is_chest(250));
+    printf(" db_item_is_furnace(231)               = %d (True) //ender_chest\n",db_item_is_furnace(231));
     printf("Now testing errors \n");
     printf(" db_get_blk_name(8599)                 = %s (out of bounds)\n", db_get_blk_name(8599));
     printf(" db_get_blk_name(8600)                 = %s (out of bounds)\n", db_get_blk_name(8600));
@@ -882,11 +885,17 @@ int test_examples() {
 // trapdoors
 #define I_TDOOR (1ULL<<25)
 
+// chests and trapped chests - oriented and doubleable containers (type: left/right/single)
+#define I_CHEST (1ULL<<27)
+
 // buttons and lever
 #define I_FACE (1ULL<<33)
 
 // beds
 #define I_BED (1ULL<<34)
+
+// furnace and enderchest - oriented containers
+#define I_FURNACE (1ULL<<35)
 
 // example - placeholder should each armor type get its own designation
 #define I_ARMOR 0ULL
@@ -1041,12 +1050,12 @@ const uint64_t item_flags[] = {
     [146] = I_STAIR,                       //purpur_stairs
     [147] = 0,                             //spawner
     [148] = I_STAIR,                       //oak_stairs
-    [149] = I_CONT,                        //chest
+    [149] = I_CONT | I_CHEST,              //chest
     [150] = 0,                             //diamond_ore
     [151] = 0,                             //diamond_block
     [152] = I_CONT,                        //crafting_table
     [153] = 0,                             //farmland
-    [154] = I_CONT,                        //furnace
+    [154] = I_CONT | I_FURNACE,            //furnace
     [155] = 0,                             //ladder
     [156] = 0,                             //rail
     [157] = I_STAIR,                       //cobblestone_stairs
@@ -1123,7 +1132,7 @@ const uint64_t item_flags[] = {
     [228] = 0,                             //redstone_lamp
     [229] = I_STAIR,                       //sandstone_stairs
     [230] = 0,                             //emerald_ore
-    [231] = I_CONT,                        //ender_chest
+    [231] = I_CONT | I_FURNACE,            //ender_chest
     [232] = 0,                             //tripwire_hook
     [233] = 0,                             //emerald_block
     [234] = I_STAIR,                       //spruce_stairs
@@ -1142,7 +1151,7 @@ const uint64_t item_flags[] = {
     [247] = I_CONT,                        //anvil
     [248] = I_CONT,                        //chipped_anvil
     [249] = I_CONT,                        //damaged_anvil
-    [250] = I_CONT,                        //trapped_chest
+    [250] = I_CONT | I_CHEST,              //trapped_chest
     [251] = 0,                             //light_weighted_pressure_plate
     [252] = 0,                             //heavy_weighted_pressure_plate
     [253] = 0,                             //daylight_detector
@@ -1782,6 +1791,24 @@ int db_item_is_bed (int item_id) {
 int db_item_is_rsdev (int item_id) {
     assert ( item_id >= 0 && item_id < db_num_items );
     if (item_flags[item_id] & I_RSDEV) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a chest or trapped chest (single/left/right orientable containers)
+int db_item_is_chest (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_CHEST) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a enderchest or furnace  (orientable containers)
+int db_item_is_furnace (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_FURNACE) {
         return 1;
     }
     return 0;

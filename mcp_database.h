@@ -134,3 +134,9 @@ int db_item_is_bed (int item_id);
 
 // True if item is a redstone device
 int db_item_is_rsdev (int item_id);
+
+// True if item is a chest or trapped chest (single/left/right orientable containers)
+int db_item_is_chest (int item_id);
+
+// True if item is a enderchest or furnace  (orientable containers)
+int db_item_is_furnace (int item_id);
