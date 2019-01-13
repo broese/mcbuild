@@ -588,6 +588,47 @@ int db_blk_is_empty(blid_t blk_id) {
     return 0;
 }
 
+// blocks that are onwall -- cannot use item flags -- the block & item names dont match
+int db_blk_is_onwall(blid_t blk_id) {
+    const char *blk_name = db_get_blk_name(blk_id);
+    if (!strcmp(blk_name, "wall_torch")) return 1;
+    if (!strcmp(blk_name, "wall_sign")) return 1;
+    if (!strcmp(blk_name, "redstone_wall_torch")) return 1;
+    if (!strcmp(blk_name, "skeleton_wall_skull")) return 1;
+    if (!strcmp(blk_name, "wither_skeleton_wall_skull")) return 1;
+    if (!strcmp(blk_name, "zombie_wall_head")) return 1;
+    if (!strcmp(blk_name, "player_wall_head")) return 1;
+    if (!strcmp(blk_name, "creeper_wall_head")) return 1;
+    if (!strcmp(blk_name, "dragon_wall_head")) return 1;
+    if (!strcmp(blk_name, "white_wall_banner")) return 1;
+    if (!strcmp(blk_name, "orange_wall_banner")) return 1;
+    if (!strcmp(blk_name, "magenta_wall_banner")) return 1;
+    if (!strcmp(blk_name, "light_blue_wall_banner")) return 1;
+    if (!strcmp(blk_name, "yellow_wall_banner")) return 1;
+    if (!strcmp(blk_name, "lime_wall_banner")) return 1;
+    if (!strcmp(blk_name, "pink_wall_banner")) return 1;
+    if (!strcmp(blk_name, "gray_wall_banner")) return 1;
+    if (!strcmp(blk_name, "light_gray_wall_banner")) return 1;
+    if (!strcmp(blk_name, "cyan_wall_banner")) return 1;
+    if (!strcmp(blk_name, "purple_wall_banner")) return 1;
+    if (!strcmp(blk_name, "blue_wall_banner")) return 1;
+    if (!strcmp(blk_name, "brown_wall_banner")) return 1;
+    if (!strcmp(blk_name, "green_wall_banner")) return 1;
+    if (!strcmp(blk_name, "red_wall_banner")) return 1;
+    if (!strcmp(blk_name, "black_wall_banner")) return 1;
+    if (!strcmp(blk_name, "dead_tube_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "dead_brain_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "dead_bubble_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "dead_fire_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "dead_horn_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "tube_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "brain_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "bubble_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "fire_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "horn_coral_wall_fan")) return 1;
+    return 0;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // TODO: use what we already have

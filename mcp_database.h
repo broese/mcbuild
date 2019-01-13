@@ -75,6 +75,9 @@ int db_blk_is_noscan(blid_t blk_id);
 // true if this block cannot be used for placement upon its faces
 int db_blk_is_empty(blid_t blk_id);
 
+// blocks that are onwall -- cannot use item flags -- the block & item names dont match
+int db_blk_is_onwall(blid_t blk_id);
+
 // Gets the property value of a property for this block id
 //  db_get_blk_propval(14,"facing") => NULL // no such property
 //  db_get_blk_propval(1650,"facing") => "north"
