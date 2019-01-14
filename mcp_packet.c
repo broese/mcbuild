@@ -391,11 +391,10 @@ ENCODE_BEGIN(SP_BlockAction,_1_8_1) {
 } ENCODE_END;
 
 DUMP_BEGIN(SP_BlockAction) {
-    char name[256];
     printf("pos=%d,%d,%d b1=%d b2=%d type=%d (%s)",
            tpkt->loc.x, tpkt->loc.y, tpkt->loc.z,
            tpkt->b1, tpkt->b2, tpkt->type,
-           get_bid_name(name, BLOCKTYPE(tpkt->type, 0)));
+           db_get_blk_name_from_old_id(tpkt->type));
 } DUMP_END;
 
 ////////////////////////////////////////////////////////////////////////////////
