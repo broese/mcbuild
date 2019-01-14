@@ -39,13 +39,6 @@ int argparse(char **words, char **names, char **fmt, ...);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-int mcparg_parse_material(char **words, int argpos, char *reply, bid_t *mat, const char *suffix);
-int mcparg_parse_offset(char **words, int argpos, char *reply, boff_t *off);
-int mcparg_parse_direction(char **words, int argpos, char *reply, int *dir);
-int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, int *sy);
-
-////////////////////////////////////////////////////////////////////////////////
-
 // macro to produce a NULL-terminated char ** - compatible list of words
 #define WORDLIST(...) (char*[]) { __VA_ARGS__, NULL }
 
@@ -87,14 +80,6 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
     if (reply[0]) goto Error;                           \
     if (ARG_NOTFOUND) {                                 \
         var = val;                                      \
-    }
-
-// special case for the material parsing
-#define ARGMAT(names,var,val)                                           \
-    ARGDEF(mat,names,var,val);                                          \
-    if (var.bid==0 || var.bid==0xfff) {                                 \
-        sprintf(reply, "Specify material - either explicitly or by holding a buildable block"); \
-        goto Error;                                                     \
     }
 
 // material parsing with symbolic name (v1.13+)
@@ -142,9 +127,6 @@ extern const char *argfmt_offset;
 
 int argf_pos(arg_defaults *ad, char **words, char **names, off3_t *pos);
 extern const char *argfmt_pos;
-
-int argf_mat(arg_defaults *ad, char **words, char **names, bid_t *mat);
-extern const char *argfmt_mat;
 
 int argf_matname(arg_defaults *ad, char **words, char **names, const char **matname);
 extern const char *argfmt_matname;
