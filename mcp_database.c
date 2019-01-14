@@ -241,6 +241,7 @@ int db_get_item_id(const char *name) {
             break;
         }
     }
+    //TODO: if this is a blockname with a different itemname for the base material
     return id;
 };
 
@@ -263,7 +264,7 @@ const char *db_get_item_name(int item_id) {
     return "ID not found";
 };
 
-const char *db_get_blk_name(int id) {
+const char *db_get_blk_name(blid_t id) {
     assert(activedb);
     char *buf;
     if (id == -1) {
@@ -282,7 +283,7 @@ const char *db_get_blk_name(int id) {
     return "ID not found";
 };
 
-const char *db_get_blk_name_from_old_id(int oldid) {
+const char *db_get_blk_name_from_old_id(blid_t oldid) {
     assert(activedb);
     char *buf;
     if (oldid == -1) {
@@ -301,7 +302,7 @@ const char *db_get_blk_name_from_old_id(int oldid) {
     return "ID not found";
 };
 
-int db_get_blk_id(const char *name) {
+blid_t db_get_blk_id(const char *name) {
     assert (activedb);
     for (int i =0; i < C(activedb->block); i++) {
         if (!strcmp(activedb->P(block)[i].name, name)) {
@@ -311,7 +312,7 @@ int db_get_blk_id(const char *name) {
     return -1;
 }
 
-int db_get_blk_default_id(int id) {
+blid_t db_get_blk_default_id(blid_t id) {
     assert (activedb);
     for (int i=0; i < C(activedb->block); i++) {
         if (id == P(activedb->block)[i].id) {
@@ -321,7 +322,7 @@ int db_get_blk_default_id(int id) {
     return -1;
 }
 
-int db_get_num_states(int block_id) {
+int db_get_num_states(blid_t block_id) {
     assert (activedb);
     int count = 0;
     //we could use defaultid or blockname since they are 1-1 correspondence
@@ -532,7 +533,7 @@ void db_unload() {
 // db_get_blk_propval(db,14,"facing") => NULL // no such property
 // db_get_blk_propval(db,1650,"facing") => "north"
 // db_get_blk_propval(db,1686,"half") => "bottom"
-const char * db_get_blk_propval(int id, const char *propname) {
+const char * db_get_blk_propval(blid_t id, const char *propname) {
     assert (activedb);
     if (id < 0 || id >= C(activedb->block)) {
         return NULL;
@@ -555,7 +556,7 @@ const char * db_get_blk_propval(int id, const char *propname) {
 ////////////////////////////////////////////////////////////////////////////////
 
 // block types we should exclude from scanning
-int db_blk_is_noscan(int blk_id) {
+int db_blk_is_noscan(blid_t blk_id) {
     const char *blk_name = db_get_blk_name(blk_id);
     if (!strcmp(blk_name, "air")) return 1;
     if (!strcmp(blk_name, "water")) return 1;
@@ -574,7 +575,7 @@ int db_blk_is_noscan(int blk_id) {
 }
 
 // block types that are considered 'empty' for the block placement
-int db_blk_is_empty(int blk_id) {
+int db_blk_is_empty(blid_t blk_id) {
     const char *blk_name = db_get_blk_name(blk_id);
     if (!strcmp(blk_name, "air")) return 1;
     if (!strcmp(blk_name, "water")) return 1;
@@ -585,6 +586,147 @@ int db_blk_is_empty(int blk_id) {
     if (!strcmp(blk_name, "fire")) return 1;
     if (!strcmp(blk_name, "snow")) return 1;
     return 0;
+}
+
+// blocks that are onwall -- cannot use item flags -- the block & item names dont match
+int db_blk_is_onwall(blid_t blk_id) {
+    const char *blk_name = db_get_blk_name(blk_id);
+    if (!strcmp(blk_name, "wall_torch")) return 1;
+    if (!strcmp(blk_name, "wall_sign")) return 1;
+    if (!strcmp(blk_name, "redstone_wall_torch")) return 1;
+    if (!strcmp(blk_name, "skeleton_wall_skull")) return 1;
+    if (!strcmp(blk_name, "wither_skeleton_wall_skull")) return 1;
+    if (!strcmp(blk_name, "zombie_wall_head")) return 1;
+    if (!strcmp(blk_name, "player_wall_head")) return 1;
+    if (!strcmp(blk_name, "creeper_wall_head")) return 1;
+    if (!strcmp(blk_name, "dragon_wall_head")) return 1;
+    if (!strcmp(blk_name, "white_wall_banner")) return 1;
+    if (!strcmp(blk_name, "orange_wall_banner")) return 1;
+    if (!strcmp(blk_name, "magenta_wall_banner")) return 1;
+    if (!strcmp(blk_name, "light_blue_wall_banner")) return 1;
+    if (!strcmp(blk_name, "yellow_wall_banner")) return 1;
+    if (!strcmp(blk_name, "lime_wall_banner")) return 1;
+    if (!strcmp(blk_name, "pink_wall_banner")) return 1;
+    if (!strcmp(blk_name, "gray_wall_banner")) return 1;
+    if (!strcmp(blk_name, "light_gray_wall_banner")) return 1;
+    if (!strcmp(blk_name, "cyan_wall_banner")) return 1;
+    if (!strcmp(blk_name, "purple_wall_banner")) return 1;
+    if (!strcmp(blk_name, "blue_wall_banner")) return 1;
+    if (!strcmp(blk_name, "brown_wall_banner")) return 1;
+    if (!strcmp(blk_name, "green_wall_banner")) return 1;
+    if (!strcmp(blk_name, "red_wall_banner")) return 1;
+    if (!strcmp(blk_name, "black_wall_banner")) return 1;
+    if (!strcmp(blk_name, "dead_tube_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "dead_brain_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "dead_bubble_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "dead_fire_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "dead_horn_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "tube_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "brain_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "bubble_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "fire_coral_wall_fan")) return 1;
+    if (!strcmp(blk_name, "horn_coral_wall_fan")) return 1;
+    return 0;
+}
+
+// takes a block_id and returns the id that matches it, except for the facing property rotated in degrees
+blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
+    assert (activedb);
+    assert (degrees == 90 || degrees == 180 || degrees == 270);
+
+    block_t blk; // will be used to get the full block record from blk_id
+
+    const char *currentdirection = db_get_blk_propval(blk_id,"facing");
+    const char *currentaxis = db_get_blk_propval(blk_id,"axis");
+
+    if (currentdirection) {
+        char *desireddirection;
+        //TODO: something more elegant
+        if (!strcmp(currentdirection, "north")) {
+            if (degrees == 90) desireddirection = "east";
+            if (degrees == 180) desireddirection = "south";
+            if (degrees == 270) desireddirection = "west";
+        }
+        else if (!strcmp(currentdirection, "east")) {
+            if (degrees == 90) desireddirection = "south";
+            if (degrees == 180) desireddirection = "west";
+            if (degrees == 270) desireddirection = "north";
+        }
+        else if (!strcmp(currentdirection, "south")) {
+            if (degrees == 90) desireddirection = "west";
+            if (degrees == 180) desireddirection = "north";
+            if (degrees == 270) desireddirection = "east";
+        }
+        else if (!strcmp(currentdirection, "west")) {
+            if (degrees == 90) desireddirection = "north";
+            if (degrees == 180) desireddirection = "east";
+            if (degrees == 270) desireddirection = "south";
+        }
+        else return blk_id;  //block is facing up or down
+
+        //find the block record for the blk_id parameter
+        for (int i=0; i < C(activedb->block); i++) {
+            if (blk_id ==  P(activedb->block)[i].id) {
+                blk = P(activedb->block)[i];
+                break;
+            }
+        }
+        //TODO: move this to a lookup function
+        for (int i=0; i < C(activedb->block); i++) {
+            if (!strcmp( P(activedb->block)[i].name, blk.name) ) {
+                //found the same block name - loop all properties for a match
+                int matchcount = 0;
+                for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
+                    if (!strcmp(P(activedb->block)[i].P(prop)[j].pname, "facing")) {
+                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, desireddirection)) matchcount++;  //matched our desired facing
+                    }
+                    else {
+                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk.P(prop)[j].pvalue)) matchcount++; //matched the other property
+                    }
+                }
+                if ( matchcount == blk.C(prop) ) return P(activedb->block)[i].id;
+            }
+        }
+    }
+    else if (currentaxis) {
+        char *desiredaxis;
+        if (!strcmp(currentaxis, "x")) {
+            if (degrees == 90) desiredaxis = "z";
+            if (degrees == 180) return blk_id;
+            if (degrees == 270) desiredaxis = "z";
+        }
+        else if (!strcmp(currentaxis, "z")) {
+            if (degrees == 90) desiredaxis = "x";
+            if (degrees == 180) return blk_id;
+            if (degrees == 270) desiredaxis = "x";
+        }
+        else return blk_id; //block in z axis
+
+        //find the block record for the blk_id parameter
+        for (int i=0; i < C(activedb->block); i++) {
+            if (blk_id ==  P(activedb->block)[i].id) {
+                blk = P(activedb->block)[i];
+                break;
+            }
+        }
+        //TODO: move this to a lookup function
+        for (int i=0; i < C(activedb->block); i++) {
+            if (!strcmp( P(activedb->block)[i].name, blk.name) ) {
+                //found the same block name - loop all properties for a match
+                int matchcount = 0;
+                for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
+                    if (!strcmp(P(activedb->block)[i].P(prop)[j].pname, "axis")) {
+                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, desiredaxis)) matchcount++;//matched our desired axis
+                    }
+                    else {
+                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk.P(prop)[j].pvalue)) matchcount++; //matched the other property
+                    }
+                }
+                if ( matchcount == blk.C(prop) ) return P(activedb->block)[i].id;
+            }
+        }
+    }
+    return blk_id;  //block doesnt rotate or have an axis (or slipped thru horrible logic above)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -771,28 +913,37 @@ int try_to_get_missing_json_files(int protocol_id) {
 }
 
 int test_examples() {
-    printf("db_get_blk_propval(1686,\"half\")      = %s (bottom)\n",db_get_blk_propval(1686,"half"));
-    printf("db_get_item_id(\"heart_of_the_sea\")    = %d (789)\n", db_get_item_id("heart_of_the_sea"));
-    printf("db_get_item_name(788)         = %s (nautilus_shell)\n", db_get_item_name(788));
-    printf("db_get_blk_name(8596)               = %s (structure_block)\n", db_get_blk_name(8596));
-    printf("db_get_blk_default_id(8596)         = %d (8595)\n",db_get_blk_default_id(8596));
-    printf("db_get_blk_name_from_old_id(597)    = %s (structure_block)\n", db_get_blk_name_from_old_id(597));
-    printf("db_get_blk_id(\"nether_brick_stairs\") = %d (4540)\n",db_get_blk_id("nether_brick_stairs"));
-    printf("db_get_num_states(5)            = %d (1)\n",db_get_num_states(5));
-    printf("db_get_num_states(8)            = %d (2)\n",db_get_num_states(8));
-    printf("db_get_num_states(2913)         = %d (1296)\n",db_get_num_states(2913));
-    printf("db_stacksize(db_get_item_id(\"ender_pearl\")) = %d (16)\n",db_stacksize(db_get_item_id("ender_pearl")));
-    printf("db_item_is_itemonly(703) = %d (False) //skeleton_skull\n",db_item_is_itemonly(703));
-    printf("db_item_is_container (262) = %d (True) //dropper\n",db_item_is_container(262));
-
-    printf("\nNumber of blocks: %zd\n",C(activedb->block));
+    printf("Number of blocks: %zd\n",C(activedb->block));
     printf("Number of items: %zd\n", C(activedb->item));
-
-    printf("\nNow testing errors \n");
-    printf("db_get_blk_name(8599)               = %s (out of bounds)\n", db_get_blk_name(8599));
-    printf("db_get_blk_name(8600)               = %s (out of bounds)\n", db_get_blk_name(8600));
-    printf("db_get_blk_id(\"gold_nugget\")         = %d (-1 meaning not found)\n",db_get_blk_id("gold_nugget"));
-    printf("db_get_num_states(8599)         = %d (0 meaning problem)\n",db_get_num_states(8599));
+    printf(" db_get_blk_propval(1686,\"half\")       = %s (bottom)\n",db_get_blk_propval(1686,"half"));
+    printf(" db_get_item_id(\"heart_of_the_sea\")    = %d (789)\n", db_get_item_id("heart_of_the_sea"));
+    printf(" db_get_item_name(788)                 = %s (nautilus_shell)\n", db_get_item_name(788));
+    printf(" db_get_blk_name(8596)                 = %s (structure_block)\n", db_get_blk_name(8596));
+    printf(" db_get_blk_default_id(8596)           = %d (8595)\n",db_get_blk_default_id(8596));
+    printf(" db_get_blk_name_from_old_id(597)      = %s (structure_block)\n", db_get_blk_name_from_old_id(597));
+    printf(" db_get_blk_id(\"nether_brick_stairs\")  = %d (4540)\n",db_get_blk_id("nether_brick_stairs"));
+    printf(" db_get_num_states(5)                  = %d (1)\n",db_get_num_states(5));
+    printf(" db_get_num_states(8)                  = %d (2)\n",db_get_num_states(8));
+    printf(" db_get_num_states(2913)               = %d (1296)\n",db_get_num_states(2913));
+    printf(" db_stacksize(db_get_item_id(\"ender_pearl\")) = %d (16)\n",db_stacksize(db_get_item_id("ender_pearl")));
+    printf(" db_item_is_itemonly(703)              = %d (False) //skeleton_skull\n",db_item_is_itemonly(703));
+    printf(" db_item_is_container(262)             = %d (True) //dropper\n",db_item_is_container(262));
+    printf(" db_item_is_axis(32)                   = %d (True) //oak_log\n",db_item_is_axis(32));
+    printf(" db_item_is_door(460)                  = %d (True) //iron_door\n",db_item_is_door(460));
+    printf(" db_item_is_tdoor(280)                 = %d (True) //iron_trapdoor\n",db_item_is_tdoor(280));
+    printf(" db_item_is_face(158)                  = %d (True) //lever\n",db_item_is_face(158));
+    printf(" db_item_is_bed(596)                   = %d (True) //white_bed\n",db_item_is_bed(596));
+    printf(" db_item_is_rsdev(67)                  = %d (True) //dispenser\n",db_item_is_rsdev(67));
+    printf(" db_blk_is_onwall(3270)                = %d (True) //wall_sign\n",db_blk_is_onwall(3270));
+    printf(" db_item_is_chest(250)                 = %d (True) //trapped_chest\n",db_item_is_chest(250));
+    printf(" db_item_is_furnace(231)               = %d (True) //ender_chest\n",db_item_is_furnace(231));
+    printf(" db_get_rotated_block(1649, 270)       = %d (1689) //oak_stairs rotated\n", db_get_rotated_block(1649, 270));
+    printf(" db_get_rotated_block(74, 90)          = %d (72) //oak_log rotated from z to x\n", db_get_rotated_block(74, 90));
+    printf("Now testing errors \n");
+    printf(" db_get_blk_name(8599)                 = %s (out of bounds)\n", db_get_blk_name(8599));
+    printf(" db_get_blk_name(8600)                 = %s (out of bounds)\n", db_get_blk_name(8600));
+    printf(" db_get_blk_id(\"gold_nugget\")          = %d (-1 meaning not found)\n",db_get_blk_id("gold_nugget"));
+    printf(" db_get_num_states(8599)               = %d (0 meaning problem)\n",db_get_num_states(8599));
 
     return 0;
 }
@@ -825,7 +976,28 @@ int test_examples() {
 #define I_STAIR (1ULL<<17)
 
 // blocks with an axis property - wood log type blocks
-#define I_AXIS (1<<18)
+#define I_AXIS (1ULL<<18)
+
+// redstone devices (hoppers, dispensers, droppers, pistons, observers)
+#define I_RSDEV (1ULL<<23)
+
+// doors
+#define I_DOOR (1ULL<<24)
+
+// trapdoors
+#define I_TDOOR (1ULL<<25)
+
+// chests and trapped chests - oriented and doubleable containers (type: left/right/single)
+#define I_CHEST (1ULL<<27)
+
+// buttons and lever
+#define I_FACE (1ULL<<33)
+
+// beds
+#define I_BED (1ULL<<34)
+
+// furnace and enderchest - oriented containers
+#define I_FURNACE (1ULL<<35)
 
 // example - placeholder should each armor type get its own designation
 #define I_ARMOR 0ULL
@@ -898,21 +1070,21 @@ const uint64_t item_flags[] = {
     [64] = 0,                              //glass
     [65] = 0,                              //lapis_ore
     [66] = 0,                              //lapis_block
-    [67] = I_CONT,                         //dispenser
+    [67] = I_CONT | I_RSDEV,               //dispenser
     [68] = 0,                              //sandstone
     [69] = 0,                              //chiseled_sandstone
     [70] = 0,                              //cut_sandstone
     [71] = 0,                              //note_block
     [72] = 0,                              //powered_rail
     [73] = 0,                              //detector_rail
-    [74] = 0,                              //sticky_piston
+    [74] = I_RSDEV,                        //sticky_piston
     [75] = 0,                              //cobweb
     [76] = 0,                              //grass
     [77] = 0,                              //fern
     [78] = 0,                              //dead_bush
     [79] = 0,                              //seagrass
     [80] = 0,                              //sea_pickle
-    [81] = 0,                              //piston
+    [81] = I_RSDEV,                        //piston
     [82] = 0,                              //white_wool
     [83] = 0,                              //orange_wool
     [84] = 0,                              //magenta_wool
@@ -980,16 +1152,16 @@ const uint64_t item_flags[] = {
     [146] = I_STAIR,                       //purpur_stairs
     [147] = 0,                             //spawner
     [148] = I_STAIR,                       //oak_stairs
-    [149] = I_CONT,                        //chest
+    [149] = I_CONT | I_CHEST,              //chest
     [150] = 0,                             //diamond_ore
     [151] = 0,                             //diamond_block
     [152] = I_CONT,                        //crafting_table
     [153] = 0,                             //farmland
-    [154] = I_CONT,                        //furnace
+    [154] = I_CONT | I_FURNACE,            //furnace
     [155] = 0,                             //ladder
     [156] = 0,                             //rail
     [157] = I_STAIR,                       //cobblestone_stairs
-    [158] = 0,                             //lever
+    [158] = I_FACE,                        //lever
     [159] = 0,                             //stone_pressure_plate
     [160] = 0,                             //oak_pressure_plate
     [161] = 0,                             //spruce_pressure_plate
@@ -999,7 +1171,7 @@ const uint64_t item_flags[] = {
     [165] = 0,                             //dark_oak_pressure_plate
     [166] = 0,                             //redstone_ore
     [167] = 0,                             //redstone_torch
-    [168] = 0,                             //stone_button
+    [168] = I_FACE,                        //stone_button
     [169] = 0,                             //snow
     [170] = 0,                             //ice
     [171] = 0,                             //snow_block
@@ -1018,12 +1190,12 @@ const uint64_t item_flags[] = {
     [184] = 0,                             //soul_sand
     [185] = 0,                             //glowstone
     [186] = 0,                             //jack_o_lantern
-    [187] = 0,                             //oak_trapdoor
-    [188] = 0,                             //spruce_trapdoor
-    [189] = 0,                             //birch_trapdoor
-    [190] = 0,                             //jungle_trapdoor
-    [191] = 0,                             //acacia_trapdoor
-    [192] = 0,                             //dark_oak_trapdoor
+    [187] = I_TDOOR,                       //oak_trapdoor
+    [188] = I_TDOOR,                       //spruce_trapdoor
+    [189] = I_TDOOR,                       //birch_trapdoor
+    [190] = I_TDOOR,                       //jungle_trapdoor
+    [191] = I_TDOOR,                       //acacia_trapdoor
+    [192] = I_TDOOR,                       //dark_oak_trapdoor
     [193] = 0,                             //infested_stone
     [194] = 0,                             //infested_cobblestone
     [195] = 0,                             //infested_stone_bricks
@@ -1062,7 +1234,7 @@ const uint64_t item_flags[] = {
     [228] = 0,                             //redstone_lamp
     [229] = I_STAIR,                       //sandstone_stairs
     [230] = 0,                             //emerald_ore
-    [231] = I_CONT,                        //ender_chest
+    [231] = I_CONT | I_FURNACE,            //ender_chest
     [232] = 0,                             //tripwire_hook
     [233] = 0,                             //emerald_block
     [234] = I_STAIR,                       //spruce_stairs
@@ -1072,28 +1244,28 @@ const uint64_t item_flags[] = {
     [238] = I_CONT,                        //beacon
     [239] = 0,                             //cobblestone_wall
     [240] = 0,                             //mossy_cobblestone_wall
-    [241] = 0,                             //oak_button
-    [242] = 0,                             //spruce_button
-    [243] = 0,                             //birch_button
-    [244] = 0,                             //jungle_button
-    [245] = 0,                             //acacia_button
-    [246] = 0,                             //dark_oak_button
+    [241] = I_FACE,                        //oak_button
+    [242] = I_FACE,                        //spruce_button
+    [243] = I_FACE,                        //birch_button
+    [244] = I_FACE,                        //jungle_button
+    [245] = I_FACE,                        //acacia_button
+    [246] = I_FACE,                        //dark_oak_button
     [247] = I_CONT,                        //anvil
     [248] = I_CONT,                        //chipped_anvil
     [249] = I_CONT,                        //damaged_anvil
-    [250] = I_CONT,                        //trapped_chest
+    [250] = I_CONT | I_CHEST,              //trapped_chest
     [251] = 0,                             //light_weighted_pressure_plate
     [252] = 0,                             //heavy_weighted_pressure_plate
     [253] = 0,                             //daylight_detector
     [254] = 0,                             //redstone_block
     [255] = 0,                             //nether_quartz_ore
-    [256] = I_CONT,                        //hopper
+    [256] = I_CONT | I_RSDEV,              //hopper
     [257] = 0,                             //chiseled_quartz_block
     [258] = 0,                             //quartz_block
     [259] = I_AXIS,                        //quartz_pillar
     [260] = I_STAIR,                       //quartz_stairs
     [261] = 0,                             //activator_rail
-    [262] = I_CONT,                        //dropper
+    [262] = I_CONT | I_RSDEV,              //dropper
     [263] = 0,                             //white_terracotta
     [264] = 0,                             //orange_terracotta
     [265] = 0,                             //magenta_terracotta
@@ -1111,7 +1283,7 @@ const uint64_t item_flags[] = {
     [277] = 0,                             //red_terracotta
     [278] = 0,                             //black_terracotta
     [279] = 0,                             //barrier
-    [280] = 0,                             //iron_trapdoor
+    [280] = I_TDOOR,                       //iron_trapdoor
     [281] = I_AXIS,                        //hay_block
     [282] = 0,                             //white_carpet
     [283] = 0,                             //orange_carpet
@@ -1192,7 +1364,7 @@ const uint64_t item_flags[] = {
     [358] = 0,                             //red_nether_bricks
     [359] = I_AXIS,                        //bone_block
     [360] = 0,                             //structure_void
-    [361] = 0,                             //observer
+    [361] = I_RSDEV,                       //observer
     [362] = I_NSTACK | I_CONT,             //shulker_box
     [363] = I_NSTACK | I_CONT,             //white_shulker_box
     [364] = I_NSTACK | I_CONT,             //orange_shulker_box
@@ -1291,13 +1463,13 @@ const uint64_t item_flags[] = {
     [457] = 0,                             //dead_horn_coral_fan
     [458] = 0,                             //blue_ice
     [459] = 0,                             //conduit
-    [460] = 0,                             //iron_door
-    [461] = 0,                             //oak_door
-    [462] = 0,                             //spruce_door
-    [463] = 0,                             //birch_door
-    [464] = 0,                             //jungle_door
-    [465] = 0,                             //acacia_door
-    [466] = 0,                             //dark_oak_door
+    [460] = I_DOOR,                        //iron_door
+    [461] = I_DOOR,                        //oak_door
+    [462] = I_DOOR,                        //spruce_door
+    [463] = I_DOOR,                        //birch_door
+    [464] = I_DOOR,                        //jungle_door
+    [465] = I_DOOR,                        //acacia_door
+    [466] = I_DOOR,                        //dark_oak_door
     [467] = 0,                             //repeater
     [468] = 0,                             //comparator
     [469] = 0,                             //structure_block
@@ -1427,22 +1599,22 @@ const uint64_t item_flags[] = {
     [593] = I_ITEM,                        //bone
     [594] = I_ITEM,                        //sugar
     [595] = I_NSTACK,                      //cake
-    [596] = I_NSTACK,                      //white_bed
-    [597] = I_NSTACK,                      //orange_bed
-    [598] = I_NSTACK,                      //magenta_bed
-    [599] = I_NSTACK,                      //light_blue_bed
-    [600] = I_NSTACK,                      //yellow_bed
-    [601] = I_NSTACK,                      //lime_bed
-    [602] = I_NSTACK,                      //pink_bed
-    [603] = I_NSTACK,                      //gray_bed
-    [604] = I_NSTACK,                      //light_gray_bed
-    [605] = I_NSTACK,                      //cyan_bed
-    [606] = I_NSTACK,                      //purple_bed
-    [607] = I_NSTACK,                      //blue_bed
-    [608] = I_NSTACK,                      //brown_bed
-    [609] = I_NSTACK,                      //green_bed
-    [610] = I_NSTACK,                      //red_bed
-    [611] = I_NSTACK,                      //black_bed
+    [596] = I_NSTACK | I_BED,              //white_bed
+    [597] = I_NSTACK | I_BED,              //orange_bed
+    [598] = I_NSTACK | I_BED,              //magenta_bed
+    [599] = I_NSTACK | I_BED,              //light_blue_bed
+    [600] = I_NSTACK | I_BED,              //yellow_bed
+    [601] = I_NSTACK | I_BED,              //lime_bed
+    [602] = I_NSTACK | I_BED,              //pink_bed
+    [603] = I_NSTACK | I_BED,              //gray_bed
+    [604] = I_NSTACK | I_BED,              //light_gray_bed
+    [605] = I_NSTACK | I_BED,              //cyan_bed
+    [606] = I_NSTACK | I_BED,              //purple_bed
+    [607] = I_NSTACK | I_BED,              //blue_bed
+    [608] = I_NSTACK | I_BED,              //brown_bed
+    [609] = I_NSTACK | I_BED,              //green_bed
+    [610] = I_NSTACK | I_BED,              //red_bed
+    [611] = I_NSTACK | I_BED,              //black_bed
     [612] = I_ITEM,                        //cookie
     [613] = I_ITEM,                        //filled_map
     [614] = I_NSTACK | I_ITEM,             //shears
@@ -1659,6 +1831,86 @@ int db_item_is_container (int item_id) {
 int db_item_is_axis (int item_id) {
     assert ( item_id >= 0 && item_id < db_num_items );
     if (item_flags[item_id] & I_AXIS) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a slab
+int db_item_is_slab (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_SLAB) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a stair
+int db_item_is_stair (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_STAIR) {
+        return 1;
+    }
+    return 0;
+}
+// True if item is a door
+int db_item_is_door (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_DOOR) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a trapdoor
+int db_item_is_tdoor (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_TDOOR) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item has the face property (buttons, lever, upcoming grindstone)
+int db_item_is_face (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_FACE) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a bed
+int db_item_is_bed (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_BED) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a redstone device
+int db_item_is_rsdev (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_RSDEV) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a chest or trapped chest (single/left/right orientable containers)
+int db_item_is_chest (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_CHEST) {
+        return 1;
+    }
+    return 0;
+}
+
+// True if item is a enderchest or furnace  (orientable containers)
+int db_item_is_furnace (int item_id) {
+    assert ( item_id >= 0 && item_id < db_num_items );
+    if (item_flags[item_id] & I_FURNACE) {
         return 1;
     }
     return 0;

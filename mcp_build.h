@@ -40,5 +40,5 @@ void build_sload(const char *name, char *reply);
 void build_dump_plan();
 build_info * get_build_info(int plan);
 void calculate_material(int plan);
-int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, int blk_id);
+int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, blid_t blk_id);
 int find_evictable_slot();

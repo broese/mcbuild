@@ -265,7 +265,7 @@ int find_evictable_slot() {
 }
 
 // fetch necessary material to the quickbar
-int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, int blk_id) {
+int prefetch_material(MCPacketQueue *sq, MCPacketQueue *cq, blid_t blk_id) {
     int i;
 
     // determine item ID suitable for placing this block type
@@ -384,7 +384,7 @@ void calculate_material(int plan) {
         if (need <= 0)
             printf("-\n");
         else
-            printf("%5d ($%.1f)\n", need, (float)need/db_stacksize(m->material.raw));
+            printf("%5d ($%.1f)\n", need, (float)need/db_stacksize(db_get_item_id(db_get_blk_name(m->material.raw))));
     }
 
     printf("=========================================\n");
