@@ -78,6 +78,9 @@ int db_blk_is_empty(blid_t blk_id);
 // blocks that are onwall -- cannot use item flags -- the block & item names dont match
 int db_blk_is_onwall(blid_t blk_id);
 
+// takes a block_id and returns the id that matches it, except for the facing property rotated in degrees
+blid_t db_get_rotated_block(blid_t blk_id, int degrees);
+
 // Gets the property value of a property for this block id
 //  db_get_blk_propval(14,"facing") => NULL // no such property
 //  db_get_blk_propval(1650,"facing") => "north"
