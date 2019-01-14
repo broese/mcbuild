@@ -2029,7 +2029,7 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     pivot_t     pv;
     size3_t     sz;
     bid_t       mat,mat1,mat2;
-    const char *matname;
+    const char *matname, *matname2;
     int         count;
     float       diam;
 
@@ -2190,19 +2190,20 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         NEEDBP;
         char **mw1 = WORDLIST("material1","mat1","m1");
         char **mw2 = WORDLIST("material2","mat2","m2");
-        ARGREQ(mat, mw1, mat1);
-        ARGREQ(mat, mw2, mat2);
+        ARGREQ(matname, mw1, matname);
+        ARGREQ(matname, mw2, matname2);
+        mat1.raw = db_get_blk_id(matname);
+        mat2.raw = db_get_blk_id(matname2);
+
         int anymeta = argflag(words, WORDLIST("anymeta","a"));
         int count = bplan_replace(build.bp, mat1, mat2, anymeta);
-        if (mat2.bid == 0) {
+        if (mat2.raw == 0) {
             // blocks were removed
-            sprintf(reply, "Removed %d blocks of %s\n", count,
-                    db_get_blk_name(mat1.raw));
+            sprintf(reply, "Removed %d blocks of %s\n", count, matname);
         }
         else {
             // blocks were replaced
-            sprintf(reply, "Replaced %d blocks of %s with %s\n", count,
-                    db_get_blk_name(mat1.raw), db_get_blk_name(mat2.raw));
+            sprintf(reply, "Replaced %d blocks of %s with %s\n", count, matname, matname2);
         }
 
         goto Place;
