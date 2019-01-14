@@ -633,7 +633,7 @@ static void inv_click(int button, int16_t sid) {
             if ( d->count + s->count > db_stacksize(s->item)) {
                 if (DEBUG_INVENTORY)
                     printf("*** No-op: can't pick up another %dx %s into dragslot from product slot\n",
-                           s->count, get_item_name(name,s));
+                           s->count, db_get_item_name(s->item));
             }
             else {
                 slot_t pr;
@@ -689,14 +689,14 @@ static void inv_click(int button, int16_t sid) {
                 // left-click
                 if (DEBUG_INVENTORY)
                     printf("*** Pick %dx %s from slot %d to drag-slot\n",
-                           s->count, get_item_name(name,s), sid);
+                           s->count, db_get_item_name(s->item), sid);
                 slot_transfer(s, &gs.inv.drag, s->count);
                 break;
             case 1:
                 // right-click
                 if (DEBUG_INVENTORY)
                     printf("*** Pick %dx %s from slot %d to drag-slot\n",
-                           GREATERHALF(s->count), get_item_name(name,s), sid);
+                           GREATERHALF(s->count), db_get_item_name(s->item), sid);
                 slot_transfer(s, &gs.inv.drag, GREATERHALF(s->count));
                 break;
         }
@@ -713,14 +713,14 @@ static void inv_click(int button, int16_t sid) {
                 // left-click - throw all
                 if (DEBUG_INVENTORY)
                     printf("*** Throw out %dx %s from drag slot\n",
-                           gs.inv.drag.count, get_item_name(name,&gs.inv.drag) );
+                           gs.inv.drag.count, db_get_item_name(gs.inv.drag.item) );
                 gs.inv.drag.count = 0;
                 break;
             case 1:
                 // right-click - throw one
                 if (DEBUG_INVENTORY)
                     printf("*** Throw out 1x %s from drag slot\n",
-                           get_item_name(name,&gs.inv.drag));
+                           db_get_item_name(gs.inv.drag.item));
                 gs.inv.drag.count--;
                 break;
         }
@@ -738,14 +738,14 @@ static void inv_click(int button, int16_t sid) {
                 // left-click - put all
                 if (DEBUG_INVENTORY)
                     printf("*** Put %dx %s from drag slot to slot %d\n",
-                           gs.inv.drag.count, get_item_name(name,&gs.inv.drag), sid);
+                           gs.inv.drag.count, db_get_item_name(gs.inv.drag.item), sid);
                 slot_transfer(&gs.inv.drag, s, gs.inv.drag.count);
                 break;
             case 1:
                 // right-click - put one
                 if (DEBUG_INVENTORY)
                     printf("*** Put 1x %s from drag slot to slot %d\n",
-                           get_item_name(name,&gs.inv.drag), sid);
+                           db_get_item_name(gs.inv.drag.item), sid);
                 slot_transfer(&gs.inv.drag, s, 1);
                 break;
         }
@@ -760,8 +760,8 @@ static void inv_click(int button, int16_t sid) {
         // are non-stackable (e.g. weapons) - swap items
         if (DEBUG_INVENTORY)
             printf("*** Swap %dx %s in the drag slot with %dx %s in slot %d\n",
-                   gs.inv.drag.count, get_item_name(name,&gs.inv.drag),
-                   s->count, get_item_name(name2,s), sid);
+                   gs.inv.drag.count, db_get_item_name(gs.inv.drag.item),
+                   s->count, db_get_item_name(s->item), sid);
 
         swap_slots(s, &gs.inv.drag);
         return;
@@ -777,14 +777,14 @@ static void inv_click(int button, int16_t sid) {
     if (count > 0) {
         if (DEBUG_INVENTORY)
             printf("*** Add %dx %s from drag slot to slot %d\n",
-                   count, get_item_name(name,&gs.inv.drag), sid);
+                   count, db_get_item_name(gs.inv.drag.item), sid);
         s->count += count;
         gs.inv.drag.count -= count;
     }
     else {
         if (DEBUG_INVENTORY)
             printf("*** Can't put more %s from drag slot to slot %d - slot full\n",
-                   get_item_name(name,&gs.inv.drag), sid);
+                   db_get_item_name(gs.inv.drag.item), sid);
     }
 
     prune_slot(s);
@@ -922,7 +922,7 @@ static void inv_shiftclick(int button, int16_t sid) {
                 int amount = (f->count > capacity) ? capacity : f->count;
                 if (DEBUG_INVENTORY)
                     printf("*** Distribute %dx %s from slot %d to slot %d (move to stack)\n",
-                           amount, get_item_name(name,f), sid, i);
+                           amount, db_get_item_name(f->item), sid, i);
                 slot_transfer(f, &gs.inv.slots[i], amount);
                 smask &= ~(1LL<<i);
                 prune_slot(f);
@@ -942,7 +942,7 @@ static void inv_shiftclick(int button, int16_t sid) {
 
                 if (DEBUG_INVENTORY)
                     printf("*** Distribute %dx %s from slot %d to slot %d (move to empty)\n",
-                           amount, get_item_name(name,f), sid, i);
+                           amount, db_get_item_name(f->item), sid, i);
                 slot_transfer(f,t,amount);
             }
         }
@@ -1026,7 +1026,7 @@ static void inv_paint(int button, int16_t sid) {
 
                     if (DEBUG_INVENTORY)
                         printf("*** Paint %dx %s from drag slot to slot %d\n",
-                               slot_amount, get_item_name(name,&gs.inv.drag), gs.inv.pslots[i]);
+                               slot_amount, db_get_item_name(gs.inv.drag.item), gs.inv.pslots[i]);
                     slot_transfer(&gs.inv.drag, &gs.inv.slots[gs.inv.pslots[i]], slot_amount);
                     if (DEBUG_INVENTORY)
                         printf("*** %d remain in the dragslot\n",gs.inv.drag.count);
@@ -1056,7 +1056,7 @@ static void inv_throw(int button, int16_t sid) {
 
     if (DEBUG_INVENTORY)
         printf("*** Throw out %dx %s from slot %d\n",
-               amount, get_item_name(name,s), sid);
+               amount, db_get_item_name(s->item), sid);
 
     s->count -= amount;
     prune_slot(s);
