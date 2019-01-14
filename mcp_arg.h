@@ -98,12 +98,17 @@ int mcparg_parse_size(char **words, int argpos, char *reply, int *sx, int *sz, i
     }
 
 // material parsing with symbolic name (v1.13+)
-#define ARGMATNAME(names,var,val)                                       \
-    ARGDEF(matname,names,var,val);                                      \
-    if (var == NULL) {                                 \
+#define ARGMATNAME(names,var,val)                                                               \
+    ARGDEF(matname,names,var,val);                                                              \
+    if (var == NULL) {                                                                          \
         sprintf(reply, "Specify material - either explicitky or by holding a buildable block"); \
-        goto Error;                                                     \
+        goto Error;                                                                             \
+    }                                                                                           \
+    if (db_get_num_states(mat.raw) != 1) {                                                      \
+        sprintf(reply, "Material %s has more than one state - currently unsupported", matname); \
+        goto Error;                                                                             \
     }
+
 
 // a struct containing all relevant values from gamestate that may be needed
 // as default values in the argument parsing. We are passing these values through

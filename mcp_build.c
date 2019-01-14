@@ -2044,10 +2044,6 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
         mat.raw = db_get_blk_id(matname);
-        if (db_get_num_states(mat.raw) != 1) {
-            sprintf(reply, "Floor: material %s has more than one state - currently unsupported", matname);
-            goto Error;
-        }
         build.bp = bplan_floor(sz.x, sz.z, mat);
         sprintf(reply, "Floor size=%d,%d material=%s",sz.x,sz.z,matname);
         goto Place;
@@ -2055,56 +2051,61 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     CMD2(wall,wa) {
         ARGREQ(size, NULL, sz);
-        ARGMAT(NULL, mat, ad.mat);
+        ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
+        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_wall(sz.x, sz.z, mat);
-        sprintf(reply, "Wall size=%d,%d material=%s",sz.x,sz.z,db_get_blk_name(mat.raw));
+        sprintf(reply, "Wall size=%d,%d material=%s",sz.x,sz.z,matname);
         goto Place;
     }
 
     CMD2(disk,di) {
         ARGREQ(diam, NULL, diam);
-        ARGMAT(NULL, mat, ad.mat);
+        ARGMATNAME(NULL, matname, ad.matname1);
         int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
+        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_disk(diam, mat, edge);
         sprintf(reply, "Disk diam=%f%s material=%s",
-                diam,edge?"(edge) ":"",db_get_blk_name(mat.raw));
+                diam,edge?"(edge) ":"",matname);
         goto Place;
     }
 
     CMD2(ball,ba) {
         ARGREQ(diam, NULL, diam);
-        ARGMAT(NULL, mat, ad.mat);
+        ARGMATNAME(NULL, matname, ad.matname1);
         int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
+        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_ball(diam, mat, edge);
         sprintf(reply, "Ball diam=%f%s material=%s",
-                diam,edge?"(edge) ":"",db_get_blk_name(mat.raw));
+                diam,edge?"(edge) ":"",matname);
         goto Place;
     }
 
     CMD2(ring,ri) {
         ARGREQ(diam, NULL, diam);
-        ARGMAT(NULL, mat, ad.mat);
+        ARGMATNAME(NULL, matname, ad.matname1);
         int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
+        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_disk(diam, mat, edge);
         bplan_hollow(build.bp, 1, 0);
         sprintf(reply, "Ring diam=%f%s material=%s",
-                diam,edge?"(edge) ":"",db_get_blk_name(mat.raw));
+                diam,edge?"(edge) ":"",matname);
         goto Place;
     }
 
     CMD2(sphere,sp) {
         ARGREQ(diam, NULL, diam);
-        ARGMAT(NULL, mat, ad.mat);
+        ARGMATNAME(NULL, matname, ad.matname1);
         int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
+        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_ball(diam, mat, edge);
         bplan_hollow(build.bp, 0, 0);
         sprintf(reply, "Sphere diam=%f%s material=%s",
-                diam,edge?"(edge) ":"",db_get_blk_name(mat.raw));
+                diam,edge?"(edge) ":"",matname);
         goto Place;
     }
 
@@ -2113,10 +2114,6 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
         ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
         mat.raw = db_get_blk_id(matname);
-        if (db_get_num_states(mat.raw) != 1) {
-            sprintf(reply, "Floor: material %s has more than one state - currently unsupported", matname);
-            goto Error;
-        }
         build.bp = bplan_floor(sz.x, sz.z, mat);
         bplan_hollow(build.bp, 1, 0);
         sprintf(reply, "Rectangle size=%d,%d material=%s",sz.x,sz.z,matname);
@@ -2126,36 +2123,38 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     CMD2(scaffolding,scaf) {
         bid_t dirt = BLOCKTYPE(3,0);
         ARGREQ(size, NULL, sz);
-        ARGMAT(NULL, mat, dirt);
+        ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
+        mat.raw = db_get_blk_id(matname);
         if (argflag(words, WORDLIST("ladder","l","2"))) {
             build.bp = bplan_scaffolding(sz.x, sz.z, mat,1);
             sprintf(reply, "Scaffolding (ladder) width=%d floors=%d material=%s",
-                    sz.x,sz.z,db_get_blk_name(mat.raw));
+                    sz.x,sz.z,matname);
         }
         else {
             if (sz.z==1 && sz.x<4) sz.x = 4;
             if (sz.z>1  && sz.x<7) sz.x = 7;
             build.bp = bplan_scaffolding(sz.x, sz.z, mat,0);
             sprintf(reply, "Scaffolding width=%d floors=%d material=%s",
-                    sz.x,sz.z,db_get_blk_name(mat.raw));
+                    sz.x,sz.z,matname);
         }
         goto Place;
     }
 
     CMD2(stairs,stair) {
         ARGREQ(size, NULL, sz);
-        ARGMAT(NULL, mat, ad.mat);
+        ARGMATNAME(NULL, matname, ad.matname1);
         build_clear(sq, cq);
         int base = 1,ex=1;
         if (argflag(words, WORDLIST("none","n","bn"))) base=0;
         if (argflag(words, WORDLIST("minimal","min","m","bm"))) base=1;
         if (argflag(words, WORDLIST("full","f","bf"))) base=2;
         if (argflag(words, WORDLIST("exact","e"))) ex=-1;
+        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_stairs(sz.x, sz.z, mat, base*ex);
         char **BASE = WORDLIST("none","minimal","full");
         sprintf(reply, "Stairs width=%d floors=%d material=%s base=%s%s",
-                sz.x,sz.z,db_get_blk_name(mat.raw),BASE[base],(ex<0)?" (exact)":"");
+                sz.x,sz.z,matname,BASE[base],(ex<0)?" (exact)":"");
         goto Place;
     }
 
