@@ -20,6 +20,7 @@
 
 #include "slot.h"
 #include "mcp_ids.h"
+#include "mcp_database.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -29,7 +30,7 @@
 void dump_slot(slot_t *s) {
     char buf[256];
     if (s->present) {
-        printf("item=%d (%s) count=%d", s->item, get_item_name(buf,s), s->count);
+        printf("item=%d (%s) count=%d", s->item, db_get_item_name(s->item), s->count);
         if (s->nbt) {
             printf(", nbt=available");
             // printf(":\n"); nbt_dump(s->nbt);
