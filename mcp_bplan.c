@@ -388,11 +388,9 @@ int bplan_hollow(bplan *bp, int flat, int opaque) {
         int32_t off_z = b->z-bp->minz+1;
         int32_t off   = off_x+off_z*(bp->sx+2)+off_y*size_xz;
 
-        if (b->b.bid) {
+        if (b->b.raw != 0) {
             // block is present
-            v[off] = 1;
-            if (!opaque || (ITEMS[b->b.bid].flags&I_OPAQUE))
-                v[off] += 2; // Bit 1 - block is considered opaque
+            v[off] = 3; // TODO: for now we consider all blocks opaque
         }
     }
 
