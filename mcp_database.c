@@ -33,6 +33,7 @@ int save_db_to_file(database_t *db);
 int load_db_from_file(database_t *db, FILE* fp);
 int test_examples();
 
+// Loads a db for this protocol into memory
 int db_load(int protocol_id) {
     activedb = NULL;
 
@@ -232,6 +233,7 @@ int db_load(int protocol_id) {
     return 0; //success
 }
 
+// Gets the item id given the item name
 int db_get_item_id(const char *name) {
     assert(activedb);
     int id = -1;
@@ -245,6 +247,7 @@ int db_get_item_id(const char *name) {
     return id;
 };
 
+// Gets the item name given the item id
 const char *db_get_item_name(int item_id) {
     assert (activedb);
     char *buf;
@@ -264,6 +267,7 @@ const char *db_get_item_name(int item_id) {
     return "ID not found";
 };
 
+// Gets the block name given the block id
 const char *db_get_blk_name(blid_t id) {
     assert(activedb);
     char *buf;
@@ -280,6 +284,7 @@ const char *db_get_blk_name(blid_t id) {
     return "ID not found";
 };
 
+// Gets the blockname from the old-style block ID (only relevant for the SP_BlockAction packet)
 const char *db_get_blk_name_from_old_id(blid_t oldid) {
 
     assert(activedb);
@@ -297,6 +302,9 @@ const char *db_get_blk_name_from_old_id(blid_t oldid) {
     return "ID not found";
 };
 
+// Gets the block's default id given a block name
+//  db_get_blk_id("cobblestone") => 14
+//  db_get_blk_id("nether_brick_stairs") => 4540 // north,bottom,straight,false marked as default
 blid_t db_get_blk_id(const char *name) {
     assert (activedb);
     for (int i =0; i < C(activedb->block); i++) {
@@ -307,6 +315,7 @@ blid_t db_get_blk_id(const char *name) {
     return UINT16_MAX;
 }
 
+// input is another block id, returning that block id's default id
 blid_t db_get_blk_default_id(blid_t id) {
     assert (activedb);
     for (int i=0; i < C(activedb->block); i++) {
@@ -317,6 +326,9 @@ blid_t db_get_blk_default_id(blid_t id) {
     return UINT16_MAX;
 }
 
+// Gets the number of states a block has, given the block id
+//  db_get_num_states(5) => 1 // polished_diorite
+//  db_get_num_states(8) => 2 // grass_block
 int db_get_num_states(blid_t block_id) {
     assert (activedb);
     int count = 0;
@@ -330,6 +342,7 @@ int db_get_num_states(blid_t block_id) {
     return count;
 }
 
+// Dumps blocks array to stdout
 void db_dump_blocks(int maxlines){
     assert (activedb);
     printf("Dumping Blocks...\n");
@@ -347,6 +360,7 @@ void db_dump_blocks(int maxlines){
     }
 }
 
+// Dumps items array to stdout
 void db_dump_items(int maxlines){
     assert (activedb);
     printf("Dumping Items...\n");
@@ -357,6 +371,7 @@ void db_dump_items(int maxlines){
     }
 }
 
+// Dumps blocks array to a csv file
 int db_dump_blocks_to_csv_file() {
     assert (activedb);
     char *blockcsvfilespec = malloc(strlen(databasefilepath)+30);
@@ -382,6 +397,7 @@ int db_dump_blocks_to_csv_file() {
     return 0;
 }
 
+// Dumps items array to a csv file
 int db_dump_items_to_csv_file() {
     assert (activedb);
     char *itemcsvfilespec = malloc(strlen(databasefilepath)+30);
@@ -400,6 +416,7 @@ int db_dump_items_to_csv_file() {
     return 0;
 }
 
+// Private: Saves a database struct to file so it can be loaded in the future
 int save_db_to_file(database_t *db) {
     char *dbfilespec = malloc(strlen(databasefilepath)+20);
     sprintf(dbfilespec, "%s/mcb_db_%d.txt",databasefilepath,db->protocol);  //example: "./database/mcb_db_404.txt"
@@ -430,6 +447,7 @@ int save_db_to_file(database_t *db) {
     return 0;
 }
 
+// Private: Loads a previously-saved db file created by save_db_to_file
 int load_db_from_file(database_t *db, FILE* fp) {
 
     char buf[100];
@@ -487,6 +505,7 @@ int load_db_from_file(database_t *db, FILE* fp) {
     return 0;
 }
 
+// Unloads all databases from memory
 void db_unload() {
     activedb = NULL;
     int dbcount = C(dbs);
@@ -524,9 +543,10 @@ void db_unload() {
     return;
 }
 
-// db_get_blk_propval(db,14,"facing") => NULL // no such property
-// db_get_blk_propval(db,1650,"facing") => "north"
-// db_get_blk_propval(db,1686,"half") => "bottom"
+// Gets the property value of a property for this block id
+//  db_get_blk_propval(db,14,"facing") => NULL // no such property
+//  db_get_blk_propval(db,1650,"facing") => "north"
+//  db_get_blk_propval(db,1686,"half") => "bottom"
 const char * db_get_blk_propval(blid_t id, const char *propname) {
     assert (activedb);
     if (id < 0 || id >= C(activedb->block)) {
@@ -725,14 +745,16 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// TODO: use what we already have
+// Private:  Converts the protocol ID to its MC version string
 char *protocol_to_ver_string(int protid){
+    // TODO: use what we already have
     if (protid == 404) {
         return "1.13.2";
     }
     return "unknown";
 }
 
+// Private:  Saves a URL to a local file
 int download_url_into_file(const char *url, const char *filespec) {
     CURL *curl = curl_easy_init();
     // set header options
@@ -748,6 +770,7 @@ int download_url_into_file(const char *url, const char *filespec) {
     return rc;
 }
 
+// Private:  Finds the directory of the Java VM executable
 char *findjavapath() {
     char *javapath = NULL;
 
@@ -779,7 +802,7 @@ char *findjavapath() {
     return javapath;
 }
 
-//if blocks.json and items.json dont exist, use this to fetch the server jar and extract them
+// Private:  Gets the server jar from Mojang and extract blocks.json & items.json
 int try_to_get_missing_json_files(int protocol_id) {
     int rc;
 
@@ -906,6 +929,7 @@ int try_to_get_missing_json_files(int protocol_id) {
     return 0;
 }
 
+// Private:  Dumps database tests to stdout (activated by #define TESTEXAMPLES)
 int test_examples() {
     printf("Number of blocks: %zd\n",C(activedb->block));
     printf("Number of items: %zd\n", C(activedb->item));
@@ -941,12 +965,6 @@ int test_examples() {
 
     return 0;
 }
-//struct prop_t { const char *pname, const char *pvalue };
-// prop_t * defines a set of properties I'm interested in. It's a list no longer than 3 I guess
-// how should we define the length? it could be {NULL,NULL} terminated or length explicitly given.
-// many different IDs can match
-//int get_matching_block_ids(database_t *db, const char *name, prop_t *match, int *ids);
-// places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
 
 ///////////////////////////////////////////////////
 // Item flags
