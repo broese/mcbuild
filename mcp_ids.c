@@ -624,9 +624,17 @@ int get_base_meta(int id, int meta) {
 
 // mapping macro for the block types that have different IDs
 // for the block and the item used for placement of such block
-#define BI(block,item) if (mat.bid == block) return BLOCKTYPE(item,0)
+//#define BI(block,item) if (mat.bid == block) return BLOCKTYPE(item,0)
 
-bid_t get_base_material(bid_t mat) {
+int get_base_material(blid_t blk_id) {
+    const char *blk_name = db_get_blk_name(blk_id);
+    int item_id = db_get_item_id(blk_name);
+    assert(item_id > 0);
+
+    //TODO: verify which blocks require a different type of material for building
+
+#if 0
+    //DISABLED: transition to dev_3.0
     assert(mat.bid <0x100);
 
     // material for doubleslabs is the slab with the next block ID and same meta
@@ -680,6 +688,7 @@ bid_t get_base_material(bid_t mat) {
 
     mat.meta = get_base_meta(mat.bid, mat.meta);
     return mat;
+#endif
 }
 
 // select a block material that matches best a block derived from it,

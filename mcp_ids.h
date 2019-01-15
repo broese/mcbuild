@@ -14,6 +14,7 @@
 
 #include "mcp_types.h"
 #include "slot.h"
+#include "mcp_database.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Block type flags
@@ -136,7 +137,7 @@ extern const biome_id BIOMES[];
 
 #include "mcp_types.h"
 
-bid_t get_base_material(bid_t mat);
+int get_base_material(blid_t mat);
 uint8_t get_state_mask(int bid);
 bid_t get_base_block_material(bid_t mat);
 
