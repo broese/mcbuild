@@ -83,13 +83,14 @@ int argparse(char **words, char **names, char **fmt, ...);
     }
 
 // material parsing with symbolic name (v1.13+)
-#define ARGMATNAME(names,var,val)                                                               \
+#define ARGMATNAME(names,var,val,mvar)                                                          \
     ARGDEF(matname,names,var,val);                                                              \
     if (var == NULL) {                                                                          \
         sprintf(reply, "Specify material - either explicitky or by holding a buildable block"); \
         goto Error;                                                                             \
     }                                                                                           \
-    if (db_get_num_states(mat.raw) != 1) {                                                      \
+    mvar.raw = db_get_blk_id(matname);                                                          \
+    if (db_get_num_states(mvar.raw) != 1) {                                                     \
         sprintf(reply, "Material %s has more than one state - currently unsupported", matname); \
         goto Error;                                                                             \
     }

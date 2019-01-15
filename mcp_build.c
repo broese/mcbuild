@@ -2041,9 +2041,8 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     // Parametric builds
     CMD2(floor,fl) {
         ARGREQ(size, NULL, sz);
-        ARGMATNAME(NULL, matname, ad.matname1);
+        ARGMATNAME(NULL, matname, ad.matname1, mat);
         build_clear(sq, cq);
-        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_floor(sz.x, sz.z, mat);
         sprintf(reply, "Floor size=%d,%d material=%s",sz.x,sz.z,matname);
         goto Place;
@@ -2051,9 +2050,8 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     CMD2(wall,wa) {
         ARGREQ(size, NULL, sz);
-        ARGMATNAME(NULL, matname, ad.matname1);
+        ARGMATNAME(NULL, matname, ad.matname1, mat);
         build_clear(sq, cq);
-        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_wall(sz.x, sz.z, mat);
         sprintf(reply, "Wall size=%d,%d material=%s",sz.x,sz.z,matname);
         goto Place;
@@ -2061,10 +2059,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     CMD2(disk,di) {
         ARGREQ(diam, NULL, diam);
-        ARGMATNAME(NULL, matname, ad.matname1);
+        ARGMATNAME(NULL, matname, ad.matname1, mat);
         int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
-        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_disk(diam, mat, edge);
         sprintf(reply, "Disk diam=%f%s material=%s",
                 diam,edge?"(edge) ":"",matname);
@@ -2073,10 +2070,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     CMD2(ball,ba) {
         ARGREQ(diam, NULL, diam);
-        ARGMATNAME(NULL, matname, ad.matname1);
+        ARGMATNAME(NULL, matname, ad.matname1, mat);
         int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
-        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_ball(diam, mat, edge);
         sprintf(reply, "Ball diam=%f%s material=%s",
                 diam,edge?"(edge) ":"",matname);
@@ -2085,10 +2081,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     CMD2(ring,ri) {
         ARGREQ(diam, NULL, diam);
-        ARGMATNAME(NULL, matname, ad.matname1);
+        ARGMATNAME(NULL, matname, ad.matname1, mat);
         int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
-        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_disk(diam, mat, edge);
         bplan_hollow(build.bp, 1, 0);
         sprintf(reply, "Ring diam=%f%s material=%s",
@@ -2098,10 +2093,9 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     CMD2(sphere,sp) {
         ARGREQ(diam, NULL, diam);
-        ARGMATNAME(NULL, matname, ad.matname1);
+        ARGMATNAME(NULL, matname, ad.matname1, mat);
         int edge = argflag(words, WORDLIST("edge","e"));
         build_clear(sq, cq);
-        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_ball(diam, mat, edge);
         bplan_hollow(build.bp, 0, 0);
         sprintf(reply, "Sphere diam=%f%s material=%s",
@@ -2111,9 +2105,8 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     CMD2(rectangle,rect) {
         ARGREQ(size, NULL, sz);
-        ARGMATNAME(NULL, matname, ad.matname1);
+        ARGMATNAME(NULL, matname, ad.matname1, mat);
         build_clear(sq, cq);
-        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_floor(sz.x, sz.z, mat);
         bplan_hollow(build.bp, 1, 0);
         sprintf(reply, "Rectangle size=%d,%d material=%s",sz.x,sz.z,matname);
@@ -2123,9 +2116,8 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
     CMD2(scaffolding,scaf) {
         bid_t dirt = BLOCKTYPE(3,0);
         ARGREQ(size, NULL, sz);
-        ARGMATNAME(NULL, matname, ad.matname1);
+        ARGMATNAME(NULL, matname, ad.matname1, mat);
         build_clear(sq, cq);
-        mat.raw = db_get_blk_id(matname);
         if (argflag(words, WORDLIST("ladder","l","2"))) {
             build.bp = bplan_scaffolding(sz.x, sz.z, mat,1);
             sprintf(reply, "Scaffolding (ladder) width=%d floors=%d material=%s",
@@ -2143,14 +2135,13 @@ void build_cmd(char **words, MCPacketQueue *sq, MCPacketQueue *cq) {
 
     CMD2(stairs,stair) {
         ARGREQ(size, NULL, sz);
-        ARGMATNAME(NULL, matname, ad.matname1);
+        ARGMATNAME(NULL, matname, ad.matname1, mat);
         build_clear(sq, cq);
         int base = 1,ex=1;
         if (argflag(words, WORDLIST("none","n","bn"))) base=0;
         if (argflag(words, WORDLIST("minimal","min","m","bm"))) base=1;
         if (argflag(words, WORDLIST("full","f","bf"))) base=2;
         if (argflag(words, WORDLIST("exact","e"))) ex=-1;
-        mat.raw = db_get_blk_id(matname);
         build.bp = bplan_stairs(sz.x, sz.z, mat, base*ex);
         char **BASE = WORDLIST("none","minimal","full");
         sprintf(reply, "Stairs width=%d floors=%d material=%s base=%s%s",
