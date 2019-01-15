@@ -286,7 +286,6 @@ const char *db_get_blk_name(blid_t id) {
 
 // Gets the blockname from the old-style block ID (only relevant for the SP_BlockAction packet)
 const char *db_get_blk_name_from_old_id(blid_t oldid) {
-
     assert(activedb);
     char *buf;
     if (oldid > P(activedb->block)[C(activedb->block)-1].oldid) {
