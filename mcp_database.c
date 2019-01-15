@@ -267,10 +267,7 @@ const char *db_get_item_name(int item_id) {
 const char *db_get_blk_name(blid_t id) {
     assert(activedb);
     char *buf;
-    if (id == -1) {
-        return "Empty";
-    }
-    if (id < -1 || id >= C(activedb->block)) {
+    if (id >= C(activedb->block)) {
         return "ID out of bounds";
     }
     for (int i=0; i < C(activedb->block); i++) {
@@ -284,12 +281,10 @@ const char *db_get_blk_name(blid_t id) {
 };
 
 const char *db_get_blk_name_from_old_id(blid_t oldid) {
+
     assert(activedb);
     char *buf;
-    if (oldid == -1) {
-        return "Empty";
-    }
-    if (oldid < -1 || oldid >= P(activedb->block)[C(activedb->block)-1].oldid) {
+    if (oldid > P(activedb->block)[C(activedb->block)-1].oldid) {
         return "ID out of bounds";
     }
     for (int i=0; i < C(activedb->block); i++) {
@@ -309,7 +304,7 @@ blid_t db_get_blk_id(const char *name) {
             return activedb->P(block)[i].defaultid;
         }
     }
-    return -1;
+    return UINT16_MAX;
 }
 
 blid_t db_get_blk_default_id(blid_t id) {
@@ -319,7 +314,7 @@ blid_t db_get_blk_default_id(blid_t id) {
             return P(activedb->block)[i].defaultid;
         }
     }
-    return -1;
+    return UINT16_MAX;
 }
 
 int db_get_num_states(blid_t block_id) {
@@ -335,16 +330,15 @@ int db_get_num_states(blid_t block_id) {
     return count;
 }
 
-
 void db_dump_blocks(int maxlines){
     assert (activedb);
     printf("Dumping Blocks...\n");
     printf("%-30s %-5s %-5s %-5s %s\n","blockname","blkid","oldid","defid","#prop");
     for (int i=0; (i < C(activedb->block)) && (i < maxlines); i++) {
         printf("%30s ", P(activedb->block)[i].name);
-        printf("%05d ", P(activedb->block)[i].id);
-        printf("%05d ", P(activedb->block)[i].oldid);
-        printf("%05d ", P(activedb->block)[i].defaultid);
+        printf("%05u ", P(activedb->block)[i].id);
+        printf("%05u ", P(activedb->block)[i].oldid);
+        printf("%05u ", P(activedb->block)[i].defaultid);
         printf("%05zd ", P(activedb->block)[i].C(prop));
         for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
             printf("prop:%s val:%s, ", P(activedb->block)[i].P(prop)[j].pname, P(activedb->block)[i].P(prop)[j].pvalue);
@@ -942,7 +936,7 @@ int test_examples() {
     printf("Now testing errors \n");
     printf(" db_get_blk_name(8599)                 = %s (out of bounds)\n", db_get_blk_name(8599));
     printf(" db_get_blk_name(8600)                 = %s (out of bounds)\n", db_get_blk_name(8600));
-    printf(" db_get_blk_id(\"gold_nugget\")          = %d (-1 meaning not found)\n",db_get_blk_id("gold_nugget"));
+    printf(" db_get_blk_id(\"gold_nugget\")          = %d (UINT16_MAX meaning not found)\n",db_get_blk_id("gold_nugget"));
     printf(" db_get_num_states(8599)               = %d (0 meaning problem)\n",db_get_num_states(8599));
 
     return 0;
