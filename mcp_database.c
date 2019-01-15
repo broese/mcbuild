@@ -384,9 +384,9 @@ int db_dump_blocks_to_csv_file() {
     fprintf(fp, "%s, %s, %s, %s, %s\n","blockname","blkid","oldid","defid","#prop");
     for (int i=0; i < C(activedb->block) ; i++) {
         fprintf(fp, "%s,", P(activedb->block)[i].name);
-        fprintf(fp, "%d,", P(activedb->block)[i].id);
-        fprintf(fp, "%d,", P(activedb->block)[i].oldid);
-        fprintf(fp, "%d,", P(activedb->block)[i].defaultid);
+        fprintf(fp, "%u,", P(activedb->block)[i].id);
+        fprintf(fp, "%u,", P(activedb->block)[i].oldid);
+        fprintf(fp, "%u,", P(activedb->block)[i].defaultid);
         fprintf(fp, "%zd", P(activedb->block)[i].C(prop));
         for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
             fprintf(fp, ",prop:%s val:%s", P(activedb->block)[i].P(prop)[j].pname, P(activedb->block)[i].P(prop)[j].pvalue);
