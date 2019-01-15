@@ -311,6 +311,7 @@ build_info * get_build_info(int plan) {
 
     if (!plan) build_update_placed();
 
+    // The index represents the item ID needed for this material
     int total[65536], placed[65536], available[65536];
     lh_clear_obj(total);
     lh_clear_obj(placed);
@@ -320,18 +321,18 @@ build_info * get_build_info(int plan) {
     int i,j;
     if (plan) {
         for (i=0; build.bp && i<C(build.bp->plan); i++) {
-            bid_t bmat = get_base_material(P(build.bp->plan)[i].b);
-            total[bmat.raw]++;
+            int item_id = get_base_material(P(build.bp->plan)[i].b.raw);
+            total[item_id]++;
             bi->total ++;
         }
     }
     else {
         for (i=0; i<C(build.task); i++) {
-            bid_t bmat = get_base_material(P(build.task)[i].b);
-            total[bmat.raw]++;
-            bi->total++;
+            int item_id = get_base_material(P(build.task)[i].b.raw);
+            total[item_id]++;
+            bi->total ++;
             if (P(build.task)[i].placed) {
-                placed[bmat.raw]++;
+                placed[item_id]++;
                 bi->placed ++;
             }
         }
@@ -974,6 +975,10 @@ int update_placed() {
             // else - some block with the correct ID, but incorrect meta was placed
             // (e.g. wrong wool color)
         }
+
+        #if 0
+        //DISABLED: transition to dev_3.0
+
         else if (it->flags&I_DSLAB) {
             // special case - doubleslabs
             bid_t bm = get_base_material(b->b);
@@ -991,6 +996,7 @@ int update_placed() {
             b->needadj = 1;
         }
         // else - placed is set to 0
+        #endif
 
         // check if the block is empty, but ignore those that are already
         // placed - this way we can support "empty" blocks like water in our buildplan
@@ -1609,6 +1615,8 @@ static void brec_blockplace(MCPacket *pkt) {
     char buf[256];
     //printf("Recording block at %d,%d,%d  %s",x,y,z,get_bid_name(buf, b));
 
+#if 0
+    //DISABLED: transition to dev_3.0
     // check if the placed block will become a double slab
     if (ITEMS[b.bid].flags&I_SLAB) {
         bid_t on = get_block_at(tpkt->bpos.x,tpkt->bpos.z,tpkt->bpos.y);
@@ -1620,6 +1628,7 @@ static void brec_blockplace(MCPacket *pkt) {
                          // corresponding slab, meta is the same
         }
     }
+#endif
 
     // verify if this block is already in the pending queue
     int i;
