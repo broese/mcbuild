@@ -1667,7 +1667,6 @@ void gs_packet(MCPacket *pkt) {
                 if (hud_bogus_map(islot) && wslot->item <= 0)
                     continue;
 
-                clear_slot(islot);
                 clone_slot(wslot, islot);
             }
         } _GSP;
@@ -1691,9 +1690,10 @@ void gs_reset() {
     CLEAR(gs);
 
     // set all items in the inventory to -1 to define them as empty
-    for(i=0; i<64; i++) {
-        gs.inv.slots[i].item = -1;
-    }
+    for(i=0; i<64; i++)
+        clear_slot(&gs.inv.slots[i]);
+    clear_slot(&gs.inv.drag);
+
     // reset the currently dragged item to none
     gs.inv.drag.item = -1;
     gs.inv.windowopen = 0;
@@ -1709,8 +1709,9 @@ void gs_destroy() {
         free_metadata(P(gs.entity)[i].mdata);
     lh_free(P(gs.entity));
 
-    for(i=0; i<45; i++)
+    for(i=0; i<64; i++)
         clear_slot(&gs.inv.slots[i]);
+    clear_slot(&gs.inv.drag);
 
     //dump_chunks(&gs.overworld);
 

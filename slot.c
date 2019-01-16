@@ -56,7 +56,7 @@ void prune_slot(slot_t *s) {
 
 // make a copy of a slot, including deep-copied NBT
 slot_t * clone_slot(slot_t *src, slot_t *dst) {
-    if (!dst) lh_alloc_obj(dst);
+    if (!dst) { lh_alloc_obj(dst); }
     clear_slot(dst);
     *dst = *src;
     dst->nbt = nbt_clone(src->nbt);
