@@ -236,51 +236,44 @@ int db_load(int protocol_id) {
 // Gets the item id given the item name
 int db_get_item_id(const char *name) {
     assert(activedb);
-    int id = -1;
     for (int i =0; i < C(activedb->item); i++) {
         if (!strcmp(activedb->P(item)[i].name, name)) {
-            id = activedb->P(item)[i].id;
-            break;
+            return activedb->P(item)[i].id;
         }
     }
     //TODO: if this is a blockname with a different itemname for the base material
-    return id;
+    return -1;
 };
 
 // Gets the item name given the item id
 const char *db_get_item_name(int item_id) {
     assert (activedb);
-    char *buf;
     if (item_id == -1) {
         return "Empty";
     }
-    if (item_id < -1 || item_id >= C(activedb->item)) {
-        return "ID out of bounds";
-    }
     for (int i=0; i < C(activedb->item); i++) {
         if (item_id == activedb->P(item)[i].id) {
-            buf = malloc(strlen(activedb->P(item)[i].name)+1);
-            strcpy(buf,activedb->P(item)[i].name);
-            return buf;
+            return activedb->P(item)[i].name;
         }
     }
     return "ID not found";
 };
 
+// Private:  Gets the database record for a block given its block_id
+block_t *db_blk_record_from_id(blid_t block_id) {
+    for (int i=0; i < C(activedb->block); i++) {
+        if (block_id == P(activedb->block)[i].id) {
+            return &P(activedb->block)[i];
+        }
+    }
+    return NULL;
+}
+
 // Gets the block name given the block id
 const char *db_get_blk_name(blid_t id) {
     assert(activedb);
-    char *buf;
-    if (id >= C(activedb->block)) {
-        return "ID out of bounds";
-    }
-    for (int i=0; i < C(activedb->block); i++) {
-        if (id == P(activedb->block)[i].id) {
-            buf = malloc(strlen( P(activedb->block)[i].name)+1);
-            strcpy(buf, P(activedb->block)[i].name);
-            return buf;
-        }
-    }
+    block_t *blk = db_blk_record_from_id(id);
+    if (blk) return blk->name;
     return "ID not found";
 };
 
@@ -293,9 +286,7 @@ const char *db_get_blk_name_from_old_id(blid_t oldid) {
     }
     for (int i=0; i < C(activedb->block); i++) {
         if (oldid == P(activedb->block)[i].oldid) {
-            buf = malloc(strlen(P(activedb->block)[i].name)+1);
-            strcpy(buf,P(activedb->block)[i].name);
-            return buf;
+            return P(activedb->block)[i].name;
         }
     }
     return "ID not found";
@@ -317,11 +308,8 @@ blid_t db_get_blk_id(const char *name) {
 // input is another block id, returning that block id's default id
 blid_t db_get_blk_default_id(blid_t id) {
     assert (activedb);
-    for (int i=0; i < C(activedb->block); i++) {
-        if (id == P(activedb->block)[i].id) {
-            return P(activedb->block)[i].defaultid;
-        }
-    }
+    block_t *blk = db_blk_record_from_id(id);
+    if (blk) return blk->defaultid;
     return UINT16_MAX;
 }
 
@@ -546,21 +534,14 @@ void db_unload() {
 //  db_get_blk_propval(db,14,"facing") => NULL // no such property
 //  db_get_blk_propval(db,1650,"facing") => "north"
 //  db_get_blk_propval(db,1686,"half") => "bottom"
-const char * db_get_blk_propval(blid_t id, const char *propname) {
+const char *db_get_blk_propval(blid_t block_id, const char *propname) {
     assert (activedb);
-    if (id < 0 || id >= C(activedb->block)) {
-        return NULL;
-    }
-    for (int i=0; i < C(activedb->block); i++) {
-        if (id ==  P(activedb->block)[i].id) {
-            for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
-                if (!strcmp(P(activedb->block)[i].P(prop)[j].pname, propname)) {
-                    char *buf = malloc(strlen(P(activedb->block)[i].P(prop)[j].pvalue)+1);
-                    strcpy(buf,P(activedb->block)[i].P(prop)[j].pvalue);
-                    return buf;
-                }
+    block_t *blk = db_blk_record_from_id(block_id);
+    if (blk) {
+        for (int j=0; j < blk->C(prop); j++) {
+            if (!strcmp(blk->P(prop)[j].pname, propname)) {
+                return blk->P(prop)[j].pvalue;
             }
-            break;
         }
     }
     return NULL;
@@ -647,10 +628,9 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
     assert (activedb);
     assert (degrees == 90 || degrees == 180 || degrees == 270);
 
-    block_t blk; // will be used to get the full block record from blk_id
-
     const char *currentdirection = db_get_blk_propval(blk_id,"facing");
     const char *currentaxis = db_get_blk_propval(blk_id,"axis");
+    block_t *blk = db_blk_record_from_id(blk_id);
 
     if (currentdirection) {
         char *desireddirection;
@@ -677,16 +657,9 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
         }
         else return blk_id;  //block is facing up or down
 
-        //find the block record for the blk_id parameter
-        for (int i=0; i < C(activedb->block); i++) {
-            if (blk_id ==  P(activedb->block)[i].id) {
-                blk = P(activedb->block)[i];
-                break;
-            }
-        }
         //TODO: move this to a lookup function
         for (int i=0; i < C(activedb->block); i++) {
-            if (!strcmp( P(activedb->block)[i].name, blk.name) ) {
+            if (!strcmp( P(activedb->block)[i].name, blk->name) ) {
                 //found the same block name - loop all properties for a match
                 int matchcount = 0;
                 for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
@@ -694,10 +667,10 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
                         if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, desireddirection)) matchcount++;  //matched our desired facing
                     }
                     else {
-                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk.P(prop)[j].pvalue)) matchcount++; //matched the other property
+                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk->P(prop)[j].pvalue)) matchcount++; //matched the other property
                     }
                 }
-                if ( matchcount == blk.C(prop) ) return P(activedb->block)[i].id;
+                if ( matchcount == blk->C(prop) ) return P(activedb->block)[i].id;
             }
         }
     }
@@ -715,16 +688,9 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
         }
         else return blk_id; //block in z axis
 
-        //find the block record for the blk_id parameter
-        for (int i=0; i < C(activedb->block); i++) {
-            if (blk_id ==  P(activedb->block)[i].id) {
-                blk = P(activedb->block)[i];
-                break;
-            }
-        }
         //TODO: move this to a lookup function
         for (int i=0; i < C(activedb->block); i++) {
-            if (!strcmp( P(activedb->block)[i].name, blk.name) ) {
+            if (!strcmp( P(activedb->block)[i].name, blk->name) ) {
                 //found the same block name - loop all properties for a match
                 int matchcount = 0;
                 for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
@@ -732,10 +698,10 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
                         if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, desiredaxis)) matchcount++;//matched our desired axis
                     }
                     else {
-                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk.P(prop)[j].pvalue)) matchcount++; //matched the other property
+                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk->P(prop)[j].pvalue)) matchcount++; //matched the other property
                     }
                 }
-                if ( matchcount == blk.C(prop) ) return P(activedb->block)[i].id;
+                if ( matchcount == blk->C(prop) ) return P(activedb->block)[i].id;
             }
         }
     }
@@ -924,7 +890,6 @@ int try_to_get_missing_json_files(int protocol_id) {
     if (rc) {
         printf("Warning: Couldnt cleanup. %d",rc);
     }
-
     return 0;
 }
 
