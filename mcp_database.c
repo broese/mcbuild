@@ -55,13 +55,9 @@ int db_load(int protocol_id) {
     //TODO: Protocol Specific
     assert(protocol_id == 404);
 
-    char *blockjsonfilespec = malloc(strlen(databasefilepath)+20);
+    char blockjsonfilespec[PATH_MAX], itemjsonfilespec[PATH_MAX], dbfilespec[PATH_MAX];
     sprintf(blockjsonfilespec, "%s/blocks_%d.json",databasefilepath,protocol_id);  //example "./database/blocks_404.json"
-
-    char *itemjsonfilespec = malloc(strlen(databasefilepath)+20);
     sprintf(itemjsonfilespec, "%s/items_%d.json",databasefilepath,protocol_id);  //example: "./database/items_404.json"
-
-    char *dbfilespec = malloc(strlen(databasefilepath)+20);
     sprintf(dbfilespec, "%s/mcb_db_%d.txt",databasefilepath,protocol_id);  //example: "./database/mcb_db_404.txt"
 
     //First Method: if the db file already exists, load it.

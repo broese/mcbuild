@@ -1156,6 +1156,7 @@ int proxy_pump() {
 
     gs_destroy();
     gm_reset();
+    db_unload();
 
     close_session();
     lh_poll_free(&pa);
