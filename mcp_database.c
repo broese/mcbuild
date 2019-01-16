@@ -33,6 +33,7 @@ int save_db_to_file(database_t *db);
 int load_db_from_file(database_t *db, FILE* fp);
 int test_examples();
 
+// Loads a db for this protocol into memory
 int db_load(int protocol_id) {
     activedb = NULL;
 
@@ -232,76 +233,68 @@ int db_load(int protocol_id) {
     return 0; //success
 }
 
+// Gets the item id given the item name
 int db_get_item_id(const char *name) {
     assert(activedb);
-    int id = -1;
     for (int i =0; i < C(activedb->item); i++) {
         if (!strcmp(activedb->P(item)[i].name, name)) {
-            id = activedb->P(item)[i].id;
-            break;
+            return activedb->P(item)[i].id;
         }
     }
     //TODO: if this is a blockname with a different itemname for the base material
-    return id;
+    return -1;
 };
 
+// Gets the item name given the item id
 const char *db_get_item_name(int item_id) {
     assert (activedb);
-    char *buf;
     if (item_id == -1) {
         return "Empty";
     }
-    if (item_id < -1 || item_id >= C(activedb->item)) {
-        return "ID out of bounds";
-    }
     for (int i=0; i < C(activedb->item); i++) {
         if (item_id == activedb->P(item)[i].id) {
-            buf = malloc(strlen(activedb->P(item)[i].name)+1);
-            strcpy(buf,activedb->P(item)[i].name);
-            return buf;
+            return activedb->P(item)[i].name;
         }
     }
     return "ID not found";
 };
 
+// Private:  Gets the database record for a block given its block_id
+block_t *db_blk_record_from_id(blid_t block_id) {
+    for (int i=0; i < C(activedb->block); i++) {
+        if (block_id == P(activedb->block)[i].id) {
+            return &P(activedb->block)[i];
+        }
+    }
+    return NULL;
+}
+
+// Gets the block name given the block id
 const char *db_get_blk_name(blid_t id) {
     assert(activedb);
-    char *buf;
-    if (id == -1) {
-        return "Empty";
-    }
-    if (id < -1 || id >= C(activedb->block)) {
-        return "ID out of bounds";
-    }
-    for (int i=0; i < C(activedb->block); i++) {
-        if (id == P(activedb->block)[i].id) {
-            buf = malloc(strlen( P(activedb->block)[i].name)+1);
-            strcpy(buf, P(activedb->block)[i].name);
-            return buf;
-        }
-    }
+    block_t *blk = db_blk_record_from_id(id);
+    if (blk) return blk->name;
     return "ID not found";
 };
 
+// Gets the blockname from the old-style block ID (only relevant for the SP_BlockAction packet)
 const char *db_get_blk_name_from_old_id(blid_t oldid) {
     assert(activedb);
     char *buf;
-    if (oldid == -1) {
-        return "Empty";
-    }
-    if (oldid < -1 || oldid >= P(activedb->block)[C(activedb->block)-1].oldid) {
+    if (oldid > P(activedb->block)[C(activedb->block)-1].oldid) {
         return "ID out of bounds";
     }
     for (int i=0; i < C(activedb->block); i++) {
         if (oldid == P(activedb->block)[i].oldid) {
-            buf = malloc(strlen(P(activedb->block)[i].name)+1);
-            strcpy(buf,P(activedb->block)[i].name);
-            return buf;
+            return P(activedb->block)[i].name;
         }
     }
     return "ID not found";
 };
 
+// Gets the block's default id given a block name
+//  db_get_blk_id("cobblestone") => 14
+//  db_get_blk_id("nether_brick_stairs") => 4540 // north,bottom,straight,false marked as default
 blid_t db_get_blk_id(const char *name) {
     assert (activedb);
     for (int i =0; i < C(activedb->block); i++) {
@@ -309,19 +302,20 @@ blid_t db_get_blk_id(const char *name) {
             return activedb->P(block)[i].defaultid;
         }
     }
-    return -1;
+    return UINT16_MAX;
 }
 
+// input is another block id, returning that block id's default id
 blid_t db_get_blk_default_id(blid_t id) {
     assert (activedb);
-    for (int i=0; i < C(activedb->block); i++) {
-        if (id == P(activedb->block)[i].id) {
-            return P(activedb->block)[i].defaultid;
-        }
-    }
-    return -1;
+    block_t *blk = db_blk_record_from_id(id);
+    if (blk) return blk->defaultid;
+    return UINT16_MAX;
 }
 
+// Gets the number of states a block has, given the block id
+//  db_get_num_states(5) => 1 // polished_diorite
+//  db_get_num_states(8) => 2 // grass_block
 int db_get_num_states(blid_t block_id) {
     assert (activedb);
     int count = 0;
@@ -335,16 +329,16 @@ int db_get_num_states(blid_t block_id) {
     return count;
 }
 
-
+// Dumps blocks array to stdout
 void db_dump_blocks(int maxlines){
     assert (activedb);
     printf("Dumping Blocks...\n");
     printf("%-30s %-5s %-5s %-5s %s\n","blockname","blkid","oldid","defid","#prop");
     for (int i=0; (i < C(activedb->block)) && (i < maxlines); i++) {
         printf("%30s ", P(activedb->block)[i].name);
-        printf("%05d ", P(activedb->block)[i].id);
-        printf("%05d ", P(activedb->block)[i].oldid);
-        printf("%05d ", P(activedb->block)[i].defaultid);
+        printf("%05u ", P(activedb->block)[i].id);
+        printf("%05u ", P(activedb->block)[i].oldid);
+        printf("%05u ", P(activedb->block)[i].defaultid);
         printf("%05zd ", P(activedb->block)[i].C(prop));
         for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
             printf("prop:%s val:%s, ", P(activedb->block)[i].P(prop)[j].pname, P(activedb->block)[i].P(prop)[j].pvalue);
@@ -353,6 +347,7 @@ void db_dump_blocks(int maxlines){
     }
 }
 
+// Dumps items array to stdout
 void db_dump_items(int maxlines){
     assert (activedb);
     printf("Dumping Items...\n");
@@ -363,6 +358,7 @@ void db_dump_items(int maxlines){
     }
 }
 
+// Dumps blocks array to a csv file
 int db_dump_blocks_to_csv_file() {
     assert (activedb);
     char *blockcsvfilespec = malloc(strlen(databasefilepath)+30);
@@ -375,9 +371,9 @@ int db_dump_blocks_to_csv_file() {
     fprintf(fp, "%s, %s, %s, %s, %s\n","blockname","blkid","oldid","defid","#prop");
     for (int i=0; i < C(activedb->block) ; i++) {
         fprintf(fp, "%s,", P(activedb->block)[i].name);
-        fprintf(fp, "%d,", P(activedb->block)[i].id);
-        fprintf(fp, "%d,", P(activedb->block)[i].oldid);
-        fprintf(fp, "%d,", P(activedb->block)[i].defaultid);
+        fprintf(fp, "%u,", P(activedb->block)[i].id);
+        fprintf(fp, "%u,", P(activedb->block)[i].oldid);
+        fprintf(fp, "%u,", P(activedb->block)[i].defaultid);
         fprintf(fp, "%zd", P(activedb->block)[i].C(prop));
         for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
             fprintf(fp, ",prop:%s val:%s", P(activedb->block)[i].P(prop)[j].pname, P(activedb->block)[i].P(prop)[j].pvalue);
@@ -388,6 +384,7 @@ int db_dump_blocks_to_csv_file() {
     return 0;
 }
 
+// Dumps items array to a csv file
 int db_dump_items_to_csv_file() {
     assert (activedb);
     char *itemcsvfilespec = malloc(strlen(databasefilepath)+30);
@@ -406,6 +403,7 @@ int db_dump_items_to_csv_file() {
     return 0;
 }
 
+// Private: Saves a database struct to file so it can be loaded in the future
 int save_db_to_file(database_t *db) {
     char *dbfilespec = malloc(strlen(databasefilepath)+20);
     sprintf(dbfilespec, "%s/mcb_db_%d.txt",databasefilepath,db->protocol);  //example: "./database/mcb_db_404.txt"
@@ -436,6 +434,7 @@ int save_db_to_file(database_t *db) {
     return 0;
 }
 
+// Private: Loads a previously-saved db file created by save_db_to_file
 int load_db_from_file(database_t *db, FILE* fp) {
 
     char buf[100];
@@ -493,6 +492,7 @@ int load_db_from_file(database_t *db, FILE* fp) {
     return 0;
 }
 
+// Unloads all databases from memory
 void db_unload() {
     activedb = NULL;
     int dbcount = C(dbs);
@@ -530,24 +530,18 @@ void db_unload() {
     return;
 }
 
-// db_get_blk_propval(db,14,"facing") => NULL // no such property
-// db_get_blk_propval(db,1650,"facing") => "north"
-// db_get_blk_propval(db,1686,"half") => "bottom"
-const char * db_get_blk_propval(blid_t id, const char *propname) {
+// Gets the property value of a property for this block id
+//  db_get_blk_propval(db,14,"facing") => NULL // no such property
+//  db_get_blk_propval(db,1650,"facing") => "north"
+//  db_get_blk_propval(db,1686,"half") => "bottom"
+const char *db_get_blk_propval(blid_t block_id, const char *propname) {
     assert (activedb);
-    if (id < 0 || id >= C(activedb->block)) {
-        return NULL;
-    }
-    for (int i=0; i < C(activedb->block); i++) {
-        if (id ==  P(activedb->block)[i].id) {
-            for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
-                if (!strcmp(P(activedb->block)[i].P(prop)[j].pname, propname)) {
-                    char *buf = malloc(strlen(P(activedb->block)[i].P(prop)[j].pvalue)+1);
-                    strcpy(buf,P(activedb->block)[i].P(prop)[j].pvalue);
-                    return buf;
-                }
+    block_t *blk = db_blk_record_from_id(block_id);
+    if (blk) {
+        for (int j=0; j < blk->C(prop); j++) {
+            if (!strcmp(blk->P(prop)[j].pname, propname)) {
+                return blk->P(prop)[j].pvalue;
             }
-            break;
         }
     }
     return NULL;
@@ -634,10 +628,9 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
     assert (activedb);
     assert (degrees == 90 || degrees == 180 || degrees == 270);
 
-    block_t blk; // will be used to get the full block record from blk_id
-
     const char *currentdirection = db_get_blk_propval(blk_id,"facing");
     const char *currentaxis = db_get_blk_propval(blk_id,"axis");
+    block_t *blk = db_blk_record_from_id(blk_id);
 
     if (currentdirection) {
         char *desireddirection;
@@ -664,16 +657,9 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
         }
         else return blk_id;  //block is facing up or down
 
-        //find the block record for the blk_id parameter
-        for (int i=0; i < C(activedb->block); i++) {
-            if (blk_id ==  P(activedb->block)[i].id) {
-                blk = P(activedb->block)[i];
-                break;
-            }
-        }
         //TODO: move this to a lookup function
         for (int i=0; i < C(activedb->block); i++) {
-            if (!strcmp( P(activedb->block)[i].name, blk.name) ) {
+            if (!strcmp( P(activedb->block)[i].name, blk->name) ) {
                 //found the same block name - loop all properties for a match
                 int matchcount = 0;
                 for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
@@ -681,10 +667,10 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
                         if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, desireddirection)) matchcount++;  //matched our desired facing
                     }
                     else {
-                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk.P(prop)[j].pvalue)) matchcount++; //matched the other property
+                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk->P(prop)[j].pvalue)) matchcount++; //matched the other property
                     }
                 }
-                if ( matchcount == blk.C(prop) ) return P(activedb->block)[i].id;
+                if ( matchcount == blk->C(prop) ) return P(activedb->block)[i].id;
             }
         }
     }
@@ -702,16 +688,9 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
         }
         else return blk_id; //block in z axis
 
-        //find the block record for the blk_id parameter
-        for (int i=0; i < C(activedb->block); i++) {
-            if (blk_id ==  P(activedb->block)[i].id) {
-                blk = P(activedb->block)[i];
-                break;
-            }
-        }
         //TODO: move this to a lookup function
         for (int i=0; i < C(activedb->block); i++) {
-            if (!strcmp( P(activedb->block)[i].name, blk.name) ) {
+            if (!strcmp( P(activedb->block)[i].name, blk->name) ) {
                 //found the same block name - loop all properties for a match
                 int matchcount = 0;
                 for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
@@ -719,10 +698,10 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
                         if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, desiredaxis)) matchcount++;//matched our desired axis
                     }
                     else {
-                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk.P(prop)[j].pvalue)) matchcount++; //matched the other property
+                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk->P(prop)[j].pvalue)) matchcount++; //matched the other property
                     }
                 }
-                if ( matchcount == blk.C(prop) ) return P(activedb->block)[i].id;
+                if ( matchcount == blk->C(prop) ) return P(activedb->block)[i].id;
             }
         }
     }
@@ -731,14 +710,16 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-// TODO: use what we already have
+// Private:  Converts the protocol ID to its MC version string
 char *protocol_to_ver_string(int protid){
+    // TODO: use what we already have
     if (protid == 404) {
         return "1.13.2";
     }
     return "unknown";
 }
 
+// Private:  Saves a URL to a local file
 int download_url_into_file(const char *url, const char *filespec) {
     CURL *curl = curl_easy_init();
     // set header options
@@ -754,6 +735,7 @@ int download_url_into_file(const char *url, const char *filespec) {
     return rc;
 }
 
+// Private:  Finds the directory of the Java VM executable
 char *findjavapath() {
     char *javapath = NULL;
 
@@ -785,7 +767,7 @@ char *findjavapath() {
     return javapath;
 }
 
-//if blocks.json and items.json dont exist, use this to fetch the server jar and extract them
+// Private:  Gets the server jar from Mojang and extract blocks.json & items.json
 int try_to_get_missing_json_files(int protocol_id) {
     int rc;
 
@@ -908,10 +890,10 @@ int try_to_get_missing_json_files(int protocol_id) {
     if (rc) {
         printf("Warning: Couldnt cleanup. %d",rc);
     }
-
     return 0;
 }
 
+// Private:  Dumps database tests to stdout (activated by #define TESTEXAMPLES)
 int test_examples() {
     printf("Number of blocks: %zd\n",C(activedb->block));
     printf("Number of items: %zd\n", C(activedb->item));
@@ -942,17 +924,11 @@ int test_examples() {
     printf("Now testing errors \n");
     printf(" db_get_blk_name(8599)                 = %s (out of bounds)\n", db_get_blk_name(8599));
     printf(" db_get_blk_name(8600)                 = %s (out of bounds)\n", db_get_blk_name(8600));
-    printf(" db_get_blk_id(\"gold_nugget\")          = %d (-1 meaning not found)\n",db_get_blk_id("gold_nugget"));
+    printf(" db_get_blk_id(\"gold_nugget\")          = %d (UINT16_MAX meaning not found)\n",db_get_blk_id("gold_nugget"));
     printf(" db_get_num_states(8599)               = %d (0 meaning problem)\n",db_get_num_states(8599));
 
     return 0;
 }
-//struct prop_t { const char *pname, const char *pvalue };
-// prop_t * defines a set of properties I'm interested in. It's a list no longer than 3 I guess
-// how should we define the length? it could be {NULL,NULL} terminated or length explicitly given.
-// many different IDs can match
-//int get_matching_block_ids(database_t *db, const char *name, prop_t *match, int *ids);
-// places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
 
 ///////////////////////////////////////////////////
 // Item flags

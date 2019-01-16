@@ -46,7 +46,10 @@ typedef struct {
   lh_arr_declare(block_t, block);
 } database_t;
 
+// Loads a db for this protocol into memory
 int db_load(int protocol_id);
+
+// Unloads all databases from memory
 void db_unload();
 
 // Gets the item id given the item name
@@ -92,18 +95,17 @@ const char *db_get_blk_propval(blid_t id, const char *propname);
 //  db_get_num_states(8) => 2 // grass_block
 int db_get_num_states(blid_t block_id);
 
-// Dump database arrays to stdout or a .csv file
+// Dumps blocks array to stdout
 void db_dump_blocks(int maxlines);
-void db_dump_items(int maxlines);
-int db_dump_blocks_to_csv_file();
-int db_dump_items_to_csv_file();
 
-//struct prop_t { const char *pname, const char *pvalue };
-// prop_t * defines a set of properties I'm interested in. It's a list no longer than 3 I guess
-// how should we define the length? it could be {NULL,NULL} terminated or length explicitly given.
-// many different IDs can match
-//int get_matching_block_ids(database_t *db, const char *name, prop_t *match, int *ids);
-// places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
+// Dumps items array to stdout
+void db_dump_items(int maxlines);
+
+// Dumps blocks array to a csv file
+int db_dump_blocks_to_csv_file();
+
+// Dumps items array to a csv file
+int db_dump_items_to_csv_file();
 
 // Gets the stacksize given an item id
 int db_stacksize (int item_id);
@@ -143,3 +145,11 @@ int db_item_is_chest (int item_id);
 
 // True if item is a enderchest or furnace  (orientable containers)
 int db_item_is_furnace (int item_id);
+
+//TODO:
+//struct prop_t { const char *pname, const char *pvalue };
+// prop_t * defines a set of properties I'm interested in. It's a list no longer than 3 I guess
+// how should we define the length? it could be {NULL,NULL} terminated or length explicitly given.
+// many different IDs can match
+//int get_matching_block_ids(database_t *db, const char *name, prop_t *match, int *ids);
+// places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
