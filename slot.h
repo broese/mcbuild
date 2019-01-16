@@ -46,9 +46,7 @@ slot_t * clone_slot(slot_t *src, slot_t *dst);
 void swap_slots(slot_t *f, slot_t *t);
 
 // read slot data from MC packet format
-uint8_t * read_slot_legacy(uint8_t *p, slot_t *s);
 uint8_t * read_slot(uint8_t *p, slot_t *s);
 
 // write slot data to MC packet format
-uint8_t * write_slot_legacy(uint8_t *w, slot_t *s);
 uint8_t * write_slot(uint8_t *w, slot_t *s);

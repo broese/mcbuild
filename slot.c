@@ -71,31 +71,6 @@ void swap_slots(slot_t *f, slot_t *t) {
     *f = temp;
 }
 
-// read slot data from MC packet format (v1.13/1.13.1)
-uint8_t * read_slot_legacy(uint8_t *p, slot_t *s) {
-    clear_slot(s);
-    s->item     = lh_read_short_be(p);
-    if (s->item != -1) {
-        s->present = 1;
-        s->count    = lh_read_char(p);
-        s->nbt      = nbt_parse(&p);
-    }
-    return p;
-}
-
-// write slot data to MC packet format (v1.13/1.13.1)
-uint8_t * write_slot_legacy(uint8_t *w, slot_t *s) {
-    if (s->present) {
-        lh_write_short_be(w, s->item);
-        lh_write_char(w, s->count);
-        nbt_write(&w, s->nbt);
-    }
-    else {
-        lh_write_short_be(w, -1);
-    }
-    return w;
-}
-
 // read slot data from MC packet format (v1.13 and above)
 uint8_t * read_slot(uint8_t *p, slot_t *s) {
     clear_slot(s);
