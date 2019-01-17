@@ -619,7 +619,32 @@ int db_blk_is_onwall(blid_t blk_id) {
     return 0;
 }
 
-// takes a block_id and returns the id that matches it, except for the facing property rotated in degrees
+// Gets the block_id that matches another block_id, except for changing one property to a different value
+blid_t db_blk_property_change(blid_t blk_id, const char* prop_name, const char* new_prop_value) {
+    block_t *originalblk = db_blk_record_from_id(blk_id);
+    int propertycount = originalblk->C(prop);
+
+    // loop through every block in the database to find a match
+    for (int i=0; i < activedb->C(block); i++) {
+        block_t newblk = activedb->P(block)[i];
+        if (!strcmp( newblk.name, originalblk->name) ) {
+            //found a block with the same block name - loop all properties for a match
+            int matchcount = 0;
+            for (int j=0; j < propertycount; j++) {
+                // if this is the property that should change and its value matches new_prop_value
+                if (!strcmp(newblk.P(prop)[j].pname, prop_name)) {
+                    if (!strcmp(newblk.P(prop)[j].pvalue, new_prop_value)) matchcount++;
+                }
+                // this is one of the properties that should remain the same as the original block
+                else if (!strcmp(newblk.P(prop)[j].pvalue, originalblk->P(prop)[j].pvalue)) matchcount++;
+            }
+            if ( matchcount == propertycount ) return newblk.id;
+        }
+    }
+    return UINT16_MAX; //not found
+}
+
+// takes a block_id and returns the id that matches it, except for the facing axis property rotated in degrees
 blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
     assert (activedb);
     assert (degrees == 90 || degrees == 180 || degrees == 270);
@@ -653,22 +678,7 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
         }
         else return blk_id;  //block is facing up or down
 
-        //TODO: move this to a lookup function
-        for (int i=0; i < C(activedb->block); i++) {
-            if (!strcmp( P(activedb->block)[i].name, blk->name) ) {
-                //found the same block name - loop all properties for a match
-                int matchcount = 0;
-                for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
-                    if (!strcmp(P(activedb->block)[i].P(prop)[j].pname, "facing")) {
-                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, desireddirection)) matchcount++;  //matched our desired facing
-                    }
-                    else {
-                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk->P(prop)[j].pvalue)) matchcount++; //matched the other property
-                    }
-                }
-                if ( matchcount == blk->C(prop) ) return P(activedb->block)[i].id;
-            }
-        }
+        return db_blk_property_change(blk_id, "facing", desireddirection);
     }
     else if (currentaxis) {
         char *desiredaxis;
@@ -682,26 +692,64 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
             if (degrees == 180) return blk_id;
             if (degrees == 270) desiredaxis = "x";
         }
-        else return blk_id; //block in z axis
+        else return blk_id; //block in y axis
 
-        //TODO: move this to a lookup function
-        for (int i=0; i < C(activedb->block); i++) {
-            if (!strcmp( P(activedb->block)[i].name, blk->name) ) {
-                //found the same block name - loop all properties for a match
-                int matchcount = 0;
-                for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
-                    if (!strcmp(P(activedb->block)[i].P(prop)[j].pname, "axis")) {
-                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, desiredaxis)) matchcount++;//matched our desired axis
-                    }
-                    else {
-                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk->P(prop)[j].pvalue)) matchcount++; //matched the other property
-                    }
-                }
-                if ( matchcount == blk->C(prop) ) return P(activedb->block)[i].id;
-            }
-        }
+        return db_blk_property_change(blk_id, "axis", desiredaxis);
     }
     return blk_id;  //block doesnt rotate or have an axis (or slipped thru horrible logic above)
+}
+
+// Private: Get all block records matching a given blockname
+int get_all_records_matching_blockname(const char *blockname, block_t *blockarray[] ) {
+    assert(activedb);
+    int count = 0;
+    for (int i=0; i < activedb->C(block); i++) {
+        if (!strcmp(activedb->P(block)[i].name, blockname)) {
+            blockarray[count]= &activedb->P(block)[i];
+            count++;
+        }
+    }
+    return count;
+}
+
+// Private: Get a property value given a block record and property name
+const char *get_prop_value_from_record(block_t *blk, const char *propname) {
+    for (int j=0; j < blk->C(prop); j++) {
+        if (!strcmp(blk->P(prop)[j].pname, propname)) {
+            return blk->P(prop)[j].pvalue;
+        }
+    }
+    return NULL;
+}
+
+// places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
+int db_get_matching_block_ids(const char *name, prop_t *match, int propcount, blid_t *ids) {
+    block_t *blockarray[2000];
+    int blkcount = get_all_records_matching_blockname(name, blockarray);
+    int blkmatches = 0;
+    for (int i=0; i < blkcount; i++) {
+        block_t *blk = blockarray[i]; //give this block a convenient name
+        int propmatches=0;
+        // loop through properties to see if this block's prop values match those in the given array
+        for (int j=0; j < propcount; j++) {
+            if (!strcmp(get_prop_value_from_record(blk, match[j].pname),match[j].pvalue)) propmatches++;
+        }
+        if (propmatches == propcount) ids[blkmatches++] = blk->id;
+    }
+    return blkmatches;
+}
+
+// Get all block ids matching a given blockname and places ids into an array returning the count
+int db_get_all_ids_matching_blockname(const char *blockname, blid_t *idarray ) {
+    assert(activedb);
+    int count = 0;
+    for (int i=0; i < activedb->C(block); i++) {
+        if (!strcmp(activedb->P(block)[i].name, blockname)) {
+            idarray[count]=activedb->P(block)[i].id;
+            count++;
+        }
+    }
+    return count;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -917,12 +965,24 @@ int test_examples() {
     printf(" db_item_is_furnace(231)               = %d (True) //ender_chest\n",db_item_is_furnace(231));
     printf(" db_get_rotated_block(1649, 270)       = %d (1689) //oak_stairs rotated\n", db_get_rotated_block(1649, 270));
     printf(" db_get_rotated_block(74, 90)          = %d (72) //oak_log rotated from z to x\n", db_get_rotated_block(74, 90));
+    printf(" db_blk_property_change(5315,\"facing\",\"east\") = %d (5319) //oak_button south->east\n", db_blk_property_change(5315,"facing","east"));
     printf("Now testing errors \n");
     printf(" db_get_blk_name(8599)                 = %s (out of bounds)\n", db_get_blk_name(8599));
     printf(" db_get_blk_name(8600)                 = %s (out of bounds)\n", db_get_blk_name(8600));
     printf(" db_get_blk_id(\"gold_nugget\")          = %d (UINT16_MAX meaning not found)\n",db_get_blk_id("gold_nugget"));
     printf(" db_get_num_states(8599)               = %d (0 meaning problem)\n",db_get_num_states(8599));
-
+    printf("Now testing advanced functions\n");
+    blid_t idarray[2000];
+    int matchnum = db_get_all_ids_matching_blockname("lever", idarray);
+    printf(" db_get_all_ids_matching_blockname(\"lever\",idarray)\n");
+    for (int i=0; i<matchnum; i++) printf("%u ",idarray[i]);
+    printf("\n");
+    blid_t idarray2[2000];
+    prop_t testproparr[2] = { {"face","wall"}, {"powered","true"} };
+    int matchnum2 = db_get_matching_block_ids("lever", testproparr, 2, idarray2);
+    printf(" db_get_matching_block_ids(\"lever\",{ {\"face\",\"wall\"}, {\"powered\",\"true\"} },2,idarray2)\n");
+    for (int i=0; i<matchnum2; i++) printf("%u ",idarray2[i]);
+    printf("\n");
     return 0;
 }
 
