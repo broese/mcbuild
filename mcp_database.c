@@ -619,7 +619,32 @@ int db_blk_is_onwall(blid_t blk_id) {
     return 0;
 }
 
-// takes a block_id and returns the id that matches it, except for the facing property rotated in degrees
+// Gets the block_id that matches another block_id, except for changing one property to a different value
+blid_t db_blk_property_change(blid_t blk_id, const char* prop_name, const char* new_prop_value) {
+    block_t *originalblk = db_blk_record_from_id(blk_id);
+    int propertycount = originalblk->C(prop);
+
+    // loop through every block in the database to find a match
+    for (int i=0; i < activedb->C(block); i++) {
+        block_t newblk = activedb->P(block)[i];
+        if (!strcmp( newblk.name, originalblk->name) ) {
+            //found a block with the same block name - loop all properties for a match
+            int matchcount = 0;
+            for (int j=0; j < propertycount; j++) {
+                // if this is the property that should change and its value matches new_prop_value
+                if (!strcmp(newblk.P(prop)[j].pname, prop_name)) {
+                    if (!strcmp(newblk.P(prop)[j].pvalue, new_prop_value)) matchcount++;
+                }
+                // this is one of the properties that should remain the same as the original block
+                else if (!strcmp(newblk.P(prop)[j].pvalue, originalblk->P(prop)[j].pvalue)) matchcount++;
+            }
+            if ( matchcount == propertycount ) return newblk.id;
+        }
+    }
+    return UINT16_MAX; //not found
+}
+
+// takes a block_id and returns the id that matches it, except for the facing axis property rotated in degrees
 blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
     assert (activedb);
     assert (degrees == 90 || degrees == 180 || degrees == 270);
@@ -653,22 +678,7 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
         }
         else return blk_id;  //block is facing up or down
 
-        //TODO: move this to a lookup function
-        for (int i=0; i < C(activedb->block); i++) {
-            if (!strcmp( P(activedb->block)[i].name, blk->name) ) {
-                //found the same block name - loop all properties for a match
-                int matchcount = 0;
-                for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
-                    if (!strcmp(P(activedb->block)[i].P(prop)[j].pname, "facing")) {
-                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, desireddirection)) matchcount++;  //matched our desired facing
-                    }
-                    else {
-                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk->P(prop)[j].pvalue)) matchcount++; //matched the other property
-                    }
-                }
-                if ( matchcount == blk->C(prop) ) return P(activedb->block)[i].id;
-            }
-        }
+        return db_blk_property_change(blk_id, "facing", desireddirection);
     }
     else if (currentaxis) {
         char *desiredaxis;
@@ -684,22 +694,7 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
         }
         else return blk_id; //block in z axis
 
-        //TODO: move this to a lookup function
-        for (int i=0; i < C(activedb->block); i++) {
-            if (!strcmp( P(activedb->block)[i].name, blk->name) ) {
-                //found the same block name - loop all properties for a match
-                int matchcount = 0;
-                for (int j=0; j < P(activedb->block)[i].C(prop); j++) {
-                    if (!strcmp(P(activedb->block)[i].P(prop)[j].pname, "axis")) {
-                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, desiredaxis)) matchcount++;//matched our desired axis
-                    }
-                    else {
-                        if (!strcmp(P(activedb->block)[i].P(prop)[j].pvalue, blk->P(prop)[j].pvalue)) matchcount++; //matched the other property
-                    }
-                }
-                if ( matchcount == blk->C(prop) ) return P(activedb->block)[i].id;
-            }
-        }
+        return db_blk_property_change(blk_id, "axis", desiredaxis);
     }
     return blk_id;  //block doesnt rotate or have an axis (or slipped thru horrible logic above)
 }
@@ -917,6 +912,7 @@ int test_examples() {
     printf(" db_item_is_furnace(231)               = %d (True) //ender_chest\n",db_item_is_furnace(231));
     printf(" db_get_rotated_block(1649, 270)       = %d (1689) //oak_stairs rotated\n", db_get_rotated_block(1649, 270));
     printf(" db_get_rotated_block(74, 90)          = %d (72) //oak_log rotated from z to x\n", db_get_rotated_block(74, 90));
+    printf(" db_blk_property_change(5315,\"facing\",\"east\") = %d (5319) //oak_button south->east\n", db_blk_property_change(5315,"facing","east"));
     printf("Now testing errors \n");
     printf(" db_get_blk_name(8599)                 = %s (out of bounds)\n", db_get_blk_name(8599));
     printf(" db_get_blk_name(8600)                 = %s (out of bounds)\n", db_get_blk_name(8600));
