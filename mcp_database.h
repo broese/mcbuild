@@ -84,8 +84,14 @@ int db_blk_is_onwall(blid_t blk_id);
 // Gets the block_id that matches another block_id, except for changing one property to a different value
 blid_t db_blk_property_change(blid_t blk_id, const char* prop_name, const char* new_prop_value);
 
-// takes a block_id and returns the id that matches it, except for the facing property rotated in degrees
+// takes a block_id and returns the id that matches it, except for the facing or axis property rotated in degrees
 blid_t db_get_rotated_block(blid_t blk_id, int degrees);
+
+// places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
+int db_get_matching_block_ids(const char *name, prop_t *match, int propcount, blid_t *ids);
+
+// Get all block ids matching a given blockname and places ids into an array returning the count
+int db_get_all_ids_matching_blockname(const char *blockname, blid_t *idarray );
 
 // Gets the property value of a property for this block id
 //  db_get_blk_propval(14,"facing") => NULL // no such property

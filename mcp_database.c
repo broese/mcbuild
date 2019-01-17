@@ -699,6 +699,59 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
     return blk_id;  //block doesnt rotate or have an axis (or slipped thru horrible logic above)
 }
 
+// Private: Get all block records matching a given blockname
+int get_all_records_matching_blockname(const char *blockname, block_t *blockarray[] ) {
+    assert(activedb);
+    int count = 0;
+    for (int i=0; i < activedb->C(block); i++) {
+        if (!strcmp(activedb->P(block)[i].name, blockname)) {
+            blockarray[count]= &activedb->P(block)[i];
+            count++;
+        }
+    }
+    return count;
+}
+
+// Private: Get a property value given a block record and property name
+const char *get_prop_value_from_record(block_t *blk, const char *propname) {
+    for (int j=0; j < blk->C(prop); j++) {
+        if (!strcmp(blk->P(prop)[j].pname, propname)) {
+            return blk->P(prop)[j].pvalue;
+        }
+    }
+    return NULL;
+}
+
+// places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
+int db_get_matching_block_ids(const char *name, prop_t *match, int propcount, blid_t *ids) {
+    block_t *blockarray[2000];
+    int blkcount = get_all_records_matching_blockname(name, blockarray);
+    int blkmatches = 0;
+    for (int i=0; i < blkcount; i++) {
+        block_t *blk = blockarray[i]; //give this block a convenient name
+        int propmatches=0;
+        // loop through properties to see if this block's prop values match those in the given array
+        for (int j=0; j < propcount; j++) {
+            if (!strcmp(get_prop_value_from_record(blk, match[j].pname),match[j].pvalue)) propmatches++;
+        }
+        if (propmatches == propcount) ids[blkmatches++] = blk->id;
+    }
+    return blkmatches;
+}
+
+// Get all block ids matching a given blockname and places ids into an array returning the count
+int db_get_all_ids_matching_blockname(const char *blockname, blid_t *idarray ) {
+    assert(activedb);
+    int count = 0;
+    for (int i=0; i < activedb->C(block); i++) {
+        if (!strcmp(activedb->P(block)[i].name, blockname)) {
+            idarray[count]=activedb->P(block)[i].id;
+            count++;
+        }
+    }
+    return count;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 
 // Private:  Converts the protocol ID to its MC version string
@@ -918,7 +971,18 @@ int test_examples() {
     printf(" db_get_blk_name(8600)                 = %s (out of bounds)\n", db_get_blk_name(8600));
     printf(" db_get_blk_id(\"gold_nugget\")          = %d (UINT16_MAX meaning not found)\n",db_get_blk_id("gold_nugget"));
     printf(" db_get_num_states(8599)               = %d (0 meaning problem)\n",db_get_num_states(8599));
-
+    printf("Now testing advanced functions\n");
+    blid_t idarray[2000];
+    int matchnum = db_get_all_ids_matching_blockname("lever", idarray);
+    printf(" db_get_all_ids_matching_blockname(\"lever\",idarray)\n");
+    for (int i=0; i<matchnum; i++) printf("%u ",idarray[i]);
+    printf("\n");
+    blid_t idarray2[2000];
+    prop_t testproparr[2] = { {"face","wall"}, {"powered","true"} };
+    int matchnum2 = db_get_matching_block_ids("lever", testproparr, 2, idarray2);
+    printf(" db_get_matching_block_ids(\"lever\",{ {\"face\",\"wall\"}, {\"powered\",\"true\"} },2,idarray2)\n");
+    for (int i=0; i<matchnum2; i++) printf("%u ",idarray2[i]);
+    printf("\n");
     return 0;
 }
 
