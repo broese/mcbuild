@@ -692,7 +692,7 @@ blid_t db_get_rotated_block(blid_t blk_id, int degrees) {
             if (degrees == 180) return blk_id;
             if (degrees == 270) desiredaxis = "x";
         }
-        else return blk_id; //block in z axis
+        else return blk_id; //block in y axis
 
         return db_blk_property_change(blk_id, "axis", desiredaxis);
     }
