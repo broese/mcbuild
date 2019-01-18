@@ -154,11 +154,3 @@ int db_item_is_chest (int item_id);
 
 // True if item is a enderchest or furnace  (orientable containers)
 int db_item_is_furnace (int item_id);
-
-//TODO:
-//struct prop_t { const char *pname, const char *pvalue };
-// prop_t * defines a set of properties I'm interested in. It's a list no longer than 3 I guess
-// how should we define the length? it could be {NULL,NULL} terminated or length explicitly given.
-// many different IDs can match
-//int get_matching_block_ids(database_t *db, const char *name, prop_t *match, int *ids);
-// places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
