@@ -159,7 +159,7 @@ TBDEF(tb_ash, MIN_ATTACK_DELAY, MAX_ATTACK);
 static void autoshear(MCPacketQueue *sq) {
     // player must hold shears as active item
     slot_t * islot = &gs.inv.slots[gs.inv.held+36];
-    if (islot->item != 359) return;
+    if (islot->item != db_get_item_id("shears")) return;
 
     // rate-limit
     if (!tb_event(&tb_ash, 1)) return;

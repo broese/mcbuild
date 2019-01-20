@@ -24,106 +24,110 @@
 typedef enum {
     //// Superclasses
     IllegalEntityType   = -1,
-    Entity              = 0,
-    Living              = 1,
-    Ageable             = 2,
-    Player              = 3,
+    Entity              = 256-1,
+    Living              = 256-2,
+    Ageable             = 256-3,
+    Hanging             = 256-9,
+    Insentinent         = 256-10,
+    Ambient             = 256-11,
+    Creature            = 256-12,
+    Animal              = 256-13,
+    Golem               = 256-14,
+    Flying              = 256-15,
+    Monster             = 256-17,
+    TameableAnimal      = 256-18,
+    AbstractFireball    = 256-19,
+    AbstractFish        = 256-20,
+    AbstractHorse       = 256-21,
+    AbstractIllager     = 256-22,
+    AbstractSkeleton    = 256-23,
+    Arrow               = 256-24,
+    ChestedHorse        = 256-25,
+    MinecartContainer   = 256-26,
+    SpellcasterIllager  = 256-27,
+    Throwable           = 256-28,
+    WaterMob            = 256-29,
+    Weather             = 256-30,
 
-    ElderGuardian       = 4,
-    WitherSkeleton      = 5,
-    Stray               = 6,
+    //// Special
+    ExperienceOrb       = 22,  // (SP_SpawnExperienceOrb)
+    Painting            = 49,  // (SP_SpawnPainting)
+    LightningBolt       = 91,  // (SP_SpawnGlobalEntity)
+    Player              = 92,  // (SP_SpawnPlayer)
 
-    Potion              = 7,
-    FallingBlock        = 8,
-    Hanging             = 9,
-    Insentinent         = 10,
-    Ambient             = 11,
-    Creature            = 12,
-    Animal              = 13,
-    Golem               = 14,
-    Flying              = 15,
+    //// Mobs (SP_SpawnMob)
+    Bat                           = 3,
+    Blaze                         = 4,
+    CaveSpider                    = 6,
+    Chicken                       = 7,
+    Cod                           = 8,  // added
+    Cow                           = 9,
+    Creeper                       = 10,
+    Donkey                        = 11,
+    Dolphin                       = 12, // added
+    Drowned                       = 14, // added
+    ElderGuardian                 = 15,
+    Enderdragon                   = 17,
+    Enderman                      = 18,
+    Endermite                     = 19,
+    EvocationIllager              = 21,
+    Ghast                         = 26,
+    Giant                         = 27,
+    Guardian                      = 28,
+    Horse                         = 29,
+    Husk                          = 30,
+    IllusionIllager               = 31,
+    Llama                         = 36,
+    MagmaCube                     = 38,
+    Mule                          = 46,
+    Mooshroom                     = 47,
+    Ocelot                        = 48,
+    Parrot                        = 50,
+    Pig                           = 51,
+    Pufferfish                    = 52, // added
+    ZombiePigman                  = 53,
+    PolarBear                     = 54,
+    Rabbit                        = 56,
+    Salmon                        = 57, // added
+    Sheep                         = 58,
+    Shulker                       = 59,
+    Silverfish                    = 61,
+    Skeleton                      = 62,
+    SkeletonHorse                 = 63,
+    Slime                         = 64,
+    Snowman                       = 66,
+    Spider                        = 69,
+    Squid                         = 70,
+    Stray                         = 71,
+    TropicalFish                  = 72, // added
+    Turtle                        = 73, // added
+    Vex                           = 78,
+    Villager                      = 79,
+    IronGolem                     = 80,
+    VindicationIllager            = 81,
+    Witch                         = 82,
+    Wither                        = 83,
+    WitherSkeleton                = 84,
+    Wolf                          = 86,
+    Zombie                        = 87,
+    ZombieHorse                   = 88,
+    ZombieVillager                = 89,
+    Phantom                       = 90, // added
 
-    Husk                = 23,
-    ZombieVillager      = 27,
-    SkeletonHorse       = 28,
-    ZombieHorse         = 29,
-    Donkey              = 31,
-    Mule                = 32,
-    EvocationFangs      = 33,
-    EvocationIllager    = 34,
-    Vex                 = 35,
-    VindicationIllager  = 36,
-    IllusionIllager     = 37,
-
-    Mob                 = 48,
-    Monster             = 49,
-
-
-    //// Mobs
-    Creeper             = 50,
-    Skeleton            = 51,
-    Spider              = 52,
-    GiantZombie         = 53,
-    Zombie              = 54,
-    Slime               = 55,
-    Ghast               = 56,
-    ZombiePigman        = 57,
-    Enderman            = 58,
-    CaveSpider          = 59,
-
-    Silverfish          = 60,
-    Blaze               = 61,
-    MagmaCube           = 62,
-    Enderdragon         = 63,
-    Wither              = 64,
-    Bat                 = 65,
-    Witch               = 66,
-    Endermite           = 67,
-    Guardian            = 68,
-    Shulker             = 69,
-
-    Pig                 = 90,
-    Sheep               = 91,
-    Cow                 = 92,
-    Chicken             = 93,
-    Squid               = 94,
-    Wolf                = 95,
-    Mooshroom           = 96,
-    Snowman             = 97,
-    Ocelot              = 98,
-    IronGolem           = 99,
-
-    Horse               = 100,
-    Rabbit              = 101,
-    PolarBear           = 102,
-    Llama               = 103,
-    LlamaSpit           = 104,
-    Parrot              = 105,
-
-    Villager            = 120,
-
-    // inofficial entity types so we can track exp orbs and paintings
-    TameableAnimal      = 244,
-    Item                = 245,
-    Fireworks           = 246,
-
-    Painting            = 254,
-    ExperienceOrb       = 255,
-
-    //// Objects
+    //// Objects (SP_SpawnObject)
     Boat                = 1 +256,
-    ItemStack           = 2 +256,
+    Item                = 2 +256,
     AreaEffectCloud     = 3 +256,
 
     Minecart            = 10+256,
     ChestMinecart       = 11+256, // deprecated since 1.6
     MinecartFurnace     = 12+256, // deprecated since 1.6
-    MinecartCommandBlock= 13+256,
+    MinecartCommandBlock= 13+256, // deprecated
 
     ActivatedTNT        = 50+256,
     EnderCrystal        = 51+256,
 
-    Arrow               = 60+256,
+    TippedArrow         = 60+256,
     Snowball            = 61+256,
     Egg                 = 62+256,
     Fireball            = 63+256,
@@ -131,21 +135,23 @@ typedef enum {
     ThrownEnderpearl    = 65+256,
     WitherSkull         = 66+256,
     ShulkerBullet       = 67+256,
+    LlamaSpit           = 68+256, // moved from mob to object
 
-    FallingObjects      = 70+256,
+    FallingBlock        = 70+256,
     ItemFrame           = 71+256,
     EyeOfEnder          = 72+256,
-    ThrownPotion        = 73+256,
-    FallingDragonEgg    = 74+256,
+    Potion              = 73+256,
+    FallingDragonEgg    = 74+256, // deprecated
     ThrownExpBottle     = 75+256,
-    FireworkRocket      = 76+256,
+    Fireworks           = 76+256,
     LeashKnot           = 77+256,
     ArmorStand          = 78+256,
+    EvocationFangs      = 79+256, // moved from mob to object
 
     FishingFloat        = 90+256,
     SpectralArrow       = 91+256,
-    TippedArrow         = 92+256,
     DragonFireball      = 93+256,
+    Trident             = 94+256, // added
 
     //// Terminating ID
     MaxEntityType       = 512,
@@ -209,4 +215,3 @@ void free_metadata(metadata *meta);
 uint8_t * read_metadata(uint8_t *p, metadata **meta);
 uint8_t * write_metadata(uint8_t *w, metadata *meta);
 void dump_metadata(metadata *meta, EntityType et);
-

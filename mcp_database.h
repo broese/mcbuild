@@ -81,8 +81,17 @@ int db_blk_is_empty(blid_t blk_id);
 // blocks that are onwall -- cannot use item flags -- the block & item names dont match
 int db_blk_is_onwall(blid_t blk_id);
 
-// takes a block_id and returns the id that matches it, except for the facing property rotated in degrees
+// Gets the block_id that matches another block_id, except for changing one property to a different value
+blid_t db_blk_property_change(blid_t blk_id, const char* prop_name, const char* new_prop_value);
+
+// takes a block_id and returns the id that matches it, except for the facing or axis property rotated in degrees
 blid_t db_get_rotated_block(blid_t blk_id, int degrees);
+
+// places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
+int db_get_matching_block_ids(const char *name, prop_t *match, int propcount, blid_t *ids);
+
+// Get all block ids matching a given blockname and places ids into an array returning the count
+int db_get_all_ids_matching_blockname(const char *blockname, blid_t *idarray );
 
 // Gets the property value of a property for this block id
 //  db_get_blk_propval(14,"facing") => NULL // no such property
@@ -145,11 +154,3 @@ int db_item_is_chest (int item_id);
 
 // True if item is a enderchest or furnace  (orientable containers)
 int db_item_is_furnace (int item_id);
-
-//TODO:
-//struct prop_t { const char *pname, const char *pvalue };
-// prop_t * defines a set of properties I'm interested in. It's a list no longer than 3 I guess
-// how should we define the length? it could be {NULL,NULL} terminated or length explicitly given.
-// many different IDs can match
-//int get_matching_block_ids(database_t *db, const char *name, prop_t *match, int *ids);
-// places all ids matching a set of propeties for the block name into array ids (can be assumed to be long enough) and returns the number of ids
